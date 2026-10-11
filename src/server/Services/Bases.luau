@@ -169,8 +169,10 @@ local function updatePrompts(player: Player)
 	player:SetAttribute("TreadmillRate", Progression.treadmillRate(s.data.Treadmill))
 end
 
-local function itemCFrame(ped: BasePart): CFrame
-	return ped.CFrame * CFrame.new(0, 0.6 + 2.4, 0) * CFrame.Angles(0, math.pi, 0)
+-- Above a (round) podium, facing the base entrance.
+local function itemCFrame(base: any, ped: BasePart): CFrame
+	local facing = (base.origin :: CFrame).Rotation * CFrame.Angles(0, math.pi, 0)
+	return CFrame.new(ped.Position + Vector3.new(0, 0.6 + 2.6, 0)) * facing
 end
 
 local function renderSlot(player: Player, slot: string)
@@ -194,7 +196,7 @@ local function renderSlot(player: Player, slot: string)
 		return
 	end
 	local model = ItemModel.build(item.Id, item.Mut)
-	ItemModel.place(model, itemCFrame(ped))
+	ItemModel.place(model, itemCFrame(s.base, ped))
 	model:SetAttribute("Slot", slot)
 	local core = model.PrimaryPart :: BasePart
 	local value = Progression.sellValue(item.Id, item.Mut)
@@ -243,7 +245,7 @@ function Bases.render(player: Player)
 		local open = i <= unlocked
 		ped.Transparency = if open then 0 else 0.75
 		ped.Color = if open then Color3.fromRGB(245, 245, 250) else Color3.fromRGB(120, 120, 130)
-		ped.Material = if open then Enum.Material.Marble else Enum.Material.ForceField
+		ped.Material = if open then Enum.Material.SmoothPlastic else Enum.Material.ForceField
 		local ring = s.base.rings and s.base.rings[i]
 		if ring then
 			ring.Transparency = if open then 0 else 1
@@ -269,6 +271,7 @@ function Bases.assign(player: Player): any?
 			base.model:SetAttribute("LockedUntil", 0)
 			base.model:SetAttribute("LockReadyAt", 0)
 			base.signLabel.Text = string.upper(player.DisplayName) .. "'S BASE"
+			base.signLabel.TextColor3 = Color3.new(1, 1, 1)
 			player:SetAttribute("BaseId", base.id)
 			Bases.render(player)
 			changed(player)
@@ -295,7 +298,8 @@ function Bases.release(player: Player)
 		base.model:SetAttribute("OwnerUserId", nil)
 		base.model:SetAttribute("OwnerName", nil)
 		base.model:SetAttribute("LockedUntil", 0)
-		base.signLabel.Text = "EMPTY BASE"
+		base.signLabel.Text = "FREE BASE"
+		base.signLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
 		for _, sign in { base.plotSign, base.treadSign } do
 			for _, sg in sign:GetChildren() do
 				local l = sg:IsA("SurfaceGui") and sg:FindFirstChildOfClass("TextLabel")
@@ -307,6 +311,10 @@ function Bases.release(player: Player)
 		base.pendingLabel.Text = ""
 		base.laser.CanCollide = false
 		base.laser.Transparency = 1
+		local blocker = base.model:FindFirstChild("LaserBarrier") :: BasePart?
+		if blocker then
+			blocker.CanCollide = false
+		end
 		base.beam.Transparency = 1
 		s.base = nil
 	end
@@ -430,8 +438,13 @@ local function teleportIntrudersOut(base: any, owner: Player)
 end
 
 local function setLaser(base: any, on: boolean)
-	base.laser.CanCollide = on
 	base.laser.Transparency = if on then 0.35 else 1
+	-- the visible laser is only 8 tall; the invisible blocker above it stops jumping over
+	local blocker = base.model:FindFirstChild("LaserBarrier") :: BasePart?
+	if blocker then
+		blocker.CanCollide = on
+	end
+	base.laser.CanCollide = on
 end
 
 function Bases.lock(player: Player)
@@ -538,7 +551,7 @@ function Bases.start(worldInfo: any)
 		local plotPrompt = Instance.new("ProximityPrompt")
 		plotPrompt.Name = "Upgrade"
 		plotPrompt.HoldDuration = 0
-		plotPrompt.MaxActivationDistance = 12
+		plotPrompt.MaxActivationDistance = 7 -- short: the prompt must not pop up while training
 		plotPrompt.RequiresLineOfSight = false
 		plotPrompt.Parent = base.plotSign
 		plotPrompt.Triggered:Connect(function(player)

@@ -88,7 +88,7 @@ function CarryFX.start()
 		BackgroundTransparency = 1,
 		Parent = layer,
 	})
-	UI.scaleObject(dropHolder)
+	UI.scaleObject(dropHolder, 1.35) -- thumb-sized on a phone
 	local drop: TextButton = UI.new("TextButton", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Color3.fromRGB(200, 40, 50),
@@ -113,7 +113,7 @@ function CarryFX.start()
 		BackgroundTransparency = 1,
 		Parent = layer,
 	})
-	UI.scaleObject(slapHolder)
+	UI.scaleObject(slapHolder, 1.35)
 	local slap: TextButton = UI.new("TextButton", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Color3.fromRGB(255, 160, 40),

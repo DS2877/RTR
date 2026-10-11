@@ -133,18 +133,18 @@ function UI.icon(name: string, emoji: string): GuiObject
 	})
 end
 
--- HUD scale: phones in landscape are ~390 pt tall; bigger on tablets/PC, smaller on tiny screens.
+-- HUD scale: phones in landscape are ~390 pt tall; bigger on tablets/PC.
+-- A landscape iPhone (852x393 pt) lands at ~0.61: the HUD hugs the corners and leaves the
+-- middle of the screen to the game (playtest feedback: 0.75 covered too much).
 function UI.screenScale(): number
 	local camera = workspace.CurrentCamera
-	local size = if camera then camera.ViewportSize else Vector2.new(844, 390)
-	-- Tuned so a landscape phone (~390–460 pt tall) lands around 0.8: chunky but not covering the
-	-- farm. Tablets and desktop grow up to 1.25.
-	return math.clamp(math.min(size.Y / 520, size.X / 980), 0.65, 1.25)
+	local size = if camera then camera.ViewportSize else Vector2.new(852, 393)
+	return math.clamp(math.min(size.Y / 640, size.X / 1150), 0.55, 1.15)
 end
 
--- Menus/panels use the same scale as the HUD: on a landscape iPhone (~390 pt tall) a 600x330
--- panel then lands at ~450x250, big enough to read and tap.
-UI.PANEL_SCALE = 1
+-- Menus/panels are drawn bigger than the HUD widgets: on a landscape iPhone a 600x330 panel
+-- lands at ~440x240, big enough to read and tap.
+UI.PANEL_SCALE = 1.2
 
 -- Scales one GuiObject (and its children) with UI.screenScale() * factor. Use this for boxes
 -- in a full-screen layer, so full-screen backdrops stay full-screen.

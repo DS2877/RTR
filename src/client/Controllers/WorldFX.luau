@@ -19,8 +19,6 @@ local UI = require(script.Parent.Parent.Util.UI)
 local Sound = require(script.Parent.Parent.Util.Sound)
 local HUD = require(script.Parent.HUD)
 
-local tutorial: () -> ()
-
 local WorldFX = {}
 
 local player = Players.LocalPlayer
@@ -68,14 +66,20 @@ end
 
 local function zoneBanner()
 	local gui = HUD.gui()
-	local banner = UI.bigText({
+	local holder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 150),
-		Size = UDim2.fromOffset(520, 52),
+		Position = UDim2.new(0.5, 0, 0, 120),
+		Size = UDim2.fromOffset(560, 64),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	})
+	UI.scaleObject(holder)
+	local banner = UI.bigText({
+		Size = UDim2.fromScale(1, 1),
 		Text = "",
 		Visible = false,
-		Parent = gui,
-	}, Color3.fromRGB(20, 20, 28), 3)
+		Parent = holder,
+	}, Color3.fromRGB(20, 20, 28), 3.5)
 	local current: number? = nil
 	task.spawn(function()
 		while true do
@@ -242,14 +246,25 @@ end
 -- Guide: one short goal at a time + a beam arrow to it.
 local function guide()
 	local gui = HUD.gui()
-	local hint = UI.bigText({
+	-- one compact objective pill (bottom center) + the golden beam to the target
+	local pill = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -16),
-		Size = UDim2.fromOffset(560, 32),
+		Position = UDim2.new(0.5, 0, 1, -10),
+		Size = UDim2.fromOffset(520, 40),
+		BackgroundColor3 = Color3.fromRGB(20, 20, 30),
+		BackgroundTransparency = 0.3,
+		Visible = false,
+		Parent = gui,
+	}, { UI.corner(20), UI.stroke(Color3.fromRGB(255, 215, 60), 2) })
+	UI.scaleObject(pill)
+	local hint = UI.bigText({
+		Position = UDim2.fromOffset(14, 6),
+		Size = UDim2.new(1, -28, 1, -12),
 		Text = "",
 		TextColor3 = Color3.fromRGB(255, 240, 160),
-		Parent = gui,
-	}, Color3.fromRGB(20, 20, 28), 2.5)
+		Parent = pill,
+	}, Color3.fromRGB(20, 20, 28), 2)
+	local lastText = ""
 
 	local a0 = Instance.new("Attachment")
 	local a1 = Instance.new("Attachment")
@@ -289,8 +304,16 @@ local function guide()
 			local target: Vector3? = nil
 			local pts = player:GetAttribute("SpeedPoints") or 0
 			local speed = Progression.walkSpeed(pts)
+			local learning = not player:GetAttribute("TutorialDone")
+			local steals = player:GetAttribute("Steals") or 0
+			local function vaultTarget(i: number): Vector3?
+				local v = workspace:FindFirstChild("Vaults")
+				local vm = v and v:FindFirstChild("Vault_" .. Vaults[i].id)
+				local floor = vm and vm:FindFirstChild("Floor") :: BasePart?
+				return floor and floor.Position
+			end
 			if player:GetAttribute("Carrying") then
-				text = "🏃 Bring it to YOUR base! Guards will chase you!"
+				text = (if learning then "STEP 3/4  •  " else "") .. "🏃 RUN HOME! The guards are coming!"
 				local floor = base and base:FindFirstChild("Floor") :: BasePart?
 				target = floor and floor.Position
 			elseif base then
@@ -301,100 +324,42 @@ local function guide()
 						best = i
 					end
 				end
-				local slots = player:GetAttribute("CashPerSec") or 0
-				if pts < 30 then
-					text = "⚡ Stand on your treadmill to get faster!"
+				local income = player:GetAttribute("CashPerSec") or 0
+				if learning and pts < 30 and steals == 0 then
+					text = "STEP 1/4  •  ⚡ Stand on your treadmill"
 					local belt = base:FindFirstChild("Treadmill") :: BasePart?
 					target = belt and belt.Position
-				elseif best >= 1 and slots < Vaults[math.max(1, best)].baseIncome * 3 then
-					text = "💰 Steal from " .. Vaults[best].name .. "!"
-					local v = workspace:FindFirstChild("Vaults")
-					local vm = v and v:FindFirstChild("Vault_" .. Vaults[best].id)
-					local floor = vm and vm:FindFirstChild("Floor") :: BasePart?
-					target = floor and floor.Position
-				else
-					text = ""
+				elseif learning and steals == 0 then
+					local v = math.max(1, best)
+					text = "STEP 2/4  •  💰 STEAL loot at " .. Vaults[v].name
+					target = vaultTarget(v)
+				elseif learning and (player:GetAttribute("Collected") or 0) == 0 then
+					text = "STEP 4/4  •  💵 Step on your green COLLECT pad"
+					local pad = base:FindFirstChild("CollectPad") :: BasePart?
+					target = pad and pad.Position
+				elseif pts < 30 then
+					text = "⚡ Train on your treadmill to get faster"
+					local belt = base:FindFirstChild("Treadmill") :: BasePart?
+					target = belt and belt.Position
+				elseif best >= 1 and income < Vaults[best].baseIncome * 3 then
+					text = "💰 Next target: " .. Vaults[best].name
+					target = vaultTarget(best)
 				end
 			end
 			hint.Text = text
-			hint.Visible = text ~= ""
+			pill.Visible = text ~= ""
+			if text ~= lastText and text ~= "" then
+				UI.bump(pill, 0.12)
+				if lastText ~= "" and learning then
+					Sound.play("Upgrade", 0.4)
+				end
+			end
+			lastText = text
 			if target then
 				targetPart.Position = target + Vector3.new(0, 3, 0)
 				beam.Enabled = true
 			else
 				beam.Enabled = false
-			end
-		end
-	end)
-end
-
--- First-session checklist (top right) until one steal is home and cash was collected.
-function tutorial()
-	local gui = HUD.gui()
-	local card = UI.new("Frame", {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -10, 0, 50),
-		Size = UDim2.fromOffset(250, 150),
-		BackgroundColor3 = Color3.fromRGB(20, 20, 30),
-		BackgroundTransparency = 0.2,
-		Visible = false,
-		Parent = gui,
-	}, { UI.corner(16), UI.stroke(Color3.fromRGB(255, 215, 60), 2.5) })
-	UI.scaleObject(card)
-	UI.bigText({
-		Position = UDim2.fromOffset(10, 6),
-		Size = UDim2.new(1, -20, 0, 24),
-		Text = "💰 HOW TO GET RICH",
-		TextColor3 = Color3.fromRGB(255, 215, 60),
-		Parent = card,
-	})
-	local steps = {
-		"⚡ Stand on your treadmill",
-		"🏃 STEAL loot from a vault",
-		"🏠 Run it home to your base",
-		"💵 Step on COLLECT for cash",
-	}
-	local lines: { TextLabel } = {}
-	for i, text in steps do
-		table.insert(
-			lines,
-			UI.label({
-				Position = UDim2.fromOffset(12, 6 + i * 28),
-				Size = UDim2.new(1, -24, 0, 24),
-				Text = text,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				Font = Enum.Font.GothamBold,
-				Parent = card,
-			})
-		)
-	end
-	local seenCarry = false
-	local done: { boolean } = { false, false, false, false }
-	task.spawn(function()
-		while true do
-			task.wait(0.3)
-			if player:GetAttribute("TutorialDone") then
-				card.Visible = false
-				break
-			end
-			card.Visible = true
-			seenCarry = seenCarry or player:GetAttribute("Carrying") ~= nil
-			local steals = player:GetAttribute("Steals") or 0
-			local now = {
-				(player:GetAttribute("SpeedPoints") or 0) >= 30 or steals > 0,
-				seenCarry or steals > 0,
-				steals > 0,
-				(player:GetAttribute("Collected") or 0) > 0,
-			}
-			for i, ok in now do
-				lines[i].Text = (if ok then "✅ " else "⬜ ")
-					.. string.sub(steps[i], (utf8.offset(steps[i], 2) or 1))
-				lines[i].TextColor3 = if ok then Color3.fromRGB(120, 255, 140) else Color3.new(1, 1, 1)
-				if ok and not done[i] then
-					done[i] = true
-					UI.bump(lines[i], 0.25)
-					Sound.play("Upgrade", 0.4)
-				end
 			end
 		end
 	end)
@@ -431,7 +396,6 @@ function WorldFX.start()
 	end)
 	zoneBanner()
 	treadmillPopups()
-	tutorial()
 	rainbow()
 	ownLaser()
 	guide()

@@ -133,6 +133,10 @@ end
 local function localBox(origin: CFrame, p: BasePart): (Vector3, Vector3)
 	local c = origin:PointToObjectSpace(p.Position)
 	local half = p.Size / 2
+	if p:IsA("Part") and p.Shape == Enum.PartType.Cylinder then
+		-- upright podium: the cylinder's length (X) is its height
+		half = Vector3.new(p.Size.Y / 2, p.Size.X / 2, p.Size.Z / 2)
+	end
 	return c - half, c + half
 end
 
@@ -181,6 +185,22 @@ for _, base in world.bases do
 	)
 	-- laser off, beam hidden
 	check(id .. " laser starts open", base.laser.CanCollide == false and base.laser.Transparency == 1)
+	local barriers = 0
+	for _, part in model:GetChildren() do
+		if part.Name == "Barrier" and part:IsA("BasePart") and part.CanCollide and part.Size.Y >= 40 then
+			barriers += 1
+		end
+	end
+	check(id .. " invisible barriers over the low walls", barriers == 5, barriers)
+	-- the Upgrade prompt (7 studs) must not reach a player standing on the treadmill
+	local nearest = belt.CFrame:PointToWorldSpace(
+		Vector3.new(
+			math.clamp(belt.CFrame:PointToObjectSpace(tread.Position).X, -belt.Size.X / 2, belt.Size.X / 2),
+			3,
+			math.clamp(belt.CFrame:PointToObjectSpace(tread.Position).Z, -belt.Size.Z / 2, belt.Size.Z / 2)
+		)
+	)
+	check(id .. " treadmill prompt out of reach from the belt", (nearest - tread.Position).Magnitude > 7.5)
 	check(id .. " crown beam hidden", base.beam.Transparency == 1)
 	-- everything inside, nothing on top of a pedestal
 	for _, part in { base.collectPad, plot, tread, belt } do
@@ -715,6 +735,7 @@ if sim and A and B then
 		Bases.lock(B)
 		assert((b.base.model:GetAttribute("LockedUntil") or 0) > 0, "Bob's lock failed")
 		assert(b.base.laser.CanCollide, "laser not solid")
+		assert(b.base.model:FindFirstChild("LaserBarrier").CanCollide, "no blocker above the laser")
 		moveTo(A, inBase(b))
 		task.wait(1.2)
 		assert(not Bases.contains(b.base, A.Character.PrimaryPart.Position), "intruder still inside")

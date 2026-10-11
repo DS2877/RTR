@@ -192,10 +192,10 @@ function ItemModel.build(id: string, mutation: string, options: Options?): Model
 	if opts.label ~= false then
 		local bb = Instance.new("BillboardGui")
 		bb.Name = "Label"
-		bb.Size = UDim2.fromOffset(170, 74)
-		bb.StudsOffset = Vector3.new(0, 3.6, 0)
+		bb.Size = UDim2.fromOffset(200, 86)
+		bb.StudsOffset = Vector3.new(0, 3.8, 0)
 		bb.AlwaysOnTop = false
-		bb.MaxDistance = 70
+		bb.MaxDistance = 110
 		bb.LightInfluence = 0
 		bb.Adornee = core
 		bb.Parent = core
@@ -221,9 +221,10 @@ function ItemModel.build(id: string, mutation: string, options: Options?): Model
 		if mut.id ~= "None" then
 			line(mut.label, 14, rgb(mut.color :: { number }), 0)
 		end
-		line(info.emoji .. " " .. info.name, 20, Color3.new(1, 1, 1), 1)
-		line(info.rarity, 15, rgb(tier.color), 2)
-		line(Format.cash(Progression.income(id, mut.id)) .. "/s", 18, Color3.fromRGB(110, 255, 120), 3)
+		-- big green income first (like the genre's "+$570M"), then name and rarity
+		line("+" .. Format.cash(Progression.income(id, mut.id)) .. "/s", 26, Color3.fromRGB(110, 255, 120), 1)
+		line(info.emoji .. " " .. info.name, 19, Color3.new(1, 1, 1), 2)
+		line(info.rarity, 15, rgb(tier.color), 3)
 		if opts.extraText then
 			line(opts.extraText, 13, Color3.fromRGB(255, 230, 150), 4)
 		end

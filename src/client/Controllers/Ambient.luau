@@ -220,8 +220,24 @@ local function updatePad(t: number)
 	end
 end
 
+-- Start every life zoomed out a bit (the default camera sits right on your back): briefly
+-- raising the minimum zoom pushes the camera out, then the player is free to zoom again.
+local function zoomOut()
+	local function onCharacter()
+		task.wait(0.2)
+		player.CameraMinZoomDistance = 22
+		task.wait(0.1)
+		player.CameraMinZoomDistance = 0.5
+	end
+	player.CharacterAdded:Connect(onCharacter)
+	if player.Character then
+		task.spawn(onCharacter)
+	end
+end
+
 function Ambient.start()
 	setupBelts()
+	zoomOut()
 	local t = 0
 	local acc = 0
 	-- limb swings go in before physics so the joints are solved with them this frame

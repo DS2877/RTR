@@ -616,8 +616,8 @@ function WorldDecor.base(
 				"Tower",
 				Vector3.new(4, H + 4, 4),
 				at(lx, (H + 4) / 2, depth),
-				color:Lerp(rgb(0, 0, 0), 0.55),
-				M.Brick
+				rgb(250, 250, 255),
+				M.SmoothPlastic
 			)
 			local cap =
 				part(model, "TowerCap", Vector3.new(4.6, 1.4, 4.6), at(lx, H + 4.7, depth), color, M.Neon)
@@ -1017,7 +1017,8 @@ end
 
 -- ===== Halloween =====
 local function pumpkin(parent: Instance, cf: CFrame, scale: number)
-	local body = part(
+	-- decoration only: you run straight through pumpkins
+	local body = deco(
 		parent,
 		"Pumpkin",
 		Vector3.new(3.2, 2.6, 3.2) * scale,
@@ -1026,7 +1027,7 @@ local function pumpkin(parent: Instance, cf: CFrame, scale: number)
 		M.SmoothPlastic,
 		Enum.PartType.Ball
 	)
-	part(
+	deco(
 		parent,
 		"Stem",
 		Vector3.new(0.4, 0.8, 0.4) * scale,

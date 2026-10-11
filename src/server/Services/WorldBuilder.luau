@@ -14,6 +14,7 @@ local WorldDecor = require(script.Parent.WorldDecor)
 local WorldBuilder = {}
 
 local FLOOR = 0.4 -- top of base/vault floors
+local BARRIER_HEIGHT = 50 -- invisible wall above the low base walls (no jumping in)
 
 export type BaseRecord = {
 	id: number,
@@ -219,65 +220,118 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 	model:SetAttribute("BaseId", id)
 	model.Parent = parent
 	local color = rgb(World.BaseColors[id])
-	local dark = color:Lerp(Color3.new(0, 0, 0), 0.45)
 	local W, D, H = World.BaseWidth, World.BaseDepth, World.WallHeight
 
 	local function at(lx: number, ly: number, depth: number): CFrame
 		return origin * CFrame.new(lx, ly, -depth)
 	end
 
+	-- pastel floor with a darker "shelf" band under each pedestal row
 	block(
 		model,
 		"Floor",
 		Vector3.new(W, FLOOR, D),
 		at(0, FLOOR / 2, D / 2),
-		color:Lerp(Color3.new(1, 1, 1), 0.55),
-		Enum.Material.Plastic
+		color:Lerp(Color3.new(1, 1, 1), 0.72),
+		Enum.Material.SmoothPlastic
 	)
-
-	-- walls
-	block(model, "WallL", Vector3.new(2, H, D), at(-W / 2, H / 2, D / 2), dark, Enum.Material.Brick)
-	block(model, "WallR", Vector3.new(2, H, D), at(W / 2, H / 2, D / 2), dark, Enum.Material.Brick)
-	block(model, "WallBack", Vector3.new(W, H, 2), at(0, H / 2, D), dark, Enum.Material.Brick)
-	local seg = (W - World.EntranceWidth) / 2
-	block(model, "WallFL", Vector3.new(seg, H, 2), at(-W / 2 + seg / 2, H / 2, 0), dark, Enum.Material.Brick)
-	block(model, "WallFR", Vector3.new(seg, H, 2), at(W / 2 - seg / 2, H / 2, 0), dark, Enum.Material.Brick)
-	-- trim on top of the walls in the base color
-	for _, n in { "WallL", "WallR", "WallBack", "WallFL", "WallFR" } do
-		local w = model:FindFirstChild(n) :: BasePart
-		block(
+	for _, depth in World.PedestalRowDepth do
+		local band = block(
 			model,
-			n .. "Trim",
-			Vector3.new(w.Size.X + 0.4, 1, w.Size.Z + 0.4),
-			w.CFrame * CFrame.new(0, H / 2 + 0.5, 0),
-			color,
+			"RowBand",
+			Vector3.new(W - 8, 0.06, 8),
+			at(0, FLOOR + 0.03, depth),
+			color:Lerp(Color3.new(1, 1, 1), 0.45),
 			Enum.Material.SmoothPlastic
 		)
+		band.CanCollide = false
+		band.CanQuery = false
 	end
 
-	-- laser door (server toggles CanCollide/Transparency when locked)
+	-- low, bright walls so the plaza stays open and everyone can see your loot...
+	local wallColor = color:Lerp(Color3.new(1, 1, 1), 0.15)
+	local seg = (W - World.EntranceWidth) / 2
+	local walls = {
+		{ "WallL", Vector3.new(2, H, D), at(-W / 2, H / 2, D / 2) },
+		{ "WallR", Vector3.new(2, H, D), at(W / 2, H / 2, D / 2) },
+		{ "WallBack", Vector3.new(W, H, 2), at(0, H / 2, D) },
+		{ "WallFL", Vector3.new(seg, H, 2), at(-W / 2 + seg / 2, H / 2, 0) },
+		{ "WallFR", Vector3.new(seg, H, 2), at(W / 2 - seg / 2, H / 2, 0) },
+	}
+	for _, w in walls do
+		local wall = block(model, w[1], w[2], w[3], wallColor, Enum.Material.SmoothPlastic)
+		block(
+			model,
+			w[1] .. "Trim",
+			Vector3.new(wall.Size.X + 0.4, 0.6, wall.Size.Z + 0.4),
+			wall.CFrame * CFrame.new(0, H / 2 + 0.3, 0),
+			Color3.new(1, 1, 1),
+			Enum.Material.SmoothPlastic
+		)
+		-- ...plus an invisible barrier on top, so nobody jumps in: the entrance is the only way
+		local barrier = block(
+			model,
+			"Barrier",
+			Vector3.new(wall.Size.X, BARRIER_HEIGHT, wall.Size.Z),
+			wall.CFrame * CFrame.new(0, BARRIER_HEIGHT / 2 - H / 2, 0),
+			Color3.new(),
+			Enum.Material.SmoothPlastic
+		)
+		barrier.Transparency = 1
+		barrier.CanQuery = false
+		barrier.CastShadow = false
+	end
+
+	-- laser door (server toggles it when locked): a visible laser + a tall invisible blocker
 	local laser = block(
 		model,
 		"Laser",
-		Vector3.new(World.EntranceWidth, H, 0.6),
-		at(0, H / 2, 0),
+		Vector3.new(World.EntranceWidth, 8, 0.6),
+		at(0, 4, 0),
 		Color3.fromRGB(255, 40, 60),
 		Enum.Material.Neon
 	)
 	laser.Transparency = 1
 	laser.CanCollide = false
 	laser.CanQuery = false
+	local laserBarrier = block(
+		model,
+		"LaserBarrier",
+		Vector3.new(World.EntranceWidth, BARRIER_HEIGHT, 0.6),
+		at(0, BARRIER_HEIGHT / 2, 0),
+		Color3.new(),
+		Enum.Material.SmoothPlastic
+	)
+	laserBarrier.Transparency = 1
+	laserBarrier.CanCollide = false
+	laserBarrier.CanQuery = false
+	laserBarrier.CastShadow = false
 
-	-- sign above the entrance (faces the plaza)
+	-- entrance arch with the owner's name (faces the plaza)
+	local archX = World.EntranceWidth / 2 + 1.5
+	for _, lx in { -archX, archX } do
+		block(
+			model,
+			"ArchPost",
+			Vector3.new(3, 13, 3),
+			at(lx, 6.5, 0),
+			wallColor,
+			Enum.Material.SmoothPlastic
+		)
+		local cap =
+			block(model, "ArchCap", Vector3.new(3.6, 1, 3.6), at(lx, 13.5, 0), color, Enum.Material.Neon)
+		cap.CanCollide = false
+	end
 	local sign = block(
 		model,
 		"Sign",
-		Vector3.new(World.EntranceWidth + 14, 5, 1),
-		at(0, H + 3.5, -0.6),
-		color,
+		Vector3.new(World.EntranceWidth + 8, 4.6, 1.2),
+		at(0, 12, -0.4),
+		color:Lerp(Color3.new(0, 0, 0), 0.35),
 		Enum.Material.SmoothPlastic
 	)
-	local signLabel = surfaceText(sign, Enum.NormalId.Back, "EMPTY BASE", Color3.new(1, 1, 1))
+	local signLabel = surfaceText(sign, Enum.NormalId.Back, "FREE BASE", Color3.fromRGB(200, 200, 210))
+	surfaceText(sign, Enum.NormalId.Front, "🏠", Color3.new(1, 1, 1))
 
 	-- pedestals
 	local pedestals: { BasePart } = {}
@@ -285,14 +339,16 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 	for r = 1, World.PedestalRows do
 		for c = 1, cols do
 			local lx = (c - (cols + 1) / 2) * World.PedestalSpacingX
+			-- round podium (cylinders run along X: stood up with a 90° turn about Z)
 			local ped = block(
 				model,
 				"Pedestal",
-				Vector3.new(5, 1.2, 5),
-				at(lx, FLOOR + 0.6, World.PedestalRowDepth[r]),
+				Vector3.new(1.2, 5.4, 5.4),
+				at(lx, FLOOR + 0.6, World.PedestalRowDepth[r]) * CFrame.Angles(0, 0, math.rad(90)),
 				Color3.fromRGB(245, 245, 250),
-				Enum.Material.Marble
+				Enum.Material.SmoothPlastic
 			)
+			ped.Shape = Enum.PartType.Cylinder
 			ped:SetAttribute("Slot", #pedestals + 1)
 			table.insert(pedestals, ped)
 		end
@@ -341,7 +397,7 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 		model,
 		"TreadSign",
 		Vector3.new(7, 4, 0.6),
-		at(beltX + 11, FLOOR + 4, beltDepth - 6),
+		at(beltX + 13, FLOOR + 4, beltDepth - 12),
 		Color3.fromRGB(255, 210, 60),
 		Enum.Material.SmoothPlastic
 	)
@@ -349,7 +405,7 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 		model,
 		"TreadSignPost",
 		Vector3.new(0.6, 2, 0.6),
-		at(beltX + 11, FLOOR + 1, beltDepth - 6),
+		at(beltX + 13, FLOOR + 1, beltDepth - 12),
 		Color3.fromRGB(90, 60, 40),
 		Enum.Material.Wood
 	)
@@ -692,13 +748,9 @@ function WorldBuilder.build(): WorldInfo
 		WorldDecor.palm(decor, Vector3.new(x - 10, 0, side * 38), 1)
 		WorldDecor.palm(decor, Vector3.new(x + 10, 0, side * 46), 1.15)
 	end
-	-- plaza: two fountains + benches between the base entrances
+	-- plaza: two fountains between the base entrances (benches removed: they were in the way)
 	for _, x in { -110, 110 } do
 		WorldDecor.fountain(root, Vector3.new(x, 0.3, 0))
-	end
-	for _, x in { -150, -70, 70, 150 } do
-		WorldDecor.bench(decor, CFrame.new(x - 20, 0.3, -12))
-		WorldDecor.bench(decor, CFrame.new(x + 20, 0.3, 12) * CFrame.Angles(0, math.pi, 0))
 	end
 
 	-- WANTED board in the plaza center (double sided)

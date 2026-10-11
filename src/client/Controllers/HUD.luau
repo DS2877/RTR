@@ -2,7 +2,6 @@
 -- Main HUD (mobile first): currency pills top-left, menu buttons on the left edge, the
 -- 👑 richest bar at the top center, Lock + Slow Mode buttons, toasts and announcements.
 
-local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
@@ -11,7 +10,6 @@ local Shared = ReplicatedStorage.Shared
 local Format = require(Shared.Format)
 local Remotes = require(Shared.Remotes)
 local Progression = require(Shared.Progression)
-local Products = require(Shared.Config.Products)
 
 local UI = require(script.Parent.Parent.Util.UI)
 local Sound = require(script.Parent.Parent.Util.Sound)
@@ -28,31 +26,6 @@ HUD.buttons = {} :: { [string]: TextButton }
 
 local DARK = Color3.fromRGB(20, 20, 28)
 
-local function pill(parent: Instance, order: number, emoji: string, color: Color3): TextLabel
-	local f = UI.new("Frame", {
-		Size = UDim2.fromOffset(190, 40),
-		BackgroundColor3 = DARK,
-		BackgroundTransparency = 0.25,
-		LayoutOrder = order,
-		Parent = parent,
-	}, { UI.corner(20), UI.stroke(color, 2.5) })
-	UI.label({
-		Position = UDim2.fromOffset(6, 4),
-		Size = UDim2.fromOffset(32, 32),
-		Text = emoji,
-		Font = Enum.Font.GothamBold,
-		Parent = f,
-	})
-	return UI.bigText({
-		Position = UDim2.fromOffset(42, 5),
-		Size = UDim2.new(1, -50, 1, -10),
-		Text = "0",
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextColor3 = color,
-		Parent = f,
-	})
-end
-
 function HUD.button(
 	name: string,
 	emoji: string,
@@ -63,7 +36,7 @@ function HUD.button(
 ): TextButton
 	local b: TextButton = UI.new("TextButton", {
 		Name = name,
-		Size = UDim2.fromOffset(74, 74),
+		Size = UDim2.fromOffset(64, 64),
 		BackgroundColor3 = color,
 		Text = "",
 		AutoButtonColor = true,
@@ -76,16 +49,16 @@ function HUD.button(
 	})
 	UI.label({
 		Name = "Emoji",
-		Position = UDim2.fromOffset(8, 4),
-		Size = UDim2.new(1, -16, 0, 42),
+		Position = UDim2.fromOffset(10, 4),
+		Size = UDim2.new(1, -20, 0, 34),
 		Text = emoji,
 		Font = Enum.Font.GothamBold,
 		Parent = b,
 	})
 	UI.bigText({
 		Name = "Text",
-		Position = UDim2.new(0, 2, 1, -26),
-		Size = UDim2.new(1, -4, 0, 22),
+		Position = UDim2.new(0, 3, 1, -22),
+		Size = UDim2.new(1, -6, 0, 18),
 		Text = text,
 		Parent = b,
 	}, color:Lerp(Color3.new(0, 0, 0), 0.6), 2)
@@ -181,22 +154,99 @@ function HUD.start()
 	-- No UIScale on the ScreenGui itself (that scales from the top-left corner and drags centered
 	-- or right-anchored widgets off their spots). Each widget box scales around its own anchor.
 
-	-- currency pills (top-left)
-	local box = UI.new("Frame", {
-		Position = UDim2.fromOffset(10, 10),
-		Size = UDim2.fromOffset(360, 140),
+	-- ===== top-left: one cash card (cash + income), a speed pill, candy in season =====
+	local stats = UI.new("Frame", {
+		Position = UDim2.fromOffset(8, 8),
+		Size = UDim2.fromOffset(240, 140),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	})
-	UI.scaleObject(box)
-	local pills = UI.new("Frame", {
-		Size = UDim2.fromOffset(200, 140),
-		BackgroundTransparency = 1,
-		Parent = box,
-	}, { UI.new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }) })
-	local cashL = pill(pills, 1, "💵", Color3.fromRGB(120, 255, 120))
-	local rateL = pill(pills, 2, "📈", Color3.fromRGB(255, 230, 110))
-	local speedL = pill(pills, 3, "⚡", Color3.fromRGB(110, 210, 255))
+	UI.scaleObject(stats)
+	local cashCard = UI.new("Frame", {
+		Size = UDim2.fromOffset(200, 54),
+		BackgroundColor3 = DARK,
+		BackgroundTransparency = 0.2,
+		Parent = stats,
+	}, { UI.corner(16), UI.stroke(Color3.fromRGB(120, 255, 120), 2.5) })
+	UI.label({
+		Position = UDim2.fromOffset(6, 9),
+		Size = UDim2.fromOffset(36, 36),
+		Text = "💵",
+		Font = Enum.Font.GothamBold,
+		Parent = cashCard,
+	})
+	local cashL = UI.bigText({
+		Position = UDim2.fromOffset(46, 4),
+		Size = UDim2.new(1, -54, 0, 30),
+		Text = "$0",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Color3.fromRGB(120, 255, 120),
+		Parent = cashCard,
+	})
+	local rateL = UI.label({
+		Position = UDim2.fromOffset(47, 33),
+		Size = UDim2.new(1, -56, 0, 17),
+		Text = "",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Color3.fromRGB(255, 225, 110),
+		Font = Enum.Font.GothamBlack,
+		Parent = cashCard,
+	})
+	local speedCard = UI.new("Frame", {
+		Position = UDim2.fromOffset(0, 60),
+		Size = UDim2.fromOffset(140, 32),
+		BackgroundColor3 = DARK,
+		BackgroundTransparency = 0.2,
+		Parent = stats,
+	}, { UI.corner(16), UI.stroke(Color3.fromRGB(110, 210, 255), 2) })
+	local speedL = UI.bigText({
+		Position = UDim2.fromOffset(10, 4),
+		Size = UDim2.new(1, -20, 1, -8),
+		Text = "",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Color3.fromRGB(110, 210, 255),
+		Parent = speedCard,
+	})
+	local candyCard = UI.new("Frame", {
+		Position = UDim2.fromOffset(146, 60),
+		Size = UDim2.fromOffset(94, 32),
+		BackgroundColor3 = DARK,
+		BackgroundTransparency = 0.2,
+		Visible = false,
+		Parent = stats,
+	}, { UI.corner(16), UI.stroke(Color3.fromRGB(255, 160, 60), 2) })
+	local candyL = UI.bigText({
+		Position = UDim2.fromOffset(8, 4),
+		Size = UDim2.new(1, -16, 1, -8),
+		Text = "",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Color3.fromRGB(255, 170, 70),
+		Parent = candyCard,
+	})
+	local function refreshCandy()
+		candyCard.Visible = workspace:GetAttribute("Season") == "Halloween"
+		candyL.Text = "🍬 " .. Format.number(player:GetAttribute("Candy") or 0)
+	end
+	player:GetAttributeChangedSignal("Candy"):Connect(refreshCandy)
+	workspace:GetAttributeChangedSignal("Season"):Connect(refreshCandy)
+	refreshCandy()
+	-- small music toggle next to the cash card
+	local musicB = UI.new("TextButton", {
+		Position = UDim2.fromOffset(206, 9),
+		Size = UDim2.fromOffset(36, 36),
+		BackgroundColor3 = Color3.fromRGB(150, 90, 230),
+		Text = "🎵",
+		TextScaled = true,
+		Font = Enum.Font.GothamBold,
+		Parent = stats,
+	}, { UI.corner(18), UI.stroke(Color3.fromRGB(60, 20, 110), 2) })
+	musicB.Activated:Connect(function()
+		Music.setEnabled(not Music.isEnabled())
+		musicB.Text = if Music.isEnabled() then "🎵" else "🔇"
+		musicB.BackgroundColor3 = if Music.isEnabled()
+			then Color3.fromRGB(150, 90, 230)
+			else Color3.fromRGB(110, 110, 120)
+	end)
 
 	-- the cash number counts up/down instead of jumping
 	local shownCash = player:GetAttribute("Cash") or 0
@@ -226,103 +276,54 @@ function HUD.start()
 			end
 		end)
 	end
-	HUD.cashPill = cashL.Parent :: GuiObject
-
-	-- second column next to the pills: a speed deal chip and (during the season) the candy count
-	local deal = UI.new("TextButton", {
-		Position = UDim2.fromOffset(200, 0),
-		Size = UDim2.fromOffset(150, 40),
-		BackgroundColor3 = Color3.fromRGB(40, 190, 90),
-		Text = "",
-		AutoButtonColor = true,
-		Visible = false,
-		Parent = box,
-	}, { UI.corner(20), UI.stroke(Color3.fromRGB(10, 80, 30), 2.5) })
-	local dealText = UI.bigText({
-		Position = UDim2.fromOffset(8, 5),
-		Size = UDim2.new(1, -16, 1, -10),
-		Text = "",
-		Parent = deal,
-	}, Color3.fromRGB(10, 60, 20), 2)
-	local speedDeal = nil
-	for _, p in Products.Items do
-		if p.kind == "speed" and p.id > 0 and (not speedDeal or p.price < speedDeal.price) then
-			speedDeal = p
-		end
-	end
-	if speedDeal then
-		deal.Visible = true
-		dealText.Text = "⚡ +SPEED  R$" .. speedDeal.price
-		deal.Activated:Connect(function()
-			Sound.play("Click", 0.4)
-			MarketplaceService:PromptProductPurchase(player, speedDeal.id)
-		end)
-	end
-	local candyPill = pill(pills, 4, "🍬", Color3.fromRGB(255, 160, 60))
-	-- the candy pill sits in its own holder so the list layout doesn't stack it under the others
-	local candyFrame = candyPill.Parent :: Frame
-	local holder = UI.new("Frame", {
-		Position = UDim2.fromOffset(200, 92),
-		Size = UDim2.fromOffset(150, 40),
-		BackgroundTransparency = 1,
-		Visible = false,
-		Parent = box,
-	})
-	candyFrame.Size = UDim2.fromScale(1, 1)
-	candyFrame.Parent = holder
-	local function refreshCandy()
-		holder.Visible = workspace:GetAttribute("Season") == "Halloween"
-		candyPill.Text = Format.number(player:GetAttribute("Candy") or 0)
-	end
-	player:GetAttributeChangedSignal("Candy"):Connect(refreshCandy)
-	workspace:GetAttributeChangedSignal("Season"):Connect(refreshCandy)
-	refreshCandy()
+	HUD.cashPill = cashCard
 
 	local function refresh()
 		cashTarget = player:GetAttribute("Cash") or 0
 		countCash()
 		local boost = player:GetAttribute("FriendBoost") or 0
-		rateL.Text = Format.cash(player:GetAttribute("CashPerSec") or 0)
+		rateL.Text = "+"
+			.. Format.cash(player:GetAttribute("CashPerSec") or 0)
 			.. "/s"
-			.. (if boost > 0 then string.format("  👥+%d%%", math.floor(boost * 100 + 0.5)) else "")
+			.. (if boost > 0 then string.format("   👥 +%d%%", math.floor(boost * 100 + 0.5)) else "")
 		local pts = player:GetAttribute("SpeedPoints") or 0
-		speedL.Text = Format.number(pts) .. "  (" .. math.floor(Progression.walkSpeed(pts)) .. ")"
+		speedL.Text = "⚡ SPEED " .. math.floor(Progression.walkSpeed(pts))
 	end
 	for _, a in { "Cash", "CashPerSec", "SpeedPoints", "FriendBoost" } do
 		player:GetAttributeChangedSignal(a):Connect(refresh)
 	end
 	player:GetAttributeChangedSignal("Cash"):Connect(function()
-		UI.bump(cashL.Parent :: GuiObject, 0.06)
+		UI.bump(cashCard, 0.05)
 	end)
 	refresh()
 
-	-- menu buttons (left edge, 2 columns)
+	-- ===== menu: 4 buttons in a 2x2 block under the stats =====
 	local menu = UI.new("Frame", {
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 10, 0.5, 40),
-		Size = UDim2.fromOffset(160, 242),
+		Position = UDim2.fromOffset(8, 112),
+		Size = UDim2.fromOffset(136, 136),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, {
 		UI.new("UIGridLayout", {
-			CellSize = UDim2.fromOffset(74, 74),
+			CellSize = UDim2.fromOffset(64, 64),
 			CellPadding = UDim2.fromOffset(8, 8),
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		}),
 	})
 	UI.scaleObject(menu)
+	-- keep the menu right under the stats at any screen scale
+	local function placeMenu()
+		menu.Position = UDim2.fromOffset(8, 8 + 100 * UI.screenScale())
+	end
+	placeMenu()
+	local camera = workspace.CurrentCamera
+	if camera then
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(placeMenu)
+	end
 	HUD.button("Shop", "🛒", "SHOP", Color3.fromRGB(255, 80, 100), menu, 1)
 	HUD.button("Index", "📖", "INDEX", Color3.fromRGB(80, 170, 255), menu, 2)
 	local lockB = HUD.button("Lock", "🔒", "LOCK", Color3.fromRGB(255, 190, 50), menu, 3)
 	local slowB = HUD.button("Slow", "🐢", "SLOW", Color3.fromRGB(120, 220, 120), menu, 4)
-	local musicB = HUD.button("Music", "🎵", "MUSIC", Color3.fromRGB(190, 120, 255), menu, 5)
-	musicB.Activated:Connect(function()
-		Music.setEnabled(not Music.isEnabled());
-		(musicB:FindFirstChild("Text") :: TextLabel).Text = if Music.isEnabled() then "MUSIC" else "OFF"
-		musicB.BackgroundColor3 = if Music.isEnabled()
-			then Color3.fromRGB(190, 120, 255)
-			else Color3.fromRGB(150, 150, 150)
-	end)
 
 	lockB.Activated:Connect(function()
 		Remotes.get(Remotes.Names.Lock):FireServer()
@@ -354,7 +355,7 @@ function HUD.start()
 					lockText.Text = math.ceil(lockedUntil - t) .. "s"
 					lockB.BackgroundColor3 = Color3.fromRGB(255, 90, 90)
 				elseif t < readyAt then
-					lockText.Text = "in " .. math.ceil(readyAt - t) .. "s"
+					lockText.Text = math.ceil(readyAt - t) .. "s"
 					lockB.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
 				else
 					lockText.Text = "LOCK"
@@ -368,8 +369,9 @@ function HUD.start()
 	local crownBar = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 6),
-		Size = UDim2.fromOffset(360, 36),
+		Size = UDim2.fromOffset(330, 32),
 		BackgroundColor3 = Color3.fromRGB(40, 30, 10),
+		Visible = false,
 		BackgroundTransparency = 0.15,
 		Parent = gui,
 	}, { UI.corner(18), UI.stroke(Color3.fromRGB(255, 205, 40), 3) })
@@ -383,8 +385,10 @@ function HUD.start()
 	})
 	local function refreshCrown()
 		local name = workspace:GetAttribute("RichestName")
+		-- only shown while someone wears the crown (needs 2+ players): no empty banner when solo
+		crownBar.Visible = name ~= nil
 		if not name then
-			crownText.Text = "👑 No Richest yet — get rich!"
+			crownText.Text = ""
 		elseif workspace:GetAttribute("RichestUserId") == player.UserId then
 			crownText.Text = "👑 YOU ARE THE RICHEST! +50% cash"
 		else
