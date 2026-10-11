@@ -166,6 +166,15 @@ function Panel.new(name: string, title: string, color: Color3, dark: Color3, siz
 	return panel
 end
 
+function Panel.anyOpen(): boolean
+	for _, p in all do
+		if p.gui.Enabled then
+			return true
+		end
+	end
+	return false
+end
+
 -- A chunky colored button with big text. Returns (button, label).
 function Panel.button(
 	props: { [string]: any },

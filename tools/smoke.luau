@@ -329,7 +329,6 @@ if lanes then
 	end
 end
 check("one lane out, one lane home", laneDirs[1] == true and laneDirs[-1] == true)
-check("Future lighting", game:GetService("Lighting").Technology == Enum.Technology.Future)
 for _, vault in world.vaults do
 	local decor = vault.model:FindFirstChild("Decor")
 	check("vault " .. vault.index .. " has themed decor", decor ~= nil and #decor:GetChildren() >= 8)

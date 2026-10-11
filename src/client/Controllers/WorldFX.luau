@@ -16,7 +16,10 @@ local Progression = require(Shared.Progression)
 local Economy = require(Shared.Config.Economy)
 
 local UI = require(script.Parent.Parent.Util.UI)
+local Sound = require(script.Parent.Parent.Util.Sound)
 local HUD = require(script.Parent.HUD)
+
+local tutorial: () -> ()
 
 local WorldFX = {}
 
@@ -34,9 +37,17 @@ local function rootPart(): BasePart?
 	return if r and r:IsA("BasePart") then r else nil
 end
 
--- Steal prompts only on other bases, Sell only on yours.
+-- Steal prompts only on other bases, Sell only on yours. Quick Hands pass: steal instantly.
 local function setupPrompt(pp: ProximityPrompt)
 	local function apply()
+		if pp.Name == "Steal" then
+			if pp:GetAttribute("BaseHold") == nil then
+				pp:SetAttribute("BaseHold", pp.HoldDuration)
+			end
+			pp.HoldDuration = if player:GetAttribute("Pass_QuickHands")
+				then 0
+				else pp:GetAttribute("BaseHold") or 0
+		end
 		local basesFolder = workspace:FindFirstChild("Bases")
 		local base: Instance? = pp.Parent
 		while base and base.Parent ~= basesFolder do
@@ -217,7 +228,7 @@ local function guide()
 				end
 				local slots = player:GetAttribute("CashPerSec") or 0
 				if pts < 30 then
-					text = "⚡ Run on your treadmill to get faster!"
+					text = "⚡ Stand on your treadmill to get faster!"
 					local belt = base:FindFirstChild("Treadmill") :: BasePart?
 					target = belt and belt.Position
 				elseif best >= 1 and slots < Vaults[math.max(1, best)].baseIncome * 3 then
@@ -237,6 +248,78 @@ local function guide()
 				beam.Enabled = true
 			else
 				beam.Enabled = false
+			end
+		end
+	end)
+end
+
+-- First-session checklist (top right) until one steal is home and cash was collected.
+function tutorial()
+	local gui = HUD.gui()
+	local card = UI.new("Frame", {
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -10, 0, 50),
+		Size = UDim2.fromOffset(250, 150),
+		BackgroundColor3 = Color3.fromRGB(20, 20, 30),
+		BackgroundTransparency = 0.2,
+		Visible = false,
+		Parent = gui,
+	}, { UI.corner(16), UI.stroke(Color3.fromRGB(255, 215, 60), 2.5) })
+	UI.scaleObject(card)
+	UI.bigText({
+		Position = UDim2.fromOffset(10, 6),
+		Size = UDim2.new(1, -20, 0, 24),
+		Text = "💰 HOW TO GET RICH",
+		TextColor3 = Color3.fromRGB(255, 215, 60),
+		Parent = card,
+	})
+	local steps = {
+		"⚡ Stand on your treadmill",
+		"🏃 STEAL loot from a vault",
+		"🏠 Run it home to your base",
+		"💵 Step on COLLECT for cash",
+	}
+	local lines: { TextLabel } = {}
+	for i, text in steps do
+		table.insert(
+			lines,
+			UI.label({
+				Position = UDim2.fromOffset(12, 6 + i * 28),
+				Size = UDim2.new(1, -24, 0, 24),
+				Text = text,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				Font = Enum.Font.GothamBold,
+				Parent = card,
+			})
+		)
+	end
+	local seenCarry = false
+	local done: { boolean } = { false, false, false, false }
+	task.spawn(function()
+		while true do
+			task.wait(0.3)
+			if player:GetAttribute("TutorialDone") then
+				card.Visible = false
+				break
+			end
+			card.Visible = true
+			seenCarry = seenCarry or player:GetAttribute("Carrying") ~= nil
+			local steals = player:GetAttribute("Steals") or 0
+			local now = {
+				(player:GetAttribute("SpeedPoints") or 0) >= 30 or steals > 0,
+				seenCarry or steals > 0,
+				steals > 0,
+				(player:GetAttribute("Collected") or 0) > 0,
+			}
+			for i, ok in now do
+				lines[i].Text = (if ok then "✅ " else "⬜ ")
+					.. string.sub(steps[i], (utf8.offset(steps[i], 2) or 1))
+				lines[i].TextColor3 = if ok then Color3.fromRGB(120, 255, 140) else Color3.new(1, 1, 1)
+				if ok and not done[i] then
+					done[i] = true
+					UI.bump(lines[i], 0.25)
+					Sound.play("Upgrade", 0.4)
+				end
 			end
 		end
 	end)
@@ -264,8 +347,16 @@ function WorldFX.start()
 			end
 		end)
 	end
+	player:GetAttributeChangedSignal("Pass_QuickHands"):Connect(function()
+		for _, d in workspace:GetDescendants() do
+			if d:IsA("ProximityPrompt") and d.Name == "Steal" then
+				setupPrompt(d)
+			end
+		end
+	end)
 	zoneBanner()
 	treadmillPopups()
+	tutorial()
 	rainbow()
 	ownLaser()
 	guide()

@@ -4,6 +4,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
 
 local Shared = ReplicatedStorage.Shared
 local Format = require(Shared.Format)
@@ -12,6 +13,7 @@ local Progression = require(Shared.Progression)
 
 local UI = require(script.Parent.Parent.Util.UI)
 local Sound = require(script.Parent.Parent.Util.Sound)
+local Music = require(script.Parent.Parent.Util.Music)
 
 local HUD = {}
 
@@ -143,7 +145,7 @@ function HUD.toast(text: string, kind: string?)
 	end
 end
 
-function HUD.announce(text: string, color: { number }?)
+function HUD.announce(text: string, color: { number }?, sound: string?)
 	if not announceLabel then
 		return
 	end
@@ -152,7 +154,7 @@ function HUD.announce(text: string, color: { number }?)
 	announceLabel.Visible = true
 	announceLabel.TextTransparency = 0
 	UI.bump(announceLabel, 0.3)
-	Sound.play("Announce", 0.35)
+	Sound.play(sound or "Announce", if sound then 0.6 else 0.35)
 	local stamp = os.clock()
 	announceLabel:SetAttribute("Stamp", stamp)
 	task.delay(5, function()
@@ -189,8 +191,39 @@ function HUD.start()
 	local rateL = pill(pills, 2, "📈", Color3.fromRGB(255, 230, 110))
 	local speedL = pill(pills, 3, "⚡", Color3.fromRGB(110, 210, 255))
 
+	-- the cash number counts up/down instead of jumping
+	local shownCash = player:GetAttribute("Cash") or 0
+	local cashTarget = shownCash
+	local counting = false
+	local function countCash()
+		if counting then
+			return
+		end
+		counting = true
+		task.spawn(function()
+			local from = shownCash
+			local t0 = os.clock()
+			while os.clock() - t0 < 0.45 do
+				local a = (os.clock() - t0) / 0.45
+				a = 1 - (1 - a) * (1 - a)
+				shownCash = from + (cashTarget - from) * a
+				cashL.Text = Format.cash(shownCash)
+				task.wait()
+			end
+			shownCash = cashTarget
+			cashL.Text = Format.cash(shownCash)
+			counting = false
+			if shownCash ~= (player:GetAttribute("Cash") or 0) then
+				cashTarget = player:GetAttribute("Cash") or 0
+				countCash()
+			end
+		end)
+	end
+	HUD.cashPill = cashL.Parent :: GuiObject
+
 	local function refresh()
-		cashL.Text = Format.cash(player:GetAttribute("Cash") or 0)
+		cashTarget = player:GetAttribute("Cash") or 0
+		countCash()
 		rateL.Text = Format.cash(player:GetAttribute("CashPerSec") or 0) .. "/s"
 		local pts = player:GetAttribute("SpeedPoints") or 0
 		speedL.Text = Format.number(pts) .. "  (" .. math.floor(Progression.walkSpeed(pts)) .. ")"
@@ -203,11 +236,11 @@ function HUD.start()
 	end)
 	refresh()
 
-	-- menu buttons (left edge, 2x2)
+	-- menu buttons (left edge, 2 columns)
 	local menu = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 10, 0.5, 30),
-		Size = UDim2.fromOffset(160, 160),
+		Position = UDim2.new(0, 10, 0.5, 40),
+		Size = UDim2.fromOffset(160, 242),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, {
@@ -222,6 +255,14 @@ function HUD.start()
 	HUD.button("Index", "📖", "INDEX", Color3.fromRGB(80, 170, 255), menu, 2)
 	local lockB = HUD.button("Lock", "🔒", "LOCK", Color3.fromRGB(255, 190, 50), menu, 3)
 	local slowB = HUD.button("Slow", "🐢", "SLOW", Color3.fromRGB(120, 220, 120), menu, 4)
+	local musicB = HUD.button("Music", "🎵", "MUSIC", Color3.fromRGB(190, 120, 255), menu, 5)
+	musicB.Activated:Connect(function()
+		Music.setEnabled(not Music.isEnabled());
+		(musicB:FindFirstChild("Text") :: TextLabel).Text = if Music.isEnabled() then "MUSIC" else "OFF"
+		musicB.BackgroundColor3 = if Music.isEnabled()
+			then Color3.fromRGB(190, 120, 255)
+			else Color3.fromRGB(150, 150, 150)
+	end)
 
 	lockB.Activated:Connect(function()
 		Remotes.get(Remotes.Names.Lock):FireServer()
@@ -287,13 +328,15 @@ function HUD.start()
 		elseif workspace:GetAttribute("RichestUserId") == player.UserId then
 			crownText.Text = "👑 YOU ARE THE RICHEST! +50% cash"
 		else
+			local g = workspace:GetAttribute("RichestGrowth") or 1
 			crownText.Text = "👑 "
 				.. tostring(name)
 				.. "  •  BOUNTY "
 				.. Format.cash(workspace:GetAttribute("RichestBounty") or 0)
+				.. (if g >= 1.1 then string.format(" (x%.1f)", g) else "")
 		end
 	end
-	for _, a in { "RichestName", "RichestUserId", "RichestBounty" } do
+	for _, a in { "RichestName", "RichestUserId", "RichestBounty", "RichestGrowth" } do
 		workspace:GetAttributeChangedSignal(a):Connect(refreshCrown)
 	end
 	refreshCrown()
@@ -334,8 +377,115 @@ function HUD.start()
 	Remotes.get(Remotes.Names.Notice).OnClientEvent:Connect(function(text: string, kind: string)
 		HUD.toast(text, kind)
 	end)
-	Remotes.get(Remotes.Names.Announce).OnClientEvent:Connect(function(text: string, color: { number })
-		HUD.announce(text, color)
+	Remotes.get(Remotes.Names.Announce).OnClientEvent
+		:Connect(function(text: string, color: { number }, sound: string?)
+			HUD.announce(text, color, sound)
+		end)
+
+	-- server event banner with a real countdown (ends at workspace.EventEnds, server time)
+	local eventHolder = UI.new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 92),
+		Size = UDim2.fromOffset(300, 34),
+		BackgroundColor3 = Color3.fromRGB(30, 20, 50),
+		BackgroundTransparency = 0.1,
+		Visible = false,
+		Parent = gui,
+	}, { UI.corner(17), UI.stroke(Color3.fromRGB(255, 255, 255), 2.5) })
+	UI.scaleObject(eventHolder)
+	local eventText = UI.bigText({
+		Position = UDim2.fromOffset(10, 4),
+		Size = UDim2.new(1, -20, 1, -8),
+		Text = "",
+		Parent = eventHolder,
+	})
+	task.spawn(function()
+		while true do
+			task.wait(0.25)
+			local name = workspace:GetAttribute("EventName")
+			local ends = workspace:GetAttribute("EventEnds") or 0
+			local left = ends - workspace:GetServerTimeNow()
+			if name and left > 0 then
+				eventHolder.Visible = true
+				eventText.Text = tostring(name) .. "  " .. Format.duration(left)
+				local id = workspace:GetAttribute("EventId")
+				local stroke = eventHolder:FindFirstChildOfClass("UIStroke") :: UIStroke
+				stroke.Color = if id == "GoldRush"
+					then Color3.fromRGB(255, 210, 60)
+					elseif id == "GuardStrike" then Color3.fromRGB(120, 200, 255)
+					else Color3.fromRGB(110, 255, 130)
+				eventText.TextColor3 = stroke.Color
+			else
+				eventHolder.Visible = false
+			end
+		end
+	end)
+	toastHolder.Position = UDim2.new(0.5, 0, 0, 132)
+
+	-- coins fly from the collect pad (or the screen center) into the cash counter
+	Remotes.get(Remotes.Names.CashFX).OnClientEvent:Connect(function(amount: number, from: Vector3?)
+		local camera = workspace.CurrentCamera
+		local start = Vector2.new(gui.AbsoluteSize.X / 2, gui.AbsoluteSize.Y * 0.55)
+		if from and camera then
+			local p, onScreen = camera:WorldToViewportPoint(from)
+			if onScreen then
+				-- viewport space includes the top bar inset, this gui doesn't
+				start = Vector2.new(p.X, p.Y - (camera.ViewportSize.Y - gui.AbsoluteSize.Y))
+			end
+		end
+		local pill = HUD.cashPill
+		local target = pill.AbsolutePosition + pill.AbsoluteSize * Vector2.new(0.2, 0.5)
+		local n = math.clamp(math.floor(math.log10(math.max(10, amount)) * 2), 4, 14)
+		for i = 1, n do
+			task.delay(i * 0.04, function()
+				local coin = UI.label({
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.fromOffset(
+						start.X + math.random(-40, 40),
+						start.Y + math.random(-30, 30)
+					),
+					Size = UDim2.fromOffset(30, 30),
+					Text = "🪙",
+					Font = Enum.Font.GothamBold,
+					ZIndex = 20,
+					Parent = gui,
+				})
+				local tw = UI.tween(
+					coin,
+					0.55,
+					{ Position = UDim2.fromOffset(target.X, target.Y), Size = UDim2.fromOffset(18, 18) },
+					Enum.EasingStyle.Quad,
+					Enum.EasingDirection.In
+				)
+				tw.Completed:Connect(function()
+					coin:Destroy()
+					Sound.play("Coin", 0.25, 1 + i * 0.03)
+					UI.bump(pill, 0.08)
+				end)
+			end)
+		end
+	end)
+
+	-- chat tags: 👑 for the richest, 💎 for VIP (client-side display only)
+	pcall(function()
+		TextChatService.OnIncomingMessage = function(message: TextChatMessage)
+			local props = Instance.new("TextChatMessageProperties")
+			local source = message.TextSource
+			local speaker = source and Players:GetPlayerByUserId(source.UserId)
+			if speaker then
+				local tags = ""
+				if workspace:GetAttribute("RichestUserId") == speaker.UserId then
+					tags ..= "<font color='#FFD23C'>[👑 RICHEST]</font> "
+				end
+				if speaker:GetAttribute("Pass_VIP") then
+					tags ..= "<font color='#78E6FF'>[💎 VIP]</font> "
+				end
+				if tags ~= "" then
+					props.PrefixText = tags .. message.PrefixText
+				end
+			end
+			return props
+		end
 	end)
 	Remotes.get(Remotes.Names.Offline).OnClientEvent:Connect(function(earned: number, seconds: number)
 		HUD.announce(

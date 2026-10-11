@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Creator Hub setup via Open Cloud, run ONLY inside GitHub Actions (.github/workflows/ops.yml).
 
-- Creates every game pass (Products.Passes) and developer product (Products.Items) listed in
-  src/shared/Config/Products.luau that doesn't exist yet (matched by name, so re-running is safe).
+- Creates every game pass (Products.Passes), its gift developer product ("Gift: <name>") and every
+  developer product (Products.Items) listed in src/shared/Config/Products.luau that doesn't exist
+  yet (matched by name, so re-running is safe).
 - Updates the price of existing ones when Products.luau says something else.
 - Writes the resulting Roblox IDs back into Products.luau (the `id = ...` field of each entry).
 - Sets the start place's Max Players (serverSize) to one per base.
@@ -175,7 +176,8 @@ def update_price(kind, item_id, name, price):
 
 
 ENTRY = re.compile(
-    r'key = "(\w+)",\s*id = (\d+),\s*name = "([^"]*)",\s*emoji = "[^"]*",\s*price = (\d+),\s*desc = "([^"]*)"'
+    r'key = "(\w+)",\s*id = (\d+),\s*(?:giftId = \d+,\s*)?name = "([^"]*)",\s*emoji = "[^"]*",'
+    r'\s*price = (\d+),\s*desc = "([^"]*)"'
 )
 
 
@@ -188,10 +190,14 @@ def parse_catalog(src):
     return out
 
 
-def set_id(src, key, value):
-    new, n = re.subn(rf'(key = "{key}",\s*id = )\d+', rf"\g<1>{value}", src, count=1)
+def set_id(src, key, value, field="id"):
+    if field == "id":
+        pattern = rf'(key = "{key}",\s*id = )\d+'
+    else:
+        pattern = rf'(key = "{key}",\s*id = \d+,\s*{field} = )\d+'
+    new, n = re.subn(pattern, rf"\g<1>{value}", src, count=1)
     if n != 1:
-        raise RuntimeError(f"id not found for {key}")
+        raise RuntimeError(f"{field} not found for {key}")
     return new
 
 
@@ -224,6 +230,20 @@ def main():
         else:
             ok = False
         log(f"  -> {key}: {kind} {rid}")
+        if is_pass:
+            # a developer product that gifts this pass to someone else on the server
+            gift_name = f"Gift: {name}"
+            existing_gift = (products or {}).get(gift_name)
+            gid = existing_gift or create(
+                "product", gift_name, f"Gift the {name} pass to a friend. {desc}", price
+            )
+            if gid:
+                src = set_id(src, key, gid, "giftId")
+                if existing_gift:
+                    ok = update_price("product", gid, gift_name, price) and ok
+            else:
+                ok = False
+            log(f"     gift product {gid}")
     with open(PRODUCTS_FILE, "w", encoding="utf-8") as f:
         f.write(src)
 

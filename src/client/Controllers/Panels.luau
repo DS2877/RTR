@@ -40,81 +40,309 @@ local function card(parent: Instance, order: number, color: Color3): Frame
 end
 
 -- ===== Shop =====
+-- One scrolling page: PASSES (forever) then BOOSTS (one-time). Every card says exactly what you
+-- get. Passes can be gifted to someone on the server. "BEST VALUE" = cheapest Robux per amount.
+local giftPanel: Panel.Panel
+local giftPass: Products.Pass? = nil
+
+local function shopCard(
+	parent: Instance,
+	order: number,
+	emoji: string,
+	name: string,
+	desc: string,
+	priceText: string,
+	buttonColor: Color3,
+	onBuy: (() -> ())?,
+	badge: string?
+): Frame
+	local c = card(parent, order, Color3.fromRGB(255, 120, 140))
+	UI.label({
+		Position = UDim2.fromOffset(0, 8),
+		Size = UDim2.new(1, 0, 0, 46),
+		Text = emoji,
+		Font = Enum.Font.GothamBold,
+		Parent = c,
+	})
+	UI.bigText(
+		{ Position = UDim2.fromOffset(6, 56), Size = UDim2.new(1, -12, 0, 24), Text = name, Parent = c },
+		Color3.fromRGB(120, 30, 50),
+		2
+	)
+	UI.label({
+		Position = UDim2.fromOffset(8, 82),
+		Size = UDim2.new(1, -16, 0, 58),
+		Text = desc,
+		TextColor3 = Color3.fromRGB(60, 60, 70),
+		Font = Enum.Font.GothamMedium,
+		TextWrapped = true,
+		Parent = c,
+	})
+	local b = Panel.button(
+		{ Position = UDim2.new(0, 10, 1, -50), Size = UDim2.new(1, -20, 0, 42) },
+		buttonColor,
+		buttonColor:Lerp(Color3.new(), 0.5),
+		priceText
+	)
+	b.Parent = c
+	b.Activated:Connect(function()
+		if onBuy then
+			onBuy()
+		end
+	end)
+	if badge then
+		local ribbon = UI.new("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0, 2),
+			Size = UDim2.fromOffset(120, 24),
+			BackgroundColor3 = Color3.fromRGB(255, 200, 40),
+			ZIndex = 3,
+			Parent = c,
+		}, { UI.corner(12), UI.stroke(Color3.fromRGB(140, 90, 0), 2) })
+		UI.bigText({
+			Position = UDim2.fromOffset(4, 2),
+			Size = UDim2.new(1, -8, 1, -4),
+			Text = badge,
+			ZIndex = 4,
+			Parent = ribbon,
+		}, Color3.fromRGB(120, 70, 0), 2)
+	end
+	return c
+end
+
+local function section(parent: Instance, order: number, text: string): Frame
+	UI.bigText({
+		Size = UDim2.new(1, -12, 0, 30),
+		Text = text,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Color3.fromRGB(255, 120, 140),
+		LayoutOrder = order,
+		Parent = parent,
+	}, Color3.fromRGB(90, 20, 40), 2.5)
+	return UI.new("Frame", {
+		Size = UDim2.new(1, -12, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		LayoutOrder = order + 1,
+		Parent = parent,
+	}, {
+		UI.new("UIGridLayout", {
+			CellSize = UDim2.fromOffset(176, 206),
+			CellPadding = UDim2.fromOffset(10, 14),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+		UI.new("UIPadding", { PaddingTop = UDim.new(0, 10) }),
+	})
+end
+
 local function buildShop(panel: Panel.Panel)
 	local body = panel.body
-	UI.new("UIGridLayout", {
-		CellSize = UDim2.fromOffset(170, 190),
-		CellPadding = UDim2.fromOffset(10, 10),
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Parent = body,
-	})
-	local function entry(
-		order: number,
-		emoji: string,
-		name: string,
-		desc: string,
-		price: number,
-		id: number,
-		owned: boolean,
-		isPass: boolean
+	UI.new(
+		"UIListLayout",
+		{ Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = body }
 	)
-		local c = card(body, order, Color3.fromRGB(255, 120, 140))
+	panel.onOpen = function()
+		clear(body)
+		local passes = section(body, 1, "⭐ PASSES — yours forever")
+		for i, p in Products.Passes do
+			local owned = state.Passes[p.key] == true
+			local soon = p.id == 0
+			local c = shopCard(
+				passes,
+				i,
+				p.emoji,
+				p.name,
+				p.desc,
+				if owned then "OWNED" elseif soon then "SOON" else "R$ " .. p.price,
+				if owned
+					then Color3.fromRGB(120, 200, 120)
+					elseif soon then Color3.fromRGB(160, 160, 170)
+					else Color3.fromRGB(70, 210, 90),
+				if owned or soon
+					then nil
+					else function()
+						MarketplaceService:PromptGamePassPurchase(player, p.id)
+					end
+			)
+			if p.giftId > 0 then
+				local gift = Panel.button({
+					AnchorPoint = Vector2.new(1, 0),
+					Position = UDim2.new(1, -6, 0, 6),
+					Size = UDim2.fromOffset(46, 40),
+					ZIndex = 3,
+				}, Color3.fromRGB(255, 170, 60), Color3.fromRGB(120, 60, 0), "🎁")
+				gift.Parent = c
+				gift.Activated:Connect(function()
+					giftPass = p
+					giftPanel.setOpen(true)
+				end)
+			end
+		end
+		local best = Products.bestValue()
+		local boosts = section(body, 3, "⚡ BOOSTS — instant, one time")
+		for i, p in Products.Items do
+			local soon = p.id == 0
+			shopCard(
+				boosts,
+				i,
+				p.emoji,
+				p.name,
+				p.desc,
+				if soon then "SOON" else "R$ " .. p.price,
+				if soon then Color3.fromRGB(160, 160, 170) else Color3.fromRGB(70, 210, 90),
+				if soon
+					then nil
+					else function()
+						MarketplaceService:PromptProductPurchase(player, p.id)
+					end,
+				if best[p.kind] == p.key and not soon then "BEST VALUE" else nil
+			)
+		end
+	end
+end
+
+-- Pick who gets the gift (only players who don't own that pass yet).
+local function buildGift(panel: Panel.Panel)
+	local body = panel.body
+	UI.new(
+		"UIListLayout",
+		{ Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = body }
+	)
+	panel.onOpen = function()
+		clear(body)
+		local pass = giftPass
+		if not pass then
+			return
+		end
+		panel.subtitle.Text = pass.emoji .. " " .. pass.name
 		UI.label({
-			Position = UDim2.fromOffset(0, 6),
-			Size = UDim2.new(1, 0, 0, 44),
-			Text = emoji,
-			Font = Enum.Font.GothamBold,
-			Parent = c,
-		})
-		UI.bigText(
-			{ Position = UDim2.fromOffset(6, 52), Size = UDim2.new(1, -12, 0, 24), Text = name, Parent = c },
-			Color3.fromRGB(120, 30, 50),
-			2
-		)
-		UI.label({
-			Position = UDim2.fromOffset(8, 78),
-			Size = UDim2.new(1, -16, 0, 50),
-			Text = desc,
+			Size = UDim2.new(1, -12, 0, 44),
+			Text = "Gift "
+				.. pass.name
+				.. " (R$ "
+				.. pass.price
+				.. ") to someone on this server. If they leave before the purchase finishes, the pass is yours.",
 			TextColor3 = Color3.fromRGB(60, 60, 70),
 			Font = Enum.Font.GothamMedium,
 			TextWrapped = true,
-			Parent = c,
+			LayoutOrder = 0,
+			Parent = body,
 		})
-		local label = if owned then "OWNED" elseif id == 0 then "SOON" else "R$ " .. price
-		local color = if owned
-			then Color3.fromRGB(120, 200, 120)
-			elseif id == 0 then Color3.fromRGB(160, 160, 170)
-			else Color3.fromRGB(70, 210, 90)
-		local b = Panel.button(
-			{ Position = UDim2.new(0, 10, 1, -50), Size = UDim2.new(1, -20, 0, 40) },
-			color,
-			color:Lerp(Color3.new(), 0.5),
-			label
-		)
-		b.Parent = c
-		b.Activated:Connect(function()
-			if owned or id == 0 then
-				return
+		local anyone = false
+		for i, other in Players:GetPlayers() do
+			if other ~= player and not other:GetAttribute("Pass_" .. pass.key) then
+				anyone = true
+				local b = Panel.button(
+					{ Size = UDim2.new(1, -12, 0, 52), LayoutOrder = i },
+					Color3.fromRGB(255, 170, 60),
+					Color3.fromRGB(120, 60, 0),
+					"🎁 " .. other.DisplayName
+				)
+				b.Parent = body
+				b.Activated:Connect(function()
+					Remotes.get(Remotes.Names.GiftTarget):FireServer(other.UserId)
+					MarketplaceService:PromptProductPurchase(player, pass.giftId)
+					panel.setOpen(false)
+				end)
 			end
-			if isPass then
-				MarketplaceService:PromptGamePassPurchase(player, id)
-			else
-				MarketplaceService:PromptProductPurchase(player, id)
-			end
-		end)
+		end
+		if not anyone then
+			UI.bigText({
+				Size = UDim2.new(1, -12, 0, 40),
+				Text = "Nobody here can get this gift right now.",
+				TextColor3 = Color3.fromRGB(255, 140, 60),
+				LayoutOrder = 1,
+				Parent = body,
+			}, Color3.new(1, 1, 1), 2)
+		end
 	end
+end
+
+-- Contextual offer: one product that fits the moment (caught by a faster guard -> speed,
+-- short on cash for an upgrade -> cash). At most one every few minutes, never while a menu is open.
+local OFFER_COOLDOWN = 240
+local lastOffer = -math.huge
+local offerPanel: Panel.Panel
+local offerProduct: Products.Product? = nil
+
+local function buildOffer(panel: Panel.Panel)
+	local body = panel.body
 	panel.onOpen = function()
 		clear(body)
-		local order = 0
-		for _, p in Products.Passes do
-			order += 1
-			entry(order, p.emoji, p.name, p.desc, p.price, p.id, state.Passes[p.key] == true, true)
+		local p = offerProduct
+		if not p then
+			return
 		end
-		for _, p in Products.Items do
-			order += 1
-			entry(order, p.emoji, p.name, p.desc, p.price, p.id, false, false)
+		UI.label({
+			Position = UDim2.fromOffset(0, 0),
+			Size = UDim2.new(0.3, 0, 1, -10),
+			Text = p.emoji,
+			Font = Enum.Font.GothamBold,
+			Parent = body,
+		})
+		UI.bigText({
+			Position = UDim2.new(0.3, 0, 0, 4),
+			Size = UDim2.new(0.7, -10, 0, 34),
+			Text = p.name,
+			TextColor3 = Color3.fromRGB(255, 120, 140),
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = body,
+		}, Color3.fromRGB(90, 20, 40), 2.5)
+		UI.label({
+			Position = UDim2.new(0.3, 0, 0, 42),
+			Size = UDim2.new(0.7, -10, 0, 50),
+			Text = p.desc,
+			TextColor3 = Color3.fromRGB(60, 60, 70),
+			Font = Enum.Font.GothamMedium,
+			TextWrapped = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = body,
+		})
+		local buy = Panel.button(
+			{ Position = UDim2.new(0.3, 0, 1, -58), Size = UDim2.new(0.38, -10, 0, 50) },
+			Color3.fromRGB(70, 210, 90),
+			Color3.fromRGB(20, 90, 30),
+			"R$ " .. p.price
+		)
+		buy.Parent = body
+		buy.Activated:Connect(function()
+			MarketplaceService:PromptProductPurchase(player, p.id)
+			panel.setOpen(false)
+		end)
+		local no = Panel.button(
+			{ Position = UDim2.new(0.68, 0, 1, -58), Size = UDim2.new(0.32, -10, 0, 50) },
+			Color3.fromRGB(170, 170, 180),
+			Color3.fromRGB(70, 70, 80),
+			"NO THANKS"
+		)
+		no.Parent = body
+		no.Activated:Connect(function()
+			panel.setOpen(false)
+		end)
+	end
+end
+
+local function offer(kind: string, title: string)
+	if os.clock() - lastOffer < OFFER_COOLDOWN or Panel.anyOpen() then
+		return
+	end
+	local pick: Products.Product? = nil
+	for _, p in Products.Items do
+		if p.kind == kind and p.id > 0 and (not pick or p.price < pick.price) then
+			pick = p
 		end
 	end
+	if not pick then
+		return
+	end
+	lastOffer = os.clock()
+	offerProduct = pick
+	offerPanel.subtitle.Text = title
+	task.delay(1.2, function()
+		if not Panel.anyOpen() then
+			offerPanel.setOpen(true)
+		end
+	end)
 end
 
 -- ===== Index =====
@@ -308,9 +536,35 @@ function Panels.start()
 		Color3.fromRGB(60, 20, 120),
 		Vector2.new(600, 330)
 	)
+	giftPanel = Panel.new(
+		"GiftPanel",
+		"🎁 GIFT",
+		Color3.fromRGB(255, 170, 60),
+		Color3.fromRGB(120, 60, 0),
+		Vector2.new(460, 330)
+	)
+	offerPanel = Panel.new(
+		"OfferPanel",
+		"BOOST?",
+		Color3.fromRGB(110, 210, 255),
+		Color3.fromRGB(20, 70, 120),
+		Vector2.new(480, 230)
+	)
 	buildShop(shop)
 	buildIndex(index)
 	buildFuse(fuse)
+	buildGift(giftPanel)
+	buildOffer(offerPanel)
+	Remotes.get(Remotes.Names.Offer).OnClientEvent:Connect(function(kind: string)
+		if kind == "cash" then
+			offer("cash", "Short on cash?")
+		end
+	end)
+	Remotes.get(Remotes.Names.Caught).OnClientEvent:Connect(function(_by: string, tooSlow: boolean?)
+		if tooSlow then
+			offer("speed", "That guard is faster!")
+		end
+	end)
 
 	Remotes.get(Remotes.Names.Sync).OnClientEvent:Connect(function(s: any)
 		state = s

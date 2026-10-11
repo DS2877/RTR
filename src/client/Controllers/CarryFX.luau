@@ -15,6 +15,8 @@ local Economy = require(Shared.Config.Economy)
 
 local UI = require(script.Parent.Parent.Util.UI)
 local Sound = require(script.Parent.Parent.Util.Sound)
+local Music = require(script.Parent.Parent.Util.Music)
+local Shake = require(script.Parent.Parent.Util.Shake)
 local HUD = require(script.Parent.HUD)
 
 local CarryFX = {}
@@ -130,7 +132,8 @@ function CarryFX.start()
 		if slapTarget then
 			Remotes.get(Remotes.Names.Slap):FireServer(slapTarget.UserId)
 			UI.bump(slap, 0.25)
-			Sound.play("Caught", 0.5, 1.4)
+			Sound.play("Slap", 0.8)
+			Shake.kick(0.3)
 		end
 	end)
 
@@ -157,7 +160,11 @@ function CarryFX.start()
 				.. ")"
 			carryName.TextColor3 = if tier then UI.rgb(tier.color) else Color3.new(1, 1, 1)
 			Sound.play("Grab", 0.6)
+			Sound.play("Whoosh", 0.5)
+			Shake.kick(0.45)
 		end
+		Shake.fov(if on then 9 else 0)
+		Music.setChase(on)
 	end
 	player:GetAttributeChangedSignal("Carrying"):Connect(refresh)
 	refresh()
@@ -207,8 +214,79 @@ function CarryFX.start()
 		end
 	end)
 
+	-- a guard spotted you: buzzer + red flash + shake
+	Remotes.get(Remotes.Names.Alarm).OnClientEvent:Connect(function(vaultName: string)
+		Sound.play("Alarm", 0.7)
+		Shake.kick(0.25)
+		HUD.toast("🚨 " .. vaultName .. "'s guard spotted you! RUN!", "bad")
+		local flash = UI.new("Frame", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundColor3 = Color3.fromRGB(255, 0, 30),
+			BackgroundTransparency = 0.55,
+			Parent = gui,
+		})
+		UI.tween(flash, 0.4, { BackgroundTransparency = 1 })
+		task.delay(0.45, function()
+			flash:Destroy()
+		end)
+	end)
+
+	-- someone is carrying MY item: a beam from me to them + GO GET THEM!
+	local a0 = Instance.new("Attachment")
+	local a1 = Instance.new("Attachment")
+	local thiefBeam = Instance.new("Beam")
+	thiefBeam.Attachment0 = a0
+	thiefBeam.Attachment1 = a1
+	thiefBeam.Width0 = 1.6
+	thiefBeam.Width1 = 0.6
+	thiefBeam.FaceCamera = true
+	thiefBeam.Color = ColorSequence.new(Color3.fromRGB(255, 60, 60))
+	thiefBeam.LightEmission = 1
+	thiefBeam.Transparency = NumberSequence.new(0.1)
+	thiefBeam.Enabled = false
+	thiefBeam.Parent = workspace.Terrain
+	local goText = UI.bigText({
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 160),
+		Size = UDim2.fromOffset(420, 46),
+		Text = "🚨 GO GET THEM! SLAP THE THIEF! 🚨",
+		TextColor3 = Color3.fromRGB(255, 90, 90),
+		Visible = false,
+		Parent = layer,
+	}, Color3.fromRGB(40, 0, 0), 3)
+	local wasChasing = false
+	task.spawn(function()
+		while true do
+			task.wait(0.15)
+			local thief: Player? = nil
+			for _, other in Players:GetPlayers() do
+				if other ~= player and other:GetAttribute("CarryVictim") == player.UserId then
+					thief = other
+				end
+			end
+			local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			local theirRoot = thief and thief.Character and thief.Character:FindFirstChild("HumanoidRootPart")
+			local on = myRoot ~= nil and theirRoot ~= nil
+			if on then
+				a0.Parent = myRoot
+				a1.Parent = theirRoot
+			end
+			thiefBeam.Enabled = on
+			goText.Visible = on
+			if on then
+				goText.Rotation = math.sin(os.clock() * 8) * 2
+			end
+			if on and not wasChasing then
+				Sound.play("Alarm", 0.6)
+				Shake.kick(0.3)
+			end
+			wasChasing = on
+		end
+	end)
+
 	Remotes.get(Remotes.Names.Caught).OnClientEvent:Connect(function(by: string)
 		Sound.play("Caught", 0.8)
+		Shake.kick(0.7)
 		HUD.announce("💥 CAUGHT by " .. by .. "! The loot went back.", { 255, 90, 90 })
 		-- knock-up: our own client owns our character's physics, so the push happens here
 		local character = player.Character
