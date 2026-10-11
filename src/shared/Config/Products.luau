@@ -30,8 +30,8 @@ local Products = {
 	Passes = {
 		{
 			key = "VIP",
-			id = 0,
-			giftId = 0,
+			id = 2026682948,
+			giftId = 3717978609,
 			name = "VIP",
 			emoji = "💎",
 			price = 299,
@@ -40,7 +40,7 @@ local Products = {
 		{
 			key = "DoubleCash",
 			id = 2026352893,
-			giftId = 0,
+			giftId = 3717978612,
 			name = "2x Cash",
 			emoji = "💵",
 			price = 199,
@@ -48,8 +48,8 @@ local Products = {
 		},
 		{
 			key = "AutoCollect",
-			id = 0,
-			giftId = 0,
+			id = 2025980943,
+			giftId = 3717978623,
 			name = "Auto Collect",
 			emoji = "🧲",
 			price = 149,
@@ -58,7 +58,7 @@ local Products = {
 		{
 			key = "DoubleSpeed",
 			id = 2026682939,
-			giftId = 0,
+			giftId = 3717978626,
 			name = "2x Treadmill",
 			emoji = "⚡",
 			price = 149,
@@ -66,8 +66,8 @@ local Products = {
 		},
 		{
 			key = "QuickHands",
-			id = 0,
-			giftId = 0,
+			id = 2026184973,
+			giftId = 3717978633,
 			name = "Quick Hands",
 			emoji = "🧤",
 			price = 99,
@@ -76,7 +76,7 @@ local Products = {
 		{
 			key = "LongLock",
 			id = 2026112940,
-			giftId = 0,
+			giftId = 3717978641,
 			name = "Mega Lock",
 			emoji = "🔒",
 			price = 99,
@@ -96,7 +96,7 @@ local Products = {
 		},
 		{
 			key = "Speed60",
-			id = 0,
+			id = 3717978642,
 			name = "Mega Speed Pack",
 			emoji = "🚀",
 			price = 129,
@@ -116,7 +116,7 @@ local Products = {
 		},
 		{
 			key = "Cash180",
-			id = 0,
+			id = 3717978646,
 			name = "Cash Vault",
 			emoji = "🏦",
 			price = 199,
