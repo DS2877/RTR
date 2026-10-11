@@ -76,6 +76,26 @@
 - Ny shop: sektionerna PASSES (för alltid) och BOOSTS (engångs), större kort och 🎁-knapp på passen.
 - Ops-workflowet skapar nu även gåvoprodukterna.
 
+### Från referensspelet (den här omgången, 567 kontroller i Roblox)
+- **Cash-pickups längs Rich Street** (och på rullbanden): spring igenom för 4 s av din inkomst (minst $25). De kommer tillbaka efter 20 s.
+- **🌈 TRAILS SHOP** på torget vid porten till Rich Street:
+  - 6 spår för cash: Sparkle $5K, Neon Blue $500K, Fire $50M, Money Rain $2B, Lightning $100B, Galaxy $5T.
+  - 2 Halloween-spår för godis: Pumpkin 150 🍬 och Ghost 400 🍬.
+  - **Rainbow Trail** som pass (79 R$).
+  - Köp, sätt på och ta av i menyn.
+- **👥 Friend Boost**: +10 % cash per Roblox-vän på servern (max +30 %). Syns i inkomstpillret.
+- **🎃 Halloween-säsong** (1 okt–3 nov, slås av och på automatiskt varje år):
+  - pumpor vid alla entréer och på torget, spindelnät på baserna, fladdermöss över stan, spöken på Rich Street
+  - pickups ger 🍬-godis, och vissa är pumpor värda 5
+  - 🍬-pill i HUD:en
+- "**SAFE ZONE**" på golvet vid varje basentré.
+- Uppgraderingsskyltarna visar nästa mål: "UPGRADE PLOT · Lv 3 → 4 · $1.2K".
+- Siffror som flyger upp i världen: "+⚡" ur dig på löpbandet, "+$" och "+🍬" vid pickups, och inkomst ur varje föremål på din plot var 3:e sekund.
+- **Välkommen tillbaka-kort**: vad du tjänat medan du var borta och vad din plot drar in per dag offline.
+- STOLEN!-kortet säger "YOU STOLE FROM MUSEUM OWNER!" (eller "YOU ROBBED <namn>!").
+- Ett litet "⚡ +SPEED R$29"-erbjudande bredvid pillren. Det är det enda på HUD:en, som förblir ren.
+- Admin: `!candy 500` ger godis för att testa godis-spåren.
+
 ## Hur du testar (iPhone)
 1. Gå med: musiken startar och ljuset är gyllene. Checklistan uppe till höger visar 4 steg.
 2. Ställ dig på löpbandet och **släpp tumspaken**: gubben springer, bandet rullar, speed ökar och första bocken kommer.
@@ -86,7 +106,13 @@
 7. Försök uppgradera utan pengar: efter en sekund kommer ett Cash Bag-erbjudande med "NO THANKS".
 8. Shop: 6 passes och 4 boosts, "BEST VALUE" på de större boostsen. 🎁-knappen öppnar en lista med spelarna på servern.
 9. Testa events: skriv `!event GoldRush`, `!event GuardStrike` eller `!event CashFrenzy` i chatten. Bannern med nedräkning ska synas under kronbaren.
-10. Med en kompis:
+10. Från referensspelet:
+    - Spring längs Rich Street genom guldmynten: "+$" flyger upp och 🍬 räknas upp (Halloween).
+    - TRAILS SHOP vid porten: köp Sparkle ($5K), spring och se spåret bakom dig.
+    - Pumporna, spindelnäten och "SAFE ZONE" på golvet vid din entré.
+    - Uppgraderingsskylten visar nivå och pris.
+    - Lämna spelet i några minuter och gå med igen: välkommen tillbaka-kortet ska visas.
+11. Med en kompis:
     - Kronan växer efter några minuter och bountyn visar t.ex. "(x1.6)".
     - Stjäl från varandra: den som blir bestulen ser den röda pilen och "GO GET THEM!".
     - 👑/💎-taggar syns i chatten.
