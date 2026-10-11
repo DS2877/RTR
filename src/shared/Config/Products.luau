@@ -75,8 +75,8 @@ local Products = {
 		},
 		{
 			key = "RainbowTrail",
-			id = 0,
-			giftId = 0,
+			id = 2025284943,
+			giftId = 3717980845,
 			name = "Rainbow Trail",
 			emoji = "🌈",
 			price = 79,
