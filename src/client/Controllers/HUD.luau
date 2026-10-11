@@ -9,7 +9,6 @@ local TextChatService = game:GetService("TextChatService")
 local Shared = ReplicatedStorage.Shared
 local Format = require(Shared.Format)
 local Remotes = require(Shared.Remotes)
-local Progression = require(Shared.Progression)
 local Economy = require(Shared.Config.Economy)
 
 local UI = require(script.Parent.Parent.Util.UI)
