@@ -549,7 +549,7 @@ if sim and A and B then
 		task.wait(1.3)
 		assert(a.data.Cash > before, "cash did not grow")
 		assert(a.data.Pending < 10, "pending not emptied " .. a.data.Pending)
-		assert(A.attrs.Collected == 1, "Collected attr " .. tostring(A.attrs.Collected))
+		assert((A.attrs.Collected or 0) >= 1, "Collected attr " .. tostring(A.attrs.Collected)) -- 1 or 2 collects in 1.3 s
 		assert(got(A, Remotes.Names.CashFX), "no CashFX")
 	end)
 
