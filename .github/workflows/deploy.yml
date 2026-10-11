@@ -1,0 +1,48 @@
+name: deploy
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain (pinned, same as rokit.toml)
+        run: ./tools/install-tools.sh "$HOME/.tools/bin" >> "$GITHUB_PATH"
+
+      - name: Format (StyLua)
+        run: stylua --check src
+
+      - name: Lint (Selene)
+        run: selene src
+
+      - name: Tests (Lune)
+        run: lune run tests
+
+      - name: Build place (Rojo)
+        run: rojo build default.project.json -o rtr.rbxl
+
+      - name: Publish to Roblox
+        if: github.ref == 'refs/heads/main'
+        env:
+          KEY: ${{ secrets.RTR_PUBLISHING_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::Secret RTR_PUBLISHING_KEY is not set"
+            exit 1
+          fi
+          curl --fail-with-body -sS -X POST \
+            "https://apis.roblox.com/universes/v1/10770392871/places/95313582510402/versions?versionType=Published" \
+            -H "x-api-key: $KEY" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @rtr.rbxl
+          echo
+          echo "Published. 401/403 = check key permission (universe-places write) and IP allow-list."
