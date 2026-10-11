@@ -360,11 +360,16 @@ for i, vault in world.vaults do
 	for _, d in vault.model:GetDescendants() do
 		if d:IsA("BasePart") and d.CanCollide and d.Name ~= "Floor" and d.Name ~= "Path" then
 			local l = vault.origin:PointToObjectSpace(d.Position)
-			local halfAcross = d.Size.Magnitude / 2
-			if
-				math.abs(l.X) - halfAcross < World.PathHalfWidth
-				and d.Position.Y - d.Size.Magnitude / 2 < 7
-			then
+			-- the part's real half-extent across the corridor and downward (rotation aware)
+			local function halfAlong(axis: Vector3): number
+				local c = d.CFrame
+				return math.abs(c.RightVector:Dot(axis)) * d.Size.X / 2
+					+ math.abs(c.UpVector:Dot(axis)) * d.Size.Y / 2
+					+ math.abs(c.LookVector:Dot(axis)) * d.Size.Z / 2
+			end
+			local across = halfAlong(vault.origin.RightVector)
+			local bottom = d.Position.Y - halfAlong(Vector3.yAxis)
+			if math.abs(l.X) - across < World.PathHalfWidth and bottom < 7 then
 				blocked = d:GetFullName()
 			end
 		end
