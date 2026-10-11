@@ -76,6 +76,25 @@
 - Ny shop: sektionerna PASSES (för alltid) och BOOSTS (engångs), större kort och 🎁-knapp på passen.
 - Ops-workflowet skapar nu även gåvoprodukterna.
 
+### Efter speltest på iPhone (skärmdumpar 11 okt)
+- **HUD:en städad:**
+  - Hela HUD:en skalas ner på telefon (cirka 20 % mindre).
+  - Cash och inkomst sitter i ett kort, med speed i en liten pill under.
+  - 4 mindre knappar (SHOP, INDEX, LOCK, SLOW). Musiken är en liten 🎵-ikon bredvid kassan.
+  - "+SPEED"-chippet är borttaget (det krockade med kronbaren).
+  - Kronbaren syns bara när någon faktiskt är THE RICHEST.
+  - Checklistan till höger och den stora tipstexten är ersatta av **en** kompakt uppdragsrad nere i mitten ("STEP 2/4 • 💰 STEAL loot at Grandpa's Garage"), med guldpilen kvar.
+  - Drop/Slap är större för tummen.
+- **"Upgrade Treadmill"-prompten poppar inte längre upp när du tränar**: skylten är flyttad och räckvidden är kortare. Smoke-testet mäter avståndet.
+- **Baserna är öppna**:
+  - Låga, ljusa murar (4,5 studs i stället för 12 tegel) och en osynlig barriär ovanpå, så det går inte att hoppa in och låset håller.
+  - Entrébåge med namnskylt och "FREE BASE" på lediga baser.
+  - Runda podier och mörkare "hyllband" under varje rad.
+  - Torget är inte längre en korridor mellan murar.
+- Föremålen visar stor grön inkomst ("+$35/s") synlig på längre håll.
+- Bänkarna är borta ur gången och man springer igenom pumporna.
+- Kameran börjar längre bak vid varje spawn.
+
 ### Från referensspelet (den här omgången, 567 kontroller i Roblox)
 - **Cash-pickups längs Rich Street** (och på rullbanden): spring igenom för 4 s av din inkomst (minst $25). De kommer tillbaka efter 20 s.
 - **🌈 TRAILS SHOP** på torget vid porten till Rich Street:
