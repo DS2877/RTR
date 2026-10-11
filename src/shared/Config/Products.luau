@@ -20,7 +20,7 @@ local Products = {
 	Passes = {
 		{
 			key = "DoubleCash",
-			id = 0,
+			id = 2026352893,
 			name = "2x Cash",
 			emoji = "💵",
 			price = 199,
@@ -28,7 +28,7 @@ local Products = {
 		},
 		{
 			key = "DoubleSpeed",
-			id = 0,
+			id = 2026682939,
 			name = "2x Treadmill",
 			emoji = "⚡",
 			price = 149,
@@ -36,7 +36,7 @@ local Products = {
 		},
 		{
 			key = "LongLock",
-			id = 0,
+			id = 2026112940,
 			name = "Mega Lock",
 			emoji = "🔒",
 			price = 99,
@@ -46,7 +46,7 @@ local Products = {
 	Items = {
 		{
 			key = "Speed10",
-			id = 0,
+			id = 3717972926,
 			name = "Speed Pack",
 			emoji = "👟",
 			price = 29,
@@ -56,7 +56,7 @@ local Products = {
 		},
 		{
 			key = "Cash30",
-			id = 0,
+			id = 3717972928,
 			name = "Cash Bag",
 			emoji = "💰",
 			price = 49,
