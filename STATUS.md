@@ -1,63 +1,108 @@
 # Rob the Rich! – status
 
-## Klart (version 1 + Fas A)
-- **Världen** byggs helt i kod: torg, 8 baser (en per spelare), Rich Street med 8 valv, WANTED-tavla, topplista "Longest Reign", Fuse Machine.
-- **Löpband** i varje bas: spring på det, så får du speed-poäng (+popups). Bandet trycker dig bakåt. Uppgraderas vid skylten bredvid.
-- **8 rika NPC-valv** (Grandpa's Garage → THE BILLIONAIRE): 6 föremål vardera (Common → Mythic), mutationer (Gold x2, Diamond x5, Rainbow x15). Lootet delas av hela servern och fylls på efter 6–12 s.
-- **Vakter** patrullerar och jagar den som bär loot. Rikare valv har snabbare vakter. Blir du fångad går lootet tillbaka, du blir stunnad och kastas upp i luften.
-- **RUN!!-läget**: röd vinjett, "RUN!!", Drop-knapp, "SAFE ZONE" nära hemmet, stort "STOLEN!"-kort när lootet landar.
-- **Stjäla från spelare**: Steal-prompt på andras föremål; föremålet lämnar ägaren först när tjuven når hem. **SLAP**-knappen dyker upp nära någon som bär loot och får hen att tappa det.
-- **Lås basen** (60 s, 30 s cooldown). Inkräktare teleporteras ut, och servern håller dem ute hela låstiden. Ägaren går rakt igenom sin egen laser.
-- **Inkomst** per föremål → samlas på COLLECT-plattan (räcker att stå still på den). Sälj föremål (håll Sell). Plot-uppgradering (6 → 30 piedestaler).
-- **👑 THE RICHEST (twisten)**: rikaste spelaren (kräver minst 2 på servern) får krona, guldstråle över basen, ansiktet på WANTED-tavlan och +50 % inkomst, men **kan aldrig låsa basen**. Den som rånar hen får en bounty (2 min av den rikes inkomst, minst $500) och ett meddelande till hela servern. Tronbyten annonseras. Längsta regeringstid sparas i en global topplista.
-- **Fuse Machine**: 3 identiska → 1 med nästa mutation ("FUSED!"-kort).
-- **Index**, **Shop**, **offline-inkomst** (50 %, max 12 h), guide-text + pil för nya spelare, Slow Mode.
-- Data sparas med ProfileStore (session lock).
+## Klart
 
-### Fas A (den här omgången)
-- **Kodgranskning, fixade buggar:**
-  - Vakterna var rigless-humanoids i R6-läge (default), som letar efter ben och snubblar/faller. Nu R15-läge så HipHeight håller dem stående och de går.
-  - HUD:en skalades med en UIScale på hela skärmen, vilket på mobil drar mitten- och högerplacerade saker (kronbaren, notiser) snett. Nu skalas varje del runt sin egen ankarpunkt. Menyerna (Shop/Index/Fuse) är större på telefon.
-  - "UPGRADE PLOT"-skylten hade texten mot väggen (osynlig inifrån basen). Nu text på båda sidor, samma för löpbandsskylten.
-  - Glaslocket i valven skar igenom föremålens namnskyltar. Flyttat upp.
-  - Knuffen när en vakt fångar dig sattes på servern (fungerar inte på spelarens egen fysik). Nu på klienten.
-  - Kronans ädelstenar satt inuti bandet. "Tall"-föremål (t.ex. Antique Clock) var platta.
-  - Fuse visade "STOLEN!". Nu "FUSED!".
-  - Topplistan slog upp spelarnamn varje minut, nu cachat.
-  - Fuse Machine skymde "Longest Reign"-tavlan, flyttad åt sidan.
-- **Headless smoke-test** (`tools/smoke.luau` + `tools/ci/smoke.py`): vid varje push laddar CI upp bygget som en *sparad* (ej publicerad) version och kör testet inne i den riktiga placen på Robloxs servrar (Open Cloud Luau Execution). Det startar alla servertjänster som riktiga servern gör och kontrollerar världen: antal baser/valv/vakter, åt vilket håll varje skylt pekar, att spawn ligger i basen, löpbandets riktning och att man räknas när man står på det, att inget står på piedestalerna, vakternas humanoid-setup, alla 48 föremål × 4 mutationer, lootet ovanför huvudet och kronan. Publicering stoppas om testet hittar fel. (Fysik och spelare finns inte i den miljön, så rörelser måste fortfarande testas på riktigt.)
-- **Ops-workflow** (`tools/ops/roblox_setup.py` + `.github/workflows/ops.yml`, samma upplägg som i CM): push till en branch `ops/*` skapar alla game passes och developer products i `Config/Products.luau` via Open Cloud (matchas på namn, priser synkas), skriver tillbaka ID:n och sätter **Max Players = 8**. Loggen hamnar i `tools/ops/ops-log.md`.
+### Kärnspelet (v1 + Fas A)
+- **Världen** byggs helt i kod: torg, 8 baser (en per spelare), Rich Street med 8 valv, WANTED-tavla, topplista "Longest Reign", Fuse Machine.
+- **Löpband**: stå på det så får du speed-poäng. Det räcker att stå still (går att AFK:a på telefonen): gubben springer och bandet rullar.
+- **8 rika NPC-valv** (Grandpa's Garage → THE BILLIONAIRE), 6 föremål vardera (Common → Mythic), mutationer (Gold x2, Diamond x5, Rainbow x15). Lootet delas av hela servern och fylls på efter 6–12 s.
+- **Vakter** patrullerar och jagar den som bär loot. Rikare valv har snabbare vakter. Blir du fångad går lootet tillbaka, du blir stunnad och kastas upp.
+- **Carry**: RUN!!, Drop, SAFE ZONE, STOLEN!-kort. **Stjäla från spelare**, **SLAP**, **lås basen** (60 s, servern håller inkräktare ute).
+- **Inkomst** → COLLECT-plattan (räcker att stå på den). Sälj, plot-uppgradering (6 → 30 piedestaler), Fuse (3 lika → nästa mutation), Index, offline-inkomst.
+- **👑 THE RICHEST**: krona, guldstråle, WANTED-tavlan, +50 % inkomst, kan aldrig låsa, bounty till den som rånar hen.
+
+### Arbetsorder "AAA" (den här omgången)
+**Spellogik, testad inne i Roblox vid varje push (548 kontroller):**
+- Smoke-testet kör nu **hela spelloopen med två simulerade spelare** i den riktiga placen:
+  - inkomst, insamling och uppgradering (med erbjudande när pengarna inte räcker), löpbandet
+  - stöld från valv, vakten som larmar och fångar, deposit hemma
+  - Guard Strike, Cash Frenzy, Gold Rush
+  - stöld från spelare: pilen till tjuven, offret varnas, föremålet lämnar först när tjuven är hemma, slap
+  - THE RICHEST: krona, stråle, kan inte låsa, bounty betalas
+  - lås (inkräktare ut), sälj, fuse, Auto Collect, spelare som lämnar mitt i en stöld
+- Alla 23 ljud-, musik- och animations-ID:n kontrolleras mot Roblox (att de finns och är licensierade).
+- Bugg hittad och fixad: bountyn räknades ut *efter* att det stulna föremålet lämnat den rikaste, så den blev för låg när man stal hens bästa sak. Nu räknas den innan.
+
+**Roligare:**
+- **Express lanes**: två rullband längs torget och hela Rich Street (blått ut, gult hem, +18 fart). Kortar den tråkiga promenaden i början.
+- **Server-events** var 10–15:e minut i 90 s, annonserade med riktig nedräkning i HUD:en:
+  - ✨ **GOLD RUSH**: 4x mutationschans, alla valv fylls på direkt.
+  - 😴 **GUARD STRIKE**: vakterna sover.
+  - 💸 **CASH FRENZY**: 2x inkomst.
+- **THE RICHEST växer**: bountyn ökar 15 % per minut av regeringen (max x3), kronan blir större och strålen bredare. Visas på WANTED-tavlan och i kronbaren.
+- **Tjuvlarm**: när någon bär ditt föremål visas en röd pil från dig till tjuven och "GO GET THEM! SLAP THE THIEF!". Slappar du tjuven annonseras det för hela servern.
+- **Vaktlarm**: summer, röd blixt och skak när en vakt får syn på dig. Vakterna sträcker armarna framåt när de jagar.
+- **Onboarding**: checklista uppe till höger första gången (löpband → stjäl → spring hem → collect) med bockar.
+
+**Grafik:**
+- Ny ljussättning: gyllene eftermiddag, Future lighting, himmel, solstrålar, bloom och färgkorrigering.
+- **Unikt tema i varje valv**, byggt av parts:
+  - Grandpa: veteranbil, verktygsvägg, oljefat.
+  - Influencer: rosa soffa, ringlampor, neonskylt, ballonger.
+  - Pirate: mast med segel, kistor med guld, kanoner.
+  - Museum: pelare, dinosaurieskelett, tavlor, avspärrning.
+  - Gold Tycoon: myntberg, guldtackor, guldstaty.
+  - Mega Yacht: pool, solstolar, båt.
+  - Tech Billionaire: blinkande serverrack, raket, hologram.
+  - THE BILLIONAIRE: guldstaty, guldbil, kristallkrona, snurrande diamant.
+  - Markis och spotlights vid varje entré.
+- **Stadssiluett** med glastorn och lysande fönster bakom valven. Trottoarer med gul kantsten, övergångsställe och palmer.
+- Torget: två fontäner med vattenpartiklar och bänkar.
+- Baserna: hörntorn med lysande toppar i basens färg, entrématta och en lysande ring under varje upplåst piedestal.
+- Vakterna: ny modell (skjorta, slips, bricka, keps, öronsnäcka) med **gånganimation**.
+- Löpbandet har rullande ränder och din gubbe springer på det.
+
+**Juice:**
+- **Musik**: licensierade APM-spår (Heist Time, Smooth Operator, Code Heist, Funky Disco Beats). Byter till jaktmusik (Spy Action) när du bär loot. 🎵-knappen stänger av.
+- Kameraskak (stöld, fångad, slap) och FOV-kick när du springer med loot.
+- Mynt som flyger in i kassan och en kassasiffra som räknar upp.
+- Gnistregn på piedestalen när loot landar och en pulserande COLLECT-platta.
+- Nya ljud: kassaapparat, slap, whoosh, larm, fanfarer.
+
+**Monetisering (allt med känt innehåll, inga slumpköp, inga falska timers):**
+- Nya passes:
+  - **💎 VIP** (299 R$): +25 % cash, VIP-skylt över huvudet och chattagg.
+  - **🧲 Auto Collect** (149 R$).
+  - **🧤 Quick Hands** (99 R$): stjäl utan att hålla inne.
+  - 2x Cash, 2x Treadmill och Mega Lock finns kvar.
+- Nya produkter: **🚀 Mega Speed Pack** (129 R$, 60 min) och **🏦 Cash Vault** (199 R$, 3 h). "BEST VALUE" räknas fram ur riktiga mängder per Robux.
+- **🎁 Gåvor**: alla passes kan ges bort till någon på servern (egen gåvoprodukt per pass). Lämnar mottagaren innan köpet är klart får köparen passet. Det står i dialogen.
+- **Kontextuella erbjudanden**:
+  - fångad av en vakt du är för långsam för → Speed Pack
+  - försöker uppgradera utan pengar → Cash Bag
+  - max ett var 4:e minut, aldrig när en meny är öppen, alltid med "NO THANKS"
+- **Premium**: +10 % cash för Roblox Premium-medlemmar (ger också Premium Payouts).
+- Köp och gåvor annonseras för servern ("X unlocked 💎 VIP!").
+- Ny shop: sektionerna PASSES (för alltid) och BOOSTS (engångs), större kort och 🎁-knapp på passen.
+- Ops-workflowet skapar nu även gåvoprodukterna.
 
 ## Hur du testar (iPhone)
-1. Gå med → du ska stå **i din egen bas** (skylten ovanför ingången har ditt namn) med en gratis Rusty Wrench på en piedestal.
-2. HUD: cash/inkomst/speed uppe till vänster, 4 knappar till vänster (SHOP, INDEX, LOCK, SLOW), kronbaren **mitt** i toppen. Inget ska ligga utanför skärmen eller under tumspaken.
-3. Följ gula pilen till löpbandet, håll tumspaken framåt. Du ska få "+⚡"-popups och speed-siffran ska öka. Släpper du glider du av bakåt.
-4. Läs skyltarna: "UPGRADE PLOT" vid ingången (inifrån), "UPGRADE TREADMILL" vid bandet. Knappen "Upgrade" ska bara synas för dig i din bas.
-5. Ställ dig på gröna COLLECT-plattan → "+$…" och cash ökar.
-6. Med ~30 speed: följ pilen till Grandpa's Garage. Vakten ska **stå upp och gå** (inte ligga ner eller sväva). Håll STEAL på ett föremål → röd skärm, "RUN!!", föremålet svävar över huvudet, vakten jagar. Spring hem → "SAFE ZONE" → "STOLEN!"-kort, föremålet står på en piedestal.
-7. Bli fångad med flit: du ska studsa upp, se "CAUGHT", föremålet går tillbaka i valvet.
-8. Tryck LOCK → röd laser i ingången, du kan själv gå igenom den. Knappen räknar ner.
-9. Shop: ska visa R$-priser (inte "SOON"). Prova att trycka ett köp (avbryt i Robloxs dialog om du inte vill köpa).
-10. Med en kompis (eller ett andra konto): kronan över huvudet på den rikaste, guldstråle över basen, ansiktet på WANTED-tavlan, LOCK-knappen visar "👑 NO". Stjäl från den rikaste → bounty + meddelande till alla. SLAP-knappen när kompisen bär något nära dig.
-11. Admin-kommandon i chatten (du som ägare): `!cash 1e9`, `!speed 1e6`, `!item GoldBar Diamond`, `!reroll`, `!reset`.
+1. Gå med: musiken startar och ljuset är gyllene. Checklistan uppe till höger visar 4 steg.
+2. Ställ dig på löpbandet och **släpp tumspaken**: gubben springer, bandet rullar, speed ökar och första bocken kommer.
+3. Gå ut ur basen och ställ dig på det **blå rullbandet** (pilar mot Rich Street), så åker du snabbt mot valven. Det **gula** tar dig hem.
+4. Titta in i valven: varje valv har sitt tema. Vakterna går med armar och ben.
+5. Stjäl: skak, whoosh, jaktmusik och RUN!!. Vakten larmar (summer, röd blixt) och sträcker armarna efter dig. Spring hem: STOLEN!-kort och gnistor på piedestalen.
+6. Stå på COLLECT: mynt flyger upp i kassan och siffran räknar upp.
+7. Försök uppgradera utan pengar: efter en sekund kommer ett Cash Bag-erbjudande med "NO THANKS".
+8. Shop: 6 passes och 4 boosts, "BEST VALUE" på de större boostsen. 🎁-knappen öppnar en lista med spelarna på servern.
+9. Testa events: skriv `!event GoldRush`, `!event GuardStrike` eller `!event CashFrenzy` i chatten. Bannern med nedräkning ska synas under kronbaren.
+10. Med en kompis:
+    - Kronan växer efter några minuter och bountyn visar t.ex. "(x1.6)".
+    - Stjäl från varandra: den som blir bestulen ser den röda pilen och "GO GET THEM!".
+    - 👑/💎-taggar syns i chatten.
 
 ## Saknas / att göra
-- Fas B (juice), C (retention), D (twisten på max), E (intäkter) enligt planen.
-- Ingen musik än (bara ljudeffekter). Inga egna ikoner/meshes, allt är byggt av parts.
-- Vakterna har ingen gånganimation än (Fas B).
-- Grenen `claude/smoke-baseline` (engångstest av smoke-testet mot v1-koden) kunde inte raderas härifrån. Den är ofarlig, men radera den gärna på GitHub.
+- Ingen människa har spelat det här än. Testet täcker logiken, men inte känslan, prestandan på äldre telefoner eller hur UI:t ser ut på just din skärm.
+- Pass-ikonerna är Robloxs standardbild (egna ikoner kräver bilduppladdning).
+- Fas C: rebirth, dagliga belöningar och quests, likes, fler topplistor.
+- Fas D: coup i slow motion, kosmetiska kronor, gruppbonus, promokoder.
+- Grenen `claude/smoke-baseline` kan raderas på GitHub (det gick inte härifrån).
 
-## Ops-körning 2026-10-11 (allt OK, se `tools/ops/ops-log.md`)
-- Passes: 2x Cash (199 R$) `2026352893`, 2x Treadmill (149 R$) `2026682939`, Mega Lock (99 R$) `2026112940`.
-- Produkter: Speed Pack (29 R$) `3717972926`, Cash Bag (49 R$) `3717972928`.
-- Max Players = 8.
-- Ändra pris/lägg till något: ändra `Config/Products.luau` och pusha en branch `ops/<namn>`, merga sedan tillbaka till main.
+## Ops (`tools/ops/ops-log.md`)
+- Ändra eller lägg till något i `Config/Products.luau` → pusha en branch `ops/<namn>` → workflowet skapar det som saknas, synkar priser och skriver tillbaka ID:n → merga till main.
 
-## Nyckelbehörigheter (Creator Hub → Open Cloud → API Keys → RTR_PUBLISHING_KEY, alla fungerar)
-- `universe-places: write` – publicera (finns redan).
-- `universe.place.luau-execution-session: write` – headless smoke-test.
-- `game-pass: read + write`, `developer-product: read + write` – skapa passes/produkter.
-- `universe.place: write` – Max Players.
+## Nyckelbehörigheter (RTR_PUBLISHING_KEY, alla fungerar)
+`universe-places: write`, `universe.place.luau-execution-session: write`, `game-pass: read + write`, `developer-product: read + write`, `universe.place: write`.
 
 ## Balans (tools/simulate, aktiv spelare)
-Museum Owner ~7 min, Gold Tycoon ~11 min, Mega Yacht ~29 min, Tech Billionaire ~65 min, THE BILLIONAIRE ~3 h.
+Museum Owner ~7 min, Gold Tycoon ~11 min, Mega Yacht ~29 min, Tech Billionaire ~65 min, THE BILLIONAIRE ~3 h. Rullbanden gör det i praktiken lite snabbare tidigt.

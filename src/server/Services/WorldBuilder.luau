@@ -331,7 +331,7 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 		Color3.fromRGB(30, 30, 35),
 		Enum.Material.SmoothPlastic
 	)
-	surfaceText(screen, Enum.NormalId.Back, "⚡ RUN! ⚡", Color3.fromRGB(255, 230, 60))
+	surfaceText(screen, Enum.NormalId.Back, "⚡ SPEED ZONE ⚡", Color3.fromRGB(255, 230, 60))
 
 	local treadSign = block(
 		model,
