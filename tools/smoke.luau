@@ -229,8 +229,7 @@ for _, vault in world.vaults do
 	guardsWanted += def.guards
 	local id = "vault " .. def.id
 	local sign = vault.model:FindFirstChild("Sign") :: BasePart
-	local toStreet = Vector3.new(0, 0, -math.sign(vault.center.Z))
-	check(id .. " sign faces the street", anyFaces(sign, toStreet))
+	check(id .. " arch sign faces the way in (toward home)", anyFaces(sign, Vector3.new(-1, 0, 0)))
 	check(id .. " 6 pedestals", #vault.pedestals == 6, #vault.pedestals)
 	local loot = 0
 	for _, m in vault.model:GetChildren() do
@@ -346,20 +345,38 @@ head:Destroy()
 check("starter item exists", Progression.item(Economy.StarterItem) ~= nil)
 check("vault 1 guards are outrunnable at start", Progression.speedToOutrun(1) < Economy.Speed.Base)
 
--- ===== world extras: lanes, lighting, decor =====
-local lanes = root:FindFirstChild("Lanes")
-local laneDirs = {}
-if lanes then
-	for _, l in lanes:GetChildren() do
-		if l.Name == "Lane" and l:IsA("BasePart") then
-			local v = l.AssemblyLinearVelocity
-			check("lane moves along the street", math.abs(math.abs(v.X) - Economy.Lanes.Speed) < 0.01, v)
-			laneDirs[math.sign(v.X)] = true
-			check("lane clear of the WANTED board", math.abs(l.Position.Z) > 15)
+-- ===== Rich Street: zones one after another, a clear running path through all of them =====
+for i, vault in world.vaults do
+	local id = "zone " .. Vaults[vault.index].id
+	if i > 1 then
+		local prev = world.vaults[i - 1]
+		check(
+			id .. " follows the previous zone",
+			math.abs((vault.origin.Position.X - prev.origin.Position.X) - World.VaultSpacing) < 0.01
+		)
+	end
+	check(id .. " has its rich person", vault.model:FindFirstChild("RichPerson") ~= nil)
+	local blocked = nil
+	for _, d in vault.model:GetDescendants() do
+		if d:IsA("BasePart") and d.CanCollide and d.Name ~= "Floor" and d.Name ~= "Path" then
+			local l = vault.origin:PointToObjectSpace(d.Position)
+			local halfAcross = d.Size.Magnitude / 2
+			if
+				math.abs(l.X) - halfAcross < World.PathHalfWidth
+				and d.Position.Y - d.Size.Magnitude / 2 < 7
+			then
+				blocked = d:GetFullName()
+			end
 		end
 	end
+	check(id .. " running path is clear", blocked == nil, blocked)
+	local sides = { [1] = 0, [-1] = 0 }
+	for _, ped in vault.pedestals do
+		local side = math.sign(vault.origin:PointToObjectSpace(ped.Position).X)
+		sides[side] = (sides[side] or 0) + 1
+	end
+	check(id .. " stands on both sides of the path", sides[1] == 3 and sides[-1] == 3)
 end
-check("one lane out, one lane home", laneDirs[1] == true and laneDirs[-1] == true)
 check("trails shop with a prompt", world.trailsPrompt ~= nil and world.trailsPrompt:IsA("ProximityPrompt"))
 for _, base in world.bases do
 	check("base " .. base.id .. " SAFE ZONE on the floor", base.model:FindFirstChild("SafeZone") ~= nil)

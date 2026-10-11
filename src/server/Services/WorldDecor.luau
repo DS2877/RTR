@@ -8,7 +8,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
-local Economy = require(Shared.Config.Economy)
 
 local WorldDecor = {}
 
@@ -332,186 +331,196 @@ local function statue(parent: Instance, cf: CFrame, scale: number)
 	label(bag, Enum.NormalId.Back, "$", rgb(255, 255, 255))
 end
 
--- ===== vault themes =====
--- `at(lx, ly, depth)` places inside the vault (lx across, depth from the door). Free zones: the
--- side strips |lx| 31..43, depth 8..66, and the back strip depth 58..67.
+-- ===== zone themes =====
+-- `at(lx, ly, depth)` places inside a zone: depth runs down the corridor (0 = the arch), lx across
+-- (+ = right when walking in). The path is |lx| < 7, display stands at lx +-20 (depth 35/65/95),
+-- the rich person at (36, 65). Props go on the side strips |lx| 30..46.
 type At = (lx: number, ly: number, depth: number) -> CFrame
 
-local THEMES: { [string]: (folder: Instance, at: At, trim: Color3) -> () } = {
+local F = 0.4 -- zone floor top
+local FACE_RIGHT = CFrame.Angles(0, math.rad(-90), 0) -- a part's Front faces +lx (left wall)
+local FACE_LEFT = CFrame.Angles(0, math.rad(90), 0) -- a part's Front faces -lx (right wall)
+
+local THEMES: { [string]: (f: Instance, at: At, trim: Color3) -> () } = {
 	Grandpa = function(f, at, _trim)
-		car(f, at(-37, 0.4, 38), rgb(90, 140, 200))
-		part(f, "Pegboard", Vector3.new(18, 8, 0.4), at(30, 6, 66.6), rgb(170, 130, 90), M.WoodPlanks)
+		car(f, at(-38, F, 50), rgb(90, 140, 200))
+		car(f, at(38, F, 108), rgb(200, 60, 50))
+		part(f, "Pegboard", Vector3.new(0.4, 8, 18), at(-46.6, 7, 100), rgb(170, 130, 90), M.WoodPlanks)
 		for i = 0, 4 do
-			part(
-				f,
-				"Tool",
-				Vector3.new(0.4, 3, 0.3),
-				at(23 + i * 3.4, 6, 66.2) * CFrame.Angles(0, 0, math.rad(15 * (i - 2))),
-				rgb(150, 150, 160),
-				M.Metal
-			)
+			part(f, "Tool", Vector3.new(0.3, 3, 0.4), at(-46.2, 7, 93 + i * 3.4), rgb(150, 150, 160), M.Metal)
 		end
 		for i = 0, 2 do
-			barrel(f, at(38, 0.4, 14 + i * 3), rgb(200, 60, 40))
+			barrel(f, at(-40, F, 14 + i * 3), rgb(200, 60, 40))
 		end
-		part(f, "Workbench", Vector3.new(6, 3, 14), at(38, 1.9, 48), rgb(120, 80, 50), M.Wood)
+		part(f, "Workbench", Vector3.new(6, 3, 14), at(40, F + 1.5, 30), rgb(120, 80, 50), M.Wood)
 		part(
 			f,
 			"Tire",
 			Vector3.new(1.2, 3, 3),
-			at(-37, 1.9, 60),
+			at(-40, F + 1.5, 122),
 			rgb(25, 25, 28),
 			M.Rubber,
 			Enum.PartType.Cylinder
 		)
 	end,
 	Influencer = function(f, at, trim)
-		part(f, "Couch", Vector3.new(6, 2, 16), at(-38, 1.4, 40), rgb(255, 120, 190), M.Fabric)
-		part(f, "CouchBack", Vector3.new(1.5, 3, 16), at(-41.5, 3, 40), rgb(255, 100, 180), M.Fabric)
-		ringLight(f, at(36, 0.4, 20))
-		ringLight(f, at(36, 0.4, 56))
-		local sign = part(f, "NeonSign", Vector3.new(22, 5, 0.4), at(0, 12, 66.6), trim, M.Neon)
-		label(sign, Enum.NormalId.Back, "❤ LIKE & SUBSCRIBE ❤", rgb(255, 255, 255)) -- Back = toward the door
+		part(f, "Couch", Vector3.new(6, 2, 16), at(-40, F + 1, 45), rgb(255, 120, 190), M.Fabric)
+		part(f, "CouchBack", Vector3.new(1.5, 3, 16), at(-43.5, F + 2.6, 45), rgb(255, 100, 180), M.Fabric)
+		ringLight(f, at(-38, F, 20))
+		ringLight(f, at(40, F, 30))
+		ringLight(f, at(-38, F, 112))
+		local sign = part(f, "NeonSign", Vector3.new(0.4, 5, 24), at(-46.6, 9, 80), trim, M.Neon)
+		label(sign, Enum.NormalId.Right, "❤ LIKE & SUBSCRIBE ❤", rgb(255, 255, 255))
 		for i = 0, 5 do
 			local b = deco(
 				f,
 				"Balloon",
 				Vector3.new(2, 2.4, 2),
-				at(-36 + (i % 3) * 2.2, 10 + (i // 3) * 2, 14 + (i % 2)),
+				at(38 + (i % 3) * 2.2, 10 + (i // 3) * 2, 100 + (i % 2)),
 				if i % 2 == 0 then rgb(255, 120, 200) else rgb(140, 220, 255),
 				M.SmoothPlastic,
 				Enum.PartType.Ball
 			)
 			CollectionService:AddTag(b, "Bob")
 		end
-		part(f, "Tripod", Vector3.new(0.4, 5, 0.4), at(36, 2.9, 38), rgb(40, 40, 45), M.Metal)
-		part(f, "Camera", Vector3.new(1.6, 1.2, 2.2), at(36, 5.8, 38), rgb(30, 30, 35), M.Metal)
+		part(f, "Tripod", Vector3.new(0.4, 5, 0.4), at(38, F + 2.5, 116), rgb(40, 40, 45), M.Metal)
+		part(f, "Camera", Vector3.new(1.6, 1.2, 2.2), at(38, F + 5.4, 116), rgb(30, 30, 35), M.Metal)
 	end,
 	Pirate = function(f, at, _trim)
-		cyl(f, "Mast", 26, 1.4, at(-37, 13.4, 60), rgb(110, 75, 45), M.Wood)
-		part(
-			f,
-			"Yard",
-			Vector3.new(1, 1, 16),
-			at(-37, 22, 60) * CFrame.Angles(0, math.rad(90), 0),
-			rgb(110, 75, 45),
-			M.Wood
-		)
-		local sail = deco(
-			f,
-			"Sail",
-			Vector3.new(0.3, 10, 14),
-			at(-36.4, 16.5, 60) * CFrame.Angles(0, math.rad(90), 0),
-			rgb(240, 235, 220),
-			M.Fabric
-		)
+		cyl(f, "Mast", 26, 1.4, at(-38, 13.4, 100), rgb(110, 75, 45), M.Wood)
+		part(f, "Yard", Vector3.new(1, 1, 16), at(-38, 22, 100), rgb(110, 75, 45), M.Wood)
+		local sail =
+			deco(f, "Sail", Vector3.new(0.3, 10, 14), at(-37.4, 16.5, 100), rgb(240, 235, 220), M.Fabric)
 		label(sail, Enum.NormalId.Right, "☠", rgb(30, 30, 35))
 		label(sail, Enum.NormalId.Left, "☠", rgb(30, 30, 35))
-		deco(f, "Flag", Vector3.new(0.2, 2, 3.4), at(-37, 27.5, 61.7), rgb(20, 20, 25), M.Fabric)
-		chest(f, at(37, 0.4, 20))
-		chest(f, at(37, 0.4, 32))
-		for i = 0, 1 do
+		deco(f, "Flag", Vector3.new(0.2, 2, 3.4), at(-38, 27.5, 101.7), rgb(20, 20, 25), M.Fabric)
+		chest(f, at(40, F, 20))
+		chest(f, at(40, F, 40))
+		chest(f, at(-40, F, 50))
+		for _, spot in { { -40, 22 }, { 40, 112 } } do
+			local dir = if spot[1] < 0 then 1 else -1
 			part(
 				f,
 				"Cannon",
 				Vector3.new(5, 1.8, 1.8),
-				at(-36, 2.2, 18 + i * 10) * CFrame.Angles(0, math.rad(90), math.rad(12)),
+				at(spot[1], F + 1.9, spot[2]) * CFrame.Angles(0, 0, math.rad(dir * 12)),
 				rgb(35, 35, 40),
 				M.Metal,
 				Enum.PartType.Cylinder
 			)
-			part(f, "CannonCart", Vector3.new(2.4, 1.2, 3), at(-36, 1, 18 + i * 10), rgb(110, 70, 40), M.Wood)
+			part(
+				f,
+				"CannonCart",
+				Vector3.new(3, 1.2, 2.4),
+				at(spot[1], F + 0.6, spot[2]),
+				rgb(110, 70, 40),
+				M.Wood
+			)
 		end
 		for i = 0, 2 do
-			barrel(f, at(38, 0.4, 50 + i * 3), rgb(130, 85, 50))
+			barrel(f, at(-40, F, 116 + i * 3), rgb(130, 85, 50))
 		end
 	end,
 	Museum = function(f, at, _trim)
-		for _, lx in { -38, 38 } do
-			for i = 0, 2 do
-				column(f, at(lx, 0.4, 14 + i * 22), 16, rgb(235, 230, 215))
-			end
+		for _, spot in { { -42, 15 }, { 42, 15 }, { -42, 115 }, { 42, 115 }, { 42, 45 }, { 42, 85 } } do
+			column(f, at(spot[1], F, spot[2]), 16, rgb(235, 230, 215))
 		end
-		-- dino skeleton on the back strip
+		-- dino skeleton on the left, roped off
 		local bone = rgb(240, 232, 210)
-		part(f, "Spine", Vector3.new(20, 1.2, 1.2), at(0, 9, 62), bone, M.Marble)
+		part(f, "Spine", Vector3.new(1.2, 1.2, 20), at(-38, 9, 65), bone, M.Marble)
 		part(
 			f,
 			"Skull",
-			Vector3.new(4, 3, 2.4),
-			at(-11, 11, 62) * CFrame.Angles(0, 0, math.rad(-15)),
+			Vector3.new(2.4, 3, 4),
+			at(-38, 11, 53) * CFrame.Angles(math.rad(15), 0, 0),
 			bone,
 			M.Marble
 		)
 		part(
 			f,
 			"Tail",
-			Vector3.new(8, 0.8, 0.8),
-			at(13, 7.5, 62) * CFrame.Angles(0, 0, math.rad(-20)),
+			Vector3.new(0.8, 0.8, 8),
+			at(-38, 7.5, 78) * CFrame.Angles(math.rad(20), 0, 0),
 			bone,
 			M.Marble
 		)
 		for i = 0, 5 do
-			part(f, "Rib", Vector3.new(0.5, 4, 0.5), at(-6 + i * 2.4, 7, 62), bone, M.Marble)
+			part(f, "Rib", Vector3.new(0.5, 4, 0.5), at(-38, 7, 59 + i * 2.4), bone, M.Marble)
 		end
-		for _, lx in { -4, 6 } do
-			part(f, "Leg", Vector3.new(1, 8.6, 1), at(lx, 4.7, 62), bone, M.Marble)
+		for _, d in { 59, 70 } do
+			part(f, "Leg", Vector3.new(1, 8.6, 1), at(-38, 4.7, d), bone, M.Marble)
 		end
-		frame(f, at(-30, 9, 66.7) * CFrame.Angles(0, math.pi, 0), 8, 6, "🦙", rgb(60, 110, 70))
-		frame(f, at(30, 9, 66.7) * CFrame.Angles(0, math.pi, 0), 8, 6, "🌻", rgb(60, 70, 130))
 		for i = 0, 3 do
-			cyl(f, "Stanchion", 3, 0.5, at(-8 + i * 5.3, 1.9, 56), rgb(255, 200, 40), M.Foil)
+			cyl(f, "Stanchion", 3, 0.5, at(-31, F + 1.5, 56 + i * 6), rgb(255, 200, 40), M.Foil)
 		end
-		deco(f, "Rope", Vector3.new(16, 0.3, 0.3), at(0, 3, 56), rgb(180, 20, 40), M.Fabric)
+		deco(f, "Rope", Vector3.new(0.3, 0.3, 18), at(-31, 3, 65), rgb(180, 20, 40), M.Fabric)
+		frame(f, at(-46.6, 9, 30) * FACE_RIGHT, 8, 6, "🦙", rgb(60, 110, 70))
+		frame(f, at(-46.6, 9, 100) * FACE_RIGHT, 8, 6, "🌻", rgb(60, 70, 130))
+		frame(f, at(46.6, 9, 105) * FACE_LEFT, 8, 6, "🏛️", rgb(120, 60, 60))
 	end,
 	GoldTycoon = function(f, at, _trim)
-		coinPile(f, at(-37, 0.4, 16), 1.4)
-		coinPile(f, at(-37, 0.4, 56), 1.6)
-		coinPile(f, at(37, 0.4, 60), 1.2)
-		goldBars(f, at(37, 0.4, 18))
-		goldBars(f, at(37, 0.4, 38))
-		goldBars(f, at(-37, 0.4, 36))
-		statue(f, at(0, 0.4, 62), 1)
-		for i = 0, 1 do
+		coinPile(f, at(-40, F, 15), 1.4)
+		coinPile(f, at(40, F, 20), 1.3)
+		coinPile(f, at(-40, F, 115), 1.6)
+		coinPile(f, at(40, F, 118), 1.2)
+		goldBars(f, at(-40, F, 45))
+		goldBars(f, at(40, F, 40))
+		goldBars(f, at(-40, F, 85))
+		statue(f, at(40, F, 95), 1)
+		for _, d in { 62, 70 } do
 			local bag = part(
 				f,
 				"MoneyBag",
 				Vector3.new(3, 3, 3),
-				at(-30 + i * 60, 1.9, 64),
+				at(-42, F + 1.5, d),
 				rgb(90, 200, 90),
 				M.Fabric,
 				Enum.PartType.Ball
 			)
-			label(bag, Enum.NormalId.Back, "$", rgb(255, 255, 255))
+			label(bag, Enum.NormalId.Right, "$", rgb(255, 255, 255))
 		end
 	end,
 	Yacht = function(f, at, _trim)
-		part(f, "PoolRim", Vector3.new(10, 1, 30), at(-37, 0.9, 38), rgb(240, 240, 250), M.Marble)
+		part(f, "PoolRim", Vector3.new(10, 1, 30), at(-39, F + 0.5, 50), rgb(240, 240, 250), M.Marble)
 		local water =
-			part(f, "Water", Vector3.new(8.4, 1.1, 28.4), at(-37, 1, 38), rgb(40, 170, 255), M.Glass)
+			part(f, "Water", Vector3.new(8.4, 1.1, 28.4), at(-39, F + 0.55, 50), rgb(40, 170, 255), M.Glass)
 		water.Transparency = 0.25
 		water.CanCollide = false
 		light(water, rgb(80, 200, 255), 16, 1)
 		for i = 0, 2 do
-			part(f, "DeckChair", Vector3.new(3, 1, 6), at(37, 1.4, 16 + i * 9), rgb(255, 255, 255), M.Fabric)
+			part(
+				f,
+				"DeckChair",
+				Vector3.new(3, 1, 6),
+				at(40, F + 0.5, 20 + i * 9),
+				rgb(255, 255, 255),
+				M.Fabric
+			)
 			part(
 				f,
 				"ChairBack",
 				Vector3.new(3, 3, 1),
-				at(37, 2.4, 13.2 + i * 9) * CFrame.Angles(math.rad(-25), 0, 0),
+				at(40, F + 1.8, 17.2 + i * 9) * CFrame.Angles(math.rad(25), 0, 0),
 				rgb(30, 60, 140),
 				M.Fabric
 			)
 		end
-		part(f, "BoatHull", Vector3.new(6, 3, 14), at(37, 2, 54), rgb(250, 250, 255), M.SmoothPlastic)
-		part(f, "BoatStripe", Vector3.new(6.1, 0.6, 14.1), at(37, 2.4, 54), rgb(30, 60, 140), M.SmoothPlastic)
-		part(f, "BoatCabin", Vector3.new(4, 2, 5), at(37, 4.5, 55), rgb(150, 200, 230), M.Glass)
-		for i = 0, 1 do
+		part(f, "BoatHull", Vector3.new(6, 3, 14), at(-39, F + 1.5, 105), rgb(250, 250, 255), M.SmoothPlastic)
+		part(
+			f,
+			"BoatStripe",
+			Vector3.new(6.1, 0.6, 14.1),
+			at(-39, F + 1.9, 105),
+			rgb(30, 60, 140),
+			M.SmoothPlastic
+		)
+		part(f, "BoatCabin", Vector3.new(4, 2, 5), at(-39, F + 4, 106), rgb(150, 200, 230), M.Glass)
+		for _, spot in { { -46.6, 22 }, { 46.6, 112 } } do
 			part(
 				f,
 				"LifeRing",
 				Vector3.new(0.6, 3, 3),
-				at(-20 + i * 40, 7, 66.6) * CFrame.Angles(0, math.rad(90), 0),
+				at(spot[1], 7, spot[2]),
 				rgb(255, 80, 60),
 				M.SmoothPlastic,
 				Enum.PartType.Cylinder
@@ -520,43 +529,42 @@ local THEMES: { [string]: (folder: Instance, at: At, trim: Color3) -> () } = {
 	end,
 	TechBillionaire = function(f, at, trim)
 		for i = 0, 4 do
-			serverRack(f, at(-38, 0.4, 14 + i * 4) * CFrame.Angles(0, math.rad(-90), 0))
-			serverRack(f, at(-38, 0.4, 44 + i * 4) * CFrame.Angles(0, math.rad(-90), 0))
+			serverRack(f, at(-42, F, 14 + i * 4) * FACE_RIGHT)
+			serverRack(f, at(-42, F, 96 + i * 4) * FACE_RIGHT)
 		end
-		rocket(f, at(37, 0.4, 56))
-		local holo = part(f, "Hologram", Vector3.new(24, 7, 0.3), at(0, 11, 66.6), trim, M.Neon)
+		rocket(f, at(40, F, 105))
+		local holo = part(f, "Hologram", Vector3.new(0.3, 7, 24), at(-46.6, 11, 65), trim, M.Neon)
 		holo.Transparency = 0.35
-		label(holo, Enum.NormalId.Back, "🚀 TO MARS 🚀", rgb(255, 255, 255))
-		part(f, "Desk", Vector3.new(4, 3, 10), at(37, 1.9, 24), rgb(240, 240, 250), M.SmoothPlastic)
-		local screen = part(f, "Screen", Vector3.new(0.3, 3, 6), at(35.8, 5, 24), rgb(0, 200, 255), M.Neon)
+		label(holo, Enum.NormalId.Right, "🚀 TO MARS 🚀", rgb(255, 255, 255))
+		part(f, "Desk", Vector3.new(4, 3, 10), at(40, F + 1.5, 30), rgb(240, 240, 250), M.SmoothPlastic)
+		local screen = part(f, "Screen", Vector3.new(0.3, 3, 6), at(38.2, 5, 30), rgb(0, 200, 255), M.Neon)
 		CollectionService:AddTag(screen, "Blink")
 	end,
 	Billionaire = function(f, at, trim)
-		statue(f, at(0, 0.4, 62), 1.25)
-		coinPile(f, at(-37, 0.4, 16), 1.5)
-		coinPile(f, at(37, 0.4, 16), 1.5)
-		goldBars(f, at(-37, 0.4, 36))
-		goldBars(f, at(37, 0.4, 36))
-		car(f, at(-37, 0.4, 56), rgb(255, 200, 40))
-		-- chandelier
+		statue(f, at(-38, F, 65), 1.25)
+		coinPile(f, at(-40, F, 15), 1.5)
+		coinPile(f, at(40, F, 15), 1.5)
+		goldBars(f, at(-40, F, 40))
+		goldBars(f, at(40, F, 40))
+		car(f, at(-38, F, 105), rgb(255, 200, 40))
 		local chand =
-			deco(f, "Chandelier", Vector3.new(6, 2, 6), at(0, 15, 37), trim, M.Neon, Enum.PartType.Ball)
+			deco(f, "Chandelier", Vector3.new(6, 2, 6), at(0, 18, 65), trim, M.Neon, Enum.PartType.Ball)
 		light(chand, rgb(255, 220, 140), 30, 2)
 		local diamond = deco(
 			f,
 			"Diamond",
 			Vector3.new(3, 3, 3),
-			at(37, 6, 56) * CFrame.Angles(math.rad(45), 0, math.rad(45)),
+			at(40, 6, 108) * CFrame.Angles(math.rad(45), 0, math.rad(45)),
 			rgb(170, 240, 255),
 			M.Glass
 		)
 		diamond.Reflectance = 0.4
 		CollectionService:AddTag(diamond, "Spin")
-		part(f, "DiamondStand", Vector3.new(3, 3, 3), at(37, 1.9, 56), rgb(30, 25, 35), M.Marble)
+		part(f, "DiamondStand", Vector3.new(3, 3, 3), at(40, F + 1.5, 108), rgb(30, 25, 35), M.Marble)
 	end,
 }
 
-function WorldDecor.vault(model: Model, id: string, origin: CFrame, trim: Color3)
+function WorldDecor.zone(model: Model, id: string, origin: CFrame, trim: Color3)
 	local f = Instance.new("Model")
 	f.Name = "Decor"
 	f.Parent = model
@@ -567,37 +575,141 @@ function WorldDecor.vault(model: Model, id: string, origin: CFrame, trim: Color3
 	if theme then
 		theme(f, at, trim)
 	end
-	-- facade: awning over the door + two spotlights pointing at the sign
-	part(
-		f,
-		"Awning",
-		Vector3.new(38, 0.6, 5),
-		at(0, 12, -2.5) * CFrame.Angles(math.rad(-12), 0, 0),
-		trim,
-		M.Fabric
-	)
-	for _, lx in { -22, 22 } do
-		local spot = deco(
-			f,
-			"Spot",
-			Vector3.new(1.4, 1.4, 1.4),
-			at(lx, 1.2, -3),
-			rgb(255, 250, 230),
-			M.Neon,
-			Enum.PartType.Ball
-		)
-		local s = Instance.new("SpotLight")
-		s.Face = Enum.NormalId.Top
-		s.Angle = 50
-		s.Range = 28
-		s.Brightness = 3
-		s.Color = rgb(255, 240, 210)
-		s.Parent = spot
+end
+
+-- ===== the rich person =====
+-- A big blocky character on a plinth, in the zone's style, with their name over the head.
+-- `cf`: feet on the floor, Front (-Z) facing the path.
+local NPC_STYLE: { [string]: { suit: Color3, hat: string, face: string } } = {
+	Grandpa = { suit = rgb(130, 95, 70), hat = "cap", face = "👴" },
+	Influencer = { suit = rgb(255, 120, 190), hat = "none", face = "😎" },
+	Pirate = { suit = rgb(140, 30, 35), hat = "tricorn", face = "🏴‍☠️" },
+	Museum = { suit = rgb(70, 55, 40), hat = "top", face = "🧐" },
+	GoldTycoon = { suit = rgb(255, 200, 40), hat = "top", face = "🤑" },
+	Yacht = { suit = rgb(250, 250, 255), hat = "captain", face = "😏" },
+	TechBillionaire = { suit = rgb(40, 40, 50), hat = "none", face = "🤓" },
+	Billionaire = { suit = rgb(20, 20, 25), hat = "top", face = "🧐" },
+}
+
+function WorldDecor.richNPC(model: Model, def: any, cf: CFrame)
+	local style = NPC_STYLE[def.id] or { suit = rgb(40, 40, 50), hat = "top", face = "🤑" }
+	local f = Instance.new("Model")
+	f.Name = "RichPerson"
+	f.Parent = model
+	local S = 2.2
+	local skin = rgb(255, 205, 160)
+	local trim = rgb(def.trim[1], def.trim[2], def.trim[3])
+	part(f, "Plinth", Vector3.new(8, 1, 8), cf * CFrame.new(0, 0.5, 0), trim, M.Marble)
+	local y0 = 1
+	for _, x in { -0.5, 0.5 } do
+		part(f, "Leg", Vector3.new(1, 2, 1) * S, cf * CFrame.new(x * S, y0 + 1 * S, 0), rgb(30, 30, 40))
 	end
+	local torso = part(f, "Torso", Vector3.new(2, 2, 1) * S, cf * CFrame.new(0, y0 + 3 * S, 0), style.suit)
+	for _, x in { -1.5, 1.5 } do
+		part(f, "Arm", Vector3.new(1, 2, 1) * S, cf * CFrame.new(x * S, y0 + 3 * S, 0), style.suit)
+	end
+	part(f, "Tie", Vector3.new(0.35, 1.5, 0.1) * S, cf * CFrame.new(0, y0 + 3.2 * S, -0.52 * S), trim)
+	if def.id == "GoldTycoon" or def.id == "Billionaire" then
+		deco(
+			f,
+			"Chain",
+			Vector3.new(1.4, 0.2, 0.1) * S,
+			cf * CFrame.new(0, y0 + 3.6 * S, -0.56 * S),
+			rgb(255, 210, 60),
+			M.Neon
+		)
+	end
+	local head = part(f, "Head", Vector3.new(1.2, 1.2, 1.2) * S, cf * CFrame.new(0, y0 + 4.6 * S, 0), skin)
+	label(head, Enum.NormalId.Front, style.face, rgb(255, 255, 255), Enum.Font.GothamBold)
+	local top = y0 + 5.2 * S
+	if style.hat == "cap" then
+		part(
+			f,
+			"Cap",
+			Vector3.new(1.3, 0.4, 1.3) * S,
+			cf * CFrame.new(0, top + 0.2 * S, 0),
+			rgb(110, 90, 70),
+			M.Fabric
+		)
+		part(
+			f,
+			"Brim",
+			Vector3.new(1.3, 0.12, 0.6) * S,
+			cf * CFrame.new(0, top + 0.06 * S, -0.8 * S),
+			rgb(110, 90, 70),
+			M.Fabric
+		)
+	elseif style.hat == "top" then
+		part(
+			f,
+			"HatBrim",
+			Vector3.new(1.7, 0.15, 1.7) * S,
+			cf * CFrame.new(0, top + 0.08 * S, 0),
+			rgb(20, 20, 25)
+		)
+		part(
+			f,
+			"TopHat",
+			Vector3.new(1.1, 1.3, 1.1) * S,
+			cf * CFrame.new(0, top + 0.8 * S, 0),
+			rgb(20, 20, 25)
+		)
+		part(f, "HatBand", Vector3.new(1.15, 0.2, 1.15) * S, cf * CFrame.new(0, top + 0.3 * S, 0), trim)
+	elseif style.hat == "tricorn" then
+		part(
+			f,
+			"Tricorn",
+			Vector3.new(1.9, 0.5, 1.4) * S,
+			cf * CFrame.new(0, top + 0.25 * S, 0),
+			rgb(25, 25, 30)
+		)
+		part(
+			f,
+			"TricornTrim",
+			Vector3.new(1.95, 0.12, 1.45) * S,
+			cf * CFrame.new(0, top + 0.05 * S, 0),
+			rgb(255, 200, 40)
+		)
+	elseif style.hat == "captain" then
+		part(
+			f,
+			"CaptainHat",
+			Vector3.new(1.4, 0.5, 1.4) * S,
+			cf * CFrame.new(0, top + 0.25 * S, 0),
+			rgb(255, 255, 255)
+		)
+		part(
+			f,
+			"CaptainBrim",
+			Vector3.new(1.4, 0.12, 0.6) * S,
+			cf * CFrame.new(0, top + 0.05 * S, -0.8 * S),
+			rgb(20, 30, 80)
+		)
+	end
+	-- name over the head
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.fromOffset(280, 54)
+	bb.StudsOffset = Vector3.new(0, 4.5 * S, 0)
+	bb.MaxDistance = 160
+	bb.LightInfluence = 0
+	bb.Parent = torso
+	local l = Instance.new("TextLabel")
+	l.Size = UDim2.fromScale(1, 1)
+	l.BackgroundTransparency = 1
+	l.Font = Enum.Font.FredokaOne
+	l.TextScaled = true
+	l.Text = def.emoji .. " " .. string.upper(def.name)
+	l.TextColor3 = rgb(255, 230, 120)
+	local st = Instance.new("UIStroke")
+	st.Thickness = 3
+	st.Color = rgb(30, 20, 10)
+	st.Parent = l
+	l.Parent = bb
 end
 
 -- ===== bases =====
--- Corner towers with glowing caps, an entrance carpet and a glowing ring under each pedestal.
+-- Corner towers with glowing caps, a doormat and a glowing ring under each pedestal.
+-- `floorTop`: the top of the stage the pedestals stand on.
 function WorldDecor.base(
 	model: Model,
 	origin: CFrame,
@@ -616,7 +728,7 @@ function WorldDecor.base(
 				"Tower",
 				Vector3.new(4, H + 4, 4),
 				at(lx, (H + 4) / 2, depth),
-				rgb(250, 250, 255),
+				rgb(40, 42, 92),
 				M.SmoothPlastic
 			)
 			local cap =
@@ -624,14 +736,6 @@ function WorldDecor.base(
 			light(cap, color, 18, 1.2)
 		end
 	end
-	deco(
-		model,
-		"Carpet",
-		Vector3.new(World.EntranceWidth - 4, 0.12, 12),
-		at(0, floorTop + 0.06, 6),
-		color,
-		M.Fabric
-	)
 	deco(
 		model,
 		"Doormat",
@@ -657,110 +761,7 @@ function WorldDecor.base(
 	return rings
 end
 
--- ===== express lanes =====
--- Two moving walkways (one out to Rich Street, one back home) with chevrons the client animates.
-function WorldDecor.lanes(parent: Instance, fromX: number, toX: number)
-	local folder = Instance.new("Folder")
-	folder.Name = "Lanes"
-	folder.Parent = parent
-	local L = Economy.Lanes
-	local len = toX - fromX
-	for _, spec in
-		{ { z = -20, dir = 1, color = rgb(70, 200, 255) }, { z = 20, dir = -1, color = rgb(255, 190, 60) } }
-	do
-		local lane = part(
-			folder,
-			"Lane",
-			Vector3.new(len, 0.4, L.Width),
-			CFrame.new(fromX + len / 2, 0.36, spec.z),
-			rgb(40, 42, 52),
-			M.Rubber
-		)
-		lane.AssemblyLinearVelocity = Vector3.new(spec.dir * L.Speed, 0, 0)
-		lane:SetAttribute("Dir", spec.dir)
-		for _, side in { -1, 1 } do
-			part(
-				folder,
-				"LaneEdge",
-				Vector3.new(len, 0.5, 0.5),
-				CFrame.new(fromX + len / 2, 0.4, spec.z + side * (L.Width / 2 + 0.25)),
-				spec.color,
-				M.Neon
-			).CanCollide =
-				false
-		end
-		for x = fromX + 6, toX - 6, 10 do
-			local c = deco(
-				folder,
-				"Chevron",
-				Vector3.new(1.2, 0.1, 4),
-				CFrame.new(x, 0.6, spec.z) * CFrame.Angles(0, if spec.dir > 0 then 0 else math.pi, 0),
-				spec.color,
-				M.Neon
-			)
-			CollectionService:AddTag(c, "Chevron")
-		end
-		-- big arrow signs at both ends
-		for _, x in { fromX + 2, toX - 2 } do
-			-- high enough to run under (bottom at 8 studs)
-			local sign = part(
-				folder,
-				"LaneSign",
-				Vector3.new(0.6, 3, L.Width),
-				CFrame.new(x, 9.5, spec.z),
-				rgb(25, 25, 32),
-				M.SmoothPlastic
-			)
-			local text = if spec.dir > 0 then "💰 RICH STREET ▶" else "◀ HOME 🏠"
-			label(sign, Enum.NormalId.Left, text, spec.color)
-			label(sign, Enum.NormalId.Right, text, spec.color)
-			part(
-				folder,
-				"LaneSignPost",
-				Vector3.new(0.5, 11, 0.5),
-				CFrame.new(x, 5.5, spec.z + L.Width / 2 + 0.6),
-				rgb(40, 40, 45),
-				M.Metal
-			)
-		end
-	end
-	return folder
-end
-
--- ===== streets, plaza, city =====
-function WorldDecor.sidewalks(parent: Instance, fromX: number, toX: number)
-	local len = toX - fromX
-	for _, side in { -1, 1 } do
-		part(
-			parent,
-			"Sidewalk",
-			Vector3.new(len, 0.5, 6),
-			CFrame.new(fromX + len / 2, 0.25, side * (World.StreetHalfWidth + 3)),
-			rgb(200, 195, 185),
-			M.Concrete
-		)
-		part(
-			parent,
-			"Curb",
-			Vector3.new(len, 0.55, 0.6),
-			CFrame.new(fromX + len / 2, 0.28, side * (World.StreetHalfWidth + 0.3)),
-			rgb(240, 200, 60),
-			M.SmoothPlastic
-		)
-	end
-	-- crosswalk at the gate
-	for i = -4, 4 do
-		deco(
-			parent,
-			"Crosswalk",
-			Vector3.new(5, 0.05, 2.4),
-			CFrame.new(fromX + 12, 0.33, i * 5),
-			rgb(250, 250, 250),
-			M.SmoothPlastic
-		)
-	end
-end
-
+-- ===== plaza =====
 function WorldDecor.fountain(parent: Instance, pos: Vector3)
 	local f = Instance.new("Model")
 	f.Name = "Fountain"
@@ -795,135 +796,13 @@ function WorldDecor.fountain(parent: Instance, pos: Vector3)
 	light(water, rgb(80, 190, 255), 18, 1)
 end
 
-function WorldDecor.bench(parent: Instance, cf: CFrame)
-	part(parent, "BenchSeat", Vector3.new(6, 0.5, 2), cf * CFrame.new(0, 1.6, 0), rgb(150, 100, 60), M.Wood)
-	part(
-		parent,
-		"BenchBack",
-		Vector3.new(6, 1.6, 0.4),
-		cf * CFrame.new(0, 2.6, 0.9),
-		rgb(150, 100, 60),
-		M.Wood
-	)
-	for _, x in { -2.5, 2.5 } do
-		part(
-			parent,
-			"BenchLeg",
-			Vector3.new(0.4, 1.4, 1.8),
-			cf * CFrame.new(x, 0.7, 0),
-			rgb(40, 40, 45),
-			M.Metal
-		)
-	end
-end
-
-function WorldDecor.palm(parent: Instance, pos: Vector3, scale: number)
-	local trunk = rgb(150, 110, 70)
-	for i = 0, 4 do
-		local h = 3 * scale
-		part(
-			parent,
-			"PalmTrunk",
-			Vector3.new(1.4, h, 1.4) * Vector3.new(scale, 1, scale),
-			CFrame.new(pos + Vector3.new(i * 0.35 * scale, (i + 0.5) * h, 0)),
-			trunk,
-			M.Wood
-		)
-	end
-	local top = pos + Vector3.new(1.6 * scale, 15.5 * scale, 0)
-	for i = 0, 5 do
-		local a = math.rad(i * 60)
-		deco(
-			parent,
-			"PalmLeaf",
-			Vector3.new(1.2, 0.3, 7) * scale,
-			CFrame.new(top)
-				* CFrame.Angles(0, a, 0)
-				* CFrame.new(0, 0, -3 * scale)
-				* CFrame.Angles(math.rad(-20), 0, 0),
-			rgb(60, 170, 70),
-			M.Grass
-		)
-	end
-end
-
--- Tall glass towers behind the vaults: the rich part of town. `fromX`..`toX` along the street.
-function WorldDecor.skyline(parent: Instance, fromX: number, toX: number)
-	local folder = Instance.new("Folder")
-	folder.Name = "Skyline"
-	folder.Parent = parent
-	local rng = Random.new(2877)
-	local palette = {
-		rgb(70, 90, 130),
-		rgb(110, 125, 150),
-		rgb(60, 70, 90),
-		rgb(150, 160, 175),
-		rgb(90, 70, 110),
-	}
-	for _, side in { -1, 1 } do
-		local x = fromX
-		while x < toX do
-			local w = rng:NextNumber(26, 46)
-			local d = rng:NextNumber(26, 40)
-			local h = rng:NextNumber(40, 120)
-			local z = side * rng:NextNumber(128, 150)
-			local cx = x + w / 2
-			local color = palette[rng:NextInteger(1, #palette)]
-			part(folder, "Tower", Vector3.new(w, h, d), CFrame.new(cx, h / 2, z), color, M.Glass).Reflectance =
-				0.15
-			-- glowing window bands facing the street
-			local face = z - side * (d / 2 + 0.05)
-			for y = 8, h - 6, 10 do
-				deco(
-					folder,
-					"Windows",
-					Vector3.new(w - 4, 2.2, 0.2),
-					CFrame.new(cx, y, face),
-					rgb(255, 230, 150),
-					M.Neon
-				).Transparency =
-					rng:NextNumber(0.1, 0.5)
-			end
-			part(
-				folder,
-				"Roof",
-				Vector3.new(w + 1, 1.2, d + 1),
-				CFrame.new(cx, h + 0.6, z),
-				color:Lerp(rgb(0, 0, 0), 0.3),
-				M.Concrete
-			)
-			if rng:NextNumber() < 0.35 then
-				local ant = deco(
-					folder,
-					"Antenna",
-					Vector3.new(0.6, 10, 0.6),
-					CFrame.new(cx, h + 6, z),
-					rgb(200, 200, 210),
-					M.Metal
-				)
-				local tip = deco(
-					folder,
-					"AntennaTip",
-					Vector3.new(1, 1, 1),
-					ant.CFrame * CFrame.new(0, 5.4, 0),
-					rgb(255, 60, 60),
-					M.Neon,
-					Enum.PartType.Ball
-				)
-				CollectionService:AddTag(tip, "Blink")
-			end
-			x += w + rng:NextNumber(4, 12)
-		end
-	end
-end
-
 -- "SAFE ZONE" painted on the floor just inside a base entrance (reads walking in).
 function WorldDecor.safeZone(model: Model, origin: CFrame, floorTop: number)
 	local p = deco(
 		model,
 		"SafeZone",
 		Vector3.new(World.EntranceWidth - 2, 0.05, 5),
-		origin * CFrame.new(0, floorTop + 0.15, -3.5),
+		origin * CFrame.new(0, floorTop + 0.35, -3.5), -- just above the path tiles
 		rgb(255, 255, 255),
 		M.SmoothPlastic
 	)
@@ -1089,8 +968,9 @@ function WorldDecor.halloween(parent: Instance, bases: { any }, vaults: { any },
 	end
 	for _, v in vaults do
 		local o: CFrame = v.origin
-		for _, lx in { -21, 21 } do
-			pumpkin(f, o * CFrame.new(lx, 0.4, 6), 1.3)
+		for _, lx in { -30, 30 } do
+			-- just inside each zone's arch, beside the path
+			pumpkin(f, o * CFrame.new(lx, 0.4, -6), 1.3)
 		end
 	end
 	local rng = Random.new(31)

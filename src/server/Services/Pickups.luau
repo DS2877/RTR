@@ -94,13 +94,10 @@ function Pickups.start(worldInfo: any)
 	folder.Parent = workspace
 	local season = Cosmetic.seasonActive()
 	local i = 0
-	for x = World.StreetStartX + 24, worldInfo.streetEnd - 24, P.Spacing do
+	for x = World.StreetStartX + World.ZoneGap + 6, worldInfo.streetEnd - 6, P.Spacing do
 		i += 1
-		-- weave across the street; every third one sits on an express lane
-		local z = math.sin(i * 0.9) * 11
-		if i % 3 == 0 then
-			z = if i % 2 == 0 then 20 else -20
-		end
+		-- weave along the running path down the middle of the corridor
+		local z = math.sin(i * 0.9) * (World.PathHalfWidth - 2)
 		local big = season and rng:NextNumber() < Cosmetics.BigCandyChance
 		local p: Pickup =
 			{ part = makePart(folder, Vector3.new(x, 3, z), big), active = true, back = 0, big = big }

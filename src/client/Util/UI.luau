@@ -76,7 +76,7 @@ end
 
 -- Big chunky simulator-style text: heavy font with a thick dark outline.
 function UI.bigText(props: { [string]: any }, strokeColor: Color3?, thickness: number?): TextLabel
-	local base: { [string]: any } = { Font = Enum.Font.LuckiestGuy }
+	local base: { [string]: any } = { Font = Enum.Font.FredokaOne } -- the genre's rounded bold font
 	for k, v in props do
 		base[k] = v
 	end

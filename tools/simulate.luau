@@ -32,7 +32,7 @@ local function advance(dt: number)
 	cash += income() * dt
 end
 local function vaultX(i: number): number
-	return World.StreetStartX + 60 + (i - 1) * World.VaultSpacing
+	return World.StreetStartX + World.ZoneGap + (i - 0.5) * World.VaultSpacing
 end
 
 while t < 6 * 3600 do

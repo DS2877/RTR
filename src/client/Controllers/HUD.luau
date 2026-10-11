@@ -10,6 +10,7 @@ local Shared = ReplicatedStorage.Shared
 local Format = require(Shared.Format)
 local Remotes = require(Shared.Remotes)
 local Progression = require(Shared.Progression)
+local Economy = require(Shared.Config.Economy)
 
 local UI = require(script.Parent.Parent.Util.UI)
 local Sound = require(script.Parent.Parent.Util.Sound)
@@ -154,99 +155,211 @@ function HUD.start()
 	-- No UIScale on the ScreenGui itself (that scales from the top-left corner and drags centered
 	-- or right-anchored widgets off their spots). Each widget box scales around its own anchor.
 
-	-- ===== top-left: one cash card (cash + income), a speed pill, candy in season =====
-	local stats = UI.new("Frame", {
-		Position = UDim2.fromOffset(8, 8),
-		Size = UDim2.fromOffset(240, 140),
+	-- Layout follows the genre (Steal From The Rich): app-icon buttons on the left, a Slow Mode
+	-- switch, the stats as outlined text in the bottom-left corner, "You earn $X/Day offline!"
+	-- across the top, the base lock + next-event timer by the jump button. No dark panels.
+
+	-- ===== left: Store / Event / Index app icons + Slow Mode switch =====
+	local left = UI.new("Frame", {
+		Position = UDim2.fromOffset(8, 6),
+		Size = UDim2.fromOffset(190, 260),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	})
+	UI.scaleObject(left)
+	local function appIcon(
+		name: string,
+		emoji: string,
+		text: string,
+		top: Color3,
+		bottom: Color3,
+		pos: UDim2,
+		size: number
+	): TextButton
+		local b: TextButton = UI.new("TextButton", {
+			Name = name,
+			Position = pos,
+			Size = UDim2.fromOffset(size, size),
+			BackgroundColor3 = Color3.new(1, 1, 1),
+			Text = "",
+			AutoButtonColor = true,
+			Parent = left,
+		}, {
+			UI.corner(math.floor(size * 0.24)),
+			UI.stroke(Color3.fromRGB(255, 255, 255), 3),
+			UI.gradient(top, bottom),
+		})
+		UI.label({
+			Position = UDim2.fromOffset(size * 0.14, size * 0.06),
+			Size = UDim2.new(1, -size * 0.28, 0.62, 0),
+			Text = emoji,
+			Font = Enum.Font.GothamBold,
+			Parent = b,
+		})
+		UI.bigText({
+			Name = "Text",
+			Position = UDim2.new(0, 2, 1, -size * 0.32),
+			Size = UDim2.new(1, -4, 0, size * 0.28),
+			Text = text,
+			Parent = b,
+		}, Color3.fromRGB(20, 20, 30), 2)
+		b.Activated:Connect(function()
+			Sound.play("Click", 0.4)
+			UI.bump(b, 0.12)
+		end)
+		HUD.buttons[name] = b
+		return b
+	end
+	local function badge(button: GuiObject, text: string)
+		local d = UI.new("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(1, -4, 0, 4),
+			Size = UDim2.fromOffset(26, 26),
+			BackgroundColor3 = Color3.fromRGB(230, 40, 50),
+			ZIndex = 3,
+			Parent = button,
+		}, { UI.corner(13), UI.stroke(Color3.new(1, 1, 1), 2) })
+		UI.bigText(
+			{ Size = UDim2.fromScale(1, 1), Text = text, ZIndex = 4, Parent = d },
+			Color3.fromRGB(90, 0, 0),
+			1.5
+		)
+	end
+	local store = appIcon(
+		"Shop",
+		"🛍️",
+		"Store",
+		Color3.fromRGB(255, 120, 200),
+		Color3.fromRGB(120, 90, 255),
+		UDim2.fromOffset(0, 0),
+		84
+	)
+	badge(store, "!")
+	local event = appIcon(
+		"Event",
+		"🎃",
+		"Event",
+		Color3.fromRGB(255, 170, 40),
+		Color3.fromRGB(230, 90, 20),
+		UDim2.fromOffset(92, 16),
+		62
+	)
+	local function refreshEvent()
+		event.Visible = workspace:GetAttribute("Season") == "Halloween"
+	end
+	workspace:GetAttributeChangedSignal("Season"):Connect(refreshEvent)
+	refreshEvent()
+	appIcon(
+		"Index",
+		"📖",
+		"Index",
+		Color3.fromRGB(90, 190, 255),
+		Color3.fromRGB(40, 90, 220),
+		UDim2.fromOffset(0, 92),
+		84
+	)
+	-- Slow Mode switch
+	local switch = UI.new("TextButton", {
+		Position = UDim2.fromOffset(0, 188),
+		Size = UDim2.fromOffset(56, 32),
+		BackgroundColor3 = Color3.fromRGB(70, 70, 80),
+		Text = "",
+		Parent = left,
+	}, { UI.corner(10), UI.stroke(Color3.fromRGB(20, 20, 28), 2.5) })
+	local knob = UI.new("Frame", {
+		Position = UDim2.fromOffset(3, 3),
+		Size = UDim2.fromOffset(26, 26),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		Parent = switch,
+	}, { UI.corner(8) })
+	UI.bigText({
+		Position = UDim2.fromOffset(64, 2),
+		Size = UDim2.fromOffset(120, 28),
+		Text = "Slow Mode",
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Parent = left,
+	}, Color3.fromRGB(20, 20, 28), 2)
+	local function refreshSwitch()
+		local on = player:GetAttribute("SlowMode") == true
+		switch.BackgroundColor3 = if on then Color3.fromRGB(70, 210, 80) else Color3.fromRGB(70, 70, 80)
+		UI.tween(knob, 0.12, { Position = UDim2.fromOffset(if on then 27 else 3, 3) })
+	end
+	switch.Activated:Connect(function()
+		Sound.play("Click", 0.4)
+		Remotes.get(Remotes.Names.SetSlowMode):FireServer(not (player:GetAttribute("SlowMode") == true))
+	end)
+	player:GetAttributeChangedSignal("SlowMode"):Connect(refreshSwitch)
+	refreshSwitch()
+
+	-- ===== bottom-left: stats as outlined text (no panels) =====
+	local stats = UI.new("Frame", {
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 10, 1, -8),
+		Size = UDim2.fromOffset(260, 150),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	}, {
+		UI.new("UIListLayout", {
+			VerticalAlignment = Enum.VerticalAlignment.Bottom,
+			Padding = UDim.new(0, 0),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	})
 	UI.scaleObject(stats)
-	local cashCard = UI.new("Frame", {
-		Size = UDim2.fromOffset(200, 54),
-		BackgroundColor3 = DARK,
-		BackgroundTransparency = 0.2,
+	local function statRow(order: number, emoji: string, color: Color3, height: number): (Frame, TextLabel)
+		local row = UI.new("Frame", {
+			Size = UDim2.new(1, 0, 0, height),
+			BackgroundTransparency = 1,
+			LayoutOrder = order,
+			Parent = stats,
+		})
+		UI.label({
+			Size = UDim2.fromOffset(height, height),
+			Text = emoji,
+			Font = Enum.Font.GothamBold,
+			Parent = row,
+		})
+		local t = UI.bigText({
+			Position = UDim2.fromOffset(height + 4, 0),
+			Size = UDim2.new(1, -height - 4, 1, 0),
+			Text = "",
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextColor3 = color,
+			Parent = row,
+		}, Color3.fromRGB(15, 15, 20), 2.5)
+		return row, t
+	end
+	local boostRow = UI.new("Frame", {
+		Size = UDim2.new(1, 0, 0, 22),
+		BackgroundTransparency = 1,
+		LayoutOrder = 1,
 		Parent = stats,
-	}, { UI.corner(16), UI.stroke(Color3.fromRGB(120, 255, 120), 2.5) })
-	UI.label({
-		Position = UDim2.fromOffset(6, 9),
-		Size = UDim2.fromOffset(36, 36),
-		Text = "💵",
-		Font = Enum.Font.GothamBold,
-		Parent = cashCard,
 	})
-	local cashL = UI.bigText({
-		Position = UDim2.fromOffset(46, 4),
-		Size = UDim2.new(1, -54, 0, 30),
-		Text = "$0",
+	local boostL = UI.bigText({
+		Size = UDim2.new(1, 0, 1, 0),
+		Text = "Friend Boost: +0%",
 		TextXAlignment = Enum.TextXAlignment.Left,
-		TextColor3 = Color3.fromRGB(120, 255, 120),
-		Parent = cashCard,
-	})
-	local rateL = UI.label({
-		Position = UDim2.fromOffset(47, 33),
-		Size = UDim2.new(1, -56, 0, 17),
+		Parent = boostRow,
+	}, Color3.fromRGB(15, 15, 20), 2)
+	local _, speedL = statRow(2, "👟", Color3.fromRGB(255, 190, 60), 34)
+	local candyRow, candyL = statRow(3, "🍬", Color3.fromRGB(255, 170, 70), 34)
+	local cashRow, cashL = statRow(4, "💵", Color3.fromRGB(120, 255, 120), 38)
+	local rateL = UI.bigText({
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 46, 1, 16),
+		Size = UDim2.fromOffset(200, 16),
 		Text = "",
 		TextXAlignment = Enum.TextXAlignment.Left,
-		TextColor3 = Color3.fromRGB(255, 225, 110),
-		Font = Enum.Font.GothamBlack,
-		Parent = cashCard,
-	})
-	local speedCard = UI.new("Frame", {
-		Position = UDim2.fromOffset(0, 60),
-		Size = UDim2.fromOffset(140, 32),
-		BackgroundColor3 = DARK,
-		BackgroundTransparency = 0.2,
-		Parent = stats,
-	}, { UI.corner(16), UI.stroke(Color3.fromRGB(110, 210, 255), 2) })
-	local speedL = UI.bigText({
-		Position = UDim2.fromOffset(10, 4),
-		Size = UDim2.new(1, -20, 1, -8),
-		Text = "",
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextColor3 = Color3.fromRGB(110, 210, 255),
-		Parent = speedCard,
-	})
-	local candyCard = UI.new("Frame", {
-		Position = UDim2.fromOffset(146, 60),
-		Size = UDim2.fromOffset(94, 32),
-		BackgroundColor3 = DARK,
-		BackgroundTransparency = 0.2,
-		Visible = false,
-		Parent = stats,
-	}, { UI.corner(16), UI.stroke(Color3.fromRGB(255, 160, 60), 2) })
-	local candyL = UI.bigText({
-		Position = UDim2.fromOffset(8, 4),
-		Size = UDim2.new(1, -16, 1, -8),
-		Text = "",
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextColor3 = Color3.fromRGB(255, 170, 70),
-		Parent = candyCard,
-	})
+		TextColor3 = Color3.fromRGB(255, 230, 120),
+		Parent = cashRow,
+	}, Color3.fromRGB(15, 15, 20), 1.5)
 	local function refreshCandy()
-		candyCard.Visible = workspace:GetAttribute("Season") == "Halloween"
-		candyL.Text = "🍬 " .. Format.number(player:GetAttribute("Candy") or 0)
+		candyRow.Visible = workspace:GetAttribute("Season") == "Halloween"
+		candyL.Text = Format.number(player:GetAttribute("Candy") or 0)
 	end
 	player:GetAttributeChangedSignal("Candy"):Connect(refreshCandy)
 	workspace:GetAttributeChangedSignal("Season"):Connect(refreshCandy)
 	refreshCandy()
-	-- small music toggle next to the cash card
-	local musicB = UI.new("TextButton", {
-		Position = UDim2.fromOffset(206, 9),
-		Size = UDim2.fromOffset(36, 36),
-		BackgroundColor3 = Color3.fromRGB(150, 90, 230),
-		Text = "🎵",
-		TextScaled = true,
-		Font = Enum.Font.GothamBold,
-		Parent = stats,
-	}, { UI.corner(18), UI.stroke(Color3.fromRGB(60, 20, 110), 2) })
-	musicB.Activated:Connect(function()
-		Music.setEnabled(not Music.isEnabled())
-		musicB.Text = if Music.isEnabled() then "🎵" else "🔇"
-		musicB.BackgroundColor3 = if Music.isEnabled()
-			then Color3.fromRGB(150, 90, 230)
-			else Color3.fromRGB(110, 110, 120)
-	end)
 
 	-- the cash number counts up/down instead of jumping
 	local shownCash = player:GetAttribute("Cash") or 0
@@ -276,126 +389,191 @@ function HUD.start()
 			end
 		end)
 	end
-	HUD.cashPill = cashCard
+	HUD.cashPill = cashRow
+
+	-- ===== top center: "You earn $X/Day offline!" (announcements take its place for a moment) =====
+	local topHolder = UI.new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 2),
+		Size = UDim2.fromOffset(620, 40),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	})
+	UI.scaleObject(topHolder)
+	local offlineL = UI.bigText({
+		Size = UDim2.fromScale(1, 1),
+		Text = "",
+		RichText = true,
+		Parent = topHolder,
+	}, Color3.fromRGB(15, 15, 20), 3)
+	HUD.offlineLabel = offlineL
 
 	local function refresh()
 		cashTarget = player:GetAttribute("Cash") or 0
 		countCash()
+		local perSec = player:GetAttribute("CashPerSec") or 0
+		rateL.Text = "+" .. Format.cash(perSec) .. "/s"
 		local boost = player:GetAttribute("FriendBoost") or 0
-		rateL.Text = "+"
-			.. Format.cash(player:GetAttribute("CashPerSec") or 0)
-			.. "/s"
-			.. (if boost > 0 then string.format("   👥 +%d%%", math.floor(boost * 100 + 0.5)) else "")
-		local pts = player:GetAttribute("SpeedPoints") or 0
-		speedL.Text = "⚡ SPEED " .. math.floor(Progression.walkSpeed(pts))
+		boostL.Text = string.format("Friend Boost: +%d%%", math.floor(boost * 100 + 0.5))
+		speedL.Text = Format.number(player:GetAttribute("SpeedPoints") or 0)
+		local perDay = perSec * Economy.OfflineRate * math.min(86400, Economy.OfflineMaxHours * 3600)
+		offlineL.Text = if perDay > 0
+			then string.format(
+				'You earn <font color="#78FF6E">%s</font>/Day offline! 😈',
+				Format.cash(perDay)
+			)
+			else ""
 	end
 	for _, a in { "Cash", "CashPerSec", "SpeedPoints", "FriendBoost" } do
 		player:GetAttributeChangedSignal(a):Connect(refresh)
 	end
 	player:GetAttributeChangedSignal("Cash"):Connect(function()
-		UI.bump(cashCard, 0.05)
+		UI.bump(cashRow, 0.05)
 	end)
 	refresh()
 
-	-- ===== menu: 4 buttons in a 2x2 block under the stats =====
-	local menu = UI.new("Frame", {
-		Position = UDim2.fromOffset(8, 112),
-		Size = UDim2.fromOffset(136, 136),
+	-- ===== top right: trails + music =====
+	local right = UI.new("Frame", {
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -8, 0, 6),
+		Size = UDim2.fromOffset(132, 62),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, {
-		UI.new("UIGridLayout", {
-			CellSize = UDim2.fromOffset(64, 64),
-			CellPadding = UDim2.fromOffset(8, 8),
-			SortOrder = Enum.SortOrder.LayoutOrder,
+		UI.new("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			HorizontalAlignment = Enum.HorizontalAlignment.Right,
+			Padding = UDim.new(0, 8),
 		}),
 	})
-	UI.scaleObject(menu)
-	-- keep the menu right under the stats at any screen scale
-	local function placeMenu()
-		menu.Position = UDim2.fromOffset(8, 8 + 100 * UI.screenScale())
+	UI.scaleObject(right)
+	local function smallIcon(name: string, emoji: string, top: Color3, bottom: Color3): TextButton
+		local b: TextButton = UI.new("TextButton", {
+			Name = name,
+			Size = UDim2.fromOffset(60, 60),
+			BackgroundColor3 = Color3.new(1, 1, 1),
+			Text = "",
+			Parent = right,
+		}, { UI.corner(14), UI.stroke(Color3.new(1, 1, 1), 3), UI.gradient(top, bottom) })
+		UI.label({
+			Position = UDim2.fromOffset(9, 9),
+			Size = UDim2.new(1, -18, 1, -18),
+			Text = emoji,
+			Font = Enum.Font.GothamBold,
+			Name = "Emoji",
+			Parent = b,
+		})
+		b.Activated:Connect(function()
+			Sound.play("Click", 0.4)
+			UI.bump(b, 0.12)
+		end)
+		HUD.buttons[name] = b
+		return b
 	end
-	placeMenu()
-	local camera = workspace.CurrentCamera
-	if camera then
-		camera:GetPropertyChangedSignal("ViewportSize"):Connect(placeMenu)
-	end
-	HUD.button("Shop", "🛒", "SHOP", Color3.fromRGB(255, 80, 100), menu, 1)
-	HUD.button("Index", "📖", "INDEX", Color3.fromRGB(80, 170, 255), menu, 2)
-	local lockB = HUD.button("Lock", "🔒", "LOCK", Color3.fromRGB(255, 190, 50), menu, 3)
-	local slowB = HUD.button("Slow", "🐢", "SLOW", Color3.fromRGB(120, 220, 120), menu, 4)
+	smallIcon("Trails", "🌈", Color3.fromRGB(255, 150, 255), Color3.fromRGB(140, 80, 255))
+	local musicB = smallIcon("Music", "🎵", Color3.fromRGB(190, 140, 255), Color3.fromRGB(110, 60, 220))
+	musicB.Activated:Connect(function()
+		Music.setEnabled(not Music.isEnabled());
+		(musicB:FindFirstChild("Emoji") :: TextLabel).Text = if Music.isEnabled() then "🎵" else "🔇"
+	end)
 
+	-- ===== bottom right (left of the jump button): base lock + next event timer =====
+	local lockHolder = UI.new("Frame", {
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, -190, 1, -10),
+		Size = UDim2.fromOffset(260, 70),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	})
+	UI.scaleObject(lockHolder)
+	local lockB: TextButton = UI.new("TextButton", {
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 0),
+		Size = UDim2.fromOffset(56, 56),
+		BackgroundColor3 = Color3.fromRGB(60, 60, 70),
+		BackgroundTransparency = 0.25,
+		Text = "🔒",
+		TextScaled = true,
+		Font = Enum.Font.GothamBold,
+		Parent = lockHolder,
+	}, { UI.corner(28), UI.stroke(Color3.new(1, 1, 1), 3) })
+	HUD.buttons.Lock = lockB
+	local lockText = UI.bigText({
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(1, -28, 0, 54),
+		Size = UDim2.fromOffset(90, 18),
+		Text = "LOCK",
+		Parent = lockHolder,
+	}, Color3.fromRGB(15, 15, 20), 2)
+	local eventTimer = UI.bigText({
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -66, 0, 28),
+		Size = UDim2.fromOffset(190, 30),
+		Text = "",
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Parent = lockHolder,
+	}, Color3.fromRGB(15, 15, 20), 2.5)
 	lockB.Activated:Connect(function()
+		Sound.play("Click", 0.4)
+		UI.bump(lockB, 0.15)
 		Remotes.get(Remotes.Names.Lock):FireServer()
 	end)
-	slowB.Activated:Connect(function()
-		Remotes.get(Remotes.Names.SetSlowMode):FireServer(not (player:GetAttribute("SlowMode") == true))
-	end)
-	player:GetAttributeChangedSignal("SlowMode"):Connect(function()
-		local on = player:GetAttribute("SlowMode") == true;
-		(slowB:FindFirstChild("Text") :: TextLabel).Text = if on then "SLOW ON" else "SLOW"
-		slowB.BackgroundColor3 = if on then Color3.fromRGB(60, 200, 90) else Color3.fromRGB(120, 220, 120)
-	end)
-
-	-- lock status text
-	local lockText = lockB:FindFirstChild("Text") :: TextLabel
 	task.spawn(function()
 		while true do
 			task.wait(0.25)
+			local t = workspace:GetServerTimeNow()
+			local nextAt = workspace:GetAttribute("NextEventAt") or 0
+			local live = workspace:GetAttribute("EventName") ~= nil
+			eventTimer.Text = if live or nextAt <= t then "" else "🌙 in " .. Format.duration(nextAt - t)
 			local bases = workspace:FindFirstChild("Bases")
 			local base = bases and bases:FindFirstChild("Base_" .. tostring(player:GetAttribute("BaseId")))
 			if base then
-				local t = workspace:GetServerTimeNow()
 				local lockedUntil = base:GetAttribute("LockedUntil") or 0
 				local readyAt = base:GetAttribute("LockReadyAt") or 0
 				if player:GetAttribute("Richest") then
 					lockText.Text = "👑 NO"
-					lockB.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+					lockB.BackgroundColor3 = Color3.fromRGB(90, 90, 100)
 				elseif t < lockedUntil then
 					lockText.Text = math.ceil(lockedUntil - t) .. "s"
-					lockB.BackgroundColor3 = Color3.fromRGB(255, 90, 90)
+					lockB.BackgroundColor3 = Color3.fromRGB(230, 60, 70)
 				elseif t < readyAt then
 					lockText.Text = math.ceil(readyAt - t) .. "s"
-					lockB.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+					lockB.BackgroundColor3 = Color3.fromRGB(90, 90, 100)
 				else
 					lockText.Text = "LOCK"
-					lockB.BackgroundColor3 = Color3.fromRGB(255, 190, 50)
+					lockB.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
 				end
 			end
 		end
 	end)
 
-	-- 👑 richest bar (top center)
-	local crownBar = UI.new("Frame", {
+	-- ===== THE RICHEST: one gold line under the top text, only while someone wears the crown =====
+	local crownHolder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 6),
-		Size = UDim2.fromOffset(330, 32),
-		BackgroundColor3 = Color3.fromRGB(40, 30, 10),
-		Visible = false,
-		BackgroundTransparency = 0.15,
+		Position = UDim2.new(0.5, 0, 0, 30),
+		Size = UDim2.fromOffset(480, 26),
+		BackgroundTransparency = 1,
 		Parent = gui,
-	}, { UI.corner(18), UI.stroke(Color3.fromRGB(255, 205, 40), 3) })
-	UI.scaleObject(crownBar)
+	})
+	UI.scaleObject(crownHolder)
 	local crownText = UI.bigText({
-		Position = UDim2.fromOffset(10, 5),
-		Size = UDim2.new(1, -20, 1, -10),
+		Size = UDim2.fromScale(1, 1),
 		Text = "",
 		TextColor3 = Color3.fromRGB(255, 215, 60),
-		Parent = crownBar,
-	})
+		Parent = crownHolder,
+	}, Color3.fromRGB(40, 25, 0), 2.5)
 	local function refreshCrown()
 		local name = workspace:GetAttribute("RichestName")
-		-- only shown while someone wears the crown (needs 2+ players): no empty banner when solo
-		crownBar.Visible = name ~= nil
+		crownHolder.Visible = name ~= nil
 		if not name then
 			crownText.Text = ""
 		elseif workspace:GetAttribute("RichestUserId") == player.UserId then
-			crownText.Text = "👑 YOU ARE THE RICHEST! +50% cash"
+			crownText.Text = "👑 YOU ARE THE RICHEST! +50% cash — everyone wants your loot"
 		else
 			local g = workspace:GetAttribute("RichestGrowth") or 1
 			crownText.Text = "👑 "
 				.. tostring(name)
-				.. "  •  BOUNTY "
+				.. " is THE RICHEST  •  BOUNTY "
 				.. Format.cash(workspace:GetAttribute("RichestBounty") or 0)
 				.. (if g >= 1.1 then string.format(" (x%.1f)", g) else "")
 		end
@@ -425,8 +603,8 @@ function HUD.start()
 	-- the label gets its own "Bump" UIScale, so the screen scale sits on a holder frame
 	local announceHolder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 46),
-		Size = UDim2.fromOffset(700, 44),
+		Position = UDim2.new(0.5, 0, 0, 2),
+		Size = UDim2.fromOffset(700, 40),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	})
@@ -437,6 +615,9 @@ function HUD.start()
 		Visible = false,
 		Parent = announceHolder,
 	}, DARK, 3)
+	announceLabel:GetPropertyChangedSignal("Visible"):Connect(function()
+		HUD.offlineLabel.Visible = not announceLabel.Visible
+	end)
 
 	Remotes.get(Remotes.Names.Notice).OnClientEvent:Connect(function(text: string, kind: string)
 		HUD.toast(text, kind)
@@ -449,7 +630,7 @@ function HUD.start()
 	-- server event banner with a real countdown (ends at workspace.EventEnds, server time)
 	local eventHolder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 92),
+		Position = UDim2.new(0.5, 0, 0, 60),
 		Size = UDim2.fromOffset(300, 34),
 		BackgroundColor3 = Color3.fromRGB(30, 20, 50),
 		BackgroundTransparency = 0.1,
@@ -484,7 +665,7 @@ function HUD.start()
 			end
 		end
 	end)
-	toastHolder.Position = UDim2.new(0.5, 0, 0, 132)
+	toastHolder.Position = UDim2.new(0.5, 0, 0, 96)
 
 	-- coins fly from the collect pad (or the screen center) into the cash counter
 	Remotes.get(Remotes.Names.CashFX).OnClientEvent:Connect(function(amount: number, from: Vector3?)

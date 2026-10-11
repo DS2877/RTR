@@ -62,6 +62,8 @@ end
 function Events.startService()
 	Events.stop()
 	task.spawn(function()
+		-- the HUD counts down to NextEventAt (a real time, never a fake timer)
+		workspace:SetAttribute("NextEventAt", now() + E.FirstAfter)
 		task.wait(E.FirstAfter)
 		while true do
 			local pick = E.List[rng:NextInteger(1, #E.List)]
@@ -71,7 +73,9 @@ function Events.startService()
 				Events.stop()
 				Net.announce("The " .. pick.name .. " is over!", { 220, 220, 230 })
 			end
-			task.wait(rng:NextNumber(E.EverySeconds[1], E.EverySeconds[2]))
+			local gap = rng:NextNumber(E.EverySeconds[1], E.EverySeconds[2])
+			workspace:SetAttribute("NextEventAt", now() + gap)
+			task.wait(gap)
 		end
 	end)
 	-- an admin-started event still needs to end on time

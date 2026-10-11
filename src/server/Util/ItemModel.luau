@@ -128,7 +128,26 @@ end
 export type Options = {
 	label: boolean?, -- floating name + income label (default true)
 	extraText: string?, -- line under the income (e.g. owner name)
+	scale: number?, -- 1 = carried size; displays use ~1.5
 }
+
+-- Chance that a vault stand rolls exactly this item + mutation (shown as "1 in N").
+local function odds(rarity: string, mutation: string): number
+	local total = 0
+	for _, id in Rarity.Order do
+		total += Rarity.Tiers[id].weight
+	end
+	local p = Rarity.Tiers[rarity].weight / total
+	if mutation == "None" then
+		local mutated = 0
+		for _, m in Mutations.List do
+			mutated += m.chance
+		end
+		return p * (1 - mutated)
+	end
+	return p * Mutations.List[mutation].chance
+end
+ItemModel.odds = odds
 
 function ItemModel.build(id: string, mutation: string, options: Options?): Model
 	local info = Progression.item(id)
@@ -189,11 +208,33 @@ function ItemModel.build(id: string, mutation: string, options: Options?): Model
 	end
 
 	local opts = options or {}
+	local scale = opts.scale or 1
+	if scale ~= 1 then
+		model:ScaleTo(scale)
+	end
+	-- the rarest loot burns (genre look: flames + glow around Legendary/Mythic)
+	if info.rarity == "Legendary" or info.rarity == "Mythic" then
+		local fire = Instance.new("ParticleEmitter")
+		fire.Name = "Aura"
+		fire.Texture = "rbxasset://textures/particles/fire_main.dds"
+		fire.Color = ColorSequence.new(rgb(tier.color), Color3.new(1, 1, 1))
+		fire.LightEmission = 1
+		fire.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 2.2 * scale),
+			NumberSequenceKeypoint.new(1, 0),
+		})
+		fire.Transparency = NumberSequence.new(0.2, 1)
+		fire.Lifetime = NumberRange.new(0.5, 0.9)
+		fire.Speed = NumberRange.new(2, 4)
+		fire.Rate = if info.rarity == "Mythic" then 40 else 22
+		fire.SpreadAngle = Vector2.new(25, 25)
+		fire.Parent = core
+	end
 	if opts.label ~= false then
 		local bb = Instance.new("BillboardGui")
 		bb.Name = "Label"
-		bb.Size = UDim2.fromOffset(200, 86)
-		bb.StudsOffset = Vector3.new(0, 3.8, 0)
+		bb.Size = UDim2.fromOffset(210, 100)
+		bb.StudsOffset = Vector3.new(0, 2.6 * scale + 1, 0)
 		bb.AlwaysOnTop = false
 		bb.MaxDistance = 110
 		bb.LightInfluence = 0
@@ -221,12 +262,13 @@ function ItemModel.build(id: string, mutation: string, options: Options?): Model
 		if mut.id ~= "None" then
 			line(mut.label, 14, rgb(mut.color :: { number }), 0)
 		end
-		-- big green income first (like the genre's "+$570M"), then name and rarity
-		line("+" .. Format.cash(Progression.income(id, mut.id)) .. "/s", 26, Color3.fromRGB(110, 255, 120), 1)
+		-- genre layout: rarity, name, big green income, odds
+		line(info.rarity, 17, rgb(tier.color), 1)
 		line(info.emoji .. " " .. info.name, 19, Color3.new(1, 1, 1), 2)
-		line(info.rarity, 15, rgb(tier.color), 3)
+		line("+" .. Format.cash(Progression.income(id, mut.id)) .. "/s", 26, Color3.fromRGB(110, 255, 120), 3)
+		line(Format.oneIn(odds(info.rarity, mut.id)), 13, Color3.fromRGB(150, 255, 170), 4)
 		if opts.extraText then
-			line(opts.extraText, 13, Color3.fromRGB(255, 230, 150), 4)
+			line(opts.extraText, 13, Color3.fromRGB(255, 230, 150), 5)
 		end
 	end
 

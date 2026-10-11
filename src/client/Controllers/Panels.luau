@@ -683,6 +683,8 @@ function Panels.start()
 	Remotes.get(Remotes.Names.OpenTrails).OnClientEvent:Connect(function()
 		trails.setOpen(true)
 	end)
+	HUD.buttons.Trails.Activated:Connect(trails.toggle)
+	HUD.buttons.Event.Activated:Connect(trails.toggle) -- Halloween: candy trails live in the trails shop
 	Remotes.get(Remotes.Names.Offer).OnClientEvent:Connect(function(kind: string)
 		if kind == "cash" then
 			offer("cash", "Short on cash?")

@@ -21,6 +21,8 @@ local Events = require(script.Parent.Events)
 
 local Bases = {}
 
+local DISPLAY_SCALE = 1.5 -- loot on your podiums is shown bigger than when carried
+
 -- Set by Carry: (thief, owner, slot) when someone triggers "Steal" on a plot item.
 Bases.onSteal = nil :: ((thief: Player, owner: Player, slot: string) -> ())?
 -- Set by init: called whenever a player's plot changes (net worth may change).
@@ -172,7 +174,7 @@ end
 -- Above a (round) podium, facing the base entrance.
 local function itemCFrame(base: any, ped: BasePart): CFrame
 	local facing = (base.origin :: CFrame).Rotation * CFrame.Angles(0, math.pi, 0)
-	return CFrame.new(ped.Position + Vector3.new(0, 0.6 + 2.6, 0)) * facing
+	return CFrame.new(ped.Position + Vector3.new(0, 0.6 + 3.1, 0)) * facing
 end
 
 local function renderSlot(player: Player, slot: string)
@@ -195,7 +197,7 @@ local function renderSlot(player: Player, slot: string)
 	if not item or not ped or (hidden[player] and hidden[player][slot]) then
 		return
 	end
-	local model = ItemModel.build(item.Id, item.Mut)
+	local model = ItemModel.build(item.Id, item.Mut, { scale = DISPLAY_SCALE })
 	ItemModel.place(model, itemCFrame(s.base, ped))
 	model:SetAttribute("Slot", slot)
 	local core = model.PrimaryPart :: BasePart

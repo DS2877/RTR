@@ -30,7 +30,12 @@ local slots: { Slot } = {}
 local rng = Random.new()
 
 local function lootCFrame(ped: BasePart): CFrame
-	return ped.CFrame * CFrame.new(0, 1 + 2.4, 0) * CFrame.Angles(0, math.pi, 0)
+	-- above the stand, facing the path (stands sit at +-lx: turn toward the middle)
+	local toPath = Vector3.new(0, 0, -ped.Position.Z).Unit
+	return CFrame.lookAt(
+		ped.Position + Vector3.new(0, 1 + 3.1, 0),
+		ped.Position + Vector3.new(0, 4.1, 0) + toPath
+	)
 end
 
 local spawnLoot: (slot: Slot, id: string, mut: string) -> ()
@@ -68,7 +73,7 @@ function spawnLoot(slot: Slot, id: string, mut: string)
 	end
 	slot.id = id
 	slot.mut = mut
-	local model = ItemModel.build(id, mut, { extraText = "🔒 " .. Vaults[slot.vault].name })
+	local model = ItemModel.build(id, mut, { extraText = "🔒 " .. Vaults[slot.vault].name, scale = 1.5 })
 	ItemModel.place(model, lootCFrame(slot.pedestal))
 	local core = model.PrimaryPart :: BasePart
 	local pp = Instance.new("ProximityPrompt")

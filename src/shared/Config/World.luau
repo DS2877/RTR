@@ -1,5 +1,6 @@
 --!strict
 -- World layout. X runs from the home plaza (x ~ 0) out along Rich Street (+X).
+-- Look: bright, saturated, studded LEGO-style surfaces (like the genre).
 
 local World = {
 	BaseCount = 8, -- also the server size
@@ -12,7 +13,9 @@ local World = {
 	PedestalColumns = 10,
 	PedestalRows = 3,
 	PedestalSpacingX = 9,
-	PedestalRowDepth = { 18, 30, 42 }, -- distance into the base for each pedestal row
+	PedestalRowDepth = { 47, 56, 65 }, -- pedestal rows on the raised stage at the back of the base
+	StageDepth = 40, -- the stage starts this far into the base and runs to the back wall
+	StageHeight = 1.6,
 
 	BaseColors = {
 		{ 255, 90, 90 },
@@ -26,12 +29,14 @@ local World = {
 	},
 
 	PlazaHalfWidth = 230,
+	-- Rich Street: one long corridor; the rich people's zones follow each other and you run
+	-- straight through them (farther = richer). Zone i starts at StreetStartX + ZoneGap + (i-1)*VaultSpacing.
 	StreetStartX = 240,
-	StreetHalfWidth = 24,
-	VaultSpacing = 130,
-	VaultWidth = 92, -- along the street
-	VaultDepth = 70,
-	VaultOffsetZ = 30, -- vault front edge distance from the street center line
+	ZoneGap = 20, -- entry hall between the gate and the first zone
+	VaultSpacing = 130, -- zone length along the corridor
+	ZoneHalfWidth = 48, -- corridor half width (walls at +-this)
+	PathHalfWidth = 7, -- the running path down the middle of every zone
+	ZoneWallHeight = 14,
 	VaultPedestals = 6,
 }
 

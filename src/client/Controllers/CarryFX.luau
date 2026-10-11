@@ -81,9 +81,10 @@ function CarryFX.start()
 		Parent = holder,
 	})
 
+	-- Drop + Slap sit on the right edge, above the jump button
 	local dropHolder = UI.new("Frame", {
-		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -200, 1, -30),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -16, 0.5, 50),
 		Size = UDim2.fromOffset(110, 70),
 		BackgroundTransparency = 1,
 		Parent = layer,
@@ -107,8 +108,8 @@ function CarryFX.start()
 	end)
 
 	local slapHolder = UI.new("Frame", {
-		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -200, 1, -120),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -16, 0.5, -45),
 		Size = UDim2.fromOffset(130, 90),
 		BackgroundTransparency = 1,
 		Parent = layer,

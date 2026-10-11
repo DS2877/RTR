@@ -90,8 +90,12 @@ local function zoneBanner()
 			if r and vaultsFolder then
 				for _, v in vaultsFolder:GetChildren() do
 					local floor = v:FindFirstChild("Floor") :: BasePart?
-					if floor and (floor.Position - r.Position).Magnitude < 60 then
-						found = v:GetAttribute("VaultIndex")
+					if floor then
+						-- inside this zone's floor (zones are long boxes along the corridor)
+						local l = floor.CFrame:PointToObjectSpace(r.Position)
+						if math.abs(l.X) <= floor.Size.X / 2 and math.abs(l.Z) <= floor.Size.Z / 2 then
+							found = v:GetAttribute("VaultIndex")
+						end
 					end
 				end
 			end
@@ -249,13 +253,12 @@ local function guide()
 	-- one compact objective pill (bottom center) + the golden beam to the target
 	local pill = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -10),
+		Position = UDim2.new(0.5, 0, 1, -16),
 		Size = UDim2.fromOffset(520, 40),
-		BackgroundColor3 = Color3.fromRGB(20, 20, 30),
-		BackgroundTransparency = 0.3,
+		BackgroundTransparency = 1, -- outlined text only, like the rest of the HUD
 		Visible = false,
 		Parent = gui,
-	}, { UI.corner(20), UI.stroke(Color3.fromRGB(255, 215, 60), 2) })
+	})
 	UI.scaleObject(pill)
 	local hint = UI.bigText({
 		Position = UDim2.fromOffset(14, 6),
