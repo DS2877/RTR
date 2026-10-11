@@ -382,6 +382,25 @@ for i, vault in world.vaults do
 	end
 	check(id .. " stands on both sides of the path", sides[1] == 3 and sides[-1] == 3)
 end
+-- the island: beach + sea + mountains around the map (no edge of the world in sight)
+local surroundings = root:FindFirstChild("Surroundings")
+check("island surroundings built", surroundings ~= nil and surroundings:FindFirstChild("Beach") ~= nil)
+local mountains = 0
+if surroundings then
+	for _, m in surroundings:GetChildren() do
+		if m.Name == "Mountain" then
+			mountains += 1
+		end
+	end
+end
+check("mountain ring around the island", mountains >= 20, mountains)
+local okSea, sea = pcall(function()
+	local p = Vector3.new(0, -4, 520) -- out at sea, past the beach
+	local region = Region3.new(p - Vector3.new(2, 2, 2), p + Vector3.new(2, 2, 2)):ExpandToGrid(4)
+	local materials = workspace.Terrain:ReadVoxels(region, 4)
+	return materials[1][1][1]
+end)
+check("ocean around the island", okSea and sea == Enum.Material.Water, sea)
 check("trails shop with a prompt", world.trailsPrompt ~= nil and world.trailsPrompt:IsA("ProximityPrompt"))
 for _, base in world.bases do
 	check("base " .. base.id .. " SAFE ZONE on the floor", base.model:FindFirstChild("SafeZone") ~= nil)

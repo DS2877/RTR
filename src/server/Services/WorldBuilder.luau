@@ -18,6 +18,7 @@ local WorldBuilder = {}
 
 local FLOOR = 0.4 -- top of base/zone floors
 local BARRIER_HEIGHT = 50 -- invisible wall above the low base walls (no jumping in)
+local GROUND_DEPTH = 420 -- the island's grass, across (z)
 
 -- palette (the genre's palace look: navy + gold + lime grass + one accent per base)
 local NAVY = Color3.fromRGB(40, 42, 92)
@@ -169,8 +170,8 @@ local function setupLighting()
 	sky.StarCount = 0
 	sky.Parent = Lighting
 	local atm = Instance.new("Atmosphere")
-	atm.Density = 0.3
-	atm.Offset = 0.25
+	atm.Density = 0.34 -- enough distance haze that the mountain ring fades softly into the sky
+	atm.Offset = 0.3
 	atm.Haze = 0
 	atm.Glare = 0
 	atm.Color = Color3.fromRGB(205, 220, 240)
@@ -628,15 +629,22 @@ function WorldBuilder.build(): WorldInfo
 	local minX = -World.PlazaHalfWidth - 60
 	local groundW = streetEnd - minX + 140
 	local groundCenterX = (streetEnd + minX) / 2
-	studs(block(root, "Ground", Vector3.new(groundW, 4, 420), CFrame.new(groundCenterX, -2, 0), LIME))
+	studs(
+		block(root, "Ground", Vector3.new(groundW, 4, GROUND_DEPTH), CFrame.new(groundCenterX, -2, 0), LIME)
+	)
 
-	-- invisible map bounds
+	-- the island: beach, ocean and a ring of mountains instead of the world just ending
+	local BEACH = 18
+	WorldDecor.surroundings(root, groundCenterX, groundW, GROUND_DEPTH, BEACH)
+
+	-- invisible map bounds at the waterline (you can walk on the beach, not into the sea)
+	local bw, bd = groundW + BEACH * 2 - 6, GROUND_DEPTH + BEACH * 2 - 6
 	for _, b in
 		{
-			{ Vector3.new(groundW, 80, 2), Vector3.new(groundCenterX, 40, 210) },
-			{ Vector3.new(groundW, 80, 2), Vector3.new(groundCenterX, 40, -210) },
-			{ Vector3.new(2, 80, 420), Vector3.new(groundCenterX - groundW / 2, 40, 0) },
-			{ Vector3.new(2, 80, 420), Vector3.new(groundCenterX + groundW / 2, 40, 0) },
+			{ Vector3.new(bw, 80, 2), Vector3.new(groundCenterX, 40, bd / 2) },
+			{ Vector3.new(bw, 80, 2), Vector3.new(groundCenterX, 40, -bd / 2) },
+			{ Vector3.new(2, 80, bd), Vector3.new(groundCenterX - bw / 2, 40, 0) },
+			{ Vector3.new(2, 80, bd), Vector3.new(groundCenterX + bw / 2, 40, 0) },
 		}
 	do
 		local w = block(root, "Bound", b[1], CFrame.new(b[2]), Color3.new())

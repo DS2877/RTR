@@ -796,6 +796,111 @@ function WorldDecor.fountain(parent: Instance, pos: Vector3)
 	light(water, rgb(80, 190, 255), 18, 1)
 end
 
+-- ===== the island around the map =====
+-- A sand beach around the grass, a terrain ocean with waves, and a ring of green mountains out in
+-- the water so the horizon never just ends. `cx`/`w`/`d`: the grass rectangle (center x, size).
+function WorldDecor.surroundings(parent: Instance, cx: number, w: number, d: number, beach: number)
+	local f = Instance.new("Folder")
+	f.Name = "Surroundings"
+	f.Parent = parent
+
+	-- beach: peeks out between the grass (top 0) and the water surface (-1)
+	local sand = part(
+		f,
+		"Beach",
+		Vector3.new(w + beach * 2, 3, d + beach * 2),
+		CFrame.new(cx, -1.9, 0),
+		rgb(240, 222, 165),
+		M.Sand
+	)
+	sand.TopSurface = Enum.SurfaceType.Smooth
+
+	-- ocean (terrain water: waves, reflections, cheap for its size)
+	local terrain = workspace.Terrain
+	terrain.WaterColor = rgb(40, 165, 215)
+	terrain.WaterTransparency = 0.35
+	terrain.WaterReflectance = 0.6
+	terrain.WaterWaveSize = 0.12
+	terrain.WaterWaveSpeed = 8
+	local SEA = 700 -- water reaches past the mountain ring
+	pcall(function()
+		terrain:FillBlock(
+			CFrame.new(cx, -5, 0),
+			Vector3.new(w + SEA * 2, 8, d + SEA * 2),
+			Enum.Material.Water
+		)
+	end)
+
+	-- mountain ring out in the sea (big soft hills, partly under water)
+	local rng = Random.new(2877)
+	local rx, rz = w / 2 + 330, d / 2 + 330 -- ring "radius" around the island
+	local perimeter = 2 * math.pi * math.sqrt((rx * rx + rz * rz) / 2)
+	local count = math.floor(perimeter / 170)
+	for i = 1, count do
+		local a = (i / count) * math.pi * 2 + rng:NextNumber(-0.04, 0.04)
+		local wobble = rng:NextNumber(-60, 60)
+		local pos = Vector3.new(cx + math.cos(a) * (rx + wobble), 0, math.sin(a) * (rz + wobble))
+		local width = rng:NextNumber(240, 380)
+		local height = rng:NextNumber(110, 230)
+		local hill = deco(
+			f,
+			"Mountain",
+			Vector3.new(width, height, width * rng:NextNumber(0.8, 1.2)),
+			CFrame.new(pos + Vector3.new(0, -height * 0.18, 0))
+				* CFrame.Angles(0, rng:NextNumber(0, math.pi), 0),
+			rgb(80 + rng:NextInteger(-10, 10), 170 + rng:NextInteger(-15, 15), 70),
+			M.Grass,
+			Enum.PartType.Ball
+		)
+		hill.CastShadow = false
+		-- a rocky top on the tallest ones
+		if height > 190 then
+			deco(
+				f,
+				"Peak",
+				Vector3.new(width * 0.35, height * 0.3, width * 0.35),
+				CFrame.new(pos + Vector3.new(0, height * 0.28, 0)),
+				rgb(150, 150, 160),
+				M.Rock,
+				Enum.PartType.Ball
+			).CastShadow =
+				false
+		end
+	end
+	-- a few palm islets closer in, for life on the water
+	for i = 1, 10 do
+		local a = (i / 10) * math.pi * 2 + 0.3
+		local pos = Vector3.new(cx + math.cos(a) * (w / 2 + 120), 0, math.sin(a) * (d / 2 + 110))
+		deco(
+			f,
+			"Islet",
+			Vector3.new(40, 10, 34),
+			CFrame.new(pos + Vector3.new(0, -3.5, 0)),
+			rgb(240, 222, 165),
+			M.Sand,
+			Enum.PartType.Ball
+		)
+		deco(
+			f,
+			"IsletTrunk",
+			Vector3.new(1.4, 12, 1.4),
+			CFrame.new(pos + Vector3.new(0, 7, 0)) * CFrame.Angles(0, 0, 0.15),
+			rgb(150, 110, 70),
+			M.Wood
+		)
+		deco(
+			f,
+			"IsletLeaves",
+			Vector3.new(12, 3, 12),
+			CFrame.new(pos + Vector3.new(1, 13.5, 0)),
+			rgb(60, 170, 70),
+			M.Grass,
+			Enum.PartType.Ball
+		)
+	end
+	return f
+end
+
 -- "SAFE ZONE" painted on the floor just inside a base entrance (reads walking in).
 function WorldDecor.safeZone(model: Model, origin: CFrame, floorTop: number)
 	local p = deco(
