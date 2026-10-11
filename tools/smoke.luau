@@ -835,7 +835,7 @@ if sim and A and B then
 		assert(not Bases.isHidden(B, slot) and b.data.Slots[slot] ~= nil, "Bob lost his item")
 		local free = false
 		for _, base in world.bases do
-			if Bases.ownerOf(base) == nil and base.signLabel.Text == "EMPTY BASE" then
+			if Bases.ownerOf(base) == nil and base.signLabel.Text == "FREE BASE" then
 				free = true
 			end
 		end
