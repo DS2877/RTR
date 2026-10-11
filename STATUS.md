@@ -76,6 +76,15 @@
 - Ny shop: sektionerna PASSES (för alltid) och BOOSTS (engångs), större kort och 🎁-knapp på passen.
 - Ops-workflowet skapar nu även gåvoprodukterna.
 
+### Ljusfix (skärmdump 11 okt: överexponerat)
+- Ljuset ligger nu nära Robloxs standard:
+  - ljusstyrka 2 i stället för 3 och lite negativ exponering
+  - normal omgivningsfärg och inget dis
+  - bloom bara på den starkaste neonen (tröskel 2)
+  - mindre färgförstärkning
+- Torget och entréhallen är ljusgrå i stället för vita (vita studs bländade i solen).
+- "Slow Mode"-texten sitter nu bredvid strömbrytaren (den hamnade uppe vid Store).
+
 ### Omdesign efter genre-videon (Steal From The Rich), 609 kontroller i Roblox
 - **Rich Street är en korridor med zoner i rad.** Man springer rakt igenom zon efter zon (längre bort = rikare):
   - stor port med namnet (syns åt båda hållen) och egen färg och golv

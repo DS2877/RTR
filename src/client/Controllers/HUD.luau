@@ -272,7 +272,7 @@ function HUD.start()
 		Parent = switch,
 	}, { UI.corner(8) })
 	UI.bigText({
-		Position = UDim2.fromOffset(64, 2),
+		Position = UDim2.fromOffset(64, 190), -- next to the switch (was stuck at the top)
 		Size = UDim2.fromOffset(120, 28),
 		Text = "Slow Mode",
 		TextXAlignment = Enum.TextXAlignment.Left,

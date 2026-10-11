@@ -151,38 +151,40 @@ local function prompt(parent: BasePart, action: string, object: string, hold: nu
 end
 
 local function setupLighting()
-	-- bright, saturated daylight like the genre (Future lighting; Roblox scales it down on
-	-- low-end phones). Light haze only, so colors stay punchy.
+	-- Clear daylight close to Roblox's own defaults (playtest: the old setup blew out white
+	-- surfaces and made every neon bleed). Colors come from the parts, not from the post effects:
+	-- normal brightness, slightly negative exposure, bloom only on the brightest neon.
 	Lighting.ClockTime = 14
 	Lighting.GeographicLatitude = 30
-	Lighting.Brightness = 3
-	Lighting.Ambient = Color3.fromRGB(120, 120, 140)
-	Lighting.OutdoorAmbient = Color3.fromRGB(165, 165, 185)
-	Lighting.EnvironmentDiffuseScale = 0.8
-	Lighting.EnvironmentSpecularScale = 0.6
+	Lighting.Brightness = 2
+	Lighting.ExposureCompensation = -0.25
+	Lighting.Ambient = Color3.fromRGB(70, 70, 80)
+	Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 135)
+	Lighting.EnvironmentDiffuseScale = 1
+	Lighting.EnvironmentSpecularScale = 1
 	Lighting.GlobalShadows = true
 	Lighting.ShadowSoftness = 0.2
 	local sky = Instance.new("Sky")
-	sky.SunAngularSize = 12
+	sky.SunAngularSize = 11
 	sky.StarCount = 0
 	sky.Parent = Lighting
 	local atm = Instance.new("Atmosphere")
-	atm.Density = 0.22
-	atm.Offset = 0.1
-	atm.Haze = 0.2
+	atm.Density = 0.3
+	atm.Offset = 0.25
+	atm.Haze = 0
 	atm.Glare = 0
-	atm.Color = Color3.fromRGB(200, 225, 255)
-	atm.Decay = Color3.fromRGB(120, 150, 220)
+	atm.Color = Color3.fromRGB(205, 220, 240)
+	atm.Decay = Color3.fromRGB(106, 112, 125)
 	atm.Parent = Lighting
 	local bloom = Instance.new("BloomEffect")
-	bloom.Intensity = 0.8
-	bloom.Size = 28
-	bloom.Threshold = 1.15
+	bloom.Intensity = 0.35
+	bloom.Size = 24
+	bloom.Threshold = 2 -- only bright neon glows; white floors and gold trim stay crisp
 	bloom.Parent = Lighting
 	local cc = Instance.new("ColorCorrectionEffect")
-	cc.Saturation = 0.32
-	cc.Contrast = 0.1
-	cc.Brightness = 0.03
+	cc.Saturation = 0.15
+	cc.Contrast = 0.08
+	cc.Brightness = 0
 	cc.Parent = Lighting
 end
 
@@ -642,15 +644,13 @@ function WorldBuilder.build(): WorldInfo
 	end
 
 	-- plaza between the two rows of bases
-	studs(
-		block(
-			root,
-			"Plaza",
-			Vector3.new(World.PlazaHalfWidth * 2, 0.3, World.BaseRowZ * 2 - 4),
-			CFrame.new(0, 0.15, 0),
-			Color3.fromRGB(225, 225, 235)
-		)
-	)
+	studs(block(
+		root,
+		"Plaza",
+		Vector3.new(World.PlazaHalfWidth * 2, 0.3, World.BaseRowZ * 2 - 4),
+		CFrame.new(0, 0.15, 0),
+		Color3.fromRGB(178, 184, 200) -- light grey, not white: white studs glare in sunlight
+	))
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Anchored = true
 	spawn.Size = Vector3.new(10, 0.4, 10)
@@ -683,7 +683,7 @@ function WorldBuilder.build(): WorldInfo
 			"EntryHall",
 			Vector3.new(World.ZoneGap, 0.4, HW * 2),
 			CFrame.new(gx + World.ZoneGap / 2, 0.2, 0),
-			Color3.fromRGB(235, 235, 245)
+			Color3.fromRGB(178, 184, 200)
 		)
 	)
 	for _, side in { -1, 1 } do
