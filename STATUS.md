@@ -76,6 +76,28 @@
 - Ny shop: sektionerna PASSES (för alltid) och BOOSTS (engångs), större kort och 🎁-knapp på passen.
 - Ops-workflowet skapar nu även gåvoprodukterna.
 
+### Omdesign efter genre-videon (Steal From The Rich), 609 kontroller i Roblox
+- **Rich Street är en korridor med zoner i rad.** Man springer rakt igenom zon efter zon (längre bort = rikare):
+  - stor port med namnet (syns åt båda hållen) och egen färg och golv
+  - den rika personen själv som stor figur (Grandpa med keps, piraten med trekantig hatt, Gold Tycoon med hög hatt och guldkedja …)
+  - tre ställ med loot på varje sida av gången, vakter som patrullerar och temarekvisita längs väggarna
+  - smoke-testet kontrollerar att springvägen genom alla zoner är fri från hinder
+- **Baserna är palats:**
+  - limegrön studs-gård (LEGO-stil)
+  - mörk gång med lysande plattor i basens färg
+  - upphöjd scen längst in med palatsfasad (pelare, banderoller, guldgavel) där föremålen står tätt
+  - löpband och COLLECT-platta på gården
+- **Hela världen** har studs, starka mättade färger och klart ljus utan dis. Rullbanden, stadssiluetten och trottoarerna är borttagna.
+- **Föremålen** är 1,5x större på ställ och podier. Legendary och Mythic brinner (eld-aura). Etiketten visar som i videon: sällsynthet, namn, "+$X/s" och odds ("1 in 222").
+- **HUD:en följer videons layout:**
+  - vänster: Store, Event (🎃, öppnar godis-spåren) och Index som app-ikoner, plus en Slow Mode-strömbrytare
+  - nere till vänster: Friend Boost, 👟 speed, 🍬 godis och 💵 cash som text med kontur, utan rutor
+  - överst: "You earn $X/Day offline! 😈"
+  - nere till höger: lås-knapp och "🌙 in 1m 11s" (riktig tid till nästa event)
+  - uppe till höger: 🌈 Trails och 🎵
+  - THE RICHEST är en guldrad under topptexten
+  - typsnittet är runt och fett, som i genren
+
 ### Efter speltest på iPhone (skärmdumpar 11 okt)
 - **HUD:en städad:**
   - Hela HUD:en skalas ner på telefon (cirka 20 % mindre).
@@ -116,6 +138,10 @@
 - Admin: `!candy 500` ger godis för att testa godis-spåren.
 
 ## Hur du testar (iPhone)
+0. **Nytt efter omdesignen:**
+   - Gå ut genom porten "RICH STREET" och spring rakt fram genom zonerna: Grandpa → Influencer → Pirate … Varje zon har port, rik person, ställ på båda sidor och vakter.
+   - Hemma: limegrön gård, gången med lysande plattor och föremålen på scenen framför palatsfasaden.
+   - HUD:en ska likna videon: ikoner till vänster, stats nere till vänster och "You earn …/Day offline!" överst.
 1. Gå med: musiken startar och ljuset är gyllene. Checklistan uppe till höger visar 4 steg.
 2. Ställ dig på löpbandet och **släpp tumspaken**: gubben springer, bandet rullar, speed ökar och första bocken kommer.
 3. Gå ut ur basen och ställ dig på det **blå rullbandet** (pilar mot Rich Street), så åker du snabbt mot valven. Det **gula** tar dig hem.
