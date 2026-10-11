@@ -31,8 +31,19 @@ pcall(function()
 	reignStore = DataStoreService:GetOrderedDataStore("RTR_LongestReign_v1")
 end)
 
+-- 1 at the start of a reign, growing every minute up to R.MaxGrowth.
+local function growth(player: Player): number
+	local s = State.get(player)
+	if not s or not s.isRichest then
+		return 1
+	end
+	local minutes = (os.clock() - s.reignStart) / 60
+	return math.min(R.MaxGrowth, 1 + R.GrowthPerMinute * minutes)
+end
+
 local function bounty(victim: Player): number
-	return math.max(R.MinBounty, math.floor(Bases.incomePerSecond(victim) * R.BountySeconds))
+	local base = math.max(R.MinBounty, Bases.incomePerSecond(victim) * R.BountySeconds)
+	return math.floor(base * growth(victim))
 end
 
 local function crownModel(): Model
@@ -90,12 +101,17 @@ local function crownModel(): Model
 	return model
 end
 
--- Builds a crown and welds it on top of `head`. (Exported for the smoke test.)
-function Richest.attachCrown(head: BasePart, parent: Instance): Model
+-- Builds a crown and welds it on top of `head`; `scale` grows with the reign.
+-- (Exported for the smoke test.)
+function Richest.attachCrown(head: BasePart, parent: Instance, scale: number?): Model
 	local crown = crownModel()
+	if scale and scale ~= 1 then
+		crown:ScaleTo(scale)
+	end
 	local band = crown.PrimaryPart :: BasePart
-	-- cylinder axis is X: stand it up
-	crown:PivotTo(head.CFrame * CFrame.new(0, head.Size.Y / 2 + 0.6, 0) * CFrame.Angles(0, 0, math.rad(90)))
+	-- cylinder axis is X: stand it up (band bottom just above the head)
+	local lift = head.Size.Y / 2 + band.Size.X / 2 + 0.25
+	crown:PivotTo(head.CFrame * CFrame.new(0, lift, 0) * CFrame.Angles(0, 0, math.rad(90)))
 	local w = Instance.new("WeldConstraint")
 	w.Part0 = head
 	w.Part1 = band
@@ -104,20 +120,42 @@ function Richest.attachCrown(head: BasePart, parent: Instance): Model
 	return crown
 end
 
+local crownTier: { [Player]: number } = {}
+
+local function crownScale(player: Player): number
+	return 1 + (growth(player) - 1) * 0.35 -- up to 1.7x at max growth
+end
+
 local function putCrown(player: Player)
 	local character = player.Character
 	local head = character and character:FindFirstChild("Head")
 	if not character or not head or not head:IsA("BasePart") or character:FindFirstChild("Crown") then
 		return
 	end
-	Richest.attachCrown(head, character)
+	Richest.attachCrown(head, character, crownScale(player))
+	crownTier[player] = math.floor(growth(player) * 4)
 end
 
 local function removeCrown(player: Player)
+	crownTier[player] = nil
 	local character = player.Character
 	local crown = character and character:FindFirstChild("Crown")
 	if crown then
 		crown:Destroy()
+	end
+end
+
+-- Bigger crown + wider beam as the reign goes on.
+local function growCrown(player: Player)
+	local tier = math.floor(growth(player) * 4)
+	if crownTier[player] ~= tier then
+		removeCrown(player)
+		putCrown(player)
+	end
+	local s = State.get(player)
+	if s and s.base then
+		local w = 10 * (1 + (growth(player) - 1) * 0.6)
+		s.base.beam.Size = Vector3.new(s.base.beam.Size.X, w, w)
 	end
 end
 
@@ -130,7 +168,10 @@ local function setWanted(player: Player?)
 			img.Image = "rbxthumb://type=AvatarHeadShot&id=" .. player.UserId .. "&w=420&h=420"
 			wanted.Title[i].Text = "👑 WANTED 👑"
 			wanted.Name[i].Text = string.upper(player.DisplayName)
-			wanted.Bounty[i].Text = "BOUNTY " .. Format.cash(bounty(player))
+			local g = growth(player)
+			wanted.Bounty[i].Text = "BOUNTY "
+				.. Format.cash(bounty(player))
+				.. (if g >= 1.1 then string.format("  (x%.1f)", g) else "")
 		else
 			img.Image = ""
 			wanted.Title[i].Text = "👑 NO KING 👑"
@@ -174,6 +215,7 @@ local function dethrone(reason: string?)
 		s.isRichest = false
 		if s.base then
 			s.base.beam.Transparency = 1
+			s.base.beam.Size = Vector3.new(s.base.beam.Size.X, 10, 10)
 		end
 		Bases.changed(old)
 	end
@@ -181,6 +223,7 @@ local function dethrone(reason: string?)
 	removeCrown(old)
 	workspace:SetAttribute("RichestUserId", nil)
 	workspace:SetAttribute("RichestName", nil)
+	workspace:SetAttribute("RichestGrowth", nil)
 	if old.Parent == Players then
 		Net.fire(old, Remotes.Names.Crown, false)
 	end
@@ -216,9 +259,17 @@ local function crown(player: Player)
 	Bases.changed(player)
 	Net.fire(player, Remotes.Names.Crown, true)
 	if previous then
-		Net.announce("👑 " .. player.DisplayName .. " DETHRONED " .. previous.DisplayName .. "! 👑")
+		Net.announce(
+			"👑 " .. player.DisplayName .. " DETHRONED " .. previous.DisplayName .. "! 👑",
+			{ 255, 215, 60 },
+			"Crown"
+		)
 	else
-		Net.announce("👑 " .. player.DisplayName .. " is now THE RICHEST! Rob them for a bounty! 👑")
+		Net.announce(
+			"👑 " .. player.DisplayName .. " is now THE RICHEST! Rob them for a bounty! 👑",
+			{ 255, 215, 60 },
+			"Crown"
+		)
 	end
 	setWanted(player)
 end
@@ -260,6 +311,8 @@ local function evaluate()
 	if current then
 		workspace:SetAttribute("RichestWorth", Bases.netWorth(current))
 		workspace:SetAttribute("RichestBounty", bounty(current))
+		workspace:SetAttribute("RichestGrowth", growth(current))
+		growCrown(current)
 		setWanted(current)
 	end
 end
@@ -295,6 +348,12 @@ local function refreshBoard()
 			line.Text = ""
 		end
 	end
+end
+
+Richest.bounty = bounty
+Richest.growth = growth
+Richest.evaluate = function()
+	evaluate()
 end
 
 function Richest.isRichest(player: Player): boolean
@@ -333,7 +392,8 @@ function Richest.start(worldInfo: any)
 				victim.DisplayName,
 				Format.cash(amount)
 			),
-			{ 255, 80, 80 }
+			{ 255, 80, 80 },
+			"Bounty"
 		)
 		task.defer(evaluate)
 	end

@@ -8,6 +8,7 @@ local Shared = ReplicatedStorage.Shared
 local Progression = require(Shared.Progression)
 local Format = require(Shared.Format)
 local Economy = require(Shared.Config.Economy)
+local Products = require(Shared.Config.Products)
 local World = require(Shared.Config.World)
 local Remotes = require(Shared.Remotes)
 
@@ -16,6 +17,7 @@ local Net = require(script.Parent.Parent.Net)
 local ItemModel = require(script.Parent.Parent.Util.ItemModel)
 local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Wallet = require(script.Parent.Wallet)
+local Events = require(script.Parent.Events)
 
 local Bases = {}
 
@@ -53,8 +55,17 @@ function Bases.incomeMult(player: Player): number
 	if s.passes.DoubleCash then
 		m *= 2
 	end
+	if s.passes.VIP then
+		m *= Products.VipCashBonus
+	end
+	if typeof(player) == "Instance" and player.MembershipType == Enum.MembershipType.Premium then
+		m *= Products.PremiumCashBonus
+	end
 	if s.isRichest then
 		m *= Economy.Richest.IncomeBonus
+	end
+	if Events.active("CashFrenzy") then
+		m *= Economy.Events.CashFrenzyMult
 	end
 	return m
 end
@@ -201,6 +212,10 @@ function Bases.render(player: Player)
 		ped.Transparency = if open then 0 else 0.75
 		ped.Color = if open then Color3.fromRGB(245, 245, 250) else Color3.fromRGB(120, 120, 130)
 		ped.Material = if open then Enum.Material.Marble else Enum.Material.ForceField
+		local ring = s.base.rings and s.base.rings[i]
+		if ring then
+			ring.Transparency = if open then 0 else 1
+		end
 	end
 	for i = 1, #s.base.pedestals do
 		renderSlot(player, tostring(i))
@@ -285,7 +300,40 @@ function Bases.addItem(player: Player, id: string, mut: string): string?
 	s.data.Found[id] = true
 	renderSlot(player, slot)
 	changed(player)
+	Bases.celebrate(player, slot)
 	return slot
+end
+
+-- A burst of sparkles + coins on a pedestal (everyone nearby sees it).
+function Bases.celebrate(player: Player, slot: string)
+	local s = State.get(player)
+	local ped: BasePart? = s and s.base and s.base.pedestals[tonumber(slot) :: number]
+	if not ped then
+		return
+	end
+	local burst = ped:FindFirstChild("Burst") :: ParticleEmitter?
+	if not burst then
+		local e = Instance.new("ParticleEmitter")
+		e.Name = "Burst"
+		e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		e.Color = ColorSequence.new(Color3.fromRGB(255, 220, 80), Color3.fromRGB(255, 255, 255))
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 0) })
+		e.Lifetime = NumberRange.new(0.6, 1.1)
+		e.Speed = NumberRange.new(10, 18)
+		e.SpreadAngle = Vector2.new(60, 60)
+		e.Acceleration = Vector3.new(0, -30, 0)
+		e.LightEmission = 1
+		e.Rate = 120
+		e.EmissionDirection = Enum.NormalId.Top
+		e.Enabled = false
+		e.Parent = ped
+		burst = e
+	end
+	local b = burst :: ParticleEmitter
+	b.Enabled = true
+	task.delay(0.35, function()
+		b.Enabled = false
+	end)
 end
 
 function Bases.removeSlot(player: Player, slot: string): boolean
@@ -329,7 +377,7 @@ function Bases.sell(player: Player, slot: string)
 end
 
 local function teleportIntrudersOut(base: any, owner: Player)
-	for _, p in Players:GetPlayers() do
+	for p in State.all() do
 		if p ~= owner then
 			local r = State.root(p)
 			local character = p.Character
@@ -389,7 +437,10 @@ local function collect(player: Player)
 	end
 	s.data.Pending -= amount
 	Wallet.add(player, amount)
+	s.data.Stats.Collected += 1
+	player:SetAttribute("Collected", s.data.Stats.Collected)
 	Net.notice(player, "+" .. Format.cash(amount), "cash")
+	Net.fire(player, Remotes.Names.CashFX, amount, if s.base then s.base.collectPad.Position else nil)
 end
 
 local function upgradePlot(player: Player)
@@ -403,6 +454,7 @@ local function upgradePlot(player: Player)
 	end
 	if not Wallet.spend(player, cost) then
 		Net.notice(player, "Need " .. Format.cash(cost), "bad")
+		Net.fire(player, Remotes.Names.Offer, "cash")
 		return
 	end
 	s.data.PlotLevel += 1
@@ -426,6 +478,7 @@ local function upgradeTreadmill(player: Player)
 	end
 	if not Wallet.spend(player, cost) then
 		Net.notice(player, "Need " .. Format.cash(cost), "bad")
+		Net.fire(player, Remotes.Names.Offer, "cash")
 		return
 	end
 	s.data.Treadmill += 1
@@ -484,7 +537,19 @@ function Bases.start(worldInfo: any)
 					local inc = Bases.incomePerSecond(player)
 					s.data.Pending += inc
 					player:SetAttribute("CashPerSec", inc)
-					s.base.pendingLabel.Text = "💰 COLLECT " .. Format.cash(math.floor(s.data.Pending))
+					if s.passes.AutoCollect and s.data.Pending >= 1 then
+						-- Auto Collect pass: straight into the wallet, quietly
+						local amount = math.floor(s.data.Pending)
+						s.data.Pending -= amount
+						Wallet.add(player, amount)
+						if s.data.Stats.Collected == 0 then
+							s.data.Stats.Collected = 1
+							player:SetAttribute("Collected", 1)
+						end
+					end
+					s.base.pendingLabel.Text = if s.passes.AutoCollect
+						then "🧲 AUTO COLLECT"
+						else "💰 COLLECT " .. Format.cash(math.floor(s.data.Pending))
 					local lockedUntil = s.base.model:GetAttribute("LockedUntil") or 0
 					if lockedUntil > 0 and t >= lockedUntil then
 						Bases.unlock(s.base)
@@ -508,5 +573,9 @@ end
 
 Bases.changed = changed
 Bases.updatePrompts = updatePrompts
+-- what the Upgrade prompts / collect pad do (also used by the smoke test)
+Bases.upgradePlot = upgradePlot
+Bases.upgradeTreadmill = upgradeTreadmill
+Bases.collect = collect
 
 return Bases

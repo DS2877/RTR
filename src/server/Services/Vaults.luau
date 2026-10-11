@@ -13,6 +13,7 @@ local Rarity = require(Shared.Config.Rarity)
 local Net = require(script.Parent.Parent.Net)
 local ItemModel = require(script.Parent.Parent.Util.ItemModel)
 local Carry = require(script.Parent.Carry)
+local Events = require(script.Parent.Events)
 
 local VaultLoot = {}
 
@@ -32,7 +33,36 @@ local function lootCFrame(ped: BasePart): CFrame
 	return ped.CFrame * CFrame.new(0, 1 + 2.4, 0) * CFrame.Angles(0, math.pi, 0)
 end
 
-local function spawnLoot(slot: Slot, id: string, mut: string)
+local spawnLoot: (slot: Slot, id: string, mut: string) -> ()
+
+-- STEAL on a vault pedestal: start carrying, empty the pedestal, schedule the refill.
+local function take(slot: Slot, player: Player): boolean
+	local model = slot.model
+	if not model or not slot.id then
+		return false
+	end
+	local takenId, takenMut = slot.id :: string, slot.mut :: string
+	local ok = Carry.start(player, takenId, takenMut, "vault", function()
+		-- dropped / caught: the loot goes straight back on its pedestal (if still empty)
+		if not slot.id then
+			spawnLoot(slot, takenId, takenMut)
+		end
+	end)
+	if ok then
+		model:Destroy()
+		slot.model = nil
+		slot.id = nil
+		slot.mut = nil
+		local r = Economy.VaultRespawnSeconds
+		slot.respawnAt = os.clock() + rng:NextNumber(r[1], r[2])
+		Net.notice(player, "RUN!! Get it home!", "info")
+	else
+		Net.notice(player, "You're already carrying something!", "bad")
+	end
+	return ok
+end
+
+function spawnLoot(slot: Slot, id: string, mut: string)
 	if slot.model then
 		slot.model:Destroy()
 	end
@@ -50,27 +80,7 @@ local function spawnLoot(slot: Slot, id: string, mut: string)
 	pp.RequiresLineOfSight = false
 	pp.Parent = core
 	pp.Triggered:Connect(function(player)
-		if slot.model ~= model or not slot.id then
-			return
-		end
-		local takenId, takenMut = slot.id :: string, slot.mut :: string
-		local ok = Carry.start(player, takenId, takenMut, "vault", function()
-			-- dropped / caught: the loot goes straight back on its pedestal (if still empty)
-			if not slot.id then
-				spawnLoot(slot, takenId, takenMut)
-			end
-		end)
-		if ok then
-			model:Destroy()
-			slot.model = nil
-			slot.id = nil
-			slot.mut = nil
-			local r = Economy.VaultRespawnSeconds
-			slot.respawnAt = os.clock() + rng:NextNumber(r[1], r[2])
-			Net.notice(player, "RUN!! Get it home!", "info")
-		else
-			Net.notice(player, "You're already carrying something!", "bad")
-		end
+		take(slot, player)
 	end)
 	model.Parent = slot.pedestal.Parent
 	slot.model = model
@@ -93,7 +103,9 @@ end
 
 local function roll(slot: Slot)
 	local rarity = Progression.rollRarity(rng:NextNumber())
-	local mut = Progression.rollMutation(rng:NextNumber())
+	-- GOLD RUSH: dividing the roll multiplies every mutation chance
+	local mutRoll = rng:NextNumber() / (if Events.active("GoldRush") then Economy.Events.GoldRushMult else 1)
+	local mut = Progression.rollMutation(mutRoll)
 	spawnLoot(slot, Progression.vaultItem(slot.vault, rarity), mut)
 end
 
@@ -106,6 +118,12 @@ function VaultLoot.start(worldInfo: any)
 			roll(slot)
 		end
 	end
+	-- GOLD RUSH starts: every vault restocks at once, with the boosted mutation odds
+	workspace:GetAttributeChangedSignal("EventId"):Connect(function()
+		if workspace:GetAttribute("EventId") == "GoldRush" then
+			VaultLoot.rerollAll()
+		end
+	end)
 	task.spawn(function()
 		while true do
 			task.wait(0.5)
@@ -117,6 +135,34 @@ function VaultLoot.start(worldInfo: any)
 			end
 		end
 	end)
+end
+
+-- The loot on pedestal `ped` of vault `vault` (id, mutation), or nil while it refills.
+function VaultLoot.lootAt(vault: number, ped: number): (string?, string?)
+	local n = 0
+	for _, slot in slots do
+		if slot.vault == vault then
+			n += 1
+			if n == ped then
+				return slot.id, slot.mut
+			end
+		end
+	end
+	return nil, nil
+end
+
+-- What the STEAL prompt on that pedestal does (also used by the smoke test).
+function VaultLoot.stealAt(vault: number, ped: number, player: Player): boolean
+	local n = 0
+	for _, slot in slots do
+		if slot.vault == vault then
+			n += 1
+			if n == ped then
+				return take(slot, player)
+			end
+		end
+	end
+	return false
 end
 
 -- Admin: reroll everything (testing rare spawns)

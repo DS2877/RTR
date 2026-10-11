@@ -60,6 +60,8 @@ local function fuse(player: Player, id: string, mut: string)
 	end
 end
 
+Fuse.fuse = fuse
+
 function Fuse.start(worldInfo: any)
 	local limit = RateLimit.new(2, 4)
 	worldInfo.fusePrompt.Triggered:Connect(function(player: Player)

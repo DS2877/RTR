@@ -15,16 +15,20 @@ Remotes.Names = {
 	Lock = "Lock", -- () lock your base
 	Fuse = "Fuse", -- (itemId: string, mutation: string)
 	RequestSync = "RequestSync", -- ()
+	GiftTarget = "GiftTarget", -- (userId: number) who the next gift purchase is for
 	-- server -> client
 	Notice = "Notice", -- (text: string, kind: string) small toast for one player
-	Announce = "Announce", -- (text: string, color: {number}) big server-wide message
+	Announce = "Announce", -- (text: string, color: {number}, sound: string?) server-wide message
 	SpeedTick = "SpeedTick", -- (gained: number) treadmill popup
-	Caught = "Caught", -- (by: string)
+	Caught = "Caught", -- (by: string, tooSlow: boolean)
 	Deposited = "Deposited", -- (itemName, rarity, mutation, income: number, title: string?) loot landed
 	Sync = "Sync", -- ({ Found, Items, Passes }) index + plot contents for panels
 	OpenFuse = "OpenFuse", -- ()
 	Offline = "Offline", -- (earned: number, seconds: number)
 	Crown = "Crown", -- (gained: boolean) you became / stopped being the richest
+	Alarm = "Alarm", -- (vaultName: string) a guard spotted you
+	CashFX = "CashFX", -- (amount: number, from: Vector3?) coins fly into the cash counter
+	Offer = "Offer", -- (kind: string) contextual shop offer ("speed" | "cash")
 }
 
 local FOLDER_NAME = "Remotes"

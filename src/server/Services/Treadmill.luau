@@ -1,12 +1,11 @@
 --!strict
--- Stand (run!) on your own treadmill to earn speed points. The belt pushes you back toward
--- the entrance, so you have to keep running.
+-- Stand on your own treadmill to earn speed points. Standing still is enough (AFK-friendly on a
+-- phone): your character plays a run animation and the belt stripes scroll (both client side).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Progression = require(Shared.Progression)
-local Economy = require(Shared.Config.Economy)
 local Remotes = require(Shared.Remotes)
 
 local State = require(script.Parent.Parent.State)
@@ -25,11 +24,6 @@ function Treadmill.onBelt(base: any, pos: Vector3): boolean
 end
 
 function Treadmill.start(worldInfo: any)
-	for _, base in worldInfo.bases do
-		local belt = base.belt :: BasePart
-		belt.AssemblyLinearVelocity = -(base.origin :: CFrame).LookVector * Economy.Treadmill.BeltSpeed
-	end
-
 	local buffered: { [Player]: number } = {}
 	local sincePopup = 0
 	task.spawn(function()

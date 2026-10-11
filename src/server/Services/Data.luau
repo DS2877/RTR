@@ -20,7 +20,9 @@ export type PlayerData = {
 	Found: { [string]: boolean }, -- index (item ids ever owned)
 	LastOnline: number,
 	StarterGiven: boolean,
+	TutorialDone: boolean,
 	Receipts: { string },
+	GiftedPasses: { [string]: boolean }, -- passes a friend gifted (work like owning the pass)
 	Stats: {
 		Steals: number, -- from vaults
 		PlayerSteals: number, -- from other players
@@ -29,6 +31,7 @@ export type PlayerData = {
 		ReignSeconds: number,
 		BestReign: number,
 		Earned: number,
+		Collected: number,
 	},
 }
 
@@ -43,7 +46,9 @@ local TEMPLATE: PlayerData = {
 	Found = {},
 	LastOnline = 0,
 	StarterGiven = false,
+	TutorialDone = false,
 	Receipts = {},
+	GiftedPasses = {},
 	Stats = {
 		Steals = 0,
 		PlayerSteals = 0,
@@ -52,6 +57,7 @@ local TEMPLATE: PlayerData = {
 		ReignSeconds = 0,
 		BestReign = 0,
 		Earned = 0,
+		Collected = 0,
 	},
 }
 
@@ -117,25 +123,33 @@ function Data.get(player: Player): PlayerData?
 	return if profile then profile.Data else nil
 end
 
--- Admin: wipe back to a brand-new player (receipts kept so purchases never grant twice).
+local function deep(t: any): any
+	if typeof(t) ~= "table" then
+		return t
+	end
+	local out = {}
+	for k, v in t do
+		out[k] = deep(v)
+	end
+	return out
+end
+
+-- A brand-new player's data (also used by the smoke test's simulated players).
+function Data.fresh(): PlayerData
+	return deep(TEMPLATE)
+end
+
+-- Admin: wipe back to a brand-new player (receipts + gifts kept so purchases never vanish).
 function Data.reset(player: Player): boolean
 	local profile = profiles[player]
 	if not profile then
 		return false
 	end
 	local receipts = profile.Data.Receipts
-	local function deep(t: any): any
-		if typeof(t) ~= "table" then
-			return t
-		end
-		local out = {}
-		for k, v in t do
-			out[k] = deep(v)
-		end
-		return out
-	end
+	local gifts = profile.Data.GiftedPasses
 	local fresh = deep(TEMPLATE)
 	fresh.Receipts = receipts
+	fresh.GiftedPasses = gifts
 	profile.Data = fresh
 	return true
 end

@@ -1,13 +1,20 @@
 --!strict
 -- Vault guards: chunky security NPCs. They patrol their vault and chase anyone carrying loot
 -- nearby. Touch = caught (loot goes back, short stun). Faster guards on richer vaults.
+-- Limbs hang on Motor6Ds so clients can swing them (walk animation in Controllers/WorldFX).
+-- During a GUARD STRIKE event they fall asleep at home and catch nobody.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Vaults = require(ReplicatedStorage.Shared.Config.Vaults)
+local Shared = ReplicatedStorage.Shared
+local Vaults = require(Shared.Config.Vaults)
+local Remotes = require(Shared.Remotes)
+local Progression = require(Shared.Progression)
 local State = require(script.Parent.Parent.State)
+local Net = require(script.Parent.Parent.Net)
 local Carry = require(script.Parent.Carry)
+local Events = require(script.Parent.Events)
 
 local Guards = {}
 
@@ -20,17 +27,20 @@ type Guard = {
 	center: Vector3,
 	target: Player?,
 	nextPatrol: number,
+	tag: TextLabel,
+	asleep: boolean,
 }
 
 local guards: { Guard } = {}
 local rng = Random.new()
 
-local function limb(
+local SUIT = Color3.fromRGB(28, 28, 36)
+local SKIN = Color3.fromRGB(255, 205, 160)
+
+local function newPart(
 	model: Model,
-	root: BasePart,
 	name: string,
 	size: Vector3,
-	offset: CFrame,
 	color: Color3,
 	material: Enum.Material?
 ): Part
@@ -45,18 +55,54 @@ local function limb(
 	p.Massless = true
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
-	p.CFrame = root.CFrame * offset
+	p.Parent = model
+	return p
+end
+
+-- Rigidly attached detail.
+local function weld(
+	model: Model,
+	to: BasePart,
+	name: string,
+	size: Vector3,
+	offset: CFrame,
+	color: Color3,
+	material: Enum.Material?
+): Part
+	local p = newPart(model, name, size, color, material)
+	p.CFrame = to.CFrame * offset
 	local w = Instance.new("WeldConstraint")
-	w.Part0 = root
+	w.Part0 = to
 	w.Part1 = p
 	w.Parent = p
-	p.Parent = model
+	return p
+end
+
+-- A limb that swings around `joint` (offset from the root, at the top of the limb).
+local function limb(
+	model: Model,
+	root: BasePart,
+	name: string,
+	size: Vector3,
+	joint: Vector3,
+	color: Color3
+): Part
+	local p = newPart(model, name, size, color)
+	p.CFrame = root.CFrame * CFrame.new(joint) * CFrame.new(0, -size.Y / 2, 0)
+	local m = Instance.new("Motor6D")
+	m.Name = name .. "Joint"
+	m.Part0 = root
+	m.Part1 = p
+	m.C0 = CFrame.new(joint)
+	m.C1 = CFrame.new(0, size.Y / 2, 0)
+	m.Parent = root
 	return p
 end
 
 local function buildGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard
 	local model = Instance.new("Model")
 	model.Name = "Guard"
+	model:SetAttribute("Vault", vaultIndex)
 	local root = Instance.new("Part")
 	root.Name = "HumanoidRootPart"
 	root.Size = Vector3.new(2, 2, 1)
@@ -66,25 +112,52 @@ local function buildGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard
 	root.Parent = model
 	model.PrimaryPart = root
 
-	local suit = Color3.fromRGB(25, 25, 30)
-	local skin = Color3.fromRGB(255, 205, 160)
-	limb(model, root, "Torso", Vector3.new(2.4, 2.4, 1.3), CFrame.new(0, 0, 0), suit)
-	limb(model, root, "Tie", Vector3.new(0.4, 1.6, 0.1), CFrame.new(0, 0.2, -0.68), trim)
-	limb(model, root, "Head", Vector3.new(1.6, 1.6, 1.6), CFrame.new(0, 2.05, 0), skin)
-	limb(
+	local torso = weld(model, root, "Torso", Vector3.new(2.4, 2.4, 1.3), CFrame.new(), SUIT)
+	weld(model, torso, "Shirt", Vector3.new(0.9, 2.2, 0.1), CFrame.new(0, 0.05, -0.66), Color3.new(1, 1, 1))
+	weld(model, torso, "Tie", Vector3.new(0.35, 1.7, 0.12), CFrame.new(0, 0.1, -0.7), trim)
+	weld(
 		model,
-		root,
+		torso,
+		"Belt",
+		Vector3.new(2.5, 0.35, 1.4),
+		CFrame.new(0, -1.05, 0),
+		Color3.fromRGB(15, 15, 18)
+	)
+	weld(
+		model,
+		torso,
+		"Badge",
+		Vector3.new(0.45, 0.45, 0.1),
+		CFrame.new(0.7, 0.6, -0.7),
+		Color3.fromRGB(255, 205, 40),
+		Enum.Material.Foil
+	)
+	local head = weld(model, root, "Head", Vector3.new(1.5, 1.5, 1.5), CFrame.new(0, 1.95, 0), SKIN)
+	weld(
+		model,
+		head,
 		"Shades",
-		Vector3.new(1.4, 0.4, 0.1),
-		CFrame.new(0, 2.25, -0.82),
+		Vector3.new(1.45, 0.4, 0.12),
+		CFrame.new(0, 0.15, -0.76),
 		Color3.new(0, 0, 0),
 		Enum.Material.Glass
 	)
-	limb(model, root, "Cap", Vector3.new(1.8, 0.5, 1.8), CFrame.new(0, 3.0, 0), suit)
-	limb(model, root, "LegL", Vector3.new(1, 2.4, 1), CFrame.new(-0.6, -2.3, 0), suit)
-	limb(model, root, "LegR", Vector3.new(1, 2.4, 1), CFrame.new(0.6, -2.3, 0), suit)
-	limb(model, root, "ArmL", Vector3.new(0.9, 2.2, 0.9), CFrame.new(-1.7, 0, 0), suit)
-	limb(model, root, "ArmR", Vector3.new(0.9, 2.2, 0.9), CFrame.new(1.7, 0, 0), suit)
+	weld(model, head, "Cap", Vector3.new(1.7, 0.5, 1.7), CFrame.new(0, 0.9, 0), SUIT)
+	weld(model, head, "Brim", Vector3.new(1.7, 0.15, 0.7), CFrame.new(0, 0.7, -1.05), SUIT)
+	weld(model, head, "CapBand", Vector3.new(1.75, 0.18, 1.75), CFrame.new(0, 0.72, 0), trim)
+	weld(
+		model,
+		head,
+		"Earpiece",
+		Vector3.new(0.15, 0.4, 0.15),
+		CFrame.new(0.78, -0.1, 0),
+		Color3.new(0, 0, 0)
+	)
+
+	limb(model, root, "LegL", Vector3.new(1, 2.5, 1), Vector3.new(-0.6, -1.0, 0), SUIT)
+	limb(model, root, "LegR", Vector3.new(1, 2.5, 1), Vector3.new(0.6, -1.0, 0), SUIT)
+	limb(model, root, "ArmL", Vector3.new(0.85, 2.2, 0.85), Vector3.new(-1.65, 1.0, 0), SUIT)
+	limb(model, root, "ArmR", Vector3.new(0.85, 2.2, 0.85), Vector3.new(1.65, 1.0, 0), SUIT)
 
 	-- Rigless NPC: R15 mode makes the Humanoid hover the root HipHeight studs above the floor
 	-- (R6 mode looks for leg parts, finds none and trips over).
@@ -102,6 +175,7 @@ local function buildGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard
 			Enum.HumanoidStateType.Ragdoll,
 			Enum.HumanoidStateType.Dead,
 			Enum.HumanoidStateType.Seated,
+			Enum.HumanoidStateType.Climbing,
 		}
 	do
 		humanoid:SetStateEnabled(st, false)
@@ -109,9 +183,10 @@ local function buildGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard
 	humanoid.Parent = model
 
 	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromOffset(110, 26)
-	bb.StudsOffset = Vector3.new(0, 4.6, 0)
+	bb.Size = UDim2.fromOffset(130, 30)
+	bb.StudsOffset = Vector3.new(0, 4.8, 0)
 	bb.MaxDistance = 120
+	bb.LightInfluence = 0
 	bb.Parent = root
 	local l = Instance.new("TextLabel")
 	l.Name = "Tag"
@@ -139,20 +214,50 @@ local function buildGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard
 		center = home.Position,
 		target = nil,
 		nextPatrol = 0,
+		tag = l,
+		asleep = false,
 	}
 end
 
-local function setTag(g: Guard, chasing: boolean)
-	local tag = g.root:FindFirstChild("BillboardGui") and (g.root :: any).BillboardGui:FindFirstChild("Tag")
-	if tag then
-		tag.Text = if chasing then "❗ STOP THIEF ❗" else "GUARD"
-		tag.TextColor3 = if chasing then Color3.fromRGB(255, 70, 70) else Color3.new(1, 1, 1)
+local function setTag(g: Guard, mode: string)
+	g.tag.Text = if mode == "chase"
+		then "❗ STOP THIEF ❗"
+		elseif mode == "sleep" then "💤 ZZZ"
+		else "GUARD"
+	g.tag.TextColor3 = if mode == "chase"
+		then Color3.fromRGB(255, 70, 70)
+		elseif mode == "sleep" then Color3.fromRGB(150, 210, 255)
+		else Color3.new(1, 1, 1)
+	g.model:SetAttribute("Chasing", mode == "chase")
+	g.model:SetAttribute("Asleep", mode == "sleep")
+end
+
+-- The speed you need to outrun this guard with what you carry (for the "too slow" offer).
+local function tooSlowFor(g: Guard, player: Player): boolean
+	local s = State.get(player)
+	if not s then
+		return false
 	end
+	return Progression.walkSpeed(s.data.Speed) * 0.85 < Vaults[g.vault].guardSpeed
 end
 
 local function step(g: Guard)
 	local def = Vaults[g.vault]
 	local pos = g.root.Position
+
+	if Events.active("GuardStrike") then
+		if not g.asleep then
+			g.asleep = true
+			g.target = nil
+			setTag(g, "sleep")
+			g.humanoid:MoveTo(g.home.Position)
+		end
+		return
+	elseif g.asleep then
+		g.asleep = false
+		setTag(g, "idle")
+	end
+
 	-- keep the current target while still valid
 	local target = g.target
 	if target then
@@ -183,9 +288,12 @@ local function step(g: Guard)
 			end
 		end
 		target = best
+		if target then
+			Net.fire(target, Remotes.Names.Alarm, def.name)
+		end
 	end
 	if target ~= g.target then
-		setTag(g, target ~= nil)
+		setTag(g, if target then "chase" else "idle")
 	end
 	g.target = target
 
@@ -195,9 +303,9 @@ local function step(g: Guard)
 			g.humanoid:MoveTo(r.Position)
 			local flat = Vector3.new(r.Position.X - pos.X, 0, r.Position.Z - pos.Z).Magnitude
 			if flat < 4.5 and math.abs(r.Position.Y - pos.Y) < 8 then
-				Carry.caught(target, "a guard")
+				Carry.caught(target, "a guard", tooSlowFor(g, target))
 				g.target = nil
-				setTag(g, false)
+				setTag(g, "idle")
 			end
 		end
 	else
@@ -208,6 +316,12 @@ local function step(g: Guard)
 			g.humanoid:MoveTo(patrol.Position)
 		end
 	end
+end
+
+-- Exposed for the smoke test.
+Guards.step = step
+Guards.all = function(): { Guard }
+	return guards
 end
 
 function Guards.start(worldInfo: any)

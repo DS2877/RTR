@@ -54,10 +54,17 @@ local Richest = req(Services, "Richest")
 local Fuse = req(Services, "Fuse")
 local Product = req(Services, "Product")
 local Admin = req(Services, "Admin")
+local Events = req(Services, "Events")
+local State = req(Server, "State")
+local Net = req(Server, "Net")
+local Data = req(Services, "Data")
+local Wallet = req(Services, "Wallet")
+local Assets = req(Shared:WaitForChild("Config"), "Assets")
 
 -- ===== boot (same order as init.server.luau) =====
 local world: any = nil
 step("Remotes.setup", Remotes.setup)
+step("Events.startService", Events.startService)
 local built = step("WorldBuilder.build", function()
 	world = WorldBuilder.build()
 end)
@@ -154,10 +161,9 @@ for _, base in world.bases do
 	)
 	-- treadmill: pushes toward the entrance, and a runner on it counts
 	local belt: BasePart = base.belt
-	local v = belt.AssemblyLinearVelocity
-	check(id .. " belt speed", math.abs(v.Magnitude - Economy.Treadmill.BeltSpeed) < 0.01, v)
-	check(id .. " belt pushes toward the entrance", v.Magnitude > 0 and v.Unit:Dot(toPlaza) > 0.99, v)
+	check(id .. " belt doesn't push (AFK treadmill)", belt.AssemblyLinearVelocity.Magnitude < 0.01)
 	check(id .. " runner on belt counts", Treadmill.onBelt(base, belt.Position + Vector3.new(0, 3.3, 0)))
+	check(id .. " 30 pedestal rings", #base.rings == 30, #base.rings)
 	check(
 		id .. " beside belt doesn't count",
 		not Treadmill.onBelt(base, belt.Position + origin.RightVector * 9)
@@ -308,6 +314,431 @@ head:Destroy()
 -- ===== balance sanity =====
 check("starter item exists", Progression.item(Economy.StarterItem) ~= nil)
 check("vault 1 guards are outrunnable at start", Progression.speedToOutrun(1) < Economy.Speed.Base)
+
+-- ===== world extras: lanes, lighting, decor =====
+local lanes = root:FindFirstChild("Lanes")
+local laneDirs = {}
+if lanes then
+	for _, l in lanes:GetChildren() do
+		if l.Name == "Lane" and l:IsA("BasePart") then
+			local v = l.AssemblyLinearVelocity
+			check("lane moves along the street", math.abs(math.abs(v.X) - Economy.Lanes.Speed) < 0.01, v)
+			laneDirs[math.sign(v.X)] = true
+			check("lane clear of the WANTED board", math.abs(l.Position.Z) > 15)
+		end
+	end
+end
+check("one lane out, one lane home", laneDirs[1] == true and laneDirs[-1] == true)
+check("Future lighting", game:GetService("Lighting").Technology == Enum.Technology.Future)
+for _, vault in world.vaults do
+	local decor = vault.model:FindFirstChild("Decor")
+	check("vault " .. vault.index .. " has themed decor", decor ~= nil and #decor:GetChildren() >= 8)
+end
+
+-- ===== every sound / music / animation id is a real, licensed asset =====
+local MarketplaceService = game:GetService("MarketplaceService")
+local function assetOk(name: string, url: string)
+	local id = tonumber(string.match(url, "%d+"))
+	local ok, info = pcall(function()
+		return MarketplaceService:GetProductInfo(id :: number)
+	end)
+	if ok and info then
+		print(
+			string.format(
+				"asset %s = %s by %s",
+				name,
+				tostring(info.Name),
+				tostring(info.Creator and info.Creator.Name)
+			)
+		)
+	end
+	check("asset " .. name .. " exists", ok and info ~= nil, if ok then nil else info)
+end
+for name, url in Assets.Sounds do
+	assetOk(name, url)
+end
+for i, url in Assets.Music.Playlist do
+	assetOk("Music" .. i, url)
+end
+assetOk("Chase", Assets.Music.Chase)
+for name, url in Assets.Animations do
+	assetOk(name, url)
+end
+
+-- ===== gameplay simulation with two simulated players =====
+-- Real Player objects can't be created headlessly, so these are stand-ins with the same fields
+-- the services use. Messages to them land in `inbox` (Net.sink). Physics doesn't run, so we move
+-- characters by hand; the services' own loops (income, deposit, guards, treadmill) do the rest.
+local inbox: { [any]: { { name: string, args: { any } } } } = {}
+local announcements: { string } = {}
+Net.sink = function(p: any, name: string, args: { any })
+	if p == nil then
+		table.insert(announcements, tostring(args[1]))
+		return
+	end
+	inbox[p] = inbox[p] or {}
+	table.insert(inbox[p], { name = name, args = args })
+end
+local function got(p: any, name: string, contains: string?): boolean
+	for _, m in inbox[p] or {} do
+		if m.name == name and (not contains or string.find(tostring(m.args[1]), contains, 1, true)) then
+			return true
+		end
+	end
+	return false
+end
+local function announced(contains: string): boolean
+	for _, a in announcements do
+		if string.find(a, contains, 1, true) then
+			return true
+		end
+	end
+	return false
+end
+
+local fakeId = 0
+local function fakePlayer(name: string): any
+	fakeId += 1
+	local attrs: { [string]: any } = {}
+	local character = Instance.new("Model")
+	character.Name = name
+	local hrp = Instance.new("Part")
+	hrp.Name = "HumanoidRootPart"
+	hrp.Size = Vector3.new(2, 2, 1)
+	hrp.Anchored = true
+	hrp.CFrame = CFrame.new(0, 300 + fakeId * 10, 0)
+	hrp.Parent = character
+	local h = Instance.new("Part")
+	h.Name = "Head"
+	h.Size = Vector3.new(1.2, 1.2, 1.2)
+	h.Anchored = true
+	h.CFrame = hrp.CFrame * CFrame.new(0, 1.6, 0)
+	h.Parent = character
+	Instance.new("Humanoid").Parent = character
+	character.PrimaryPart = hrp
+	character.Parent = workspace
+	return {
+		Name = name,
+		DisplayName = name,
+		UserId = -1000 - fakeId,
+		Character = character,
+		Parent = game:GetService("Players"),
+		attrs = attrs,
+		SetAttribute = function(_, k: string, v: any)
+			attrs[k] = v
+		end,
+		GetAttribute = function(_, k: string): any
+			return attrs[k]
+		end,
+		FindFirstChild = function(): any
+			return nil
+		end,
+	}
+end
+local function moveTo(p: any, pos: Vector3)
+	p.Character:PivotTo(CFrame.new(pos))
+end
+local function stateOf(p: any): any
+	return State.get(p)
+end
+
+local A: any, B: any = nil, nil
+local sim = step("gameplay: two players join", function()
+	A, B = fakePlayer("Alice"), fakePlayer("Bob")
+	State.add(A, Data.fresh())
+	State.add(B, Data.fresh())
+	assert(Bases.assign(A) and Bases.assign(B), "no base assigned")
+	local a, b = stateOf(A), stateOf(B)
+	assert(a.base ~= b.base, "same base twice")
+	assert(string.find(a.base.signLabel.Text, "ALICE"), "sign says " .. a.base.signLabel.Text)
+end)
+
+if sim and A and B then
+	local a, b = stateOf(A), stateOf(B)
+	local inBase = function(st: any): Vector3
+		return (st.base.origin * CFrame.new(0, 3, -40)).Position
+	end
+
+	step("starter item lands on a pedestal with Steal + Sell prompts", function()
+		local slot = Bases.addItem(A, Economy.StarterItem, "None")
+		assert(slot == "1", "slot " .. tostring(slot))
+		local found = false
+		for _, m in a.base.model:GetChildren() do
+			if m:IsA("Model") and m:GetAttribute("Slot") == "1" then
+				local core = m.PrimaryPart :: BasePart
+				assert(core:FindFirstChild("Steal") and core:FindFirstChild("Sell"), "prompts missing")
+				found = true
+			end
+		end
+		assert(found, "item model not on the pedestal")
+	end)
+
+	step("income ticks into the collect pad", function()
+		moveTo(A, Vector3.new(0, 400, 0))
+		task.wait(2.3)
+		assert(a.data.Pending >= 9, "pending " .. a.data.Pending)
+		assert((A.attrs.CashPerSec or 0) >= 5, "CashPerSec " .. tostring(A.attrs.CashPerSec))
+	end)
+
+	step("standing on the collect pad collects", function()
+		local before = a.data.Cash
+		moveTo(A, a.base.collectPad.Position + Vector3.new(0, 3, 0))
+		task.wait(1.3)
+		assert(a.data.Cash > before, "cash did not grow")
+		assert(a.data.Pending < 10, "pending not emptied " .. a.data.Pending)
+		assert(A.attrs.Collected == 1, "Collected attr " .. tostring(A.attrs.Collected))
+		assert(got(A, Remotes.Names.CashFX), "no CashFX")
+	end)
+
+	step("upgrades: not enough cash -> cash offer; with cash -> level up", function()
+		a.data.Cash = 0
+		Bases.upgradePlot(A)
+		assert(a.data.PlotLevel == 1, "upgraded without cash")
+		assert(got(A, Remotes.Names.Offer, "cash"), "no cash offer")
+		Wallet.add(A, 1e6)
+		Bases.upgradePlot(A)
+		Bases.upgradeTreadmill(A)
+		assert(
+			a.data.PlotLevel == 2 and a.data.Treadmill == 2,
+			"levels " .. a.data.PlotLevel .. "/" .. a.data.Treadmill
+		)
+		assert(
+			a.base.rings[8].Transparency == 0 and a.base.rings[9].Transparency == 1,
+			"rings not lit for 8 pedestals"
+		)
+	end)
+
+	step("treadmill: standing still earns speed and walk speed", function()
+		local before = a.data.Speed
+		moveTo(A, a.base.belt.Position + Vector3.new(0, 3.3, 0))
+		task.wait(1.2)
+		assert(a.data.Speed > before, "no speed points")
+		local hum = A.Character:FindFirstChildOfClass("Humanoid")
+		assert(hum.WalkSpeed > Economy.Speed.Base, "walk speed " .. hum.WalkSpeed)
+		assert(got(A, Remotes.Names.SpeedTick), "no +speed popup")
+	end)
+
+	local vault1 = world.vaults[1]
+	local function stealFromVault(p: any): boolean
+		local ped = vault1.pedestals[1]
+		moveTo(p, ped.Position + Vector3.new(0, 3, -6))
+		for _ = 1, 30 do
+			if VaultLoot.lootAt(1, 1) then
+				break
+			end
+			task.wait(0.5)
+		end
+		return VaultLoot.stealAt(1, 1, p)
+	end
+
+	step("steal from a vault: carry, loot on head, slower, pedestal empty", function()
+		moveTo(A, Vector3.new(0, 400, 0))
+		local speed = A.Character:FindFirstChildOfClass("Humanoid").WalkSpeed
+		assert(stealFromVault(A), "steal failed")
+		assert(a.carry ~= nil and A.attrs.Carrying ~= nil, "not carrying")
+		assert(A.Character:FindFirstChild("CarriedLoot"), "no loot model on the head")
+		assert(VaultLoot.lootAt(1, 1) == nil, "pedestal still full")
+		assert(A.Character:FindFirstChildOfClass("Humanoid").WalkSpeed < speed, "carrying isn't slower")
+	end)
+
+	step("a guard catches the carrier: loot back on the pedestal, stun, CAUGHT", function()
+		local guard = nil
+		for _, g in Guards.all() do
+			if g.vault == 1 then
+				guard = g
+			end
+		end
+		assert(guard, "no guard at vault 1")
+		task.wait(0.3)
+		assert(guard.model:GetAttribute("Chasing") == true, "guard didn't notice the thief")
+		assert(got(A, Remotes.Names.Alarm), "no alarm for the thief")
+		moveTo(A, guard.root.Position + Vector3.new(1, 0, 0))
+		task.wait(0.4)
+		assert(a.carry == nil, "still carrying after being caught")
+		assert(got(A, Remotes.Names.Caught), "no CAUGHT message")
+		assert(VaultLoot.lootAt(1, 1) ~= nil, "loot not back on the pedestal")
+		assert(A.Character:FindFirstChildOfClass("Humanoid").WalkSpeed == 0, "not stunned")
+		task.wait(1.7)
+		assert(A.Character:FindFirstChildOfClass("Humanoid").WalkSpeed > 0, "stun never ended")
+	end)
+
+	step("steal again and run home: deposit, STOLEN card, steal counted", function()
+		assert(stealFromVault(A), "second steal failed")
+		local slots = 0
+		for _ in a.data.Slots do
+			slots += 1
+		end
+		moveTo(A, inBase(a))
+		task.wait(0.5)
+		assert(a.carry == nil, "still carrying at home")
+		local after = 0
+		for _ in a.data.Slots do
+			after += 1
+		end
+		assert(after == slots + 1, "plot " .. slots .. " -> " .. after)
+		assert(a.data.Stats.Steals == 1 and A.attrs.Steals == 1, "steal not counted")
+		assert(got(A, Remotes.Names.Deposited), "no STOLEN card")
+	end)
+
+	step("GUARD STRIKE: sleeping guards catch nobody", function()
+		Events.start("GuardStrike", 30)
+		assert(workspace:GetAttribute("EventId") == "GuardStrike", "event attribute not set")
+		assert(announced("GUARD STRIKE"), "event not announced")
+		assert(stealFromVault(A), "steal failed")
+		local guard = nil
+		for _, g in Guards.all() do
+			if g.vault == 1 then
+				guard = g
+			end
+		end
+		moveTo(A, guard.root.Position + Vector3.new(1, 0, 0))
+		task.wait(0.4)
+		assert(a.carry ~= nil, "a sleeping guard caught the thief")
+		assert(guard.model:GetAttribute("Asleep") == true, "guard not asleep")
+		Carry.drop(A)
+		assert(a.carry == nil, "drop failed")
+		Events.stop()
+	end)
+
+	step("CASH FRENZY doubles income; GOLD RUSH restocks the vaults", function()
+		local base = Bases.incomePerSecond(A)
+		Events.start("CashFrenzy", 30)
+		assert(
+			math.abs(Bases.incomePerSecond(A) - base * Economy.Events.CashFrenzyMult) < 0.01,
+			"frenzy not 2x"
+		)
+		Events.stop()
+		Events.start("GoldRush", 30)
+		task.wait(0.1)
+		assert(VaultLoot.lootAt(1, 1) ~= nil, "vault not restocked")
+		Events.stop()
+	end)
+
+	step("player steal: thief carries, victim warned, item hidden until home", function()
+		moveTo(B, inBase(a))
+		Bases.onSteal(B, A, "1")
+		assert(b.carry ~= nil, "Bob isn't carrying")
+		assert(B.attrs.CarryVictim == A.UserId, "CarryVictim not set (no GO GET THEM arrow)")
+		assert(got(A, Remotes.Names.Notice, "is stealing"), "victim not warned")
+		assert(Bases.isHidden(A, "1"), "item still visible on the plot")
+		assert(a.data.Slots["1"] ~= nil, "item left the victim before the thief got home")
+		Carry.caught(B, "Alice")
+		assert(not Bases.isHidden(A, "1"), "slapped item not back")
+		task.wait(1.7) -- the slap stun
+		Bases.onSteal(B, A, "1")
+		assert(b.carry ~= nil, "Bob couldn't steal again after the stun")
+		moveTo(B, inBase(b))
+		task.wait(0.5)
+		assert(a.data.Slots["1"] == nil, "victim still has the item")
+		assert(b.data.Stats.PlayerSteals == 1, "player steal not counted")
+		assert(got(A, Remotes.Names.Notice, "stole your"), "victim not told")
+	end)
+
+	step("THE RICHEST: crown, beam, can't lock; robbing pays a bounty", function()
+		Wallet.add(A, 1e9)
+		Bases.addItem(A, "GoldBar", "None")
+		Richest.evaluate()
+		assert(a.isRichest and workspace:GetAttribute("RichestUserId") == A.UserId, "Alice not crowned")
+		assert(A.Character:FindFirstChild("Crown"), "no crown")
+		assert(a.base.beam.Transparency < 1, "no beam")
+		assert(announced("THE RICHEST"), "crown not announced")
+		Bases.lock(A)
+		assert((a.base.model:GetAttribute("LockedUntil") or 0) == 0, "the richest locked their base")
+		local slot = nil
+		for k, it in a.data.Slots do
+			if it.Id == "GoldBar" then
+				slot = k
+			end
+		end
+		local cash = b.data.Cash
+		local robbed = b.data.Stats.RobbedRichest
+		local bounty = Richest.bounty(A)
+		assert(bounty >= Economy.Richest.MinBounty, "bounty " .. bounty)
+		moveTo(B, inBase(a))
+		Bases.onSteal(B, A, slot)
+		moveTo(B, inBase(b))
+		task.wait(0.5)
+		-- the bounty is priced before the stolen item leaves the richest's plot
+		assert(b.data.Cash >= cash + bounty, "bounty not paid: " .. (b.data.Cash - cash) .. " < " .. bounty)
+		assert(b.data.Stats.RobbedRichest == robbed + 1, "robbery not counted")
+		assert(announced("ROBBED THE RICHEST"), "robbery not announced")
+	end)
+
+	step("lock: intruders are teleported out and kept out", function()
+		Richest.evaluate()
+		if b.isRichest then
+			Wallet.add(A, 1e12)
+			Richest.evaluate()
+		end
+		Bases.lock(B)
+		assert((b.base.model:GetAttribute("LockedUntil") or 0) > 0, "Bob's lock failed")
+		assert(b.base.laser.CanCollide, "laser not solid")
+		moveTo(A, inBase(b))
+		task.wait(1.2)
+		assert(not Bases.contains(b.base, A.Character.PrimaryPart.Position), "intruder still inside")
+		Bases.unlock(b.base)
+	end)
+
+	step("sell + fuse", function()
+		local cash = a.data.Cash
+		local slot = Bases.addItem(A, "Radio", "None")
+		Bases.sell(A, slot)
+		assert(a.data.Slots[slot] == nil and a.data.Cash > cash, "sell failed")
+		for _ = 1, 3 do
+			Bases.addItem(A, "Compass", "None")
+		end
+		Fuse.fuse(A, "Compass", "None")
+		local gold, plain = 0, 0
+		for _, it in a.data.Slots do
+			if it.Id == "Compass" then
+				if it.Mut == "Gold" then
+					gold += 1
+				elseif it.Mut == "None" then
+					plain += 1
+				end
+			end
+		end
+		assert(gold == 1 and plain == 0, "fuse gave " .. gold .. " gold / " .. plain .. " plain")
+	end)
+
+	step("Auto Collect pass: cash goes straight to the wallet", function()
+		moveTo(A, Vector3.new(0, 400, 0))
+		a.passes.AutoCollect = true
+		local cash = a.data.Cash
+		task.wait(1.2)
+		assert(a.data.Cash > cash and a.data.Pending < 1, "auto collect didn't run")
+		a.passes.AutoCollect = nil
+	end)
+
+	step("a thief leaving mid-steal: item stays with the owner; base is freed", function()
+		Bases.addItem(B, "Radio", "None")
+		local slot = nil
+		for k, it in b.data.Slots do
+			if it.Id == "Radio" then
+				slot = k
+			end
+		end
+		moveTo(A, inBase(b))
+		Bases.onSteal(A, B, slot)
+		assert(a.carry ~= nil, "Alice isn't carrying")
+		Carry.onLeaving(A)
+		Richest.onLeaving(A)
+		Bases.release(A)
+		State.remove(A)
+		assert(not Bases.isHidden(B, slot) and b.data.Slots[slot] ~= nil, "Bob lost his item")
+		local free = false
+		for _, base in world.bases do
+			if Bases.ownerOf(base) == nil and base.signLabel.Text == "EMPTY BASE" then
+				free = true
+			end
+		end
+		assert(free, "Alice's base not freed")
+		Carry.onLeaving(B)
+		Bases.release(B)
+		State.remove(B)
+	end)
+end
+Net.sink = nil
 
 print(string.format("SMOKE: %d passed, %d failed", passed, #failures))
 return { passed = passed, failed = #failures, failures = failures }

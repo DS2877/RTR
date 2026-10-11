@@ -26,10 +26,12 @@ local Richest = require(Services.Richest)
 local Fuse = require(Services.Fuse)
 local Product = require(Services.Product)
 local Admin = require(Services.Admin)
+local Events = require(Services.Events)
 
 Remotes.setup()
 local world = WorldBuilder.build()
 
+Events.startService()
 Bases.start(world)
 Carry.startService()
 VaultLoot.start(world)
@@ -61,6 +63,7 @@ local function onCharacter(player: Player, character: Model)
 		Carry.drop(player)
 	end)
 	task.spawn(Richest.onCharacter, player)
+	task.spawn(Product.onCharacter, player)
 end
 
 local function giveOffline(player: Player)
@@ -98,6 +101,9 @@ local function onPlayerAdded(player: Player)
 	giveOffline(player)
 	s.data.LastOnline = os.time()
 	player:SetAttribute("SpeedPoints", data.Speed)
+	player:SetAttribute("Steals", data.Stats.Steals + data.Stats.PlayerSteals)
+	player:SetAttribute("Collected", data.Stats.Collected)
+	player:SetAttribute("TutorialDone", data.TutorialDone)
 	player:SetAttribute("Loaded", true)
 	Bases.sync(player)
 
@@ -160,6 +166,20 @@ task.spawn(function()
 		task.wait(30)
 		for _, s in State.all() do
 			s.data.LastOnline = os.time()
+		end
+	end
+end)
+
+-- first-session guide is done after one steal brought home + one collect
+task.spawn(function()
+	while true do
+		task.wait(2)
+		for player, s in State.all() do
+			local st = s.data.Stats
+			if not s.data.TutorialDone and st.Steals + st.PlayerSteals > 0 and st.Collected > 0 then
+				s.data.TutorialDone = true
+				player:SetAttribute("TutorialDone", true)
+			end
 		end
 	end
 end)

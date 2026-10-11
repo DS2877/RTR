@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
 local Vaults = require(Shared.Config.Vaults)
+local WorldDecor = require(script.Parent.WorldDecor)
 
 local WorldBuilder = {}
 
@@ -27,6 +28,7 @@ export type BaseRecord = {
 	plotSign: BasePart,
 	treadSign: BasePart,
 	beam: BasePart,
+	rings: { BasePart }, -- glowing ring under each pedestal (lit when unlocked)
 	spawnCFrame: CFrame,
 }
 
@@ -121,23 +123,43 @@ local function prompt(parent: BasePart, action: string, object: string, hold: nu
 end
 
 local function setupLighting()
-	Lighting.ClockTime = 14.5
-	Lighting.Brightness = 2.4
-	Lighting.Ambient = Color3.fromRGB(120, 120, 130)
-	Lighting.OutdoorAmbient = Color3.fromRGB(150, 150, 160)
+	-- late golden afternoon: warm sun, long shadows, neon pops (Future lighting; Roblox scales it
+	-- down automatically on low-end phones)
+	Lighting.ClockTime = 16.2
+	Lighting.GeographicLatitude = 35
+	Lighting.Brightness = 2.6
+	Lighting.Ambient = Color3.fromRGB(95, 95, 115)
+	Lighting.OutdoorAmbient = Color3.fromRGB(140, 140, 160)
+	Lighting.EnvironmentDiffuseScale = 0.6
+	Lighting.EnvironmentSpecularScale = 0.8
 	Lighting.GlobalShadows = true
+	Lighting.ShadowSoftness = 0.25
+	local sky = Instance.new("Sky")
+	sky.SunAngularSize = 14
+	sky.StarCount = 1500
+	sky.Parent = Lighting
 	local atm = Instance.new("Atmosphere")
-	atm.Density = 0.25
-	atm.Haze = 1
-	atm.Color = Color3.fromRGB(200, 225, 255)
+	atm.Density = 0.3
+	atm.Offset = 0.2
+	atm.Haze = 1.4
+	atm.Glare = 0.35
+	atm.Color = Color3.fromRGB(255, 225, 200)
+	atm.Decay = Color3.fromRGB(110, 120, 160)
 	atm.Parent = Lighting
 	local bloom = Instance.new("BloomEffect")
-	bloom.Intensity = 0.6
-	bloom.Threshold = 1.6
+	bloom.Intensity = 0.7
+	bloom.Size = 30
+	bloom.Threshold = 1.3
 	bloom.Parent = Lighting
+	local rays = Instance.new("SunRaysEffect")
+	rays.Intensity = 0.08
+	rays.Spread = 0.6
+	rays.Parent = Lighting
 	local cc = Instance.new("ColorCorrectionEffect")
-	cc.Saturation = 0.18
-	cc.Contrast = 0.05
+	cc.Saturation = 0.22
+	cc.Contrast = 0.08
+	cc.Brightness = 0.02
+	cc.TintColor = Color3.fromRGB(255, 248, 240)
 	cc.Parent = Lighting
 end
 
@@ -395,12 +417,15 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 	beam.CanTouch = false
 	beam.Transparency = 1
 
+	local rings = WorldDecor.base(model, origin, color, pedestals, FLOOR)
+
 	return {
 		id = id,
 		origin = origin,
 		model = model,
 		color = color,
 		pedestals = pedestals,
+		rings = rings,
 		laser = laser,
 		belt = belt,
 		collectPad = collectPad,
@@ -494,6 +519,8 @@ local function buildVault(parent: Instance, index: number, origin: CFrame): Vaul
 			table.insert(pedestals, ped)
 		end
 	end
+
+	WorldDecor.vault(model, def.id, origin, trim)
 
 	local guardSpawns: { CFrame } = {}
 	for g = 1, def.guards do
@@ -643,11 +670,30 @@ function WorldBuilder.build(): WorldInfo
 		lamp(decor, Vector3.new(x, 0, -World.StreetHalfWidth - 2))
 		lamp(decor, Vector3.new(x + 20, 0, World.StreetHalfWidth + 2))
 	end
-	for i = 1, 40 do
+	-- trees behind the home bases (the skyline owns the street side)
+	for i = 1, 30 do
 		local rng = Random.new(i)
-		local x = rng:NextNumber(minX, streetEnd)
-		local z = (if rng:NextNumber() < 0.5 then -1 else 1) * rng:NextNumber(150, 200)
+		local x = rng:NextNumber(minX, World.StreetStartX - 20)
+		local z = (if rng:NextNumber() < 0.5 then -1 else 1) * rng:NextNumber(118, 200)
 		tree(decor, Vector3.new(x, 0, z), rng:NextNumber(0.9, 1.6))
+	end
+	WorldDecor.sidewalks(root, World.StreetStartX, streetEnd)
+	WorldDecor.skyline(root, World.StreetStartX + 10, streetEnd - 30)
+	WorldDecor.lanes(root, -175, streetEnd - 10)
+	-- palms in the gaps between vaults
+	for i = 1, #Vaults - 2 do
+		local x = World.StreetStartX + 70 + (i - 1) * World.VaultSpacing + World.VaultSpacing
+		local side = if i % 2 == 1 then -1 else 1
+		WorldDecor.palm(decor, Vector3.new(x - 10, 0, side * 38), 1)
+		WorldDecor.palm(decor, Vector3.new(x + 10, 0, side * 46), 1.15)
+	end
+	-- plaza: two fountains + benches between the base entrances
+	for _, x in { -110, 110 } do
+		WorldDecor.fountain(root, Vector3.new(x, 0.3, 0))
+	end
+	for _, x in { -150, -70, 70, 150 } do
+		WorldDecor.bench(decor, CFrame.new(x - 20, 0.3, -12))
+		WorldDecor.bench(decor, CFrame.new(x + 20, 0.3, 12) * CFrame.Angles(0, math.pi, 0))
 	end
 
 	-- WANTED board in the plaza center (double sided)

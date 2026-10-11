@@ -34,10 +34,13 @@ local function setAttributes(player: Player)
 		player:SetAttribute("Carrying", if info then info.name else c.id)
 		player:SetAttribute("CarryRarity", if info then info.rarity else "Common")
 		player:SetAttribute("CarryMut", c.mut)
+		-- the victim's client points a "GO GET THEM!" arrow at whoever carries their item
+		player:SetAttribute("CarryVictim", if c.victim then c.victim.UserId else nil)
 	else
 		player:SetAttribute("Carrying", nil)
 		player:SetAttribute("CarryRarity", nil)
 		player:SetAttribute("CarryMut", nil)
+		player:SetAttribute("CarryVictim", nil)
 	end
 end
 
@@ -118,15 +121,16 @@ function Carry.drop(player: Player, reason: string?)
 	end
 end
 
--- Caught by a guard or slapped by a player.
-function Carry.caught(player: Player, by: string)
+-- Caught by a guard or slapped by a player. `tooSlow`: the guard was faster than you can ever
+-- run with loot (the client may show the Speed Pack offer).
+function Carry.caught(player: Player, by: string, tooSlow: boolean?)
 	local s = State.get(player)
 	if not s or not s.carry then
 		return
 	end
 	Carry.drop(player)
 	s.data.Stats.Caught += 1
-	Net.fire(player, Remotes.Names.Caught, by)
+	Net.fire(player, Remotes.Names.Caught, by, tooSlow == true)
 	Movement.stun(player, Economy.StunSeconds) -- the knock-up is done by the client (it owns its physics)
 end
 
@@ -147,6 +151,8 @@ local function deposit(player: Player)
 	end
 	local victim = c.victim
 	local victimSlot = c.victimSlot
+	-- the bounty is priced while the item still counts toward the richest's income
+	local bounty = if victim and Carry.bountyFor then Carry.bountyFor(victim) else 0
 	clear(player)
 	-- stolen from a player: now it really leaves their plot
 	if victim and victimSlot then
@@ -172,7 +178,6 @@ local function deposit(player: Player)
 			"😱 " .. player.DisplayName .. " stole your " .. (if info then info.name else c.id) .. "!",
 			"bad"
 		)
-		local bounty = if Carry.bountyFor then Carry.bountyFor(victim) else 0
 		if bounty > 0 then
 			Wallet.add(player, bounty)
 			s.data.Stats.RobbedRichest += 1
@@ -183,6 +188,7 @@ local function deposit(player: Player)
 	else
 		s.data.Stats.Steals += 1
 	end
+	player:SetAttribute("Steals", s.data.Stats.Steals + s.data.Stats.PlayerSteals)
 	Wallet.sync(player)
 
 	if info and (info.rarity == "Legendary" or info.rarity == "Mythic" or c.mut == "Rainbow") then
@@ -267,8 +273,19 @@ function Carry.startService()
 			return
 		end
 		s.lastSlap = t
+		local victim = (ts.carry :: State.Carry).victim
 		Carry.caught(target, player.DisplayName)
 		Net.notice(player, "👋 SLAPPED " .. target.DisplayName .. "!", "good")
+		if victim == player then
+			Net.announce(
+				"👋 " .. player.DisplayName .. " SLAPPED the thief " .. target.DisplayName .. "!",
+				{
+					255,
+					170,
+					60,
+				}
+			)
+		end
 	end)
 
 	-- deposit + safety loop
