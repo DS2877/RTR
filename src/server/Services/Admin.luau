@@ -1,6 +1,6 @@
 --!strict
 -- Chat commands for testing (admins only, re-checked here):
---   !cash 1e9   !speed 1e6   !item GoldBar Diamond   !reroll   !event GoldRush 90   !reset
+--   !cash 1e9   !speed 1e6   !item GoldBar Diamond   !reroll   !event GoldRush 90   !candy 500   !reset
 -- ("!" instead of "/" so the Roblox chat never swallows them as unknown chat commands)
 
 local Players = game:GetService("Players")
@@ -20,6 +20,7 @@ local Bases = require(script.Parent.Bases)
 local Movement = require(script.Parent.Movement)
 local VaultLoot = require(script.Parent.Vaults)
 local Events = require(script.Parent.Events)
+local Cosmetic = require(script.Parent.Cosmetic)
 
 local Admin = {}
 
@@ -62,6 +63,8 @@ local function run(player: Player, message: string)
 		end
 	elseif cmd == "!reroll" then
 		VaultLoot.rerollAll()
+	elseif cmd == "!candy" then
+		Cosmetic.addCandy(player, tonumber(args[2]) or 500)
 	elseif cmd == "!event" then
 		if not Events.start(args[2] or "GoldRush", tonumber(args[3])) then
 			Net.notice(player, "Events: GoldRush, GuardStrike, CashFrenzy", "bad")

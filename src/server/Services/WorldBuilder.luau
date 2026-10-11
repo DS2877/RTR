@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
 local Vaults = require(Shared.Config.Vaults)
+local Cosmetics = require(Shared.Config.Cosmetics)
 local WorldDecor = require(script.Parent.WorldDecor)
 
 local WorldBuilder = {}
@@ -47,6 +48,9 @@ export type WorldInfo = {
 	wanted: { [string]: any }, -- Image (ImageLabel list), Title/Name/Bounty (TextLabel lists)
 	reignLines: { TextLabel },
 	fusePrompt: ProximityPrompt,
+	trailsPrompt: ProximityPrompt,
+	streetEnd: number,
+	halloween: boolean,
 }
 
 local function rgb(c: { number }): Color3
@@ -418,6 +422,7 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 	beam.Transparency = 1
 
 	local rings = WorldDecor.base(model, origin, color, pedestals, FLOOR)
+	WorldDecor.safeZone(model, origin, FLOOR)
 
 	return {
 		id = id,
@@ -829,12 +834,24 @@ function WorldBuilder.build(): WorldInfo
 	local fusePrompt = prompt(machine, "Fuse", "3 identical → 1 better", 0)
 	fusePrompt.MaxActivationDistance = 16
 
+	local trailsPrompt = WorldDecor.trailsShop(root, Vector3.new(196, 0.3, 0))
+
+	-- seasonal dressing (Config/Cosmetics.Season decides the dates)
+	local d = os.date("!*t") :: any
+	local halloween = Cosmetics.seasonActive({ month = d.month, day = d.day })
+	if halloween then
+		WorldDecor.halloween(root, bases, vaults, streetEnd)
+	end
+
 	return {
 		bases = bases,
 		vaults = vaults,
 		wanted = wanted,
 		reignLines = reignLines,
 		fusePrompt = fusePrompt,
+		trailsPrompt = trailsPrompt,
+		streetEnd = streetEnd,
+		halloween = halloween,
 	}
 end
 

@@ -25,6 +25,7 @@ export type PlayerState = {
 	passes: { [string]: boolean },
 	isRichest: boolean,
 	reignStart: number,
+	friendBoost: number, -- 0.2 = +20% cash (Friend Boost)
 }
 
 local State = {}
@@ -43,6 +44,7 @@ function State.add(player: Player, data: Data.PlayerData): PlayerState
 		passes = {},
 		isRichest = false,
 		reignStart = 0,
+		friendBoost = 0,
 	}
 	states[player] = s
 	return s

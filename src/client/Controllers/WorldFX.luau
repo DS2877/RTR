@@ -117,21 +117,96 @@ local function zoneBanner()
 	end)
 end
 
+-- A number that pops out at a spot in the world and floats up (treadmill, pickups, income).
+local function worldPopup(at: Vector3, text: string, color: Color3, size: number?)
+	local anchor = Instance.new("Part")
+	anchor.Anchored = true
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+	anchor.Transparency = 1
+	anchor.Size = Vector3.new(0.2, 0.2, 0.2)
+	anchor.CFrame = CFrame.new(at)
+	anchor.Parent = workspace
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.fromOffset(170, 40 * (size or 1))
+	bb.AlwaysOnTop = true
+	bb.LightInfluence = 0
+	bb.MaxDistance = 90
+	bb.Adornee = anchor
+	bb.Parent = anchor
+	local l = UI.bigText({
+		Size = UDim2.fromScale(1, 1),
+		Text = text,
+		TextColor3 = color,
+		Parent = bb,
+	}, Color3.fromRGB(20, 20, 28), 2.5)
+	UI.tween(bb, 1.1, { StudsOffset = Vector3.new(math.random(-15, 15) / 10, 4.5, 0) }, Enum.EasingStyle.Quad)
+	task.delay(0.6, function()
+		UI.tween(l, 0.5, { TextTransparency = 1 })
+		local st = l:FindFirstChildOfClass("UIStroke")
+		if st then
+			UI.tween(st, 0.5, { Transparency = 1 })
+		end
+	end)
+	task.delay(1.2, function()
+		anchor:Destroy()
+	end)
+end
+
 local function treadmillPopups()
-	local gui = HUD.gui()
+	-- "+29,000"-style numbers spraying out of you while you train
 	Remotes.get(Remotes.Names.SpeedTick).OnClientEvent:Connect(function(amount: number)
-		local l = UI.bigText({
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5 + (math.random() - 0.5) * 0.2, 0.55),
-			Size = UDim2.fromOffset(200, 34),
-			Text = "+" .. Format.number(math.max(1, math.floor(amount))) .. " ⚡",
-			TextColor3 = Color3.fromRGB(110, 210, 255),
-			Parent = gui,
-		})
-		UI.tween(l, 0.9, { Position = l.Position - UDim2.fromOffset(0, 80), TextTransparency = 1 })
-		task.delay(0.95, function()
-			l:Destroy()
-		end)
+		local r = rootPart()
+		if r then
+			local side = r.CFrame.RightVector * (math.random(-20, 20) / 10)
+			worldPopup(
+				r.Position + Vector3.new(0, 2.5, 0) + side,
+				"+" .. Format.number(math.max(1, math.floor(amount))) .. " ⚡",
+				Color3.fromRGB(110, 210, 255)
+			)
+		end
+	end)
+	-- street pickups: cash (and candy during Halloween)
+	Remotes.get(Remotes.Names.Pickup).OnClientEvent:Connect(function(cash: number, candy: number, at: Vector3)
+		Sound.play("Coin", 0.6, 1.1)
+		worldPopup(at + Vector3.new(0, 1, 0), "+" .. Format.cash(cash), Color3.fromRGB(120, 255, 130), 1.2)
+		if candy > 0 then
+			task.delay(0.15, function()
+				worldPopup(at + Vector3.new(0, 2.5, 0), "+" .. candy .. " 🍬", Color3.fromRGB(255, 170, 60))
+			end)
+		end
+	end)
+	-- income floating up out of every item on your plot ("+$570" every few seconds)
+	task.spawn(function()
+		while true do
+			task.wait(3)
+			local base = myBase()
+			local r = rootPart()
+			if base and r and (base:GetPivot().Position - r.Position).Magnitude < 120 then
+				-- your multipliers (passes, richest, events, friends) = real income / base income
+				local raw = 0
+				for _, m in base:GetChildren() do
+					local id = m:IsA("Model") and m:GetAttribute("ItemId")
+					if id then
+						raw += Progression.income(id, m:GetAttribute("Mutation") or "None")
+					end
+				end
+				local mult = if raw > 0 then (player:GetAttribute("CashPerSec") or raw) / raw else 1
+				for _, m in base:GetChildren() do
+					local id = m:IsA("Model") and m:GetAttribute("ItemId")
+					if id and m.PrimaryPart then
+						local income = Progression.income(id, m:GetAttribute("Mutation") or "None") * 3 * mult
+						worldPopup(
+							m.PrimaryPart.Position + Vector3.new(0, 2, 0),
+							"+" .. Format.cash(income),
+							Color3.fromRGB(255, 230, 110),
+							0.8
+						)
+					end
+				end
+			end
+		end
 	end)
 end
 

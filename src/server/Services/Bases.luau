@@ -67,6 +67,7 @@ function Bases.incomeMult(player: Player): number
 	if Events.active("CashFrenzy") then
 		m *= Economy.Events.CashFrenzyMult
 	end
+	m *= 1 + (s.friendBoost or 0)
 	return m
 end
 
@@ -132,6 +133,37 @@ local function updatePrompts(player: Player)
 	treadPrompt.ObjectText = if tc
 		then string.format("Lv %d → %d  (%s)", s.data.Treadmill, s.data.Treadmill + 1, Format.cash(tc))
 		else "Max level"
+	-- the signs themselves show the next goal (big, readable from a distance)
+	local function signText(sign: BasePart, text: string)
+		for _, sg in sign:GetChildren() do
+			local l = sg:IsA("SurfaceGui") and sg:FindFirstChildOfClass("TextLabel")
+			if l then
+				l.Text = text
+			end
+		end
+	end
+	signText(
+		base.plotSign,
+		if pc
+			then string.format(
+				"UPGRADE PLOT\nLv %d → %d\n%s",
+				s.data.PlotLevel,
+				s.data.PlotLevel + 1,
+				Format.cash(pc)
+			)
+			else "PLOT MAX"
+	)
+	signText(
+		base.treadSign,
+		if tc
+			then string.format(
+				"TREADMILL\nLv %d → %d\n%s",
+				s.data.Treadmill,
+				s.data.Treadmill + 1,
+				Format.cash(tc)
+			)
+			else "TREADMILL MAX"
+	)
 	player:SetAttribute("PlotLevel", s.data.PlotLevel)
 	player:SetAttribute("Treadmill", s.data.Treadmill)
 	player:SetAttribute("TreadmillRate", Progression.treadmillRate(s.data.Treadmill))
@@ -264,6 +296,14 @@ function Bases.release(player: Player)
 		base.model:SetAttribute("OwnerName", nil)
 		base.model:SetAttribute("LockedUntil", 0)
 		base.signLabel.Text = "EMPTY BASE"
+		for _, sign in { base.plotSign, base.treadSign } do
+			for _, sg in sign:GetChildren() do
+				local l = sg:IsA("SurfaceGui") and sg:FindFirstChildOfClass("TextLabel")
+				if l then
+					l.Text = if sign == base.plotSign then "UPGRADE PLOT" else "UPGRADE TREADMILL"
+				end
+			end
+		end
 		base.pendingLabel.Text = ""
 		base.laser.CanCollide = false
 		base.laser.Transparency = 1

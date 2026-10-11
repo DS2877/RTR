@@ -23,6 +23,9 @@ export type PlayerData = {
 	TutorialDone: boolean,
 	Receipts: { string },
 	GiftedPasses: { [string]: boolean }, -- passes a friend gifted (work like owning the pass)
+	Candy: number, -- seasonal event currency
+	Trails: { [string]: boolean }, -- owned trails
+	Trail: string, -- equipped trail id ("" = none)
 	Stats: {
 		Steals: number, -- from vaults
 		PlayerSteals: number, -- from other players
@@ -49,6 +52,9 @@ local TEMPLATE: PlayerData = {
 	TutorialDone = false,
 	Receipts = {},
 	GiftedPasses = {},
+	Candy = 0,
+	Trails = {},
+	Trail = "",
 	Stats = {
 		Steals = 0,
 		PlayerSteals = 0,

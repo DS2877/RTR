@@ -74,6 +74,15 @@ local Products = {
 			desc = "Steal instantly: no more holding the STEAL button.",
 		},
 		{
+			key = "RainbowTrail",
+			id = 0,
+			giftId = 0,
+			name = "Rainbow Trail",
+			emoji = "🌈",
+			price = 79,
+			desc = "A rainbow trail behind you while you run. Equip it in the Trails shop.",
+		},
+		{
 			key = "LongLock",
 			id = 2026112940,
 			giftId = 3717978641,

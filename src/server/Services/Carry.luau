@@ -10,6 +10,7 @@ local Progression = require(Shared.Progression)
 local Format = require(Shared.Format)
 local Economy = require(Shared.Config.Economy)
 local Rarity = require(Shared.Config.Rarity)
+local Vaults = require(Shared.Config.Vaults)
 local Remotes = require(Shared.Remotes)
 
 local State = require(script.Parent.Parent.State)
@@ -162,13 +163,18 @@ local function deposit(player: Player)
 
 	local info = Progression.item(c.id)
 	local income = Progression.income(c.id, c.mut)
+	local title = if victim
+		then "YOU ROBBED " .. string.upper(victim.DisplayName) .. "!"
+		elseif info then "YOU STOLE FROM " .. string.upper(Vaults[info.vault].name) .. "!"
+		else "STOLEN!"
 	Net.fire(
 		player,
 		Remotes.Names.Deposited,
 		if info then info.name else c.id,
 		if info then info.rarity else "Common",
 		c.mut,
-		income
+		income,
+		title
 	)
 
 	if victim then

@@ -13,6 +13,7 @@ local Products = require(Shared.Config.Products)
 local Vaults = require(Shared.Config.Vaults)
 local Rarity = require(Shared.Config.Rarity)
 local Mutations = require(Shared.Config.Mutations)
+local Cosmetics = require(Shared.Config.Cosmetics)
 
 local UI = require(script.Parent.Parent.Util.UI)
 local Panel = require(script.Parent.Parent.Util.Panel)
@@ -345,6 +346,122 @@ local function offer(kind: string, title: string)
 	end)
 end
 
+-- ===== Trails =====
+-- Cash trails, Halloween candy trails (during the season) and the Rainbow Trail pass.
+local function buildTrails(panel: Panel.Panel)
+	local body = panel.body
+	UI.new("UIGridLayout", {
+		CellSize = UDim2.fromOffset(176, 196),
+		CellPadding = UDim2.fromOffset(10, 10),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = body,
+	})
+	panel.onOpen = function()
+		clear(body)
+		local season = workspace:GetAttribute("Season") == "Halloween"
+		local owned: { [string]: boolean } = {}
+		for _, id in string.split(player:GetAttribute("TrailsOwned") or "", ",") do
+			owned[id] = true
+		end
+		local equipped = player:GetAttribute("Trail") or ""
+		panel.subtitle.Text = if season
+			then "🍬 " .. Format.number(player:GetAttribute("Candy") or 0)
+			else ""
+		for i, t in Cosmetics.Trails do
+			if t.currency == "candy" and not season and not owned[t.id] then
+				continue
+			end
+			local has = owned[t.id]
+				or (t.currency == "pass" and t.pass ~= nil and state.Passes[t.pass] == true)
+			local c = card(body, i, Color3.fromRGB(200, 120, 255))
+			UI.label({
+				Position = UDim2.fromOffset(0, 6),
+				Size = UDim2.new(1, 0, 0, 40),
+				Text = t.emoji,
+				Font = Enum.Font.GothamBold,
+				Parent = c,
+			})
+			UI.bigText({
+				Position = UDim2.fromOffset(6, 48),
+				Size = UDim2.new(1, -12, 0, 24),
+				Text = t.name,
+				Parent = c,
+			}, Color3.fromRGB(70, 20, 110), 2)
+			-- color preview
+			local keys = {}
+			for k, col in t.colors do
+				table.insert(
+					keys,
+					ColorSequenceKeypoint.new((k - 1) / math.max(1, #t.colors - 1), UI.rgb(col))
+				)
+			end
+			if #keys == 1 then
+				table.insert(keys, ColorSequenceKeypoint.new(1, UI.rgb(t.colors[1])))
+			end
+			UI.new("Frame", {
+				Position = UDim2.fromOffset(14, 82),
+				Size = UDim2.new(1, -28, 0, 26),
+				BackgroundColor3 = Color3.new(1, 1, 1),
+				Parent = c,
+			}, { UI.corner(13), UI.new("UIGradient", { Color = ColorSequence.new(keys) }) })
+			local label: string
+			local color: Color3
+			local action: (() -> ())? = nil
+			if has and equipped == t.id then
+				label, color = "EQUIPPED", Color3.fromRGB(120, 200, 120)
+				action = function()
+					Remotes.get(Remotes.Names.EquipTrail):FireServer("")
+				end
+			elseif has then
+				label, color = "EQUIP", Color3.fromRGB(160, 90, 255)
+				action = function()
+					Remotes.get(Remotes.Names.EquipTrail):FireServer(t.id)
+				end
+			elseif t.currency == "pass" then
+				local pass = t.pass and Products.pass(t.pass)
+				if pass and pass.id > 0 then
+					label, color = "R$ " .. pass.price, Color3.fromRGB(70, 210, 90)
+					action = function()
+						MarketplaceService:PromptGamePassPurchase(player, pass.id)
+					end
+				else
+					label, color = "SOON", Color3.fromRGB(160, 160, 170)
+				end
+			elseif t.currency == "candy" then
+				label, color = t.price .. " 🍬", Color3.fromRGB(255, 150, 40)
+				action = function()
+					Remotes.get(Remotes.Names.BuyTrail):FireServer(t.id)
+				end
+			else
+				label, color = Format.cash(t.price), Color3.fromRGB(70, 210, 90)
+				action = function()
+					Remotes.get(Remotes.Names.BuyTrail):FireServer(t.id)
+				end
+			end
+			local b = Panel.button(
+				{ Position = UDim2.new(0, 10, 1, -54), Size = UDim2.new(1, -20, 0, 44) },
+				color,
+				color:Lerp(Color3.new(), 0.5),
+				label
+			)
+			b.Parent = c
+			b.Activated:Connect(function()
+				if action then
+					action()
+				end
+			end)
+		end
+	end
+	-- refresh while open (bought / equipped / candy changed)
+	for _, a in { "TrailsOwned", "Trail", "Candy" } do
+		player:GetAttributeChangedSignal(a):Connect(function()
+			if panel.isOpen() and panel.onOpen then
+				panel.onOpen()
+			end
+		end)
+	end
+end
+
 -- ===== Index =====
 local function buildIndex(panel: Panel.Panel)
 	local body = panel.body
@@ -555,6 +672,17 @@ function Panels.start()
 	buildFuse(fuse)
 	buildGift(giftPanel)
 	buildOffer(offerPanel)
+	local trails = Panel.new(
+		"TrailsPanel",
+		"🌈 TRAILS",
+		Color3.fromRGB(200, 120, 255),
+		Color3.fromRGB(70, 20, 110),
+		Vector2.new(600, 330)
+	)
+	buildTrails(trails)
+	Remotes.get(Remotes.Names.OpenTrails).OnClientEvent:Connect(function()
+		trails.setOpen(true)
+	end)
 	Remotes.get(Remotes.Names.Offer).OnClientEvent:Connect(function(kind: string)
 		if kind == "cash" then
 			offer("cash", "Short on cash?")

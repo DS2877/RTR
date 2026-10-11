@@ -2,6 +2,7 @@
 -- Main HUD (mobile first): currency pills top-left, menu buttons on the left edge, the
 -- 👑 richest bar at the top center, Lock + Slow Mode buttons, toasts and announcements.
 
+local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
@@ -10,6 +11,7 @@ local Shared = ReplicatedStorage.Shared
 local Format = require(Shared.Format)
 local Remotes = require(Shared.Remotes)
 local Progression = require(Shared.Progression)
+local Products = require(Shared.Config.Products)
 
 local UI = require(script.Parent.Parent.Util.UI)
 local Sound = require(script.Parent.Parent.Util.Sound)
@@ -180,13 +182,18 @@ function HUD.start()
 	-- or right-anchored widgets off their spots). Each widget box scales around its own anchor.
 
 	-- currency pills (top-left)
-	local pills = UI.new("Frame", {
+	local box = UI.new("Frame", {
 		Position = UDim2.fromOffset(10, 10),
-		Size = UDim2.fromOffset(200, 140),
+		Size = UDim2.fromOffset(360, 140),
 		BackgroundTransparency = 1,
 		Parent = gui,
+	})
+	UI.scaleObject(box)
+	local pills = UI.new("Frame", {
+		Size = UDim2.fromOffset(200, 140),
+		BackgroundTransparency = 1,
+		Parent = box,
 	}, { UI.new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }) })
-	UI.scaleObject(pills)
 	local cashL = pill(pills, 1, "💵", Color3.fromRGB(120, 255, 120))
 	local rateL = pill(pills, 2, "📈", Color3.fromRGB(255, 230, 110))
 	local speedL = pill(pills, 3, "⚡", Color3.fromRGB(110, 210, 255))
@@ -221,14 +228,67 @@ function HUD.start()
 	end
 	HUD.cashPill = cashL.Parent :: GuiObject
 
+	-- second column next to the pills: a speed deal chip and (during the season) the candy count
+	local deal = UI.new("TextButton", {
+		Position = UDim2.fromOffset(200, 0),
+		Size = UDim2.fromOffset(150, 40),
+		BackgroundColor3 = Color3.fromRGB(40, 190, 90),
+		Text = "",
+		AutoButtonColor = true,
+		Visible = false,
+		Parent = box,
+	}, { UI.corner(20), UI.stroke(Color3.fromRGB(10, 80, 30), 2.5) })
+	local dealText = UI.bigText({
+		Position = UDim2.fromOffset(8, 5),
+		Size = UDim2.new(1, -16, 1, -10),
+		Text = "",
+		Parent = deal,
+	}, Color3.fromRGB(10, 60, 20), 2)
+	local speedDeal = nil
+	for _, p in Products.Items do
+		if p.kind == "speed" and p.id > 0 and (not speedDeal or p.price < speedDeal.price) then
+			speedDeal = p
+		end
+	end
+	if speedDeal then
+		deal.Visible = true
+		dealText.Text = "⚡ +SPEED  R$" .. speedDeal.price
+		deal.Activated:Connect(function()
+			Sound.play("Click", 0.4)
+			MarketplaceService:PromptProductPurchase(player, speedDeal.id)
+		end)
+	end
+	local candyPill = pill(pills, 4, "🍬", Color3.fromRGB(255, 160, 60))
+	-- the candy pill sits in its own holder so the list layout doesn't stack it under the others
+	local candyFrame = candyPill.Parent :: Frame
+	local holder = UI.new("Frame", {
+		Position = UDim2.fromOffset(200, 92),
+		Size = UDim2.fromOffset(150, 40),
+		BackgroundTransparency = 1,
+		Visible = false,
+		Parent = box,
+	})
+	candyFrame.Size = UDim2.fromScale(1, 1)
+	candyFrame.Parent = holder
+	local function refreshCandy()
+		holder.Visible = workspace:GetAttribute("Season") == "Halloween"
+		candyPill.Text = Format.number(player:GetAttribute("Candy") or 0)
+	end
+	player:GetAttributeChangedSignal("Candy"):Connect(refreshCandy)
+	workspace:GetAttributeChangedSignal("Season"):Connect(refreshCandy)
+	refreshCandy()
+
 	local function refresh()
 		cashTarget = player:GetAttribute("Cash") or 0
 		countCash()
-		rateL.Text = Format.cash(player:GetAttribute("CashPerSec") or 0) .. "/s"
+		local boost = player:GetAttribute("FriendBoost") or 0
+		rateL.Text = Format.cash(player:GetAttribute("CashPerSec") or 0)
+			.. "/s"
+			.. (if boost > 0 then string.format("  👥+%d%%", math.floor(boost * 100 + 0.5)) else "")
 		local pts = player:GetAttribute("SpeedPoints") or 0
 		speedL.Text = Format.number(pts) .. "  (" .. math.floor(Progression.walkSpeed(pts)) .. ")"
 	end
-	for _, a in { "Cash", "CashPerSec", "SpeedPoints" } do
+	for _, a in { "Cash", "CashPerSec", "SpeedPoints", "FriendBoost" } do
 		player:GetAttributeChangedSignal(a):Connect(refresh)
 	end
 	player:GetAttributeChangedSignal("Cash"):Connect(function()
@@ -487,15 +547,70 @@ function HUD.start()
 			return props
 		end
 	end)
-	Remotes.get(Remotes.Names.Offline).OnClientEvent:Connect(function(earned: number, seconds: number)
-		HUD.announce(
-			"💤 Welcome back! Your loot earned "
-				.. Format.cash(earned)
-				.. " in "
-				.. Format.duration(seconds),
-			{ 120, 255, 130 }
-		)
-	end)
+	-- welcome back card: what you earned while away + what your plot makes offline per day
+	Remotes.get(Remotes.Names.Offline).OnClientEvent
+		:Connect(function(earned: number, seconds: number, perDay: number?)
+			local card = UI.new("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5),
+				Size = UDim2.fromOffset(420, 210),
+				BackgroundColor3 = Color3.fromRGB(25, 30, 45),
+				BackgroundTransparency = 0.05,
+				ZIndex = 30,
+				Parent = gui,
+			}, { UI.corner(22), UI.stroke(Color3.fromRGB(120, 255, 130), 4) })
+			UI.scaleObject(card)
+			UI.bigText({
+				Position = UDim2.fromOffset(12, 10),
+				Size = UDim2.new(1, -24, 0, 34),
+				Text = "💤 WELCOME BACK!",
+				TextColor3 = Color3.fromRGB(255, 215, 60),
+				ZIndex = 31,
+				Parent = card,
+			})
+			UI.bigText({
+				Position = UDim2.fromOffset(12, 50),
+				Size = UDim2.new(1, -24, 0, 46),
+				Text = "+" .. Format.cash(earned),
+				TextColor3 = Color3.fromRGB(120, 255, 130),
+				ZIndex = 31,
+				Parent = card,
+			})
+			UI.label({
+				Position = UDim2.fromOffset(12, 98),
+				Size = UDim2.new(1, -24, 0, 40),
+				Text = "earned in " .. Format.duration(seconds) .. (if perDay
+					then "\nYour plot earns " .. Format.cash(perDay) .. "/day offline!"
+					else ""),
+				Font = Enum.Font.GothamBold,
+				ZIndex = 31,
+				Parent = card,
+			})
+			local ok = UI.new("TextButton", {
+				AnchorPoint = Vector2.new(0.5, 1),
+				Position = UDim2.new(0.5, 0, 1, -12),
+				Size = UDim2.fromOffset(180, 48),
+				BackgroundColor3 = Color3.fromRGB(70, 210, 90),
+				Text = "",
+				ZIndex = 31,
+				Parent = card,
+			}, { UI.corner(14), UI.stroke(Color3.fromRGB(20, 90, 30), 3) })
+			UI.bigText({
+				Position = UDim2.fromOffset(6, 6),
+				Size = UDim2.new(1, -12, 1, -12),
+				Text = "NICE!",
+				ZIndex = 32,
+				Parent = ok,
+			}, Color3.fromRGB(20, 90, 30), 2.5)
+			Sound.play("Collect", 0.7)
+			local function close()
+				if card.Parent then
+					card:Destroy()
+				end
+			end
+			ok.Activated:Connect(close)
+			task.delay(12, close)
+		end)
 	Remotes.get(Remotes.Names.Crown).OnClientEvent:Connect(function(gained: boolean)
 		if gained then
 			Sound.play("Crown", 0.7)

@@ -27,6 +27,9 @@ local Fuse = require(Services.Fuse)
 local Product = require(Services.Product)
 local Admin = require(Services.Admin)
 local Events = require(Services.Events)
+local Cosmetic = require(Services.Cosmetic)
+local Pickups = require(Services.Pickups)
+local Social = require(Services.Social)
 
 Remotes.setup()
 local world = WorldBuilder.build()
@@ -41,6 +44,9 @@ Richest.start(world)
 Fuse.start(world)
 Product.start()
 Admin.start()
+Cosmetic.start(world)
+Pickups.start(world)
+Social.start()
 
 local function toBase(player: Player)
 	local s = State.get(player)
@@ -64,6 +70,7 @@ local function onCharacter(player: Player, character: Model)
 	end)
 	task.spawn(Richest.onCharacter, player)
 	task.spawn(Product.onCharacter, player)
+	task.spawn(Cosmetic.onCharacter, player)
 end
 
 local function giveOffline(player: Player)
@@ -75,10 +82,13 @@ local function giveOffline(player: Player)
 	if away < 60 then
 		return
 	end
-	local earned = math.floor(Bases.incomePerSecond(player) * away * Economy.OfflineRate)
+	local perSecond = Bases.incomePerSecond(player) * Economy.OfflineRate
+	local earned = math.floor(perSecond * away)
 	if earned > 0 then
 		Wallet.add(player, earned)
-		Net.fire(player, Remotes.Names.Offline, earned, away)
+		-- perDay: what the plot earns offline in a full day (capped at OfflineMaxHours)
+		local perDay = math.floor(perSecond * math.min(86400, Economy.OfflineMaxHours * 3600))
+		Net.fire(player, Remotes.Names.Offline, earned, away, perDay)
 	end
 end
 
@@ -104,6 +114,7 @@ local function onPlayerAdded(player: Player)
 	player:SetAttribute("Steals", data.Stats.Steals + data.Stats.PlayerSteals)
 	player:SetAttribute("Collected", data.Stats.Collected)
 	player:SetAttribute("TutorialDone", data.TutorialDone)
+	Cosmetic.syncAttributes(player)
 	player:SetAttribute("Loaded", true)
 	Bases.sync(player)
 

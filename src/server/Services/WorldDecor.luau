@@ -917,4 +917,207 @@ function WorldDecor.skyline(parent: Instance, fromX: number, toX: number)
 	end
 end
 
+-- "SAFE ZONE" painted on the floor just inside a base entrance (reads walking in).
+function WorldDecor.safeZone(model: Model, origin: CFrame, floorTop: number)
+	local p = deco(
+		model,
+		"SafeZone",
+		Vector3.new(World.EntranceWidth - 2, 0.05, 5),
+		origin * CFrame.new(0, floorTop + 0.15, -3.5),
+		rgb(255, 255, 255),
+		M.SmoothPlastic
+	)
+	p.Transparency = 1
+	local sg = Instance.new("SurfaceGui")
+	sg.Face = Enum.NormalId.Top
+	sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	sg.PixelsPerStud = 30
+	sg.LightInfluence = 0
+	sg.Parent = p
+	local l = Instance.new("TextLabel")
+	l.Size = UDim2.fromScale(1, 1)
+	l.BackgroundTransparency = 1
+	l.Font = Enum.Font.LuckiestGuy
+	l.TextScaled = true
+	l.Text = "SAFE ZONE"
+	l.TextColor3 = rgb(120, 255, 140)
+	l.TextTransparency = 0.1
+	local st = Instance.new("UIStroke")
+	st.Thickness = 4
+	st.Color = rgb(10, 60, 20)
+	st.Parent = l
+	l.Parent = sg
+end
+
+-- A neon booth on the plaza; its prompt opens the trails menu.
+function WorldDecor.trailsShop(parent: Instance, pos: Vector3): ProximityPrompt
+	local f = Instance.new("Model")
+	f.Name = "TrailsShop"
+	f.Parent = parent
+	local base = CFrame.new(pos)
+	part(
+		f,
+		"Counter",
+		Vector3.new(12, 3.5, 4),
+		base * CFrame.new(0, 1.75, 0),
+		rgb(60, 30, 90),
+		M.SmoothPlastic
+	)
+	part(
+		f,
+		"CounterTop",
+		Vector3.new(12.6, 0.5, 4.6),
+		base * CFrame.new(0, 3.75, 0),
+		rgb(255, 120, 255),
+		M.Neon
+	)
+	for _, x in { -5.5, 5.5 } do
+		part(f, "Post", Vector3.new(0.8, 10, 0.8), base * CFrame.new(x, 5, 1.6), rgb(40, 20, 60), M.Metal)
+	end
+	local sign = part(
+		f,
+		"Sign",
+		Vector3.new(13, 3.4, 0.6),
+		base * CFrame.new(0, 10.5, 1.6),
+		rgb(30, 15, 45),
+		M.SmoothPlastic
+	)
+	label(sign, Enum.NormalId.Front, "🌈 TRAILS SHOP", rgb(255, 150, 255))
+	label(sign, Enum.NormalId.Back, "🌈 TRAILS SHOP", rgb(255, 150, 255))
+	local awning = part(
+		f,
+		"Awning",
+		Vector3.new(13, 0.5, 6),
+		base * CFrame.new(0, 8.6, -0.6) * CFrame.Angles(math.rad(-10), 0, 0),
+		rgb(255, 90, 200),
+		M.Fabric
+	)
+	light(awning, rgb(255, 140, 255), 18, 1.5)
+	for i = 0, 2 do
+		local orb = deco(
+			f,
+			"Orb",
+			Vector3.new(1.2, 1.2, 1.2),
+			base * CFrame.new(-3 + i * 3, 4.8, 0),
+			Color3.fromHSV(i / 3, 0.7, 1),
+			M.Neon,
+			Enum.PartType.Ball
+		)
+		CollectionService:AddTag(orb, "Bob")
+	end
+	local pp = Instance.new("ProximityPrompt")
+	pp.ActionText = "Trails"
+	pp.ObjectText = "Glow while you run"
+	pp.HoldDuration = 0
+	pp.MaxActivationDistance = 14
+	pp.RequiresLineOfSight = false
+	pp.Parent = f:FindFirstChild("Counter") :: BasePart
+	return pp
+end
+
+-- ===== Halloween =====
+local function pumpkin(parent: Instance, cf: CFrame, scale: number)
+	local body = part(
+		parent,
+		"Pumpkin",
+		Vector3.new(3.2, 2.6, 3.2) * scale,
+		cf * CFrame.new(0, 1.3 * scale, 0),
+		rgb(255, 120, 20),
+		M.SmoothPlastic,
+		Enum.PartType.Ball
+	)
+	part(
+		parent,
+		"Stem",
+		Vector3.new(0.4, 0.8, 0.4) * scale,
+		cf * CFrame.new(0, 2.8 * scale, 0),
+		rgb(70, 120, 40),
+		M.Wood
+	)
+	local sg = Instance.new("SurfaceGui")
+	sg.Face = Enum.NormalId.Back
+	sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	sg.PixelsPerStud = 40
+	sg.LightInfluence = 0
+	sg.Parent = body
+	local face = Instance.new("TextLabel")
+	face.Size = UDim2.fromScale(1, 1)
+	face.BackgroundTransparency = 1
+	face.Font = Enum.Font.GothamBlack
+	face.TextScaled = true
+	face.Text = "▲ ▲\n◡◡◡"
+	face.TextColor3 = rgb(255, 230, 90)
+	face.Parent = sg
+	light(body, rgb(255, 150, 40), 9, 1)
+end
+
+local function floatingEmoji(parent: Instance, pos: Vector3, emoji: string, size: number)
+	local anchor =
+		deco(parent, "Spooky", Vector3.new(1, 1, 1), CFrame.new(pos), rgb(0, 0, 0), M.SmoothPlastic)
+	anchor.Transparency = 1
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.fromScale(size, size)
+	bb.MaxDistance = 260
+	bb.LightInfluence = 0
+	bb.Parent = anchor
+	local l = Instance.new("TextLabel")
+	l.Size = UDim2.fromScale(1, 1)
+	l.BackgroundTransparency = 1
+	l.TextScaled = true
+	l.Font = Enum.Font.GothamBold
+	l.Text = emoji
+	l.Parent = bb
+	CollectionService:AddTag(anchor, "Bob")
+end
+
+-- Pumpkins at every entrance, cobwebs on the base towers, bats over the skyline and ghosts on
+-- Rich Street. `bases`/`vaults` are the WorldBuilder records.
+function WorldDecor.halloween(parent: Instance, bases: { any }, vaults: { any }, streetEnd: number)
+	local f = Instance.new("Folder")
+	f.Name = "Halloween"
+	f.Parent = parent
+	for _, b in bases do
+		local o: CFrame = b.origin
+		for _, lx in { -12, 12 } do
+			-- facing out of the base (Back face = toward the plaza)
+			pumpkin(f, o * CFrame.new(lx, 0.3, 3), 1)
+		end
+		for _, lx in { -World.BaseWidth / 2, World.BaseWidth / 2 } do
+			floatingEmoji(f, (o * CFrame.new(lx, World.WallHeight + 7, 0)).Position, "🕸️", 5)
+		end
+	end
+	for _, v in vaults do
+		local o: CFrame = v.origin
+		for _, lx in { -21, 21 } do
+			pumpkin(f, o * CFrame.new(lx, 0.4, 6), 1.3)
+		end
+	end
+	local rng = Random.new(31)
+	for x = World.StreetStartX + 40, streetEnd, 70 do
+		floatingEmoji(
+			f,
+			Vector3.new(
+				x,
+				rng:NextNumber(60, 110),
+				(if rng:NextNumber() < 0.5 then -1 else 1) * rng:NextNumber(110, 150)
+			),
+			"🦇",
+			9
+		)
+		floatingEmoji(
+			f,
+			Vector3.new(
+				x + 35,
+				rng:NextNumber(14, 22),
+				(if rng:NextNumber() < 0.5 then -1 else 1) * rng:NextNumber(26, 30)
+			),
+			"👻",
+			6
+		)
+	end
+	for x = -200, 200, 50 do
+		pumpkin(f, CFrame.new(x, 0.3, if (x // 50) % 2 == 0 then 7 else -7), 0.9)
+	end
+end
+
 return WorldDecor

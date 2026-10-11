@@ -16,6 +16,8 @@ Remotes.Names = {
 	Fuse = "Fuse", -- (itemId: string, mutation: string)
 	RequestSync = "RequestSync", -- ()
 	GiftTarget = "GiftTarget", -- (userId: number) who the next gift purchase is for
+	BuyTrail = "BuyTrail", -- (trailId: string)
+	EquipTrail = "EquipTrail", -- (trailId: string) "" = take it off
 	-- server -> client
 	Notice = "Notice", -- (text: string, kind: string) small toast for one player
 	Announce = "Announce", -- (text: string, color: {number}, sound: string?) server-wide message
@@ -24,11 +26,13 @@ Remotes.Names = {
 	Deposited = "Deposited", -- (itemName, rarity, mutation, income: number, title: string?) loot landed
 	Sync = "Sync", -- ({ Found, Items, Passes }) index + plot contents for panels
 	OpenFuse = "OpenFuse", -- ()
-	Offline = "Offline", -- (earned: number, seconds: number)
 	Crown = "Crown", -- (gained: boolean) you became / stopped being the richest
 	Alarm = "Alarm", -- (vaultName: string) a guard spotted you
 	CashFX = "CashFX", -- (amount: number, from: Vector3?) coins fly into the cash counter
 	Offer = "Offer", -- (kind: string) contextual shop offer ("speed" | "cash")
+	Pickup = "Pickup", -- (cash: number, candy: number, at: Vector3) you grabbed a street pickup
+	OpenTrails = "OpenTrails", -- () the trails shop prompt was used
+	Offline = "Offline", -- (earned: number, seconds: number, perDay: number)
 }
 
 local FOLDER_NAME = "Remotes"

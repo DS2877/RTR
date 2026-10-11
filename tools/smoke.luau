@@ -60,6 +60,10 @@ local Net = req(Server, "Net")
 local Data = req(Services, "Data")
 local Wallet = req(Services, "Wallet")
 local Assets = req(Shared:WaitForChild("Config"), "Assets")
+local Cosmetics = req(Shared:WaitForChild("Config"), "Cosmetics")
+local Cosmetic = req(Services, "Cosmetic")
+local Pickups = req(Services, "Pickups")
+local Social = req(Services, "Social")
 
 -- ===== boot (same order as init.server.luau) =====
 local world: any = nil
@@ -92,6 +96,13 @@ step("Fuse.start", function()
 end)
 step("Product.start", Product.start)
 step("Admin.start", Admin.start)
+step("Cosmetic.start", function()
+	Cosmetic.start(world)
+end)
+step("Pickups.start", function()
+	Pickups.start(world)
+end)
+step("Social.start", Social.start)
 
 -- ===== helpers =====
 local function faceNormal(part: BasePart, face: Enum.NormalId): Vector3
@@ -329,6 +340,17 @@ if lanes then
 	end
 end
 check("one lane out, one lane home", laneDirs[1] == true and laneDirs[-1] == true)
+check("trails shop with a prompt", world.trailsPrompt ~= nil and world.trailsPrompt:IsA("ProximityPrompt"))
+for _, base in world.bases do
+	check("base " .. base.id .. " SAFE ZONE on the floor", base.model:FindFirstChild("SafeZone") ~= nil)
+end
+check("street pickups placed", #Pickups.all() >= 30, #Pickups.all())
+local season = Cosmetic.seasonActive()
+check("Halloween decor matches the season", (root:FindFirstChild("Halloween") ~= nil) == season)
+check(
+	"friend boost math",
+	Social.boostFor(0) == 0 and Social.boostFor(2) == 0.2 and Social.boostFor(9) == 0.3
+)
 for _, vault in world.vaults do
 	local decor = vault.model:FindFirstChild("Decor")
 	check("vault " .. vault.index .. " has themed decor", decor ~= nil and #decor:GetChildren() >= 8)
@@ -579,6 +601,27 @@ if sim and A and B then
 		assert(got(A, Remotes.Names.Deposited), "no STOLEN card")
 	end)
 
+	step("the STOLEN card names the vault", function()
+		local title = nil
+		for _, m in inbox[A] or {} do
+			if m.name == Remotes.Names.Deposited then
+				title = m.args[5]
+			end
+		end
+		assert(title and string.find(title, "YOU STOLE FROM", 1, true), "title " .. tostring(title))
+	end)
+
+	step("upgrade signs show the next level and price", function()
+		local found = false
+		for _, sg in a.base.plotSign:GetChildren() do
+			local l = sg:IsA("SurfaceGui") and sg:FindFirstChildOfClass("TextLabel")
+			if l and string.find(l.Text, "Lv 2", 1, true) and string.find(l.Text, "$", 1, true) then
+				found = true
+			end
+		end
+		assert(found, "plot sign doesn't show Lv 2 -> 3 and a price")
+	end)
+
 	step("GUARD STRIKE: sleeping guards catch nobody", function()
 		Events.start("GuardStrike", 30)
 		assert(workspace:GetAttribute("EventId") == "GuardStrike", "event attribute not set")
@@ -698,6 +741,50 @@ if sim and A and B then
 			end
 		end
 		assert(gold == 1 and plain == 0, "fuse gave " .. gold .. " gold / " .. plain .. " plain")
+	end)
+
+	step("street pickup: cash (+ candy in season), then it respawns later", function()
+		local pick = nil
+		for _, p in Pickups.all() do
+			if p.active then
+				pick = p
+				break
+			end
+		end
+		assert(pick, "no active pickup")
+		local cash, candy = a.data.Cash, a.data.Candy
+		moveTo(A, pick.part.Position)
+		task.wait(0.4)
+		assert(a.data.Cash > cash, "no cash from the pickup")
+		assert(not pick.active and pick.part.Transparency == 1, "pickup still there")
+		assert(got(A, Remotes.Names.Pickup), "no pickup popup")
+		if season then
+			assert(a.data.Candy > candy, "no candy during Halloween")
+		end
+		moveTo(A, Vector3.new(0, 400, 0))
+	end)
+
+	step("trails: can't afford -> refused; buy, equip, take off; pass trail needs the pass", function()
+		a.data.Cash = 0
+		assert(not Cosmetic.buy(A, "Sparkle"), "bought without cash")
+		Wallet.add(A, 1e4)
+		assert(Cosmetic.buy(A, "Sparkle"), "buy failed")
+		assert(a.data.Trails.Sparkle and a.data.Trail == "Sparkle", "not owned/equipped")
+		assert(A.Character.PrimaryPart:FindFirstChild("RTR_Trail"), "no trail on the character")
+		assert(A.attrs.TrailsOwned == "Sparkle", "TrailsOwned attr " .. tostring(A.attrs.TrailsOwned))
+		assert(Cosmetic.equip(A, ""), "unequip failed")
+		assert(A.Character.PrimaryPart:FindFirstChild("RTR_Trail") == nil, "trail still on")
+		assert(
+			not Cosmetic.buy(A, "Rainbow") and not Cosmetic.equip(A, "Rainbow"),
+			"pass trail without the pass"
+		)
+		a.passes.RainbowTrail = true
+		assert(Cosmetic.equip(A, "Rainbow"), "pass owner can't equip Rainbow")
+		a.passes.RainbowTrail = nil
+		if season then
+			Cosmetic.addCandy(A, Cosmetics.trail("Pumpkin").price)
+			assert(Cosmetic.buy(A, "Pumpkin"), "candy trail failed")
+		end
 	end)
 
 	step("Auto Collect pass: cash goes straight to the wallet", function()

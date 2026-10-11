@@ -21,6 +21,7 @@ local Data = require(script.Parent.Data)
 local Wallet = require(script.Parent.Wallet)
 local Bases = require(script.Parent.Bases)
 local Movement = require(script.Parent.Movement)
+local Cosmetic = require(script.Parent.Cosmetic)
 
 local Product = {}
 
@@ -62,7 +63,8 @@ function Product.onCharacter(player: Player)
 	end
 end
 
-local function grantPass(player: Player, key: string)
+-- `fresh`: just bought/gifted now (not loaded on join), so new cosmetics get equipped.
+local function grantPass(player: Player, key: string, fresh: boolean?)
 	local s = State.get(player)
 	if not s then
 		return
@@ -72,6 +74,8 @@ local function grantPass(player: Player, key: string)
 	Bases.changed(player)
 	if key == "VIP" then
 		vipTag(player)
+	elseif key == "RainbowTrail" and fresh then
+		Cosmetic.equip(player, "Rainbow")
 	end
 end
 
@@ -115,7 +119,7 @@ local function grantGift(buyer: Player, pass: Products.Pass)
 	local ts = target and State.get(target)
 	if target and ts and not ts.passes[pass.key] then
 		ts.data.GiftedPasses[pass.key] = true
-		grantPass(target, pass.key)
+		grantPass(target, pass.key, true)
 		Net.notice(target, "🎁 " .. buyer.DisplayName .. " gifted you " .. pass.name .. "!", "good")
 		Net.notice(buyer, "🎁 You gifted " .. pass.name .. " to " .. target.DisplayName .. "!", "good")
 		celebrate(buyer, "gifted " .. pass.name .. " to " .. target.DisplayName .. "!")
@@ -125,7 +129,7 @@ local function grantGift(buyer: Player, pass: Products.Pass)
 	local bs = State.get(buyer)
 	if bs then
 		bs.data.GiftedPasses[pass.key] = true
-		grantPass(buyer, pass.key)
+		grantPass(buyer, pass.key, true)
 		Net.notice(buyer, "🎁 Your friend left, so " .. pass.name .. " is yours!", "good")
 	end
 end
@@ -175,7 +179,7 @@ function Product.start()
 		end
 		for _, pass in Products.Passes do
 			if pass.id == passId then
-				grantPass(player, pass.key)
+				grantPass(player, pass.key, true)
 				Net.notice(player, "Thanks! " .. pass.name .. " unlocked!", "good")
 				celebrate(player, "unlocked " .. pass.emoji .. " " .. pass.name .. "!")
 			end

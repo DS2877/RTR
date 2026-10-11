@@ -5,6 +5,7 @@ local process = require("@lune/process")
 local suites = {
 	{ name = "Format", run = require("./Format.spec") },
 	{ name = "Progression", run = require("./Progression.spec") },
+	{ name = "Cosmetics", run = require("./Cosmetics.spec") },
 }
 
 local failures = 0
