@@ -19,7 +19,7 @@ jobs:
         run: ./tools/install-tools.sh "$HOME/.tools/bin" >> "$GITHUB_PATH"
 
       - name: Format (StyLua)
-        run: stylua --check src
+        run: stylua --check src tools/smoke.luau tests
 
       - name: Lint (Selene)
         run: selene src
@@ -29,6 +29,20 @@ jobs:
 
       - name: Build place (Rojo)
         run: rojo build default.project.json -o rtr.rbxl
+
+      - name: Headless smoke test (saved version, not published)
+        id: smoke
+        env:
+          ROBLOX_KEY: ${{ secrets.RTR_PUBLISHING_KEY }}
+        run: |
+          set +e
+          python3 tools/ci/smoke.py
+          code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          cat smoke-result.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null
+          # 0 = passed, 2 = smoke test unavailable (warning only), 1 = failed
+          if [ "$code" = "1" ]; then exit 1; fi
+          exit 0
 
       - name: Publish to Roblox
         if: github.ref == 'refs/heads/main'

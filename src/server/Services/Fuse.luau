@@ -49,7 +49,8 @@ local function fuse(player: Player, id: string, mut: string)
 		info.name,
 		info.rarity,
 		nextMut,
-		Progression.income(id, nextMut)
+		Progression.income(id, nextMut),
+		"FUSED!"
 	)
 	if nextMut == "Rainbow" then
 		Net.announce(

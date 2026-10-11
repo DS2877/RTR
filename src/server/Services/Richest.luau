@@ -26,6 +26,7 @@ local current: Player? = nil
 local wanted: any = nil
 local reignLines: { TextLabel } = {}
 local reignStore: OrderedDataStore? = nil
+local nameCache: { [number]: string } = {}
 pcall(function()
 	reignStore = DataStoreService:GetOrderedDataStore("RTR_LongestReign_v1")
 end)
@@ -68,7 +69,8 @@ local function crownModel(): Model
 		gem.Material = Enum.Material.Neon
 		gem.CanCollide = false
 		gem.Massless = true
-		gem.CFrame = spike.CFrame * CFrame.new(0, 0.5, 0)
+		-- the spike is turned 90° about Z, so its -Y axis points up out of the band
+		gem.CFrame = spike.CFrame * CFrame.new(0, -0.5, 0)
 		for _, p in { spike, gem } do
 			local w = Instance.new("WeldConstraint")
 			w.Part0 = band
@@ -88,12 +90,8 @@ local function crownModel(): Model
 	return model
 end
 
-local function putCrown(player: Player)
-	local character = player.Character
-	local head = character and character:FindFirstChild("Head")
-	if not character or not head or not head:IsA("BasePart") or character:FindFirstChild("Crown") then
-		return
-	end
+-- Builds a crown and welds it on top of `head`. (Exported for the smoke test.)
+function Richest.attachCrown(head: BasePart, parent: Instance): Model
 	local crown = crownModel()
 	local band = crown.PrimaryPart :: BasePart
 	-- cylinder axis is X: stand it up
@@ -102,7 +100,17 @@ local function putCrown(player: Player)
 	w.Part0 = head
 	w.Part1 = band
 	w.Parent = band
-	crown.Parent = character
+	crown.Parent = parent
+	return crown
+end
+
+local function putCrown(player: Player)
+	local character = player.Character
+	local head = character and character:FindFirstChild("Head")
+	if not character or not head or not head:IsA("BasePart") or character:FindFirstChild("Crown") then
+		return
+	end
+	Richest.attachCrown(head, character)
 end
 
 local function removeCrown(player: Player)
@@ -271,12 +279,16 @@ local function refreshBoard()
 	for i, line in reignLines do
 		local e = entries[i]
 		if e then
-			local name = "Player"
-			local okName, result = pcall(function()
-				return Players:GetNameFromUserIdAsync(tonumber(e.key) :: number)
-			end)
-			if okName and result then
-				name = result
+			local userId = tonumber(e.key) :: number
+			local name = nameCache[userId]
+			if not name then
+				local okName, result = pcall(function()
+					return Players:GetNameFromUserIdAsync(userId)
+				end)
+				name = if okName and result then result else "Player"
+				if okName and result then
+					nameCache[userId] = result
+				end
 			end
 			line.Text = string.format("%d. %s — %s", i, name, Format.duration(e.value))
 		else

@@ -86,7 +86,10 @@ local function buildGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard
 	limb(model, root, "ArmL", Vector3.new(0.9, 2.2, 0.9), CFrame.new(-1.7, 0, 0), suit)
 	limb(model, root, "ArmR", Vector3.new(0.9, 2.2, 0.9), CFrame.new(1.7, 0, 0), suit)
 
+	-- Rigless NPC: R15 mode makes the Humanoid hover the root HipHeight studs above the floor
+	-- (R6 mode looks for leg parts, finds none and trips over).
 	local humanoid = Instance.new("Humanoid")
+	humanoid.RigType = Enum.HumanoidRigType.R15
 	humanoid.HipHeight = 2.5
 	humanoid.WalkSpeed = Vaults[vaultIndex].guardSpeed
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
@@ -124,7 +127,9 @@ local function buildGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard
 	l.Parent = bb
 
 	model.Parent = workspace:FindFirstChild("Guards") or workspace
-	root:SetNetworkOwner(nil)
+	pcall(function()
+		root:SetNetworkOwner(nil) -- the server moves guards (pcall: headless smoke tests have no physics)
+	end)
 	return {
 		model = model,
 		humanoid = humanoid,

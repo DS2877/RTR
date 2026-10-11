@@ -210,6 +210,12 @@ function CarryFX.start()
 	Remotes.get(Remotes.Names.Caught).OnClientEvent:Connect(function(by: string)
 		Sound.play("Caught", 0.8)
 		HUD.announce("💥 CAUGHT by " .. by .. "! The loot went back.", { 255, 90, 90 })
+		-- knock-up: our own client owns our character's physics, so the push happens here
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if root then
+			root.AssemblyLinearVelocity = Vector3.new(0, 45, 0)
+		end
 		local flash = UI.new("Frame", {
 			Size = UDim2.fromScale(1, 1),
 			BackgroundColor3 = Color3.new(1, 1, 1),
@@ -223,7 +229,7 @@ function CarryFX.start()
 	end)
 
 	Remotes.get(Remotes.Names.Deposited).OnClientEvent
-		:Connect(function(name: string, rarity: string, mut: string, income: number)
+		:Connect(function(name: string, rarity: string, mut: string, income: number, title: string?)
 			local tier = Rarity.Tiers[rarity]
 			local m = Mutations.List[mut]
 			local big = rarity == "Legendary" or rarity == "Mythic" or (m and m.mult >= 5)
@@ -240,7 +246,7 @@ function CarryFX.start()
 			UI.bigText({
 				Position = UDim2.fromOffset(10, 8),
 				Size = UDim2.new(1, -20, 0, 26),
-				Text = "STOLEN!",
+				Text = title or "STOLEN!",
 				TextColor3 = Color3.fromRGB(255, 90, 90),
 				Parent = card,
 			})

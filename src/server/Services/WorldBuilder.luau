@@ -327,7 +327,10 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 		Color3.fromRGB(90, 60, 40),
 		Enum.Material.Wood
 	)
-	surfaceText(treadSign, Enum.NormalId.Back, "UPGRADE TREADMILL", Color3.new(1, 1, 1))
+	-- double sided: readable from the entrance and from the treadmill
+	for _, face in { Enum.NormalId.Back, Enum.NormalId.Front } do
+		surfaceText(treadSign, face, "UPGRADE TREADMILL", Color3.new(1, 1, 1))
+	end
 
 	-- collect pad + plot upgrade sign near the entrance
 	local collectPad = block(
@@ -371,7 +374,11 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 		Color3.fromRGB(90, 60, 40),
 		Enum.Material.Wood
 	)
-	surfaceText(plotSign, Enum.NormalId.Back, "UPGRADE PLOT", Color3.new(1, 1, 1))
+	-- the sign stands just inside the front wall: the Front face looks into the base (toward the
+	-- spawn), the Back face at the wall. Text on both so it reads from anywhere.
+	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
+		surfaceText(plotSign, face, "UPGRADE PLOT", Color3.new(1, 1, 1))
+	end
 
 	-- crown beam (visible when this base belongs to THE RICHEST)
 	local beam = block(
@@ -478,7 +485,7 @@ local function buildVault(parent: Instance, index: number, origin: CFrame): Vaul
 				model,
 				"Glass",
 				Vector3.new(6.4, 0.4, 6.4),
-				ped.CFrame * CFrame.new(0, 7, 0),
+				ped.CFrame * CFrame.new(0, 9, 0), -- above the loot label
 				Color3.fromRGB(200, 240, 255),
 				Enum.Material.Glass
 			)
@@ -714,7 +721,7 @@ function WorldBuilder.build(): WorldInfo
 		root,
 		"ReignBoard",
 		Vector3.new(1, 22, 18),
-		CFrame.new(-World.PlazaHalfWidth + 6, 12, 0),
+		CFrame.new(-World.PlazaHalfWidth + 6, 12, 9), -- off to the side so the fuse machine never hides it
 		Color3.fromRGB(30, 25, 35),
 		Enum.Material.SmoothPlastic
 	)
@@ -745,11 +752,12 @@ function WorldBuilder.build(): WorldInfo
 
 	-- Fuse machine
 	local fx = -World.PlazaHalfWidth + 40
+	local FUSE_Z = -16
 	local machine = block(
 		root,
 		"FuseMachine",
 		Vector3.new(10, 10, 10),
-		CFrame.new(fx, 5, 0),
+		CFrame.new(fx, 5, FUSE_Z),
 		Color3.fromRGB(150, 70, 255),
 		Enum.Material.Neon
 	)
@@ -758,7 +766,7 @@ function WorldBuilder.build(): WorldInfo
 		root,
 		"FuseBase",
 		Vector3.new(14, 2, 14),
-		CFrame.new(fx, 1, 0),
+		CFrame.new(fx, 1, FUSE_Z),
 		Color3.fromRGB(60, 40, 90),
 		Enum.Material.Metal
 	)
@@ -766,7 +774,7 @@ function WorldBuilder.build(): WorldInfo
 		root,
 		"FuseSign",
 		Vector3.new(1, 4, 16),
-		CFrame.new(fx, 13.5, 0),
+		CFrame.new(fx, 13.5, FUSE_Z),
 		Color3.fromRGB(60, 40, 90),
 		Enum.Material.SmoothPlastic
 	)

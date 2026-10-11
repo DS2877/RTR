@@ -1,6 +1,7 @@
 --!strict
 -- Robux items. An id of 0 means "not created on Roblox yet": the shop shows it as "Soon" and
--- nothing can be bought. Create them in Creator Hub (Monetization) and paste the ids here.
+-- nothing can be bought. Push a branch named ops/* to create them on Roblox: the ops workflow
+-- (tools/ops/roblox_setup.py) creates missing ones by name, syncs prices and writes the ids back.
 -- Rules: known contents for everything bought with Robux, no random rewards for Robux.
 
 export type Pass = { key: string, id: number, name: string, emoji: string, price: number, desc: string }

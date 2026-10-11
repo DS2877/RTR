@@ -102,7 +102,7 @@ local SHAPES: { [string]: (model: Model, color: Color3) -> () } = {
 		part(
 			model,
 			"Body",
-			Vector3.new(1.8, 3.6, 1.8),
+			Vector3.new(3.6, 1.8, 1.8), -- cylinder length is X: 3.6 tall once stood up
 			CFrame.Angles(0, 0, math.rad(90)),
 			color,
 			Enum.PartType.Cylinder

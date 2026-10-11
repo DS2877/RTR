@@ -174,7 +174,8 @@ function HUD.start()
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		Parent = player:WaitForChild("PlayerGui"),
 	})
-	UI.autoScale(gui)
+	-- No UIScale on the ScreenGui itself (that scales from the top-left corner and drags centered
+	-- or right-anchored widgets off their spots). Each widget box scales around its own anchor.
 
 	-- currency pills (top-left)
 	local pills = UI.new("Frame", {
@@ -183,6 +184,7 @@ function HUD.start()
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, { UI.new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }) })
+	UI.scaleObject(pills)
 	local cashL = pill(pills, 1, "💵", Color3.fromRGB(120, 255, 120))
 	local rateL = pill(pills, 2, "📈", Color3.fromRGB(255, 230, 110))
 	local speedL = pill(pills, 3, "⚡", Color3.fromRGB(110, 210, 255))
@@ -215,6 +217,7 @@ function HUD.start()
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		}),
 	})
+	UI.scaleObject(menu)
 	HUD.button("Shop", "🛒", "SHOP", Color3.fromRGB(255, 80, 100), menu, 1)
 	HUD.button("Index", "📖", "INDEX", Color3.fromRGB(80, 170, 255), menu, 2)
 	local lockB = HUD.button("Lock", "🔒", "LOCK", Color3.fromRGB(255, 190, 50), menu, 3)
@@ -269,6 +272,7 @@ function HUD.start()
 		BackgroundTransparency = 0.15,
 		Parent = gui,
 	}, { UI.corner(18), UI.stroke(Color3.fromRGB(255, 205, 40), 3) })
+	UI.scaleObject(crownBar)
 	local crownText = UI.bigText({
 		Position = UDim2.fromOffset(10, 5),
 		Size = UDim2.new(1, -20, 1, -10),
@@ -309,14 +313,22 @@ function HUD.start()
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		}),
 	})
+	UI.scaleObject(toastHolder)
 
-	announceLabel = UI.bigText({
+	-- the label gets its own "Bump" UIScale, so the screen scale sits on a holder frame
+	local announceHolder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 46),
 		Size = UDim2.fromOffset(700, 44),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	})
+	UI.scaleObject(announceHolder)
+	announceLabel = UI.bigText({
+		Size = UDim2.fromScale(1, 1),
 		Text = "",
 		Visible = false,
-		Parent = gui,
+		Parent = announceHolder,
 	}, DARK, 3)
 
 	Remotes.get(Remotes.Names.Notice).OnClientEvent:Connect(function(text: string, kind: string)

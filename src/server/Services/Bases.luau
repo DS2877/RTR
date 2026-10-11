@@ -332,8 +332,10 @@ local function teleportIntrudersOut(base: any, owner: Player)
 	for _, p in Players:GetPlayers() do
 		if p ~= owner then
 			local r = State.root(p)
-			if r and Bases.contains(base, r.Position) then
-				r.CFrame = base.origin * CFrame.new(0, 4, 10)
+			local character = p.Character
+			if r and character and Bases.contains(base, r.Position) then
+				-- 10 studs out in front of the entrance, facing away from the base
+				character:PivotTo(base.origin * CFrame.new(0, 4, 10) * CFrame.Angles(0, math.pi, 0))
 			end
 		end
 	end
@@ -486,6 +488,17 @@ function Bases.start(worldInfo: any)
 					local lockedUntil = s.base.model:GetAttribute("LockedUntil") or 0
 					if lockedUntil > 0 and t >= lockedUntil then
 						Bases.unlock(s.base)
+					elseif lockedUntil > 0 then
+						-- nobody gets past a lock (not even by turning the laser off on their own client)
+						teleportIntrudersOut(s.base, player)
+					end
+					-- standing still on the pad keeps collecting (Touched only fires on a new step)
+					local r = State.root(player)
+					if r then
+						local l = (s.base.collectPad :: BasePart).CFrame:PointToObjectSpace(r.Position)
+						if math.abs(l.X) <= 4.5 and math.abs(l.Z) <= 4.5 and l.Y > 0 and l.Y < 7 then
+							collect(player)
+						end
 					end
 				end
 			end

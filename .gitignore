@@ -6,3 +6,5 @@ roblox.yml
 sourcemap.json
 /out/
 .tools/
+smoke-result.md
+__pycache__/

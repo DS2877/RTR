@@ -127,11 +127,7 @@ function Carry.caught(player: Player, by: string)
 	Carry.drop(player)
 	s.data.Stats.Caught += 1
 	Net.fire(player, Remotes.Names.Caught, by)
-	Movement.stun(player, Economy.StunSeconds)
-	local r = State.root(player)
-	if r then
-		r.AssemblyLinearVelocity = Vector3.new(0, 45, 0)
-	end
+	Movement.stun(player, Economy.StunSeconds) -- the knock-up is done by the client (it owns its physics)
 end
 
 local function deposit(player: Player)
