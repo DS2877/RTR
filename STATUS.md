@@ -37,7 +37,7 @@
 6. Med ~30 speed: följ pilen till Grandpa's Garage. Vakten ska **stå upp och gå** (inte ligga ner eller sväva). Håll STEAL på ett föremål → röd skärm, "RUN!!", föremålet svävar över huvudet, vakten jagar. Spring hem → "SAFE ZONE" → "STOLEN!"-kort, föremålet står på en piedestal.
 7. Bli fångad med flit: du ska studsa upp, se "CAUGHT", föremålet går tillbaka i valvet.
 8. Tryck LOCK → röd laser i ingången, du kan själv gå igenom den. Knappen räknar ner.
-9. Shop: ska visa R$-priser (inte "SOON") när ops-workflowet har kört. Prova att trycka ett köp (avbryt i Robloxs dialog om du inte vill köpa).
+9. Shop: ska visa R$-priser (inte "SOON"). Prova att trycka ett köp (avbryt i Robloxs dialog om du inte vill köpa).
 10. Med en kompis (eller ett andra konto): kronan över huvudet på den rikaste, guldstråle över basen, ansiktet på WANTED-tavlan, LOCK-knappen visar "👑 NO". Stjäl från den rikaste → bounty + meddelande till alla. SLAP-knappen när kompisen bär något nära dig.
 11. Admin-kommandon i chatten (du som ägare): `!cash 1e9`, `!speed 1e6`, `!item GoldBar Diamond`, `!reroll`, `!reset`.
 
@@ -45,9 +45,15 @@
 - Fas B (juice), C (retention), D (twisten på max), E (intäkter) enligt planen.
 - Ingen musik än (bara ljudeffekter). Inga egna ikoner/meshes, allt är byggt av parts.
 - Vakterna har ingen gånganimation än (Fas B).
-- Smoke-testet och ops-workflowet behöver rätt behörigheter på API-nyckeln `RTR_PUBLISHING_KEY` (se "Nyckelbehörigheter" nedan). Saknas en behörighet loggas det och publiceringen fortsätter ändå.
+- Grenen `claude/smoke-baseline` (engångstest av smoke-testet mot v1-koden) kunde inte raderas härifrån. Den är ofarlig, men radera den gärna på GitHub.
 
-## Nyckelbehörigheter (Creator Hub → Open Cloud → API Keys → RTR_PUBLISHING_KEY)
+## Ops-körning 2026-10-11 (allt OK, se `tools/ops/ops-log.md`)
+- Passes: 2x Cash (199 R$) `2026352893`, 2x Treadmill (149 R$) `2026682939`, Mega Lock (99 R$) `2026112940`.
+- Produkter: Speed Pack (29 R$) `3717972926`, Cash Bag (49 R$) `3717972928`.
+- Max Players = 8.
+- Ändra pris/lägg till något: ändra `Config/Products.luau` och pusha en branch `ops/<namn>`, merga sedan tillbaka till main.
+
+## Nyckelbehörigheter (Creator Hub → Open Cloud → API Keys → RTR_PUBLISHING_KEY, alla fungerar)
 - `universe-places: write` – publicera (finns redan).
 - `universe.place.luau-execution-session: write` – headless smoke-test.
 - `game-pass: read + write`, `developer-product: read + write` – skapa passes/produkter.
