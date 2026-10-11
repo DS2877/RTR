@@ -23,7 +23,7 @@ function Treadmill.onBelt(base: any, pos: Vector3): boolean
 	return math.abs(l.X) <= belt.Size.X / 2 + 0.5 and math.abs(l.Z) <= belt.Size.Z / 2 and l.Y > 0 and l.Y < 7
 end
 
-function Treadmill.start(worldInfo: any)
+function Treadmill.start(_worldInfo: any)
 	local buffered: { [Player]: number } = {}
 	local sincePopup = 0
 	task.spawn(function()
