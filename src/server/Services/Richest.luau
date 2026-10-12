@@ -55,7 +55,7 @@ local function crownModel(): Model
 	band.Shape = Enum.PartType.Cylinder
 	band.Size = Vector3.new(0.7, 2.2, 2.2)
 	band.Color = gold
-	band.Material = Enum.Material.Foil
+	band.Material = Enum.Material.SmoothPlastic
 	band.CanCollide = false
 	band.Massless = true
 	band.Parent = model
@@ -66,7 +66,7 @@ local function crownModel(): Model
 		spike.Name = "Spike"
 		spike.Size = Vector3.new(0.4, 0.9, 0.4)
 		spike.Color = gold
-		spike.Material = Enum.Material.Foil
+		spike.Material = Enum.Material.SmoothPlastic
 		spike.CanCollide = false
 		spike.Massless = true
 		spike.CFrame = band.CFrame

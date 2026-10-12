@@ -38,9 +38,11 @@ local Assets = {
 		ChaseVolume = 0.42,
 	},
 
-	-- Default R15 animations owned by Roblox (used for the treadmill run while standing still).
+	-- Default R15 animations owned by Roblox (treadmill run, and the NPCs' idle/walk/run).
 	Animations = {
 		Run = "rbxassetid://913376220",
+		Walk = "rbxassetid://913402848",
+		Idle = "rbxassetid://507766666",
 	} :: { [string]: string },
 
 	Images = {} :: { [string]: string },

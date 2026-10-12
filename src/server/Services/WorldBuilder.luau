@@ -20,6 +20,18 @@ local FLOOR = 0.4 -- top of base/zone floors
 local BARRIER_HEIGHT = 50 -- invisible wall above the low base walls (no jumping in)
 local GROUND_DEPTH = 420 -- the island's grass, across (z)
 
+-- each rich person's floor: { material, color }
+local ZONE_FLOORS: { [string]: { any } } = {
+	Grandpa = { Enum.Material.WoodPlanks, { 165, 120, 82 } },
+	Influencer = { Enum.Material.SmoothPlastic, { 255, 196, 222 } },
+	Pirate = { Enum.Material.WoodPlanks, { 140, 98, 64 } },
+	Museum = { Enum.Material.Marble, { 236, 232, 222 } },
+	GoldTycoon = { Enum.Material.Marble, { 245, 214, 130 } },
+	Yacht = { Enum.Material.WoodPlanks, { 214, 182, 138 } },
+	TechBillionaire = { Enum.Material.DiamondPlate, { 78, 84, 100 } },
+	Billionaire = { Enum.Material.Marble, { 44, 40, 52 } },
+}
+
 -- palette (the genre's palace look: navy + gold + lime grass + one accent per base)
 local NAVY = Color3.fromRGB(40, 42, 92)
 local NAVY_DARK = Color3.fromRGB(28, 30, 66)
@@ -449,8 +461,8 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 		Enum.Material.Neon
 	)
 	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromOffset(200, 60)
-	bb.StudsOffset = Vector3.new(0, 4, 0)
+	bb.Size = UDim2.new(10, 0, 2.2, 0) -- studs: shrinks with distance instead of filling the screen
+	bb.StudsOffset = Vector3.new(0, 3, 0)
 	bb.MaxDistance = 90
 	bb.Parent = collectPad
 	local pendingLabel = Instance.new("TextLabel")
@@ -537,26 +549,37 @@ local function buildZone(parent: Instance, index: number, origin: CFrame): Vault
 		return origin * CFrame.new(lx, ly, -depth)
 	end
 
-	studs(
+	-- themed floor (real materials, no studs) + a red carpet down the middle with gold edges
+	local floorStyle = ZONE_FLOORS[def.id] or { Enum.Material.Marble, { 235, 230, 220 } }
+	block(
+		model,
+		"Floor",
+		Vector3.new(HW * 2, FLOOR, L),
+		at(0, FLOOR / 2, L / 2),
+		rgb(floorStyle[2]),
+		floorStyle[1]
+	)
+	deco(
 		block(
 			model,
-			"Floor",
-			Vector3.new(HW * 2, FLOOR, L),
-			at(0, FLOOR / 2, L / 2),
-			color:Lerp(Color3.new(1, 1, 1), 0.3)
+			"Path",
+			Vector3.new(World.PathHalfWidth * 2, 0.1, L),
+			at(0, FLOOR + 0.05, L / 2),
+			Color3.fromRGB(175, 25, 40),
+			Enum.Material.Fabric
 		)
 	)
-	studs(
+	for _, side in { -1, 1 } do
 		deco(
 			block(
 				model,
-				"Path",
-				Vector3.new(World.PathHalfWidth * 2, 0.1, L),
-				at(0, FLOOR + 0.05, L / 2),
-				color:Lerp(Color3.new(0, 0, 0), 0.25)
+				"CarpetEdge",
+				Vector3.new(0.6, 0.12, L),
+				at(side * (World.PathHalfWidth + 0.3), FLOOR + 0.06, L / 2),
+				GOLD
 			)
 		)
-	)
+	end
 	-- side walls in the zone's colors
 	for _, side in { -1, 1 } do
 		block(model, "Wall", Vector3.new(2, WH, L), at(side * HW, WH / 2, L / 2), color)
@@ -575,25 +598,26 @@ local function buildZone(parent: Instance, index: number, origin: CFrame): Vault
 	local pedestals: { BasePart } = {}
 	for _, depth in { 35, 65, 95 } do
 		for _, side in { -1, 1 } do
+			-- white marble display stand with a gold rim (round: cylinders run along X)
 			local ped = block(
 				model,
 				"Pedestal",
-				Vector3.new(6, 2, 6),
-				at(side * 20, FLOOR + 1, depth),
-				trim,
+				Vector3.new(2, 6.4, 6.4),
+				at(side * 20, FLOOR + 1, depth) * CFrame.Angles(0, 0, math.rad(90)),
+				Color3.fromRGB(240, 238, 232),
 				Enum.Material.Marble
 			)
-			local glass = deco(
+			ped.Shape = Enum.PartType.Cylinder
+			local rim = deco(
 				block(
 					model,
-					"Glass",
-					Vector3.new(6.4, 0.4, 6.4),
-					ped.CFrame * CFrame.new(0, 10, 0),
-					Color3.fromRGB(200, 240, 255),
-					Enum.Material.Glass
+					"StandRim",
+					Vector3.new(0.4, 6.9, 6.9),
+					at(side * 20, FLOOR + 2, depth) * CFrame.Angles(0, 0, math.rad(90)),
+					GOLD
 				)
 			)
-			glass.Transparency = 0.6
+			rim.Shape = Enum.PartType.Cylinder
 			table.insert(pedestals, ped)
 		end
 	end
@@ -629,8 +653,13 @@ function WorldBuilder.build(): WorldInfo
 	local minX = -World.PlazaHalfWidth - 60
 	local groundW = streetEnd - minX + 140
 	local groundCenterX = (streetEnd + minX) / 2
-	studs(
-		block(root, "Ground", Vector3.new(groundW, 4, GROUND_DEPTH), CFrame.new(groundCenterX, -2, 0), LIME)
+	block(
+		root,
+		"Ground",
+		Vector3.new(groundW, 4, GROUND_DEPTH),
+		CFrame.new(groundCenterX, -2, 0),
+		Color3.fromRGB(96, 178, 70),
+		Enum.Material.Grass
 	)
 
 	-- the island: beach, ocean and a ring of mountains instead of the world just ending
@@ -652,13 +681,14 @@ function WorldBuilder.build(): WorldInfo
 	end
 
 	-- plaza between the two rows of bases
-	studs(block(
+	block(
 		root,
 		"Plaza",
 		Vector3.new(World.PlazaHalfWidth * 2, 0.3, World.BaseRowZ * 2 - 4),
 		CFrame.new(0, 0.15, 0),
-		Color3.fromRGB(178, 184, 200) -- light grey, not white: white studs glare in sunlight
-	))
+		Color3.fromRGB(196, 182, 158), -- warm paving stones (no studs: they read as a bare baseplate)
+		Enum.Material.Pavement
+	)
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Anchored = true
 	spawn.Size = Vector3.new(10, 0.4, 10)
@@ -691,7 +721,8 @@ function WorldBuilder.build(): WorldInfo
 			"EntryHall",
 			Vector3.new(World.ZoneGap, 0.4, HW * 2),
 			CFrame.new(gx + World.ZoneGap / 2, 0.2, 0),
-			Color3.fromRGB(178, 184, 200)
+			Color3.fromRGB(232, 228, 218),
+			Enum.Material.Marble
 		)
 	)
 	for _, side in { -1, 1 } do
@@ -701,7 +732,7 @@ function WorldBuilder.build(): WorldInfo
 			Vector3.new(5, 30, 5),
 			CFrame.new(gx, 15, side * (HW + 2.5)),
 			GOLD,
-			Enum.Material.Foil
+			Enum.Material.SmoothPlastic
 		)
 		block(
 			root,

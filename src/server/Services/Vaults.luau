@@ -73,7 +73,7 @@ function spawnLoot(slot: Slot, id: string, mut: string)
 	end
 	slot.id = id
 	slot.mut = mut
-	local model = ItemModel.build(id, mut, { extraText = "🔒 " .. Vaults[slot.vault].name, scale = 1.5 })
+	local model = ItemModel.build(id, mut, { scale = 1.6 })
 	ItemModel.place(model, lootCFrame(slot.pedestal))
 	local core = model.PrimaryPart :: BasePart
 	local pp = Instance.new("ProximityPrompt")

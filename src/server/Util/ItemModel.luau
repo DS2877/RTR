@@ -174,7 +174,8 @@ function ItemModel.build(id: string, mutation: string, options: Options?): Model
 	for _, d in model:GetChildren() do
 		if d:IsA("BasePart") then
 			if mut.id == "Gold" then
-				d.Material = Enum.Material.Foil
+				d.Material = Enum.Material.SmoothPlastic -- clean cartoon gold (Foil reads as crumpled wrap)
+				d.Reflectance = 0.25
 			elseif mut.id == "Diamond" then
 				d.Material = Enum.Material.Glass
 				d.Reflectance = 0.3
@@ -231,12 +232,40 @@ function ItemModel.build(id: string, mutation: string, options: Options?): Model
 		fire.Parent = core
 	end
 	if opts.label ~= false then
+		-- Sized in studs (not pixels), so labels shrink with distance like the world does and
+		-- far-away loot never stacks into a wall of text. Only what matters is shown: the name, the
+		-- income, and rarity/odds/mutation when they are special.
+		local p = odds(info.rarity, mut.id)
+		local rare = info.rarity ~= "Common" and info.rarity ~= "Uncommon"
+		local lines: { { text: string, weight: number, color: Color3 } } = {}
+		if mut.id ~= "None" then
+			table.insert(lines, { text = mut.label, weight = 0.8, color = rgb(mut.color :: { number }) })
+		end
+		if rare then
+			table.insert(lines, { text = info.rarity, weight = 0.85, color = rgb(tier.color) })
+		end
+		table.insert(lines, { text = info.name, weight = 1, color = Color3.new(1, 1, 1) })
+		table.insert(lines, {
+			text = "+" .. Format.cash(Progression.income(id, mut.id)) .. "/s",
+			weight = 1.25,
+			color = Color3.fromRGB(110, 255, 120),
+		})
+		if p < 1 / 20 then
+			table.insert(
+				lines,
+				{ text = Format.oneIn(p), weight = 0.7, color = Color3.fromRGB(170, 255, 190) }
+			)
+		end
+		local total = 0
+		for _, l in lines do
+			total += l.weight
+		end
 		local bb = Instance.new("BillboardGui")
 		bb.Name = "Label"
-		bb.Size = UDim2.fromOffset(210, 100)
-		bb.StudsOffset = Vector3.new(0, 2.6 * scale + 1, 0)
+		bb.Size = UDim2.new(6 * scale, 0, 0.62 * total * scale, 0)
+		bb.StudsOffset = Vector3.new(0, 2.4 * scale + 0.4 * total * scale, 0)
 		bb.AlwaysOnTop = false
-		bb.MaxDistance = 110
+		bb.MaxDistance = 75
 		bb.LightInfluence = 0
 		bb.Adornee = core
 		bb.Parent = core
@@ -244,31 +273,20 @@ function ItemModel.build(id: string, mutation: string, options: Options?): Model
 		list.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		list.SortOrder = Enum.SortOrder.LayoutOrder
 		list.Parent = bb
-		local function line(text: string, height: number, textColor: Color3, order: number)
-			local l = Instance.new("TextLabel")
-			l.BackgroundTransparency = 1
-			l.Size = UDim2.new(1, 0, 0, height)
-			l.Font = Enum.Font.FredokaOne
-			l.TextScaled = true
-			l.Text = text
-			l.TextColor3 = textColor
-			l.LayoutOrder = order
-			local s = Instance.new("UIStroke")
-			s.Thickness = 2
-			s.Color = Color3.fromRGB(20, 20, 25)
-			s.Parent = l
-			l.Parent = bb
-		end
-		if mut.id ~= "None" then
-			line(mut.label, 14, rgb(mut.color :: { number }), 0)
-		end
-		-- genre layout: rarity, name, big green income, odds
-		line(info.rarity, 17, rgb(tier.color), 1)
-		line(info.emoji .. " " .. info.name, 19, Color3.new(1, 1, 1), 2)
-		line("+" .. Format.cash(Progression.income(id, mut.id)) .. "/s", 26, Color3.fromRGB(110, 255, 120), 3)
-		line(Format.oneIn(odds(info.rarity, mut.id)), 13, Color3.fromRGB(150, 255, 170), 4)
-		if opts.extraText then
-			line(opts.extraText, 13, Color3.fromRGB(255, 230, 150), 5)
+		for order, l in lines do
+			local t = Instance.new("TextLabel")
+			t.BackgroundTransparency = 1
+			t.Size = UDim2.fromScale(1, l.weight / total)
+			t.Font = Enum.Font.FredokaOne
+			t.TextScaled = true
+			t.Text = l.text
+			t.TextColor3 = l.color
+			t.LayoutOrder = order
+			local st = Instance.new("UIStroke")
+			st.Thickness = 2
+			st.Color = Color3.fromRGB(20, 20, 25)
+			st.Parent = t
+			t.Parent = bb
 		end
 	end
 

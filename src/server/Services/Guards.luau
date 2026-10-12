@@ -15,6 +15,7 @@ local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
 local Carry = require(script.Parent.Carry)
 local Events = require(script.Parent.Events)
+local Rig = require(script.Parent.Parent.Util.Rig)
 
 local Guards = {}
 
@@ -99,6 +100,123 @@ local function limb(
 	return p
 end
 
+-- The floating GUARD / STOP THIEF tag, sized in studs so it shrinks with distance.
+local function makeTag(parent: BasePart, height: number): TextLabel
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.new(5, 0, 1.1, 0)
+	bb.StudsOffset = Vector3.new(0, height, 0)
+	bb.MaxDistance = 120
+	bb.LightInfluence = 0
+	bb.Parent = parent
+	local l = Instance.new("TextLabel")
+	l.Name = "Tag"
+	l.Size = UDim2.fromScale(1, 1)
+	l.BackgroundTransparency = 1
+	l.Font = Enum.Font.FredokaOne
+	l.TextScaled = true
+	l.Text = "GUARD"
+	l.TextColor3 = Color3.fromRGB(255, 255, 255)
+	local s = Instance.new("UIStroke")
+	s.Thickness = 2
+	s.Parent = l
+	l.Parent = bb
+	return l
+end
+
+local function setupHumanoid(humanoid: Humanoid, vaultIndex: number)
+	humanoid.WalkSpeed = Vaults[vaultIndex].guardSpeed
+	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	humanoid.BreakJointsOnDeath = false
+	humanoid.MaxHealth = math.huge
+	humanoid.Health = math.huge
+	for _, st in
+		{
+			Enum.HumanoidStateType.FallingDown,
+			Enum.HumanoidStateType.Ragdoll,
+			Enum.HumanoidStateType.Dead,
+			Enum.HumanoidStateType.Seated,
+			Enum.HumanoidStateType.Climbing,
+		}
+	do
+		humanoid:SetStateEnabled(st, false)
+	end
+end
+
+-- A real Roblox R15 guard in a dark suit (cap, shades, tie, gold badge) with Roblox's own
+-- idle/run animations. Returns nil if R15 rigs can't be created (the part model is used then).
+local function buildRigGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard?
+	local rig =
+		Rig.build("guard", { head = SKIN, torso = SUIT, arms = SUIT, legs = Color3.fromRGB(18, 18, 24) })
+	if not rig then
+		return nil
+	end
+	local root = rig:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local humanoid = rig:FindFirstChildOfClass("Humanoid")
+	local head = rig:FindFirstChild("Head") :: BasePart?
+	local chest = rig:FindFirstChild("UpperTorso") :: BasePart?
+	if not root or not humanoid or not head or not chest then
+		rig:Destroy()
+		return nil
+	end
+	rig.Name = "Guard"
+	rig:SetAttribute("Vault", vaultIndex)
+	rig:SetAttribute("Rig", "R15")
+	rig:PivotTo(home)
+	setupHumanoid(humanoid, vaultIndex)
+	local front = -chest.Size.Z / 2 - 0.04
+	Rig.attach(
+		chest,
+		newPart(rig, "Shirt", Vector3.new(0.7, 1.4, 0.08), Color3.new(1, 1, 1)),
+		CFrame.new(0, 0.2, front)
+	)
+	Rig.attach(
+		chest,
+		newPart(rig, "Tie", Vector3.new(0.28, 1.2, 0.1), trim),
+		CFrame.new(0, 0.15, front - 0.03)
+	)
+	Rig.attach(
+		chest,
+		newPart(rig, "Badge", Vector3.new(0.35, 0.35, 0.08), Color3.fromRGB(255, 205, 40)),
+		CFrame.new(0.5, 0.45, front - 0.02)
+	)
+	local hf = -head.Size.Z / 2 - 0.04
+	Rig.attach(
+		head,
+		newPart(rig, "Shades", Vector3.new(1.05, 0.28, 0.1), Color3.new(0, 0, 0), Enum.Material.Glass),
+		CFrame.new(0, 0.12, hf)
+	)
+	local top = head.Size.Y / 2
+	Rig.attach(head, newPart(rig, "Cap", Vector3.new(1.3, 0.45, 1.3), SUIT), CFrame.new(0, top + 0.12, 0))
+	Rig.attach(
+		head,
+		newPart(rig, "Brim", Vector3.new(1.3, 0.12, 0.6), SUIT),
+		CFrame.new(0, top - 0.05, hf - 0.25)
+	)
+	Rig.attach(
+		head,
+		newPart(rig, "CapBand", Vector3.new(1.34, 0.14, 1.34), trim),
+		CFrame.new(0, top - 0.02, 0)
+	)
+	local tag = makeTag(head, 2.4)
+	rig.Parent = workspace:FindFirstChild("Guards") or workspace
+	pcall(function()
+		root:SetNetworkOwner(nil)
+	end)
+	Rig.setPose(humanoid, "Idle")
+	return {
+		model = rig,
+		humanoid = humanoid,
+		root = root,
+		home = home,
+		vault = vaultIndex,
+		center = home.Position,
+		target = nil,
+		nextPatrol = 0,
+		tag = tag,
+		asleep = false,
+	}
+end
+
 local function buildGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard
 	local model = Instance.new("Model")
 	model.Name = "Guard"
@@ -130,7 +248,7 @@ local function buildGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard
 		Vector3.new(0.45, 0.45, 0.1),
 		CFrame.new(0.7, 0.6, -0.7),
 		Color3.fromRGB(255, 205, 40),
-		Enum.Material.Foil
+		Enum.Material.SmoothPlastic
 	)
 	local head = weld(model, root, "Head", Vector3.new(1.5, 1.5, 1.5), CFrame.new(0, 1.95, 0), SKIN)
 	weld(
@@ -164,42 +282,10 @@ local function buildGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard
 	local humanoid = Instance.new("Humanoid")
 	humanoid.RigType = Enum.HumanoidRigType.R15
 	humanoid.HipHeight = 2.5
-	humanoid.WalkSpeed = Vaults[vaultIndex].guardSpeed
-	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-	humanoid.BreakJointsOnDeath = false
-	humanoid.MaxHealth = math.huge
-	humanoid.Health = math.huge
-	for _, st in
-		{
-			Enum.HumanoidStateType.FallingDown,
-			Enum.HumanoidStateType.Ragdoll,
-			Enum.HumanoidStateType.Dead,
-			Enum.HumanoidStateType.Seated,
-			Enum.HumanoidStateType.Climbing,
-		}
-	do
-		humanoid:SetStateEnabled(st, false)
-	end
+	setupHumanoid(humanoid, vaultIndex)
 	humanoid.Parent = model
 
-	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromOffset(130, 30)
-	bb.StudsOffset = Vector3.new(0, 4.8, 0)
-	bb.MaxDistance = 120
-	bb.LightInfluence = 0
-	bb.Parent = root
-	local l = Instance.new("TextLabel")
-	l.Name = "Tag"
-	l.Size = UDim2.fromScale(1, 1)
-	l.BackgroundTransparency = 1
-	l.Font = Enum.Font.LuckiestGuy
-	l.TextScaled = true
-	l.Text = "GUARD"
-	l.TextColor3 = Color3.fromRGB(255, 255, 255)
-	local s = Instance.new("UIStroke")
-	s.Thickness = 2
-	s.Parent = l
-	l.Parent = bb
+	local l = makeTag(root, 4.8)
 
 	model.Parent = workspace:FindFirstChild("Guards") or workspace
 	pcall(function()
@@ -318,6 +404,20 @@ local function step(g: Guard)
 	end
 end
 
+-- R15 guards: run animation while moving (faster legs for faster guards), idle when standing.
+local function pose(g: Guard)
+	if g.model:GetAttribute("Rig") ~= "R15" then
+		return
+	end
+	local v = g.root.AssemblyLinearVelocity
+	local speed = Vector3.new(v.X, 0, v.Z).Magnitude
+	if speed > 1.5 and not g.asleep then
+		Rig.setPose(g.humanoid, "Run", math.clamp(speed / 18, 0.7, 2.2))
+	else
+		Rig.setPose(g.humanoid, "Idle")
+	end
+end
+
 -- Exposed for the smoke test.
 Guards.step = step
 Guards.all = function(): { Guard }
@@ -332,7 +432,7 @@ function Guards.start(worldInfo: any)
 		local def = Vaults[v.index]
 		local trim = Color3.fromRGB(def.trim[1], def.trim[2], def.trim[3])
 		for _, cf in v.guardSpawns do
-			local g = buildGuard(v.index, cf, trim)
+			local g = buildRigGuard(v.index, cf, trim) or buildGuard(v.index, cf, trim)
 			g.center = v.center
 			table.insert(guards, g)
 		end
@@ -345,6 +445,7 @@ function Guards.start(worldInfo: any)
 				if not ok then
 					warn("guard step failed: " .. tostring(err))
 				end
+				pcall(pose, g)
 			end
 		end
 	end)

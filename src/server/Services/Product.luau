@@ -35,7 +35,7 @@ local function vipTag(player: Player)
 	end
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "VipTag"
-	bb.Size = UDim2.fromOffset(90, 24)
+	bb.Size = UDim2.new(3.4, 0, 0.9, 0) -- studs
 	bb.StudsOffset = Vector3.new(0, 2.6, 0)
 	bb.MaxDistance = 80
 	bb.LightInfluence = 0

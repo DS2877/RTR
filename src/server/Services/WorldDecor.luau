@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
+local Rig = require(script.Parent.Parent.Util.Rig)
 
 local WorldDecor = {}
 
@@ -121,14 +122,21 @@ end
 local function chest(parent: Instance, cf: CFrame)
 	part(parent, "Chest", Vector3.new(4, 2.4, 2.6), cf * CFrame.new(0, 1.2, 0), rgb(120, 75, 40), M.Wood)
 	part(parent, "Lid", Vector3.new(4.1, 0.8, 2.7), cf * CFrame.new(0, 2.8, 0), rgb(100, 60, 30), M.Wood)
-	part(parent, "Lock", Vector3.new(0.6, 0.8, 0.2), cf * CFrame.new(0, 2.3, -1.4), rgb(255, 200, 40), M.Foil)
+	part(
+		parent,
+		"Lock",
+		Vector3.new(0.6, 0.8, 0.2),
+		cf * CFrame.new(0, 2.3, -1.4),
+		rgb(255, 200, 40),
+		M.SmoothPlastic
+	)
 	local gold = deco(
 		parent,
 		"Gold",
 		Vector3.new(3.4, 0.6, 2.2),
 		cf * CFrame.new(0, 3.3, 0.2),
 		rgb(255, 205, 40),
-		M.Foil
+		M.SmoothPlastic
 	)
 	light(gold, rgb(255, 200, 80), 8, 1)
 end
@@ -143,7 +151,7 @@ local function coinPile(parent: Instance, cf: CFrame, scale: number)
 			d,
 			cf * CFrame.new(0, (i + 0.5) * 0.8 * scale, 0),
 			rgb(255, 205, 40),
-			M.Foil
+			M.SmoothPlastic
 		)
 	end
 end
@@ -157,7 +165,7 @@ local function goldBars(parent: Instance, cf: CFrame)
 				Vector3.new(2.2, 0.8, 1.1),
 				cf * CFrame.new((i - (2 - row) / 2) * 2.3, 0.4 + row * 0.8, 0),
 				rgb(255, 205, 50),
-				M.Foil
+				M.SmoothPlastic
 			)
 		end
 	end
@@ -236,7 +244,7 @@ local function column(parent: Instance, cf: CFrame, height: number, color: Color
 end
 
 local function frame(parent: Instance, cf: CFrame, w: number, h: number, art: string, bg: Color3)
-	part(parent, "Frame", Vector3.new(w + 0.6, h + 0.6, 0.3), cf, rgb(190, 140, 40), M.Foil)
+	part(parent, "Frame", Vector3.new(w + 0.6, h + 0.6, 0.3), cf, rgb(190, 140, 40), M.SmoothPlastic)
 	local canvas = part(parent, "Canvas", Vector3.new(w, h, 0.35), cf, bg, M.SmoothPlastic)
 	label(canvas, Enum.NormalId.Front, art, rgb(255, 255, 255), Enum.Font.GothamBold)
 end
@@ -300,9 +308,30 @@ local function statue(parent: Instance, cf: CFrame, scale: number)
 		rgb(40, 35, 45),
 		M.Marble
 	)
-	part(parent, "Legs", Vector3.new(2, 3, 1) * scale, cf * CFrame.new(0, 4.5 * scale, 0), gold, M.Foil)
-	part(parent, "Body", Vector3.new(2.6, 3, 1.4) * scale, cf * CFrame.new(0, 7.5 * scale, 0), gold, M.Foil)
-	part(parent, "Head", Vector3.new(1.6, 1.6, 1.6) * scale, cf * CFrame.new(0, 9.8 * scale, 0), gold, M.Foil)
+	part(
+		parent,
+		"Legs",
+		Vector3.new(2, 3, 1) * scale,
+		cf * CFrame.new(0, 4.5 * scale, 0),
+		gold,
+		M.SmoothPlastic
+	)
+	part(
+		parent,
+		"Body",
+		Vector3.new(2.6, 3, 1.4) * scale,
+		cf * CFrame.new(0, 7.5 * scale, 0),
+		gold,
+		M.SmoothPlastic
+	)
+	part(
+		parent,
+		"Head",
+		Vector3.new(1.6, 1.6, 1.6) * scale,
+		cf * CFrame.new(0, 9.8 * scale, 0),
+		gold,
+		M.SmoothPlastic
+	)
 	part(
 		parent,
 		"TopHat",
@@ -317,7 +346,7 @@ local function statue(parent: Instance, cf: CFrame, scale: number)
 		Vector3.new(0.8, 3, 0.8) * scale,
 		cf * CFrame.new(1.8 * scale, 9 * scale, 0) * CFrame.Angles(0, 0, math.rad(-25)),
 		gold,
-		M.Foil
+		M.SmoothPlastic
 	)
 	local bag = part(
 		parent,
@@ -451,7 +480,7 @@ local THEMES: { [string]: (f: Instance, at: At, trim: Color3) -> () } = {
 			part(f, "Leg", Vector3.new(1, 8.6, 1), at(-38, 4.7, d), bone, M.Marble)
 		end
 		for i = 0, 3 do
-			cyl(f, "Stanchion", 3, 0.5, at(-31, F + 1.5, 56 + i * 6), rgb(255, 200, 40), M.Foil)
+			cyl(f, "Stanchion", 3, 0.5, at(-31, F + 1.5, 56 + i * 6), rgb(255, 200, 40), M.SmoothPlastic)
 		end
 		deco(f, "Rope", Vector3.new(0.3, 0.3, 18), at(-31, 3, 65), rgb(180, 20, 40), M.Fabric)
 		frame(f, at(-46.6, 9, 30) * FACE_RIGHT, 8, 6, "🦙", rgb(60, 110, 70))
@@ -591,7 +620,99 @@ local NPC_STYLE: { [string]: { suit: Color3, hat: string, face: string } } = {
 	Billionaire = { suit = rgb(20, 20, 25), hat = "top", face = "🧐" },
 }
 
+-- The rich person as a real Roblox R15 character (scaled up, idle animation, themed hat).
+-- Falls back to the block-built figure below if R15 rigs can't be created.
+local function rigNPC(model: Model, def: any, cf: CFrame): boolean
+	local style = NPC_STYLE[def.id] or { suit = rgb(40, 40, 50), hat = "top", face = "🤑" }
+	local rig = Rig.build(
+		"npc_" .. def.id,
+		{ head = rgb(255, 205, 160), torso = style.suit, arms = style.suit, legs = rgb(30, 30, 40) }
+	)
+	if not rig then
+		return false
+	end
+	local root = rig:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local humanoid = rig:FindFirstChildOfClass("Humanoid")
+	local head = rig:FindFirstChild("Head") :: BasePart?
+	if not root or not humanoid or not head then
+		rig:Destroy()
+		return false
+	end
+	local trim = rgb(def.trim[1], def.trim[2], def.trim[3])
+	part(model, "Plinth", Vector3.new(8, 1, 8), cf * CFrame.new(0, 0.5, 0), trim, M.Marble)
+	rig.Name = "RichPerson"
+	local S = 2.2
+	rig:ScaleTo(S)
+	-- stand on the plinth: root anchored (it never walks), the body stays free to animate
+	rig:PivotTo(cf * CFrame.new(0, 20, 0))
+	local box, size = rig:GetBoundingBox()
+	rig:PivotTo(rig:GetPivot() + Vector3.new(0, (cf.Position.Y + 1) - (box.Position.Y - size.Y / 2), 0))
+	root.Anchored = true
+	for _, d in rig:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.CanCollide = d == root
+		end
+	end
+	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	-- themed hat (sized from the head)
+	local hs = head.Size.X / 1.2
+	local top = head.Size.Y / 2
+	local function hat(name: string, sz: Vector3, offset: CFrame, color: Color3)
+		local p = part(rig, name, sz * hs, CFrame.new(), color)
+		Rig.attach(head, p, offset)
+	end
+	if style.hat == "cap" then
+		hat("Cap", Vector3.new(1.3, 0.4, 1.3), CFrame.new(0, top + 0.15 * hs, 0), rgb(110, 90, 70))
+		hat("Brim", Vector3.new(1.3, 0.12, 0.6), CFrame.new(0, top, -0.8 * hs), rgb(110, 90, 70))
+	elseif style.hat == "top" then
+		hat("HatBrim", Vector3.new(1.7, 0.15, 1.7), CFrame.new(0, top + 0.05 * hs, 0), rgb(20, 20, 25))
+		hat("TopHat", Vector3.new(1.1, 1.3, 1.1), CFrame.new(0, top + 0.75 * hs, 0), rgb(20, 20, 25))
+		hat("HatBand", Vector3.new(1.15, 0.2, 1.15), CFrame.new(0, top + 0.25 * hs, 0), trim)
+	elseif style.hat == "tricorn" then
+		hat("Tricorn", Vector3.new(1.9, 0.5, 1.4), CFrame.new(0, top + 0.2 * hs, 0), rgb(25, 25, 30))
+		hat("TricornTrim", Vector3.new(1.95, 0.12, 1.45), CFrame.new(0, top, 0), rgb(255, 200, 40))
+	elseif style.hat == "captain" then
+		hat("CaptainHat", Vector3.new(1.4, 0.5, 1.4), CFrame.new(0, top + 0.2 * hs, 0), rgb(255, 255, 255))
+		hat("CaptainBrim", Vector3.new(1.4, 0.12, 0.6), CFrame.new(0, top, -0.8 * hs), rgb(20, 30, 80))
+	end
+	local chest = rig:FindFirstChild("UpperTorso") :: BasePart?
+	if chest then
+		local p = part(rig, "Tie", Vector3.new(0.3, 1.1, 0.1) * hs, CFrame.new(), trim)
+		Rig.attach(chest, p, CFrame.new(0, 0.1 * hs, -chest.Size.Z / 2 - 0.05))
+		if def.id == "GoldTycoon" or def.id == "Billionaire" then
+			local c =
+				part(rig, "Chain", Vector3.new(1.1, 0.15, 0.1) * hs, CFrame.new(), rgb(255, 210, 60), M.Neon)
+			Rig.attach(chest, c, CFrame.new(0, 0.45 * hs, -chest.Size.Z / 2 - 0.08))
+		end
+	end
+	-- name over the head (studs: shrinks with distance)
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.new(12, 0, 2.2, 0)
+	bb.StudsOffset = Vector3.new(0, 3.4, 0)
+	bb.MaxDistance = 160
+	bb.LightInfluence = 0
+	bb.Parent = head
+	local l = Instance.new("TextLabel")
+	l.Size = UDim2.fromScale(1, 1)
+	l.BackgroundTransparency = 1
+	l.Font = Enum.Font.FredokaOne
+	l.TextScaled = true
+	l.Text = def.emoji .. " " .. string.upper(def.name)
+	l.TextColor3 = rgb(255, 230, 120)
+	local st = Instance.new("UIStroke")
+	st.Thickness = 3
+	st.Color = rgb(30, 20, 10)
+	st.Parent = l
+	l.Parent = bb
+	rig.Parent = model
+	Rig.setPose(humanoid, "Idle")
+	return true
+end
+
 function WorldDecor.richNPC(model: Model, def: any, cf: CFrame)
+	if rigNPC(model, def, cf) then
+		return
+	end
 	local style = NPC_STYLE[def.id] or { suit = rgb(40, 40, 50), hat = "top", face = "🤑" }
 	local f = Instance.new("Model")
 	f.Name = "RichPerson"
@@ -688,7 +809,7 @@ function WorldDecor.richNPC(model: Model, def: any, cf: CFrame)
 	end
 	-- name over the head
 	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromOffset(280, 54)
+	bb.Size = UDim2.new(12, 0, 2.2, 0)
 	bb.StudsOffset = Vector3.new(0, 4.5 * S, 0)
 	bb.MaxDistance = 160
 	bb.LightInfluence = 0
@@ -772,7 +893,7 @@ function WorldDecor.fountain(parent: Instance, pos: Vector3)
 	water.Transparency = 0.2
 	water.CanCollide = false
 	cyl(f, "Pillar", 5, 2, base * CFrame.new(0, 3.5, 0), rgb(235, 230, 220), M.Marble)
-	cyl(f, "Bowl", 0.8, 6, base * CFrame.new(0, 6, 0), rgb(255, 205, 40), M.Foil)
+	cyl(f, "Bowl", 0.8, 6, base * CFrame.new(0, 6, 0), rgb(235, 230, 220), M.Marble)
 	local spout = deco(
 		f,
 		"Spout",

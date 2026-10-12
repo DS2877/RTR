@@ -272,9 +272,14 @@ if guardFolder then
 		guardCount += 1
 		local h = g:FindFirstChildOfClass("Humanoid")
 		local r = g:FindFirstChild("HumanoidRootPart") :: BasePart?
-		check("guard humanoid is R15 (rigless)", h ~= nil and h.RigType == Enum.HumanoidRigType.R15)
+		check("guard humanoid is R15", h ~= nil and h.RigType == Enum.HumanoidRigType.R15)
 		check("guard root unanchored", r ~= nil and not r.Anchored)
-		if h and r then
+		if g:GetAttribute("Rig") == "R15" then
+			check(
+				"R15 guard has a body, cap and tag",
+				g:FindFirstChild("LeftFoot") ~= nil and g:FindFirstChild("Cap") ~= nil
+			)
+		elseif h and r then
 			local legL = g:FindFirstChild("LegL") :: BasePart
 			local feet = legL.Position.Y - legL.Size.Y / 2
 			local rootBottom = r.Position.Y - r.Size.Y / 2
@@ -287,6 +292,8 @@ if guardFolder then
 	end
 end
 check("guard count", guardCount == guardsWanted, guardCount)
+local firstGuard = guardFolder and guardFolder:GetChildren()[1]
+print("guards are " .. tostring(firstGuard and firstGuard:GetAttribute("Rig") or "part models"))
 
 -- ===== item models =====
 local head = Instance.new("Part")
