@@ -211,6 +211,10 @@ for _, base in world.bases do
 	check(id .. " treadmill prompt out of reach from the belt", (nearest - tread.Position).Magnitude > 7.5)
 	check(id .. " crown beam hidden", base.beam.Transparency == 1)
 	check(
+		id .. " starts as a wooden shack + wooden treadmill",
+		model:GetAttribute("PalaceTier") == 1 and model:GetAttribute("TreadTier") == 1
+	)
+	check(
 		id .. " appraiser table holds the max crates",
 		#base.crateSpots == Economy.Crates.QueueMax,
 		#base.crateSpots
@@ -256,6 +260,10 @@ for _, vault in world.vaults do
 			local core = m.PrimaryPart
 			local prompt = core and core:FindFirstChild("Steal")
 			check(id .. " crate has a STEAL prompt", prompt ~= nil and prompt:IsA("ProximityPrompt"))
+			check(
+				id .. " stealing a crate takes a hold",
+				prompt ~= nil and (prompt :: ProximityPrompt).HoldDuration >= 1
+			)
 		end
 	end
 	check(id .. " 6 crates spawned", loot == 6, loot)
@@ -280,6 +288,13 @@ local reign = root:FindFirstChild("ReignBoard") :: BasePart
 check("reign board faces the plaza", anyFaces(reign, towardStreet))
 local fuseSign = root:FindFirstChild("FuseSign") :: BasePart
 check("fuse sign faces the plaza", anyFaces(fuseSign, towardStreet))
+local stallSign = root:FindFirstChild("StallSign") :: BasePart
+check("SELL sign faces the plaza", stallSign ~= nil and anyFaces(stallSign, towardStreet))
+local trailsShop = root:FindFirstChild("TrailsShop")
+local trailsSign = trailsShop and trailsShop:FindFirstChild("Sign") :: BasePart?
+check("trails sign faces the plaza", trailsSign ~= nil and anyFaces(trailsSign :: BasePart, towardStreet))
+local wantedBoard = root:FindFirstChild("WantedBoard") :: BasePart
+check("WANTED board faces along the plaza", anyFaces(wantedBoard, towardStreet))
 check("wanted title set", world.wanted.Title[1].Text ~= "", world.wanted.Title[1].Text)
 
 -- ===== guards =====
@@ -638,6 +653,39 @@ if sim and A and B then
 			a.base.rings[8].Transparency == 0 and a.base.rings[9].Transparency == 1,
 			"rings not lit for 8 pedestals"
 		)
+	end)
+
+	step("looks grow with the level: shack -> royal palace, wooden -> golden treadmill", function()
+		local model = a.base.model
+		local function count(name: string): number
+			local m = model:FindFirstChild(name)
+			return if m then #m:GetDescendants() else 0
+		end
+		local shack, wooden = count("Palace"), count("TreadDecor")
+		local level, tread = a.data.PlotLevel, a.data.Treadmill
+		a.data.PlotLevel = 13
+		a.data.Treadmill = 30
+		Bases.render(A)
+		assert(
+			model:GetAttribute("PalaceTier") == 6,
+			"palace tier " .. tostring(model:GetAttribute("PalaceTier"))
+		)
+		assert(
+			model:GetAttribute("TreadTier") == 6,
+			"tread tier " .. tostring(model:GetAttribute("TreadTier"))
+		)
+		assert(
+			count("Palace") > shack * 1.5,
+			"royal palace not grander: " .. shack .. " -> " .. count("Palace")
+		)
+		assert(count("TreadDecor") > wooden, "golden treadmill not grander")
+		for _, d in model:FindFirstChild("Palace"):GetDescendants() do
+			assert(not (d:IsA("BasePart") and d.CanCollide), "palace decor blocks the way: " .. d.Name)
+		end
+		a.data.PlotLevel = level
+		a.data.Treadmill = tread
+		Bases.render(A)
+		assert(model:GetAttribute("PalaceTier") == 1, "not back to the shack")
 	end)
 
 	step("treadmill: standing still earns speed and walk speed", function()

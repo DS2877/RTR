@@ -37,6 +37,10 @@ local World = {
 	ZoneHalfWidth = 48, -- corridor half width (walls at +-this)
 	PathHalfWidth = 7, -- the running path down the middle of every zone
 	ZoneWallHeight = 28, -- tall brick walls: each street feels like its own place
+	-- Looks by level: plot level where each palace tier starts (shack, cottage, manor, mansion,
+	-- palace, royal palace) and treadmill level where each treadmill tier starts
+	PalaceTierLevels = { 1, 3, 5, 7, 9, 12 },
+	TreadTierLevels = { 1, 4, 8, 13, 19, 25 },
 	-- Day / night cycle (looks only): seconds of each phase, the HUD counts down to the next one
 	DaySeconds = 240,
 	NightSeconds = 120,

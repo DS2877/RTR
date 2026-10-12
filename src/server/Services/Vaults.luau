@@ -83,7 +83,7 @@ function spawnLoot(slot: Slot, id: string, mut: string)
 	pp.Name = "Steal"
 	pp.ActionText = "STEAL"
 	pp.ObjectText = info.rarity .. " Crate"
-	pp.HoldDuration = 0.4
+	pp.HoldDuration = Economy.StealHoldSeconds
 	pp.MaxActivationDistance = 10
 	pp.RequiresLineOfSight = false
 	pp.Parent = core

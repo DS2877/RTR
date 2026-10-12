@@ -831,11 +831,11 @@ function WorldDecor.safeZone(model: Model, origin: CFrame, floorTop: number)
 end
 
 -- A neon booth on the plaza; its prompt opens the trails menu.
-function WorldDecor.trailsShop(parent: Instance, pos: Vector3): ProximityPrompt
+-- `base`: ground center, front (-Z) facing the customers.
+function WorldDecor.trailsShop(parent: Instance, base: CFrame): ProximityPrompt
 	local f = Instance.new("Model")
 	f.Name = "TrailsShop"
 	f.Parent = parent
-	local base = CFrame.new(pos)
 	part(
 		f,
 		"Counter",
@@ -998,7 +998,7 @@ function WorldDecor.halloween(parent: Instance, bases: { any }, vaults: { any },
 			6
 		)
 	end
-	for x = -200, 200, 50 do
+	for x = -150, 200, 50 do
 		pumpkin(f, CFrame.new(x, 0.3, if (x // 50) % 2 == 0 then 7 else -7), 0.9)
 	end
 end

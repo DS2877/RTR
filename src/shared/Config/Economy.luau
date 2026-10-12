@@ -51,6 +51,8 @@ local Economy = {
 		Mythic = 0.75,
 	} :: { [string]: number },
 
+	StealHoldSeconds = 1.5, -- hold STEAL this long to grab a crate (Quick Hands pass: instant)
+	PlayerStealHoldSeconds = 1.2, -- same for an item on another player's plot
 	SellSeconds = 60, -- an item sells for this many seconds of its income
 
 	-- Crates: vault loot is a locked crate of a known rarity. Bring it home and the appraiser opens

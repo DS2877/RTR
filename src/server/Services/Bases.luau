@@ -15,6 +15,7 @@ local Remotes = require(Shared.Remotes)
 local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
 local ItemModel = require(script.Parent.Parent.Util.ItemModel)
+local Palace = require(script.Parent.Parent.Util.Palace)
 local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Wallet = require(script.Parent.Wallet)
 local Events = require(script.Parent.Events)
@@ -159,6 +160,7 @@ local function updatePrompts(player: Player)
 			else "MAX LEVEL",
 		if tc then Format.cash(tc) else "MAX"
 	)
+	Palace.dressTreadmill(base, s.data.Treadmill)
 	player:SetAttribute("PlotLevel", s.data.PlotLevel)
 	player:SetAttribute("Treadmill", s.data.Treadmill)
 	player:SetAttribute("TreadmillRate", Progression.treadmillRate(s.data.Treadmill))
@@ -221,7 +223,7 @@ local function renderSlot(player: Player, slot: string)
 	steal.Name = "Steal"
 	steal.ActionText = "Steal"
 	steal.ObjectText = (Progression.item(item.Id) :: any).name
-	steal.HoldDuration = 0.6
+	steal.HoldDuration = Economy.PlayerStealHoldSeconds
 	steal.MaxActivationDistance = 9
 	steal.RequiresLineOfSight = false
 	steal.Parent = core
@@ -260,7 +262,7 @@ function Bases.render(player: Player)
 	for i, ped in s.base.pedestals do
 		local open = i <= unlocked
 		ped.Transparency = if open then 0 else 0.75
-		ped.Color = if open then Color3.fromRGB(245, 245, 250) else Color3.fromRGB(120, 120, 130)
+		ped.Color = if open then Palace.pedestalColor(s.data.PlotLevel) else Color3.fromRGB(120, 120, 130)
 		ped.Material = if open then Enum.Material.SmoothPlastic else Enum.Material.ForceField
 		local ring = s.base.rings and s.base.rings[i]
 		if ring then
@@ -270,6 +272,8 @@ function Bases.render(player: Player)
 	for i = 1, #s.base.pedestals do
 		renderSlot(player, tostring(i))
 	end
+	-- the palace grows with the plot level (shack -> royal palace)
+	Palace.dressBase(s.base, s.data.PlotLevel)
 	updatePrompts(player)
 end
 
@@ -326,6 +330,8 @@ function Bases.release(player: Player)
 			blocker.CanCollide = false
 		end
 		base.beam.Transparency = 1
+		Palace.dressBase(base, 1) -- a free base is a shack again
+		Palace.dressTreadmill(base, 1)
 		s.base = nil
 	end
 end
@@ -520,6 +526,7 @@ local function upgradePlot(player: Player)
 		Net.fire(player, Remotes.Names.Offer, "cash")
 		return
 	end
+	local tier = s.base and s.base.model:GetAttribute("PalaceTier")
 	s.data.PlotLevel += 1
 	Bases.render(player)
 	changed(player)
@@ -528,6 +535,14 @@ local function upgradePlot(player: Player)
 		"Plot upgraded! " .. Progression.pedestals(s.data.PlotLevel) .. " pedestals",
 		"upgrade"
 	)
+	if s.base and s.base.model:GetAttribute("PalaceTier") ~= tier then
+		Net.notice(
+			player,
+			"🏰 Your base is now a " .. tostring(s.base.model:GetAttribute("PalaceName")) .. "!",
+			"upgrade"
+		)
+		Bases.celebrate(player, "1")
+	end
 end
 
 local function upgradeTreadmill(player: Player)
@@ -544,9 +559,14 @@ local function upgradeTreadmill(player: Player)
 		Net.fire(player, Remotes.Names.Offer, "cash")
 		return
 	end
+	local tier = s.base and s.base.model:GetAttribute("TreadTier")
 	s.data.Treadmill += 1
 	updatePrompts(player)
 	Net.notice(player, "Treadmill level " .. s.data.Treadmill .. "!", "upgrade")
+	local now = s.base and s.base.model:GetAttribute("TreadTier")
+	if now and now ~= tier then
+		Net.notice(player, "⚡ New treadmill: " .. Palace.TreadNames[now] .. "!", "upgrade")
+	end
 end
 
 local function ownerOfPrompt(base: any, player: Player): boolean
