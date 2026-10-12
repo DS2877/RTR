@@ -476,7 +476,7 @@ function HUD.start()
 		(musicB:FindFirstChild("Emoji") :: TextLabel).Text = if Music.isEnabled() then "🎵" else "🔇"
 	end)
 
-	-- ===== bottom right (left of the jump button): base lock + next event timer =====
+	-- ===== bottom right (left of the jump button): base lock + day/night timer =====
 	local lockHolder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, -190, 1, -10),
@@ -521,9 +521,13 @@ function HUD.start()
 		while true do
 			task.wait(0.25)
 			local t = workspace:GetServerTimeNow()
-			local nextAt = workspace:GetAttribute("NextEventAt") or 0
-			local live = workspace:GetAttribute("EventName") ~= nil
-			eventTimer.Text = if live or nextAt <= t then "" else "🌙 in " .. Format.duration(nextAt - t)
+			-- day / night: the icon of what comes next + a real countdown (like the genre)
+			local endsAt = workspace:GetAttribute("PhaseEndsAt") or 0
+			local left = math.max(0, math.ceil(endsAt - t))
+			local icon = if workspace:GetAttribute("DayPhase") == "Night" then "☀️" else "🌙"
+			eventTimer.Text = if endsAt <= 0
+				then ""
+				else icon .. " in " .. (if left < 60 then left .. "s" else Format.duration(left))
 			local bases = workspace:FindFirstChild("Bases")
 			local base = bases and bases:FindFirstChild("Base_" .. tostring(player:GetAttribute("BaseId")))
 			if base then

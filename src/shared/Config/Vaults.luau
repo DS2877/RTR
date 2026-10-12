@@ -1,5 +1,6 @@
 --!strict
--- The rich NPCs along Rich Street, ordered by distance from home (farther = richer + faster guards).
+-- The rich people along Rich Street, ordered by distance from home (farther = richer + faster).
+-- Their loot is crates ("<name> Crate"); the appraiser at your base opens them.
 -- Each vault has one item per rarity (Common..Mythic). Income = BaseIncome * Rarity.mult * mutation.
 
 export type Item = {
@@ -31,7 +32,7 @@ end
 local Vaults: { Vault } = {
 	{
 		id = "Grandpa",
-		name = "Grandpa's Garage",
+		name = "Grandpa",
 		emoji = "👴",
 		color = { 150, 110, 80 },
 		trim = { 90, 60, 40 },
@@ -51,7 +52,7 @@ local Vaults: { Vault } = {
 	},
 	{
 		id = "Influencer",
-		name = "Influencer Loft",
+		name = "Influencer",
 		emoji = "🤳",
 		color = { 255, 150, 200 },
 		trim = { 200, 70, 150 },
@@ -71,7 +72,7 @@ local Vaults: { Vault } = {
 	},
 	{
 		id = "Pirate",
-		name = "Pirate Captain's Ship",
+		name = "Pirate Captain",
 		emoji = "🏴‍☠️",
 		color = { 110, 75, 45 },
 		trim = { 30, 30, 35 },
@@ -131,7 +132,7 @@ local Vaults: { Vault } = {
 	},
 	{
 		id = "Yacht",
-		name = "Mega Yacht Owner",
+		name = "Yacht Owner",
 		emoji = "🛥️",
 		color = { 240, 245, 255 },
 		trim = { 30, 60, 140 },

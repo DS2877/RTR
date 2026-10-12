@@ -22,7 +22,7 @@ local HUD = require(script.Parent.HUD)
 local Panels = {}
 
 local player = Players.LocalPlayer
-local state: any = { Found = {}, Slots = {}, Passes = {} }
+local state: any = { Found = {}, Slots = {}, Inventory = {}, Passes = {} }
 
 local function clear(body: ScrollingFrame)
 	for _, c in body:GetChildren() do
@@ -546,7 +546,7 @@ local function buildFuse(panel: Panel.Panel)
 	panel.onOpen = function()
 		clear(body)
 		local groups: { [string]: { id: string, mut: string, count: number } } = {}
-		for _, item in state.Slots do
+		local function add(item: any)
 			local key = item.Id .. "|" .. item.Mut
 			local g = groups[key]
 			if not g then
@@ -554,6 +554,12 @@ local function buildFuse(panel: Panel.Panel)
 				groups[key] = g
 			end
 			g.count += 1
+		end
+		for _, item in state.Slots or {} do
+			add(item)
+		end
+		for _, item in state.Inventory or {} do
+			add(item)
 		end
 		local list = {}
 		for _, g in groups do

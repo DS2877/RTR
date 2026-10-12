@@ -64,6 +64,11 @@ local Cosmetics = req(Shared:WaitForChild("Config"), "Cosmetics")
 local Cosmetic = req(Services, "Cosmetic")
 local Pickups = req(Services, "Pickups")
 local Social = req(Services, "Social")
+local Crates = req(Services, "Crates")
+local Inventory = req(Services, "Inventory")
+local DayNight = req(Services, "DayNight")
+local CrateModel = req(Server:WaitForChild("Util"), "CrateModel")
+local Rarity = req(Shared:WaitForChild("Config"), "Rarity")
 
 -- ===== boot (same order as init.server.luau) =====
 local world: any = nil
@@ -103,6 +108,9 @@ step("Pickups.start", function()
 	Pickups.start(world)
 end)
 step("Social.start", Social.start)
+step("Crates.start", Crates.start)
+step("Inventory.start", Inventory.start)
+step("DayNight.start", DayNight.start)
 
 -- ===== helpers =====
 local function faceNormal(part: BasePart, face: Enum.NormalId): Vector3
@@ -202,6 +210,16 @@ for _, base in world.bases do
 	)
 	check(id .. " treadmill prompt out of reach from the belt", (nearest - tread.Position).Magnitude > 7.5)
 	check(id .. " crown beam hidden", base.beam.Transparency == 1)
+	check(
+		id .. " appraiser table holds the max crates",
+		#base.crateSpots == Economy.Crates.QueueMax,
+		#base.crateSpots
+	)
+	for i, spot in base.crateSpots do
+		if not Bases.contains(base, spot.Position) then
+			check(id .. " crate spot " .. i .. " inside base", false)
+		end
+	end
 	-- everything inside, nothing on top of a pedestal
 	for _, part in { base.collectPad, plot, tread, belt } do
 		check(id .. " " .. part.Name .. " inside base", Bases.contains(base, part.Position))
@@ -233,14 +251,14 @@ for _, vault in world.vaults do
 	check(id .. " 6 pedestals", #vault.pedestals == 6, #vault.pedestals)
 	local loot = 0
 	for _, m in vault.model:GetChildren() do
-		if m:IsA("Model") and m:GetAttribute("ItemId") then
+		if m:IsA("Model") and m:GetAttribute("Rarity") and m:GetAttribute("Vault") then
 			loot += 1
 			local core = m.PrimaryPart
 			local prompt = core and core:FindFirstChild("Steal")
-			check(id .. " loot has a STEAL prompt", prompt ~= nil and prompt:IsA("ProximityPrompt"))
+			check(id .. " crate has a STEAL prompt", prompt ~= nil and prompt:IsA("ProximityPrompt"))
 		end
 	end
-	check(id .. " 6 loot items spawned", loot == 6, loot)
+	check(id .. " 6 crates spawned", loot == 6, loot)
 end
 
 -- ===== plaza boards =====
@@ -276,8 +294,9 @@ if guardFolder then
 		check("guard root unanchored", r ~= nil and not r.Anchored)
 		if g:GetAttribute("Rig") == "R15" then
 			check(
-				"R15 guard has a body, cap and tag",
-				g:FindFirstChild("LeftFoot") ~= nil and g:FindFirstChild("Cap") ~= nil
+				"R15 chaser has a body (+ a cap on bodyguards)",
+				g:FindFirstChild("LeftFoot") ~= nil
+					and (g:GetAttribute("Owner") or g:FindFirstChild("Cap") ~= nil)
 			)
 		elseif h and r then
 			local legL = g:FindFirstChild("LegL") :: BasePart
@@ -294,6 +313,23 @@ end
 check("guard count", guardCount == guardsWanted, guardCount)
 local firstGuard = guardFolder and guardFolder:GetChildren()[1]
 print("guards are " .. tostring(firstGuard and firstGuard:GetAttribute("Rig") or "part models"))
+
+-- ===== crate models =====
+for _, rarity in Rarity.Order do
+	local ok, err = pcall(function()
+		local m = CrateModel.build(rarity, { title = "Test Crate", scale = 1.25 })
+		assert(m.PrimaryPart, "no PrimaryPart")
+		local _, size = m:GetBoundingBox()
+		assert(size.Magnitude < 9, "too big " .. tostring(size))
+		for _, d in m:GetDescendants() do
+			if d:IsA("BasePart") then
+				assert(not d.CanCollide and d.Massless, d.Name .. " collides or has mass")
+			end
+		end
+		m:Destroy()
+	end)
+	check("crate " .. rarity, ok, err)
+end
 
 -- ===== item models =====
 local head = Instance.new("Part")
@@ -362,7 +398,13 @@ for i, vault in world.vaults do
 			math.abs((vault.origin.Position.X - prev.origin.Position.X) - World.VaultSpacing) < 0.01
 		)
 	end
-	check(id .. " has its rich person", vault.model:FindFirstChild("RichPerson") ~= nil)
+	local owner = false
+	for _, g in Guards.all() do
+		if g.vault == vault.index and g.owner then
+			owner = true
+		end
+	end
+	check(id .. " has its rich person (chasing owner)", owner)
 	local blocked = nil
 	for _, d in vault.model:GetDescendants() do
 		if d:IsA("BasePart") and d.CanCollide and d.Name ~= "Floor" and d.Name ~= "Path" then
@@ -382,12 +424,13 @@ for i, vault in world.vaults do
 		end
 	end
 	check(id .. " running path is clear", blocked == nil, blocked)
-	local sides = { [1] = 0, [-1] = 0 }
+	local offPath = true
 	for _, ped in vault.pedestals do
-		local side = math.sign(vault.origin:PointToObjectSpace(ped.Position).X)
-		sides[side] = (sides[side] or 0) + 1
+		if math.abs(vault.origin:PointToObjectSpace(ped.Position).X) < World.PathHalfWidth + 6 then
+			offPath = false
+		end
 	end
-	check(id .. " stands on both sides of the path", sides[1] == 3 and sides[-1] == 3)
+	check(id .. " crate pile is off the running path", offPath)
 end
 -- the island: beach + sea + mountains around the map (no edge of the world in sight)
 local surroundings = root:FindFirstChild("Surroundings")
@@ -620,12 +663,14 @@ if sim and A and B then
 		return VaultLoot.stealAt(1, 1, p)
 	end
 
-	step("steal from a vault: carry, loot on head, slower, pedestal empty", function()
+	step("steal from a vault: carry a crate (secret contents), slower, spot empty", function()
 		moveTo(A, Vector3.new(0, 400, 0))
 		local speed = A.Character:FindFirstChildOfClass("Humanoid").WalkSpeed
 		assert(stealFromVault(A), "steal failed")
 		assert(a.carry ~= nil and A.attrs.Carrying ~= nil, "not carrying")
-		assert(A.Character:FindFirstChild("CarriedLoot"), "no loot model on the head")
+		assert(A.Character:FindFirstChild("CarriedLoot"), "no crate in the arms")
+		assert(string.find(A.attrs.Carrying, "Crate", 1, true), "carrying " .. tostring(A.attrs.Carrying))
+		assert(A.attrs.CarryMut == "None", "a crate's mutation must stay secret")
 		assert(VaultLoot.lootAt(1, 1) == nil, "pedestal still full")
 		assert(A.Character:FindFirstChildOfClass("Humanoid").WalkSpeed < speed, "carrying isn't slower")
 	end)
@@ -651,43 +696,125 @@ if sim and A and B then
 		assert(A.Character:FindFirstChildOfClass("Humanoid").WalkSpeed > 0, "stun never ended")
 	end)
 
-	step("steal again and run home: deposit, STOLEN card, steal counted", function()
+	step("steal again and run home: the crate goes to the appraiser, steal counted", function()
 		assert(stealFromVault(A), "second steal failed")
-		local slots = 0
-		for _ in a.data.Slots do
-			slots += 1
-		end
 		moveTo(A, inBase(a))
 		task.wait(0.5)
 		assert(a.carry == nil, "still carrying at home")
-		local after = 0
-		for _ in a.data.Slots do
-			after += 1
-		end
-		assert(after == slots + 1, "plot " .. slots .. " -> " .. after)
+		assert(#a.data.Crates == 1, "crates " .. #a.data.Crates)
+		assert(a.data.Crates[1].ReadyAt > workspace:GetServerTimeNow(), "crate ready at once")
 		assert(a.data.Stats.Steals == 1 and A.attrs.Steals == 1, "steal not counted")
-		assert(got(A, Remotes.Names.Deposited), "no STOLEN card")
+		assert(got(A, Remotes.Names.Deposited), "no STOLEN line")
+		local crate = nil
+		for _, m in a.base.model:GetChildren() do
+			if m:IsA("Model") and m:GetAttribute("Rarity") then
+				crate = m
+			end
+		end
+		assert(crate, "no crate on the appraiser's table")
+		task.wait(1.2)
+		assert(A.attrs.Crates == 1 and A.attrs.CratesReady == 0, "crate badge attrs")
 	end)
 
-	step("the STOLEN card names the vault", function()
+	step("the STOLEN line names the rich person", function()
 		local title = nil
 		for _, m in inbox[A] or {} do
 			if m.name == Remotes.Names.Deposited then
 				title = m.args[5]
 			end
 		end
-		assert(title and string.find(title, "YOU STOLE FROM", 1, true), "title " .. tostring(title))
+		assert(title and string.find(title, "You stole from", 1, true), "title " .. tostring(title))
+	end)
+
+	step("appraise: not before the timer; then the item lands on the plot (revealed)", function()
+		assert(not Crates.appraise(A, 1), "opened before the timer")
+		local id = a.data.Crates[1].Id
+		a.data.Crates[1].ReadyAt = workspace:GetServerTimeNow() - 1
+		local before = 0
+		for _ in a.data.Slots do
+			before += 1
+		end
+		assert(Crates.appraise(A, 1), "ready crate didn't open")
+		local after = 0
+		for _ in a.data.Slots do
+			after += 1
+		end
+		assert(#a.data.Crates == 0, "crate still queued")
+		assert(after == before + 1, "plot " .. before .. " -> " .. after)
+		assert(a.data.Found[id], "not in the index")
+		assert(got(A, Remotes.Names.Revealed), "no reveal")
+	end)
+
+	step("appraiser table full: the crate stays in your arms", function()
+		for _ = 1, Crates.capacity(A) do
+			assert(Crates.add(A, "Wrench", "None"), "add failed")
+		end
+		assert(not Crates.add(A, "Wrench", "None"), "table took one too many")
+		table.clear(a.data.Crates)
+		Crates.render(A)
+	end)
+
+	step("bag: full plot -> bag; equip best; take off; sell from the bag", function()
+		local cap = Progression.pedestals(a.data.PlotLevel)
+		while Bases.freeSlot(A) do
+			Bases.addItem(A, "Wrench", "None")
+		end
+		assert(Crates.give(A, "GoldWatch", "None") == "bag", "full plot didn't go to the bag")
+		Inventory.equipBest(A)
+		local best = false
+		for _, it in a.data.Slots do
+			if it.Id == "GoldWatch" then
+				best = true
+			end
+		end
+		assert(best, "equip best left the best item in the bag")
+		assert(#a.data.Inventory == 1 and a.data.Inventory[1].Id == "Wrench", "bag after equip best")
+		local slot = nil
+		for k, it in a.data.Slots do
+			if it.Id == "GoldWatch" then
+				slot = k
+			end
+		end
+		assert(Inventory.unequip(A, slot), "take off failed")
+		assert(#a.data.Inventory == 2, "bag " .. #a.data.Inventory)
+		local cash = a.data.Cash
+		assert(Inventory.sell(A, 1), "sell failed")
+		assert(a.data.Cash > cash and #a.data.Inventory == 1, "sell didn't pay")
+		-- back to a small plot for the rest of the test
+		for k, it in a.data.Slots do
+			if it.Id == "Wrench" then
+				Bases.removeSlot(A, k)
+			end
+		end
+		table.clear(a.data.Inventory)
+		if not a.data.Slots["1"] then
+			Bases.addItem(A, "Wrench", "None") -- the player-steal step below robs slot 1
+		end
+		assert(cap > 0, "no pedestals")
 	end)
 
 	step("upgrade signs show the next level and price", function()
 		local found = false
 		for _, sg in a.base.plotSign:GetChildren() do
-			local l = sg:IsA("SurfaceGui") and sg:FindFirstChildOfClass("TextLabel")
-			if l and string.find(l.Text, "Lv 2", 1, true) and string.find(l.Text, "$", 1, true) then
+			local level = sg:IsA("SurfaceGui") and sg:FindFirstChild("Level") :: TextLabel?
+			local button = sg:IsA("SurfaceGui") and sg:FindFirstChild("Button")
+			local price = button and button:FindFirstChild("Price") :: TextLabel?
+			if
+				level
+				and price
+				and string.find(level.Text, "Level 2", 1, true)
+				and string.find(price.Text, "$", 1, true)
+			then
 				found = true
 			end
 		end
-		assert(found, "plot sign doesn't show Lv 2 -> 3 and a price")
+		assert(found, "plot sign doesn't show Level 2 > 3 and a price")
+	end)
+
+	step("day/night: phase + a real countdown", function()
+		local phase = workspace:GetAttribute("DayPhase")
+		assert(phase == "Day" or phase == "Night", "phase " .. tostring(phase))
+		assert((workspace:GetAttribute("PhaseEndsAt") or 0) > workspace:GetServerTimeNow(), "no countdown")
 	end)
 
 	step("GUARD STRIKE: sleeping guards catch nobody", function()

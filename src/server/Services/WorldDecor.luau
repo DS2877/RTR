@@ -1,14 +1,13 @@
 --!strict
--- Set dressing built from parts: a unique theme inside every vault, the city skyline behind
--- Rich Street, sidewalks, fountains, base towers and the express lanes. Pure decoration except the
--- lanes (moving walkways) and pedestal rings; nothing here touches the economy.
+-- Set dressing built from LEGO-style parts: a unique theme along the walls of every rich person's
+-- street, the island around the map, fountains, the trails shop, Halloween. Pure decoration
+-- (plus the pedestal rings); nothing here touches the economy.
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
-local Rig = require(script.Parent.Parent.Util.Rig)
 
 local WorldDecor = {}
 
@@ -17,6 +16,16 @@ local M = Enum.Material
 local function rgb(r: number, g: number, b: number): Color3
 	return Color3.fromRGB(r, g, b)
 end
+
+-- Materials that stay as they are; everything else becomes a studded LEGO brick (the genre look).
+local KEEP: { [Enum.Material]: boolean } = {
+	[M.Neon] = true,
+	[M.Glass] = true,
+	[M.ForceField] = true,
+	[M.Grass] = true,
+	[M.Sand] = true,
+	[M.Rock] = true,
+}
 
 local function part(
 	parent: Instance,
@@ -33,8 +42,13 @@ local function part(
 	p.Size = size
 	p.CFrame = cf
 	p.Color = color
-	p.Material = material or M.SmoothPlastic
-	p.TopSurface = Enum.SurfaceType.Smooth
+	if material and KEEP[material] then
+		p.Material = material
+		p.TopSurface = Enum.SurfaceType.Smooth
+	else
+		p.Material = M.Plastic
+		p.TopSurface = Enum.SurfaceType.Studs
+	end
 	p.BottomSurface = Enum.SurfaceType.Smooth
 	if shape then
 		p.Shape = shape
@@ -606,230 +620,8 @@ function WorldDecor.zone(model: Model, id: string, origin: CFrame, trim: Color3)
 	end
 end
 
--- ===== the rich person =====
--- A big blocky character on a plinth, in the zone's style, with their name over the head.
--- `cf`: feet on the floor, Front (-Z) facing the path.
-local NPC_STYLE: { [string]: { suit: Color3, hat: string, face: string } } = {
-	Grandpa = { suit = rgb(130, 95, 70), hat = "cap", face = "👴" },
-	Influencer = { suit = rgb(255, 120, 190), hat = "none", face = "😎" },
-	Pirate = { suit = rgb(140, 30, 35), hat = "tricorn", face = "🏴‍☠️" },
-	Museum = { suit = rgb(70, 55, 40), hat = "top", face = "🧐" },
-	GoldTycoon = { suit = rgb(255, 200, 40), hat = "top", face = "🤑" },
-	Yacht = { suit = rgb(250, 250, 255), hat = "captain", face = "😏" },
-	TechBillionaire = { suit = rgb(40, 40, 50), hat = "none", face = "🤓" },
-	Billionaire = { suit = rgb(20, 20, 25), hat = "top", face = "🧐" },
-}
-
--- The rich person as a real Roblox R15 character (scaled up, idle animation, themed hat).
--- Falls back to the block-built figure below if R15 rigs can't be created.
-local function rigNPC(model: Model, def: any, cf: CFrame): boolean
-	local style = NPC_STYLE[def.id] or { suit = rgb(40, 40, 50), hat = "top", face = "🤑" }
-	local rig = Rig.build(
-		"npc_" .. def.id,
-		{ head = rgb(255, 205, 160), torso = style.suit, arms = style.suit, legs = rgb(30, 30, 40) }
-	)
-	if not rig then
-		return false
-	end
-	local root = rig:FindFirstChild("HumanoidRootPart") :: BasePart?
-	local humanoid = rig:FindFirstChildOfClass("Humanoid")
-	local head = rig:FindFirstChild("Head") :: BasePart?
-	if not root or not humanoid or not head then
-		rig:Destroy()
-		return false
-	end
-	local trim = rgb(def.trim[1], def.trim[2], def.trim[3])
-	part(model, "Plinth", Vector3.new(8, 1, 8), cf * CFrame.new(0, 0.5, 0), trim, M.Marble)
-	rig.Name = "RichPerson"
-	local S = 2.2
-	rig:ScaleTo(S)
-	-- stand on the plinth: root anchored (it never walks), the body stays free to animate
-	rig:PivotTo(cf * CFrame.new(0, 20, 0))
-	local box, size = rig:GetBoundingBox()
-	rig:PivotTo(rig:GetPivot() + Vector3.new(0, (cf.Position.Y + 1) - (box.Position.Y - size.Y / 2), 0))
-	root.Anchored = true
-	for _, d in rig:GetDescendants() do
-		if d:IsA("BasePart") then
-			d.CanCollide = d == root
-		end
-	end
-	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-	-- themed hat (sized from the head)
-	local hs = head.Size.X / 1.2
-	local top = head.Size.Y / 2
-	local function hat(name: string, sz: Vector3, offset: CFrame, color: Color3)
-		local p = part(rig, name, sz * hs, CFrame.new(), color)
-		Rig.attach(head, p, offset)
-	end
-	if style.hat == "cap" then
-		hat("Cap", Vector3.new(1.3, 0.4, 1.3), CFrame.new(0, top + 0.15 * hs, 0), rgb(110, 90, 70))
-		hat("Brim", Vector3.new(1.3, 0.12, 0.6), CFrame.new(0, top, -0.8 * hs), rgb(110, 90, 70))
-	elseif style.hat == "top" then
-		hat("HatBrim", Vector3.new(1.7, 0.15, 1.7), CFrame.new(0, top + 0.05 * hs, 0), rgb(20, 20, 25))
-		hat("TopHat", Vector3.new(1.1, 1.3, 1.1), CFrame.new(0, top + 0.75 * hs, 0), rgb(20, 20, 25))
-		hat("HatBand", Vector3.new(1.15, 0.2, 1.15), CFrame.new(0, top + 0.25 * hs, 0), trim)
-	elseif style.hat == "tricorn" then
-		hat("Tricorn", Vector3.new(1.9, 0.5, 1.4), CFrame.new(0, top + 0.2 * hs, 0), rgb(25, 25, 30))
-		hat("TricornTrim", Vector3.new(1.95, 0.12, 1.45), CFrame.new(0, top, 0), rgb(255, 200, 40))
-	elseif style.hat == "captain" then
-		hat("CaptainHat", Vector3.new(1.4, 0.5, 1.4), CFrame.new(0, top + 0.2 * hs, 0), rgb(255, 255, 255))
-		hat("CaptainBrim", Vector3.new(1.4, 0.12, 0.6), CFrame.new(0, top, -0.8 * hs), rgb(20, 30, 80))
-	end
-	local chest = rig:FindFirstChild("UpperTorso") :: BasePart?
-	if chest then
-		local p = part(rig, "Tie", Vector3.new(0.3, 1.1, 0.1) * hs, CFrame.new(), trim)
-		Rig.attach(chest, p, CFrame.new(0, 0.1 * hs, -chest.Size.Z / 2 - 0.05))
-		if def.id == "GoldTycoon" or def.id == "Billionaire" then
-			local c =
-				part(rig, "Chain", Vector3.new(1.1, 0.15, 0.1) * hs, CFrame.new(), rgb(255, 210, 60), M.Neon)
-			Rig.attach(chest, c, CFrame.new(0, 0.45 * hs, -chest.Size.Z / 2 - 0.08))
-		end
-	end
-	-- name over the head (studs: shrinks with distance)
-	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.new(12, 0, 2.2, 0)
-	bb.StudsOffset = Vector3.new(0, 3.4, 0)
-	bb.MaxDistance = 160
-	bb.LightInfluence = 0
-	bb.Parent = head
-	local l = Instance.new("TextLabel")
-	l.Size = UDim2.fromScale(1, 1)
-	l.BackgroundTransparency = 1
-	l.Font = Enum.Font.FredokaOne
-	l.TextScaled = true
-	l.Text = def.emoji .. " " .. string.upper(def.name)
-	l.TextColor3 = rgb(255, 230, 120)
-	local st = Instance.new("UIStroke")
-	st.Thickness = 3
-	st.Color = rgb(30, 20, 10)
-	st.Parent = l
-	l.Parent = bb
-	rig.Parent = model
-	Rig.setPose(humanoid, "Idle")
-	return true
-end
-
-function WorldDecor.richNPC(model: Model, def: any, cf: CFrame)
-	if rigNPC(model, def, cf) then
-		return
-	end
-	local style = NPC_STYLE[def.id] or { suit = rgb(40, 40, 50), hat = "top", face = "🤑" }
-	local f = Instance.new("Model")
-	f.Name = "RichPerson"
-	f.Parent = model
-	local S = 2.2
-	local skin = rgb(255, 205, 160)
-	local trim = rgb(def.trim[1], def.trim[2], def.trim[3])
-	part(f, "Plinth", Vector3.new(8, 1, 8), cf * CFrame.new(0, 0.5, 0), trim, M.Marble)
-	local y0 = 1
-	for _, x in { -0.5, 0.5 } do
-		part(f, "Leg", Vector3.new(1, 2, 1) * S, cf * CFrame.new(x * S, y0 + 1 * S, 0), rgb(30, 30, 40))
-	end
-	local torso = part(f, "Torso", Vector3.new(2, 2, 1) * S, cf * CFrame.new(0, y0 + 3 * S, 0), style.suit)
-	for _, x in { -1.5, 1.5 } do
-		part(f, "Arm", Vector3.new(1, 2, 1) * S, cf * CFrame.new(x * S, y0 + 3 * S, 0), style.suit)
-	end
-	part(f, "Tie", Vector3.new(0.35, 1.5, 0.1) * S, cf * CFrame.new(0, y0 + 3.2 * S, -0.52 * S), trim)
-	if def.id == "GoldTycoon" or def.id == "Billionaire" then
-		deco(
-			f,
-			"Chain",
-			Vector3.new(1.4, 0.2, 0.1) * S,
-			cf * CFrame.new(0, y0 + 3.6 * S, -0.56 * S),
-			rgb(255, 210, 60),
-			M.Neon
-		)
-	end
-	local head = part(f, "Head", Vector3.new(1.2, 1.2, 1.2) * S, cf * CFrame.new(0, y0 + 4.6 * S, 0), skin)
-	label(head, Enum.NormalId.Front, style.face, rgb(255, 255, 255), Enum.Font.GothamBold)
-	local top = y0 + 5.2 * S
-	if style.hat == "cap" then
-		part(
-			f,
-			"Cap",
-			Vector3.new(1.3, 0.4, 1.3) * S,
-			cf * CFrame.new(0, top + 0.2 * S, 0),
-			rgb(110, 90, 70),
-			M.Fabric
-		)
-		part(
-			f,
-			"Brim",
-			Vector3.new(1.3, 0.12, 0.6) * S,
-			cf * CFrame.new(0, top + 0.06 * S, -0.8 * S),
-			rgb(110, 90, 70),
-			M.Fabric
-		)
-	elseif style.hat == "top" then
-		part(
-			f,
-			"HatBrim",
-			Vector3.new(1.7, 0.15, 1.7) * S,
-			cf * CFrame.new(0, top + 0.08 * S, 0),
-			rgb(20, 20, 25)
-		)
-		part(
-			f,
-			"TopHat",
-			Vector3.new(1.1, 1.3, 1.1) * S,
-			cf * CFrame.new(0, top + 0.8 * S, 0),
-			rgb(20, 20, 25)
-		)
-		part(f, "HatBand", Vector3.new(1.15, 0.2, 1.15) * S, cf * CFrame.new(0, top + 0.3 * S, 0), trim)
-	elseif style.hat == "tricorn" then
-		part(
-			f,
-			"Tricorn",
-			Vector3.new(1.9, 0.5, 1.4) * S,
-			cf * CFrame.new(0, top + 0.25 * S, 0),
-			rgb(25, 25, 30)
-		)
-		part(
-			f,
-			"TricornTrim",
-			Vector3.new(1.95, 0.12, 1.45) * S,
-			cf * CFrame.new(0, top + 0.05 * S, 0),
-			rgb(255, 200, 40)
-		)
-	elseif style.hat == "captain" then
-		part(
-			f,
-			"CaptainHat",
-			Vector3.new(1.4, 0.5, 1.4) * S,
-			cf * CFrame.new(0, top + 0.25 * S, 0),
-			rgb(255, 255, 255)
-		)
-		part(
-			f,
-			"CaptainBrim",
-			Vector3.new(1.4, 0.12, 0.6) * S,
-			cf * CFrame.new(0, top + 0.05 * S, -0.8 * S),
-			rgb(20, 30, 80)
-		)
-	end
-	-- name over the head
-	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.new(12, 0, 2.2, 0)
-	bb.StudsOffset = Vector3.new(0, 4.5 * S, 0)
-	bb.MaxDistance = 160
-	bb.LightInfluence = 0
-	bb.Parent = torso
-	local l = Instance.new("TextLabel")
-	l.Size = UDim2.fromScale(1, 1)
-	l.BackgroundTransparency = 1
-	l.Font = Enum.Font.FredokaOne
-	l.TextScaled = true
-	l.Text = def.emoji .. " " .. string.upper(def.name)
-	l.TextColor3 = rgb(255, 230, 120)
-	local st = Instance.new("UIStroke")
-	st.Thickness = 3
-	st.Color = rgb(30, 20, 10)
-	st.Parent = l
-	l.Parent = bb
-end
-
 -- ===== bases =====
--- Corner towers with glowing caps, a doormat and a glowing ring under each pedestal.
+-- A doormat and a glowing ring under each pedestal (the palace itself is built in WorldBuilder).
 -- `floorTop`: the top of the stage the pedestals stand on.
 function WorldDecor.base(
 	model: Model,
@@ -838,24 +630,8 @@ function WorldDecor.base(
 	pedestals: { BasePart },
 	floorTop: number
 ): { BasePart }
-	local W, D, H = World.BaseWidth, World.BaseDepth, World.WallHeight
 	local function at(lx: number, ly: number, depth: number): CFrame
 		return origin * CFrame.new(lx, ly, -depth)
-	end
-	for _, lx in { -W / 2, W / 2 } do
-		for _, depth in { 0, D } do
-			part(
-				model,
-				"Tower",
-				Vector3.new(4, H + 4, 4),
-				at(lx, (H + 4) / 2, depth),
-				rgb(40, 42, 92),
-				M.SmoothPlastic
-			)
-			local cap =
-				part(model, "TowerCap", Vector3.new(4.6, 1.4, 4.6), at(lx, H + 4.7, depth), color, M.Neon)
-			light(cap, color, 18, 1.2)
-		end
 	end
 	deco(
 		model,

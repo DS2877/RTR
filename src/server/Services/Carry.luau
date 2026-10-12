@@ -16,10 +16,12 @@ local Remotes = require(Shared.Remotes)
 local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
 local ItemModel = require(script.Parent.Parent.Util.ItemModel)
+local CrateModel = require(script.Parent.Parent.Util.CrateModel)
 local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Bases = require(script.Parent.Bases)
 local Movement = require(script.Parent.Movement)
 local Wallet = require(script.Parent.Wallet)
+local Crates = require(script.Parent.Crates)
 
 local Carry = {}
 
@@ -32,9 +34,14 @@ local function setAttributes(player: Player)
 	local c = s and s.carry
 	if c then
 		local info = Progression.item(c.id)
-		player:SetAttribute("Carrying", if info then info.name else c.id)
+		local crate = c.source == "vault"
+		-- a crate's contents stay secret: only its rarity + whose crate it is are shown
+		player:SetAttribute(
+			"Carrying",
+			if crate and info then Vaults[info.vault].name .. " Crate" elseif info then info.name else c.id
+		)
 		player:SetAttribute("CarryRarity", if info then info.rarity else "Common")
-		player:SetAttribute("CarryMut", c.mut)
+		player:SetAttribute("CarryMut", if crate then "None" else c.mut)
 		-- the victim's client points a "GO GET THEM!" arrow at whoever carries their item
 		player:SetAttribute("CarryVictim", if c.victim then c.victim.UserId else nil)
 	else
@@ -47,6 +54,20 @@ end
 
 local function attachModel(player: Player, carry: State.Carry)
 	local character = player.Character
+	if carry.source == "vault" then
+		-- a crate is hugged in front of you
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		if not root or not root:IsA("BasePart") then
+			return
+		end
+		local info = Progression.item(carry.id)
+		local crate = CrateModel.build(if info then info.rarity else "Common", { scale = 0.9 })
+		crate.Name = "CarriedLoot"
+		ItemModel.weldTo(crate, root, CFrame.new(0, 0.6, -2.3))
+		crate.Parent = character
+		carry.model = crate
+		return
+	end
 	local head = character and character:FindFirstChild("Head")
 	if not head or not head:IsA("BasePart") then
 		return
@@ -141,12 +162,36 @@ local function deposit(player: Player)
 	if not s or not c then
 		return
 	end
+	if c.source == "vault" then
+		-- a crate goes to the appraiser's table (full table: keep carrying, tell them once)
+		if not Crates.add(player, c.id, c.mut) then
+			if not (c :: any).warned then
+				(c :: any).warned = true
+				Net.notice(player, "The appraiser's table is full! Open your crates first.", "bad")
+			end
+			return
+		end
+		clear(player)
+		local info = Progression.item(c.id)
+		Net.fire(
+			player,
+			Remotes.Names.Deposited,
+			if info then Vaults[info.vault].name .. " Crate" else "Crate",
+			if info then info.rarity else "Common",
+			"None",
+			0,
+			if info then "You stole from " .. string.upper(Vaults[info.vault].name) .. "!" else "STOLEN!"
+		)
+		s.data.Stats.Steals += 1
+		player:SetAttribute("Steals", s.data.Stats.Steals + s.data.Stats.PlayerSteals)
+		return
+	end
 	local slot = Bases.freeSlot(player)
-	if not slot then
-		-- full plot: keep carrying, tell them once in a while
+	if not slot and #s.data.Inventory >= Economy.InventoryMax then
+		-- plot and bag full: keep carrying, tell them once in a while
 		if not (c :: any).warned then
 			(c :: any).warned = true
-			Net.notice(player, "Your plot is full! Sell something or upgrade your plot.", "bad")
+			Net.notice(player, "Your plot and items are full! Sell something first.", "bad")
 		end
 		return
 	end
@@ -159,14 +204,11 @@ local function deposit(player: Player)
 	if victim and victimSlot then
 		Bases.removeSlot(victim, victimSlot)
 	end
-	Bases.addItem(player, c.id, c.mut)
+	Crates.give(player, c.id, c.mut)
 
 	local info = Progression.item(c.id)
 	local income = Progression.income(c.id, c.mut)
-	local title = if victim
-		then "YOU ROBBED " .. string.upper(victim.DisplayName) .. "!"
-		elseif info then "YOU STOLE FROM " .. string.upper(Vaults[info.vault].name) .. "!"
-		else "STOLEN!"
+	local title = if victim then "You robbed " .. string.upper(victim.DisplayName) .. "!" else "STOLEN!"
 	Net.fire(
 		player,
 		Remotes.Names.Deposited,

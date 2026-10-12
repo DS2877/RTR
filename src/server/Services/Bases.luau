@@ -94,6 +94,9 @@ function Bases.netWorth(player: Player): number
 	for _, item in s.data.Slots do
 		worth += Progression.sellValue(item.Id, item.Mut)
 	end
+	for _, item in s.data.Inventory do
+		worth += Progression.sellValue(item.Id, item.Mut)
+	end
 	return worth
 end
 
@@ -105,6 +108,10 @@ function Bases.sync(player: Player)
 	Net.fire(player, Remotes.Names.Sync, {
 		Found = s.data.Found,
 		Slots = s.data.Slots,
+		Inventory = s.data.Inventory,
+		Crates = s.data.Crates,
+		Pedestals = Progression.pedestals(s.data.PlotLevel),
+		CrateSlots = Progression.crateSlots(s.data.PlotLevel),
 		Passes = s.passes,
 	})
 end
@@ -135,40 +142,47 @@ local function updatePrompts(player: Player)
 	treadPrompt.ObjectText = if tc
 		then string.format("Lv %d → %d  (%s)", s.data.Treadmill, s.data.Treadmill + 1, Format.cash(tc))
 		else "Max level"
-	-- the signs themselves show the next goal (big, readable from a distance)
-	local function signText(sign: BasePart, text: string)
-		for _, sg in sign:GetChildren() do
-			local l = sg:IsA("SurfaceGui") and sg:FindFirstChildOfClass("TextLabel")
-			if l then
-				l.Text = text
-			end
-		end
-	end
-	signText(
+	-- the wooden boards show the next goal: title, "Level 1 > Level 2" and the price button
+	Bases.signText(
 		base.plotSign,
+		"Upgrade Plot",
 		if pc
-			then string.format(
-				"UPGRADE PLOT\nLv %d → %d\n%s",
-				s.data.PlotLevel,
-				s.data.PlotLevel + 1,
-				Format.cash(pc)
-			)
-			else "PLOT MAX"
+			then string.format("Level %d > Level %d", s.data.PlotLevel, s.data.PlotLevel + 1)
+			else "MAX LEVEL",
+		if pc then Format.cash(pc) else "MAX"
 	)
-	signText(
+	Bases.signText(
 		base.treadSign,
+		"Upgrade Treadmill",
 		if tc
-			then string.format(
-				"TREADMILL\nLv %d → %d\n%s",
-				s.data.Treadmill,
-				s.data.Treadmill + 1,
-				Format.cash(tc)
-			)
-			else "TREADMILL MAX"
+			then string.format("Level %d > Level %d", s.data.Treadmill, s.data.Treadmill + 1)
+			else "MAX LEVEL",
+		if tc then Format.cash(tc) else "MAX"
 	)
 	player:SetAttribute("PlotLevel", s.data.PlotLevel)
 	player:SetAttribute("Treadmill", s.data.Treadmill)
 	player:SetAttribute("TreadmillRate", Progression.treadmillRate(s.data.Treadmill))
+end
+
+-- Fills a wooden upgrade board (both faces): Title / Level / Price labels.
+function Bases.signText(sign: BasePart, title: string, level: string, price: string)
+	for _, sg in sign:GetChildren() do
+		if sg:IsA("SurfaceGui") then
+			local t = sg:FindFirstChild("Title") :: TextLabel?
+			local l = sg:FindFirstChild("Level") :: TextLabel?
+			local button = sg:FindFirstChild("Button")
+			local p = button and button:FindFirstChild("Price") :: TextLabel?
+			if t then
+				t.Text = title
+			end
+			if l then
+				l.Text = level
+			end
+			if p then
+				p.Text = price
+			end
+		end
+	end
 end
 
 -- Above a (round) podium, facing the base entrance.
@@ -302,14 +316,8 @@ function Bases.release(player: Player)
 		base.model:SetAttribute("LockedUntil", 0)
 		base.signLabel.Text = "FREE BASE"
 		base.signLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
-		for _, sign in { base.plotSign, base.treadSign } do
-			for _, sg in sign:GetChildren() do
-				local l = sg:IsA("SurfaceGui") and sg:FindFirstChildOfClass("TextLabel")
-				if l then
-					l.Text = if sign == base.plotSign then "UPGRADE PLOT" else "UPGRADE TREADMILL"
-				end
-			end
-		end
+		Bases.signText(base.plotSign, "Upgrade Plot", "", "")
+		Bases.signText(base.treadSign, "Upgrade Treadmill", "", "")
 		base.pendingLabel.Text = ""
 		base.laser.CanCollide = false
 		base.laser.Transparency = 1

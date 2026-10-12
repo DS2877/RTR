@@ -32,20 +32,20 @@ function CarryFX.start()
 		Parent = player:WaitForChild("PlayerGui"),
 	})
 
-	-- red edge vignette (full screen, not scaled)
+	-- red screen while carrying (strong at the edges, a light tint in the middle; not scaled)
 	local vignette = UI.new("Frame", {
 		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.fromRGB(255, 0, 30),
+		BackgroundColor3 = Color3.fromRGB(230, 0, 30),
 		BackgroundTransparency = 1,
 		Visible = false,
 		Parent = gui,
 	}, {
 		UI.new("UIGradient", {
 			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 0.35),
-				NumberSequenceKeypoint.new(0.22, 1),
-				NumberSequenceKeypoint.new(0.78, 1),
-				NumberSequenceKeypoint.new(1, 0.35),
+				NumberSequenceKeypoint.new(0, 0.15),
+				NumberSequenceKeypoint.new(0.3, 0.75),
+				NumberSequenceKeypoint.new(0.7, 0.75),
+				NumberSequenceKeypoint.new(1, 0.15),
 			}),
 		}),
 	})
@@ -65,14 +65,14 @@ function CarryFX.start()
 	UI.scaleObject(holder)
 	local run = UI.new("TextLabel", {
 		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.fromRGB(60, 0, 10),
+		BackgroundColor3 = Color3.fromRGB(190, 20, 40),
 		Text = "RUN!!",
 		Font = Enum.Font.LuckiestGuy,
 		TextScaled = true,
 		TextColor3 = Color3.new(1, 1, 1),
 		Visible = false,
 		Parent = holder,
-	}, { UI.corner(20), UI.stroke(Color3.fromRGB(255, 60, 70), 4), UI.textStroke(Color3.new(0, 0, 0), 3) })
+	}, { UI.corner(16), UI.stroke(Color3.new(1, 1, 1), 3), UI.textStroke(Color3.new(0, 0, 0), 3) })
 	local carryName = UI.bigText({
 		Position = UDim2.new(0, -100, 1, 4),
 		Size = UDim2.new(1, 200, 0, 28),
@@ -81,26 +81,26 @@ function CarryFX.start()
 		Parent = holder,
 	})
 
-	-- Drop + Slap sit on the right edge, above the jump button
+	-- Drop: a red button at the bottom center (like the genre); Slap on the right edge
 	local dropHolder = UI.new("Frame", {
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -16, 0.5, 50),
-		Size = UDim2.fromOffset(110, 70),
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -96),
+		Size = UDim2.fromOffset(150, 50),
 		BackgroundTransparency = 1,
 		Parent = layer,
 	})
-	UI.scaleObject(dropHolder, 1.35) -- thumb-sized on a phone
+	UI.scaleObject(dropHolder, 1.2)
 	local drop: TextButton = UI.new("TextButton", {
 		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.fromRGB(200, 40, 50),
+		BackgroundColor3 = Color3.fromRGB(200, 25, 45),
 		Text = "",
 		Visible = false,
 		Parent = dropHolder,
-	}, { UI.corner(16), UI.stroke(Color3.fromRGB(90, 10, 20), 3) })
+	}, { UI.corner(10), UI.stroke(Color3.fromRGB(255, 255, 255), 2) })
 	UI.bigText({
 		Position = UDim2.fromOffset(6, 6),
 		Size = UDim2.new(1, -12, 1, -12),
-		Text = "🗑 DROP",
+		Text = "🗑 Drop",
 		Parent = drop,
 	})
 	drop.Activated:Connect(function()
@@ -176,7 +176,7 @@ function CarryFX.start()
 		local t = os.clock() - t0
 		if run.Visible then
 			local pulse = 0.5 + 0.5 * math.sin(t * 9)
-			vignette.BackgroundTransparency = 0.25 + pulse * 0.25
+			vignette.BackgroundTransparency = 0.05 + pulse * 0.2
 			run.Rotation = math.sin(t * 7) * 3
 			local base = myBase()
 			local character = player.Character
@@ -219,7 +219,7 @@ function CarryFX.start()
 	Remotes.get(Remotes.Names.Alarm).OnClientEvent:Connect(function(vaultName: string)
 		Sound.play("Alarm", 0.7)
 		Shake.kick(0.25)
-		HUD.toast("🚨 " .. vaultName .. "'s guard spotted you! RUN!", "bad")
+		HUD.toast("😡 " .. vaultName .. " saw you! RUN!", "bad")
 		local flash = UI.new("Frame", {
 			Size = UDim2.fromScale(1, 1),
 			BackgroundColor3 = Color3.fromRGB(255, 0, 30),
@@ -313,6 +313,39 @@ function CarryFX.start()
 			local m = Mutations.List[mut]
 			local big = rarity == "Legendary" or rarity == "Mythic" or (m and m.mult >= 5)
 			Sound.play(if big then "Rare" else "Deposit", 0.7)
+			if income <= 0 then
+				-- a crate: "You stole from MUSEUM OWNER!" in big text, the name in gold
+				local who = string.match(title or "", "^You stole from (.+)!$") or ""
+				local line = UI.new("TextLabel", {
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.fromScale(0.5, 0.62),
+					Size = UDim2.fromOffset(700, 54),
+					BackgroundTransparency = 1,
+					RichText = true,
+					Text = 'You stole from <font color="#FFD23C">' .. who .. "</font>!",
+					Font = Enum.Font.FredokaOne,
+					TextScaled = true,
+					TextColor3 = Color3.new(1, 1, 1),
+					Parent = layer,
+				}, { UI.textStroke(Color3.fromRGB(20, 20, 25), 3) })
+				UI.scaleObject(line)
+				local sub = UI.bigText({
+					AnchorPoint = Vector2.new(0.5, 0),
+					Position = UDim2.new(0.5, 0, 1, 2),
+					Size = UDim2.fromOffset(500, 28),
+					Text = "📦 " .. rarity .. " crate → your appraiser",
+					TextColor3 = if tier then UI.rgb(tier.color) else Color3.new(1, 1, 1),
+					Parent = line,
+				})
+				UI.bump(line, 0.3)
+				task.delay(2.6, function()
+					UI.tween(line, 0.3, { TextTransparency = 1 })
+					UI.tween(sub, 0.3, { TextTransparency = 1 })
+					task.wait(0.32)
+					line:Destroy()
+				end)
+				return
+			end
 			local card = UI.new("Frame", {
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				Position = UDim2.fromScale(0.5, 0.42),

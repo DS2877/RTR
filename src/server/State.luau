@@ -7,7 +7,7 @@ export type Carry = {
 	id: string,
 	mut: string,
 	model: Model?,
-	source: string, -- "vault" | "player"
+	source: string, -- "vault" (a crate) | "player" (an item from someone's plot)
 	victim: Player?, -- when stolen from another player
 	victimSlot: string?,
 	restore: () -> (), -- puts the item back where it came from

@@ -52,6 +52,23 @@ local Economy = {
 	} :: { [string]: number },
 
 	SellSeconds = 60, -- an item sells for this many seconds of its income
+
+	-- Crates: vault loot is a locked crate of a known rarity. Bring it home and the appraiser opens
+	-- it after a timer (all crates count down at the same time) -> the item (+ a hidden mutation).
+	Crates = {
+		AppraiseSeconds = {
+			Common = 10,
+			Uncommon = 20,
+			Rare = 45,
+			Epic = 90,
+			Legendary = 180,
+			Mythic = 360,
+		} :: { [string]: number },
+		QueueBase = 3, -- crates the appraiser holds at once...
+		QueuePerPlotLevels = 3, -- ...+1 every this many plot levels
+		QueueMax = 8,
+	},
+	InventoryMax = 30, -- items you own but haven't placed on a pedestal (the hotbar / My Items)
 	VaultRespawnSeconds = { 6, 12 }, -- random range before an emptied vault pedestal refills
 
 	-- Your own base

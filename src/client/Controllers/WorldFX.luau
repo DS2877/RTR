@@ -59,27 +59,58 @@ local function setupPrompt(pp: ProximityPrompt)
 			pp.Enabled = not mine
 		elseif pp.Name == "Sell" or pp.Name == "Upgrade" then
 			pp.Enabled = mine
+		elseif pp.Name == "Appraise" and not mine then
+			pp.Enabled = false -- only the owner opens their crates
 		end
 	end
 	task.defer(apply)
+	if pp.Name == "Appraise" then
+		-- the server flips Enabled when a crate gets ready: hide it again on other bases
+		pp:GetPropertyChangedSignal("Enabled"):Connect(function()
+			if pp.Enabled then
+				task.defer(apply)
+			end
+		end)
+	end
 end
 
 local function zoneBanner()
 	local gui = HUD.gui()
+	-- a dark see-through strip across the top with the street's name, shown while you're in it
 	local holder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 120),
-		Size = UDim2.fromOffset(560, 64),
-		BackgroundTransparency = 1,
+		Position = UDim2.new(0.5, 0, 0, 58),
+		Size = UDim2.fromOffset(620, 54),
+		BackgroundColor3 = Color3.fromRGB(10, 10, 15),
+		BackgroundTransparency = 0.45,
+		BorderSizePixel = 0,
+		Visible = false,
 		Parent = gui,
+	}, {
+		UI.new("UIGradient", {
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.18, 0),
+				NumberSequenceKeypoint.new(0.82, 0),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+		}),
 	})
 	UI.scaleObject(holder)
 	local banner = UI.bigText({
-		Size = UDim2.fromScale(1, 1),
+		Position = UDim2.fromOffset(0, 4),
+		Size = UDim2.new(1, 0, 1, -8),
 		Text = "",
-		Visible = false,
 		Parent = holder,
-	}, Color3.fromRGB(20, 20, 28), 3.5)
+	}, Color3.fromRGB(20, 20, 28), 3)
+	local function nameColor(def: any): Color3
+		-- the brighter of the zone's two colors, a touch lighter so it reads on the dark strip
+		local a, b = UI.rgb(def.trim), UI.rgb(def.color)
+		local function lum(c: Color3): number
+			return 0.3 * c.R + 0.59 * c.G + 0.11 * c.B
+		end
+		return (if lum(a) > 0.4 then a else b):Lerp(Color3.new(1, 1, 1), 0.15)
+	end
 	local current: number? = nil
 	task.spawn(function()
 		while true do
@@ -101,24 +132,20 @@ local function zoneBanner()
 			end
 			if found ~= current then
 				current = found
+				holder.Visible = found ~= nil
 				if found then
 					local def = Vaults[found]
 					local need = Progression.speedToOutrun(found)
 					local mine = Progression.walkSpeed(player:GetAttribute("SpeedPoints") or 0)
-					banner.Text = def.emoji .. " " .. def.name
-					banner.TextColor3 = UI.rgb(def.trim)
-					banner.Visible = true
-					UI.bump(banner, 0.3)
+					banner.Text = def.name .. " " .. def.emoji
+					banner.TextColor3 = nameColor(def)
+					UI.bump(holder, 0.12)
 					if mine < need then
-						HUD.toast("⚠️ Guards here are faster than you! Train on your treadmill.", "bad")
+						HUD.toast(
+							"⚠️ " .. def.name .. " is faster than you! Train on your treadmill.",
+							"bad"
+						)
 					end
-					local stamp = os.clock()
-					banner:SetAttribute("Stamp", stamp)
-					task.delay(2.5, function()
-						if banner:GetAttribute("Stamp") == stamp then
-							banner.Visible = false
-						end
-					end)
 				end
 			end
 		end
@@ -253,7 +280,7 @@ local function guide()
 	-- one compact objective pill (bottom center) + the golden beam to the target
 	local pill = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -16),
+		Position = UDim2.new(0.5, 0, 1, -84), -- above the hotbar
 		Size = UDim2.fromOffset(520, 40),
 		BackgroundTransparency = 1, -- outlined text only, like the rest of the HUD
 		Visible = false,
@@ -315,12 +342,19 @@ local function guide()
 				local floor = vm and vm:FindFirstChild("Floor") :: BasePart?
 				return floor and floor.Position
 			end
+			local function appraiserTarget(): Vector3?
+				local a = base and base:FindFirstChild("Appraiser")
+				local h = a and a:FindFirstChild("Head") :: BasePart?
+				return if h then h.Position else nil
+			end
+			local ready = player:GetAttribute("CratesReady") or 0
+			local crates = player:GetAttribute("Crates") or 0
 			if player:GetAttribute("Carrying") then
-				text = (if learning then "STEP 3/4  •  " else "") .. "🏃 RUN HOME! The guards are coming!"
+				text = (if learning then "STEP 3/5  •  " else "") .. "🏃 RUN HOME! Don't get caught!"
 				local floor = base and base:FindFirstChild("Floor") :: BasePart?
 				target = floor and floor.Position
 			elseif base then
-				-- best vault you can outrun
+				-- best zone you can outrun
 				local best = 0
 				for i = 1, #Vaults do
 					if speed * Economy.CarrySlowdown.Common > Vaults[i].guardSpeed then
@@ -329,15 +363,21 @@ local function guide()
 				end
 				local income = player:GetAttribute("CashPerSec") or 0
 				if learning and pts < 30 and steals == 0 then
-					text = "STEP 1/4  •  ⚡ Stand on your treadmill"
+					text = "STEP 1/5  •  ⚡ Stand on your treadmill"
 					local belt = base:FindFirstChild("Treadmill") :: BasePart?
 					target = belt and belt.Position
 				elseif learning and steals == 0 then
 					local v = math.max(1, best)
-					text = "STEP 2/4  •  💰 STEAL loot at " .. Vaults[v].name
+					text = "STEP 2/5  •  📦 STEAL a crate from " .. Vaults[v].name
 					target = vaultTarget(v)
+				elseif ready > 0 then
+					text = (if learning then "STEP 4/5  •  " else "") .. "📦 Your crate is ready! Open it"
+					target = appraiserTarget()
+				elseif learning and crates > 0 then
+					text = "STEP 4/5  •  🧐 The appraiser is opening your crate..."
+					target = appraiserTarget()
 				elseif learning and (player:GetAttribute("Collected") or 0) == 0 then
-					text = "STEP 4/4  •  💵 Step on your green COLLECT pad"
+					text = "STEP 5/5  •  💵 Step on your green COLLECT pad"
 					local pad = base:FindFirstChild("CollectPad") :: BasePart?
 					target = pad and pad.Position
 				elseif pts < 30 then
@@ -345,7 +385,7 @@ local function guide()
 					local belt = base:FindFirstChild("Treadmill") :: BasePart?
 					target = belt and belt.Position
 				elseif best >= 1 and income < Vaults[best].baseIncome * 3 then
-					text = "💰 Next target: " .. Vaults[best].name
+					text = "📦 Next target: " .. Vaults[best].name
 					target = vaultTarget(best)
 				end
 			end

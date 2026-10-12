@@ -26,6 +26,16 @@ return function()
 		check(Vaults[i].baseIncome > Vaults[i - 1].baseIncome, "vault income grows")
 		check(Vaults[i].guardSpeed > Vaults[i - 1].guardSpeed, "guards get faster")
 	end
+	-- crates: the appraiser holds more crates as the plot grows (capped), rarer crates take longer
+	check(Progression.crateSlots(1) == 3, "3 crate slots at start")
+	check(Progression.crateSlots(4) == 4, "+1 crate slot every 3 plot levels")
+	check(Progression.crateSlots(100) == 8, "crate slots capped")
+	for i = 2, #Rarity.Order do
+		check(
+			Progression.appraiseSeconds(Rarity.Order[i]) > Progression.appraiseSeconds(Rarity.Order[i - 1]),
+			"rarer crates take longer"
+		)
+	end
 	-- speed curve
 	check(Progression.walkSpeed(0) == 16, "base speed 16")
 	check(

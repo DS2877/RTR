@@ -1,8 +1,8 @@
 --!strict
--- Vault guards: chunky security NPCs. They patrol their vault and chase anyone carrying loot
--- nearby. Touch = caught (loot goes back, short stun). Faster guards on richer vaults.
--- Limbs hang on Motor6Ds so clients can swing them (walk animation in Controllers/WorldFX).
--- During a GUARD STRIKE event they fall asleep at home and catch nobody.
+-- The chasers in every zone: the rich OWNER (stands among their crates, chases whoever steals one)
+-- plus suited bodyguards in the richer zones. Touch = caught (the crate goes back, short stun).
+-- Faster chasers in richer zones. Real R15 rigs with Roblox's run/idle animations; a part-built
+-- fallback rig if R15 can't be created. During a GUARD STRIKE event they all fall asleep.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,6 +16,7 @@ local Net = require(script.Parent.Parent.Net)
 local Carry = require(script.Parent.Carry)
 local Events = require(script.Parent.Events)
 local Rig = require(script.Parent.Parent.Util.Rig)
+local RichLook = require(script.Parent.Parent.Util.RichLook)
 
 local Guards = {}
 
@@ -30,6 +31,7 @@ type Guard = {
 	nextPatrol: number,
 	tag: TextLabel,
 	asleep: boolean,
+	owner: boolean, -- the rich person themself (else a bodyguard)
 }
 
 local guards: { Guard } = {}
@@ -114,7 +116,7 @@ local function makeTag(parent: BasePart, height: number): TextLabel
 	l.BackgroundTransparency = 1
 	l.Font = Enum.Font.FredokaOne
 	l.TextScaled = true
-	l.Text = "GUARD"
+	l.Text = ""
 	l.TextColor3 = Color3.fromRGB(255, 255, 255)
 	local s = Instance.new("UIStroke")
 	s.Thickness = 2
@@ -214,6 +216,7 @@ local function buildRigGuard(vaultIndex: number, home: CFrame, trim: Color3): Gu
 		nextPatrol = 0,
 		tag = tag,
 		asleep = false,
+		owner = false,
 	}
 end
 
@@ -302,14 +305,59 @@ local function buildGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard
 		nextPatrol = 0,
 		tag = l,
 		asleep = false,
+		owner = false,
+	}
+end
+
+-- The rich person: a bit bigger than a player, in their own style. Nil if R15 is unavailable.
+local function buildOwner(vaultIndex: number, home: CFrame): Guard?
+	local def = Vaults[vaultIndex]
+	local rig = RichLook.build(def)
+	if not rig then
+		return nil
+	end
+	local root = rig:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local humanoid = rig:FindFirstChildOfClass("Humanoid")
+	local head = rig:FindFirstChild("Head") :: BasePart?
+	if not root or not humanoid or not head then
+		rig:Destroy()
+		return nil
+	end
+	rig.Name = "RichPerson"
+	rig:SetAttribute("Vault", vaultIndex)
+	rig:SetAttribute("Rig", "R15")
+	rig:SetAttribute("Owner", true)
+	rig:ScaleTo(1.3)
+	rig:PivotTo(home)
+	setupHumanoid(humanoid, vaultIndex)
+	local tag = makeTag(head, 2.6)
+	rig.Parent = workspace:FindFirstChild("Guards") or workspace
+	pcall(function()
+		root:SetNetworkOwner(nil)
+	end)
+	Rig.setPose(humanoid, "Idle")
+	return {
+		model = rig,
+		humanoid = humanoid,
+		root = root,
+		home = home,
+		vault = vaultIndex,
+		center = home.Position,
+		target = nil,
+		nextPatrol = 0,
+		tag = tag,
+		asleep = false,
+		owner = true,
 	}
 end
 
 local function setTag(g: Guard, mode: string)
-	g.tag.Text = if mode == "chase"
-		then "❗ STOP THIEF ❗"
+	-- no label while idle (a clean zone); a shout while chasing
+	g.tag.Text = if mode == "chase" and g.owner
+		then "😡 " .. string.upper(Vaults[g.vault].name)
+		elseif mode == "chase" then "❗ STOP THIEF ❗"
 		elseif mode == "sleep" then "💤 ZZZ"
-		else "GUARD"
+		else ""
 	g.tag.TextColor3 = if mode == "chase"
 		then Color3.fromRGB(255, 70, 70)
 		elseif mode == "sleep" then Color3.fromRGB(150, 210, 255)
@@ -389,7 +437,11 @@ local function step(g: Guard)
 			g.humanoid:MoveTo(r.Position)
 			local flat = Vector3.new(r.Position.X - pos.X, 0, r.Position.Z - pos.Z).Magnitude
 			if flat < 4.5 and math.abs(r.Position.Y - pos.Y) < 8 then
-				Carry.caught(target, "a guard", tooSlowFor(g, target))
+				Carry.caught(
+					target,
+					if g.owner then Vaults[g.vault].name else "a bodyguard",
+					tooSlowFor(g, target)
+				)
 				g.target = nil
 				setTag(g, "idle")
 			end
@@ -398,7 +450,9 @@ local function step(g: Guard)
 		local t = os.clock()
 		if (pos - g.home.Position).Magnitude > 30 or t >= g.nextPatrol then
 			g.nextPatrol = t + rng:NextNumber(3, 6)
-			local patrol = g.home * CFrame.new(rng:NextNumber(-14, 14), 0, rng:NextNumber(-10, 18))
+			-- the owner fusses around their crates; bodyguards walk a wider beat
+			local r = if g.owner then 5 else 14
+			local patrol = g.home * CFrame.new(rng:NextNumber(-r, r), 0, rng:NextNumber(-r, r))
 			g.humanoid:MoveTo(patrol.Position)
 		end
 	end
@@ -431,8 +485,10 @@ function Guards.start(worldInfo: any)
 	for _, v in worldInfo.vaults do
 		local def = Vaults[v.index]
 		local trim = Color3.fromRGB(def.trim[1], def.trim[2], def.trim[3])
-		for _, cf in v.guardSpawns do
-			local g = buildRigGuard(v.index, cf, trim) or buildGuard(v.index, cf, trim)
+		for i, cf in v.guardSpawns do
+			local g = (if i == 1 then buildOwner(v.index, cf) else nil)
+				or buildRigGuard(v.index, cf, trim)
+				or buildGuard(v.index, cf, trim)
 			g.center = v.center
 			table.insert(guards, g)
 		end

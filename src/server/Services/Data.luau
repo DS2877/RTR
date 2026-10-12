@@ -8,6 +8,8 @@ local ProfileStore = require(script.Parent.Parent.Packages.ProfileStore)
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 
 export type SlotItem = { Id: string, Mut: string }
+-- A stolen crate at the appraiser: the item inside is already decided (shown when it opens).
+export type Crate = { Id: string, Mut: string, ReadyAt: number }
 
 export type PlayerData = {
 	Version: number,
@@ -17,6 +19,8 @@ export type PlayerData = {
 	Treadmill: number,
 	PlotLevel: number,
 	Slots: { [string]: SlotItem }, -- pedestal index (as string) -> item
+	Inventory: { SlotItem }, -- owned items not on a pedestal (hotbar / My Items)
+	Crates: { Crate }, -- crates being appraised at your base
 	Found: { [string]: boolean }, -- index (item ids ever owned)
 	LastOnline: number,
 	StarterGiven: boolean,
@@ -46,6 +50,8 @@ local TEMPLATE: PlayerData = {
 	Treadmill = 1,
 	PlotLevel = 1,
 	Slots = {},
+	Inventory = {},
+	Crates = {},
 	Found = {},
 	LastOnline = 0,
 	StarterGiven = false,

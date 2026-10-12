@@ -1,5 +1,5 @@
 --!strict
--- Fuse machine: 3 identical items (same item + mutation) on your plot -> 1 of the next mutation.
+-- Fuse machine: 3 identical items (same item + mutation, plot or bag) -> 1 of the next mutation.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -25,23 +25,41 @@ local function fuse(player: Player, id: string, mut: string)
 		Net.notice(player, "That's already the best mutation!", "bad")
 		return
 	end
-	local matches: { string } = {}
+	-- matches on the plot and in the bag (bag items are used first: they earn nothing)
+	local slots: { string } = {}
 	for slot, item in s.data.Slots do
 		if item.Id == id and item.Mut == mut and not Bases.isHidden(player, slot) then
-			table.insert(matches, slot)
+			table.insert(slots, slot)
 		end
 	end
-	if #matches < Mutations.FuseCount then
+	local bag: { number } = {}
+	for i, item in s.data.Inventory do
+		if item.Id == id and item.Mut == mut then
+			table.insert(bag, i)
+		end
+	end
+	if #slots + #bag < Mutations.FuseCount then
 		Net.notice(player, "You need " .. Mutations.FuseCount .. " of the same item.", "bad")
 		return
 	end
-	table.sort(matches, function(a, b)
+	table.sort(slots, function(a, b)
 		return (tonumber(a) :: number) < (tonumber(b) :: number)
 	end)
-	for i = 1, Mutations.FuseCount do
-		Bases.removeSlot(player, matches[i])
+	local need = Mutations.FuseCount
+	for i = #bag, 1, -1 do
+		if need > 0 then
+			table.remove(s.data.Inventory, bag[i])
+			need -= 1
+		end
 	end
-	Bases.addItem(player, id, nextMut)
+	for i = 1, need do
+		Bases.removeSlot(player, slots[i])
+	end
+	if not Bases.addItem(player, id, nextMut) then
+		table.insert(s.data.Inventory, { Id = id, Mut = nextMut })
+		s.data.Found[id] = true
+	end
+	Bases.changed(player)
 	local info = Progression.item(id) :: any
 	Net.fire(
 		player,

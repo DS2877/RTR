@@ -1,6 +1,7 @@
 --!strict
--- NPC vault loot: every pedestal holds one rolled item; steal it, and it refills after a while.
--- Loot is shared by the whole server, so rare spawns are a race.
+-- The rich people's loot: every spot in a zone holds one crate of a rolled rarity (the item and
+-- a hidden mutation are rolled with it); steal it, and the spot refills after a while.
+-- Loot is shared by the whole server, so rare crates are a race.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -11,7 +12,7 @@ local Vaults = require(Shared.Config.Vaults)
 local Rarity = require(Shared.Config.Rarity)
 
 local Net = require(script.Parent.Parent.Net)
-local ItemModel = require(script.Parent.Parent.Util.ItemModel)
+local CrateModel = require(script.Parent.Parent.Util.CrateModel)
 local Carry = require(script.Parent.Carry)
 local Events = require(script.Parent.Events)
 
@@ -30,12 +31,10 @@ local slots: { Slot } = {}
 local rng = Random.new()
 
 local function lootCFrame(ped: BasePart): CFrame
-	-- above the stand, facing the path (stands sit at +-lx: turn toward the middle)
+	-- on the floor marker, lock facing the middle of the zone (markers sit at +-lx)
 	local toPath = Vector3.new(0, 0, -ped.Position.Z).Unit
-	return CFrame.lookAt(
-		ped.Position + Vector3.new(0, 1 + 3.1, 0),
-		ped.Position + Vector3.new(0, 4.1, 0) + toPath
-	)
+	local core = ped.Position + Vector3.new(0, ped.Size.Y / 2 + 1.1 * 1.25, 0)
+	return CFrame.lookAt(core, core + toPath)
 end
 
 local spawnLoot: (slot: Slot, id: string, mut: string) -> ()
@@ -73,13 +72,17 @@ function spawnLoot(slot: Slot, id: string, mut: string)
 	end
 	slot.id = id
 	slot.mut = mut
-	local model = ItemModel.build(id, mut, { scale = 1.6 })
-	ItemModel.place(model, lootCFrame(slot.pedestal))
+	local info = Progression.item(id) :: Progression.ItemInfo
+	local def = Vaults[slot.vault]
+	-- a locked crate: everyone sees its rarity, nobody sees what's inside (or its mutation)
+	local model = CrateModel.build(info.rarity, { title = def.name .. " Crate", scale = 1.25 })
+	model:PivotTo(lootCFrame(slot.pedestal))
+	model:SetAttribute("Vault", slot.vault)
 	local core = model.PrimaryPart :: BasePart
 	local pp = Instance.new("ProximityPrompt")
 	pp.Name = "Steal"
 	pp.ActionText = "STEAL"
-	pp.ObjectText = (Progression.item(id) :: any).name
+	pp.ObjectText = info.rarity .. " Crate"
 	pp.HoldDuration = 0.4
 	pp.MaxActivationDistance = 10
 	pp.RequiresLineOfSight = false
@@ -89,18 +92,12 @@ function spawnLoot(slot: Slot, id: string, mut: string)
 	end)
 	model.Parent = slot.pedestal.Parent
 	slot.model = model
-	local info = Progression.item(id)
-	if info and (Rarity.Tiers[info.rarity].glow or mut ~= "None") then
+	if Rarity.Tiers[info.rarity].glow then
 		model:SetAttribute("Highlight", true)
 	end
-	if info and (info.rarity == "Mythic" or mut == "Rainbow") then
+	if info.rarity == "Mythic" then
 		Net.announce(
-			string.format(
-				"✨ A %s%s appeared at %s! ✨",
-				if mut ~= "None" then mut .. " " else "",
-				info.name,
-				Vaults[slot.vault].name
-			),
+			string.format("✨ A MYTHIC crate appeared at %s's! ✨", def.name),
 			Rarity.Tiers[info.rarity].color
 		)
 	end

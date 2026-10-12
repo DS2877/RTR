@@ -14,6 +14,7 @@ local CarryFX = require(Controllers.CarryFX)
 local WorldFX = require(Controllers.WorldFX)
 local Panels = require(Controllers.Panels)
 local Ambient = require(Controllers.Ambient)
+local Items = require(Controllers.Items)
 
 local waited = 0
 while player:GetAttribute("Loaded") ~= true and waited < 60 do
@@ -26,4 +27,5 @@ HUD.start()
 CarryFX.start()
 WorldFX.start()
 Panels.start()
+Items.start()
 Ambient.start()

@@ -1,6 +1,6 @@
 --!strict
 -- World layout. X runs from the home plaza (x ~ 0) out along Rich Street (+X).
--- Look: bright, saturated, studded LEGO-style surfaces (like the genre).
+-- Look: bright, saturated, studded LEGO-style bricks everywhere (like the genre).
 
 local World = {
 	BaseCount = 8, -- also the server size
@@ -36,7 +36,10 @@ local World = {
 	VaultSpacing = 130, -- zone length along the corridor
 	ZoneHalfWidth = 48, -- corridor half width (walls at +-this)
 	PathHalfWidth = 7, -- the running path down the middle of every zone
-	ZoneWallHeight = 14,
+	ZoneWallHeight = 28, -- tall brick walls: each street feels like its own place
+	-- Day / night cycle (looks only): seconds of each phase, the HUD counts down to the next one
+	DaySeconds = 240,
+	NightSeconds = 120,
 	VaultPedestals = 6,
 }
 

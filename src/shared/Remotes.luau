@@ -18,6 +18,11 @@ Remotes.Names = {
 	GiftTarget = "GiftTarget", -- (userId: number) who the next gift purchase is for
 	BuyTrail = "BuyTrail", -- (trailId: string)
 	EquipTrail = "EquipTrail", -- (trailId: string) "" = take it off
+	Appraise = "Appraise", -- (index: number) open a ready crate; 0 = all ready crates
+	Equip = "Equip", -- (bagIndex: number) put an item from your bag on a free pedestal
+	Unequip = "Unequip", -- (slot: string) take an item off its pedestal into your bag
+	EquipBest = "EquipBest", -- () best earners on the pedestals
+	SellItem = "SellItem", -- (kind: "bag" | "slot", key: number | string)
 	-- server -> client
 	Notice = "Notice", -- (text: string, kind: string) small toast for one player
 	Announce = "Announce", -- (text: string, color: {number}, sound: string?) server-wide message
@@ -33,6 +38,8 @@ Remotes.Names = {
 	Pickup = "Pickup", -- (cash: number, candy: number, at: Vector3) you grabbed a street pickup
 	OpenTrails = "OpenTrails", -- () the trails shop prompt was used
 	Offline = "Offline", -- (earned: number, seconds: number, perDay: number)
+	OpenItems = "OpenItems", -- (mode: "items" | "sell") the SELL stall was used
+	Revealed = "Revealed", -- (itemName, rarity, mutation, income, where: "base" | "bag") a crate opened
 }
 
 local FOLDER_NAME = "Remotes"

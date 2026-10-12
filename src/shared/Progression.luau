@@ -99,6 +99,17 @@ function Progression.plotCost(level: number): number?
 	return math.floor(p.Cost * p.CostGrowth ^ (level - 1))
 end
 
+-- How many crates the appraiser holds at plot level `level`.
+function Progression.crateSlots(level: number): number
+	local c = Economy.Crates
+	return math.min(c.QueueMax, c.QueueBase + math.floor((math.max(1, level) - 1) / c.QueuePerPlotLevels))
+end
+
+-- Seconds to appraise a crate of `rarity`.
+function Progression.appraiseSeconds(rarity: string): number
+	return Economy.Crates.AppraiseSeconds[rarity] or 10
+end
+
 -- Weighted rarity pick. `r` in [0, 1).
 function Progression.rollRarity(r: number): string
 	local total = 0
