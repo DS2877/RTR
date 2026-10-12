@@ -76,6 +76,24 @@
 - Ny shop: sektionerna PASSES (för alltid) och BOOSTS (engångs), större kort och 🎁-knapp på passen.
 - Ops-workflowet skapar nu även gåvoprodukterna.
 
+### Visuell omgång 12 okt (skärmdumpar: "looks terrible"), 614 kontroller i Roblox
+- **Ön:** sandstrand runt gräset, terränghav med vågor och en ring av gröna berg ute i havet. Världen tar inte längre slut i tomma intet. Man kan gå på stranden men inte ut i vattnet.
+- **Riktiga material i stället för studs-baseplate:**
+  - torget har varma plattstenar och marken utanför är gräs
+  - zonerna har trägolv (Grandpa, Pirate, Yacht), marmor (Museum, Gold, Billionaire), rosa (Influencer) och metallplåt (Tech)
+  - en **röd matta med guldkanter** är springvägen genom alla zoner
+  - studs finns kvar bara på basernas gård, som i genren
+- **Ställen:** vita marmorpelare med guldkant. Glaslocken som svävade i luften är borta och föremålen i zonerna är större.
+- **Etiketter i världsskala:** de krymper på avstånd och staplas inte längre till en vägg av text.
+  - de visar bara namn och inkomst
+  - sällsynthet bara för Rare och uppåt, och odds bara när de är ovanliga (inget "1 in 2")
+  - samma sak för COLLECT, GUARD, VIP och de rika personernas namn
+- **Riktiga Roblox-figurer (R15)** med Robloxs egna animationer:
+  - vakterna är i mörk kostym med keps, solglasögon, slips och guldbricka, och springer med springanimation
+  - de rika personerna är stora (2,2x) med idle-animation och temahatt
+  - reserv till de gamla modellerna om skapandet skulle misslyckas (i testet: R15 fungerar)
+- Guldet är rent i stället för skrynklig folie, och fontänskålen är i marmor.
+
 ### Ljusfix (skärmdump 11 okt: överexponerat)
 - Ljuset ligger nu nära Robloxs standard:
   - ljusstyrka 2 i stället för 3 och lite negativ exponering
