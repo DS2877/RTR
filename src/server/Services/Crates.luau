@@ -93,7 +93,11 @@ function Crates.render(player: Player)
 		local spot = spots[i]
 		if spot then
 			local rarity = rarityOf(c.Id)
-			local m = CrateModel.build(rarity, { title = "", scale = 1.1 })
+			local info = Progression.item(c.Id)
+			local m = CrateModel.build(
+				rarity,
+				{ title = "", scale = 1.1, theme = if info then Vaults[info.vault].id else nil }
+			)
 			m:PivotTo(spot * CFrame.new(0, 1.2, 0))
 			local core = m.PrimaryPart :: BasePart
 			local pp = Instance.new("ProximityPrompt")

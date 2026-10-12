@@ -63,7 +63,10 @@ local function attachModel(player: Player, carry: State.Carry)
 			return
 		end
 		local info = Progression.item(carry.id)
-		local crate = CrateModel.build(if info then info.rarity else "Common", { scale = 0.9 })
+		local crate = CrateModel.build(
+			if info then info.rarity else "Common",
+			{ scale = 0.9, theme = if info then Vaults[info.vault].id else nil }
+		)
 		crate.Name = "CarriedLoot"
 		ItemModel.weldTo(crate, root, CFrame.new(0, 4.9, -0.2))
 		crate.Parent = character

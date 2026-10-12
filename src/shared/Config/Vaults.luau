@@ -22,6 +22,7 @@ export type Vault = {
 	guardSpeed: number,
 	aggro: number, -- studs from the vault center where guards notice a carrier
 	leash: number, -- guards give up beyond this distance from home
+	guardian: string?, -- a creature that guards the crates too ("trex"), counted in `guards`
 	items: { Item }, -- index = rarity order (1 Common .. 6 Mythic)
 }
 
@@ -78,6 +79,7 @@ local Vaults: { Vault } = {
 		trim = { 140, 100, 50 },
 		baseIncome = 245,
 		guards = 2,
+		guardian = "trex", -- a big green T-rex lies by the crates and chases thieves
 		guardSpeed = 34,
 		aggro = 55,
 		leash = 130,

@@ -406,9 +406,23 @@ function HUD.start()
 		Parent = topHolder,
 	}, Color3.fromRGB(15, 15, 20), 3)
 	HUD.offlineLabel = offlineL
-	-- while you carry loot the top belongs to RUN!!
-	player:GetAttributeChangedSignal("Carrying"):Connect(function()
-		topHolder.Visible = player:GetAttribute("Carrying") == nil
+	-- only shown while you're inside your own base (and never while carrying: then RUN!! owns the top)
+	topHolder.Visible = false
+	task.spawn(function()
+		while true do
+			task.wait(0.3)
+			local inside = false
+			local bases = workspace:FindFirstChild("Bases")
+			local base = bases and bases:FindFirstChild("Base_" .. tostring(player:GetAttribute("BaseId")))
+			local floor = base and base:FindFirstChild("Floor") :: BasePart?
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if floor and root then
+				local l = floor.CFrame:PointToObjectSpace(root.Position)
+				inside = math.abs(l.X) <= floor.Size.X / 2 and math.abs(l.Z) <= floor.Size.Z / 2 and l.Y < 30
+			end
+			topHolder.Visible = inside and player:GetAttribute("Carrying") == nil
+		end
 	end)
 
 	local function refresh()

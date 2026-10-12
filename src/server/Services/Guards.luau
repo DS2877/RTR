@@ -32,6 +32,7 @@ type Guard = {
 	tag: TextLabel,
 	asleep: boolean,
 	owner: boolean, -- the rich person themself (else a bodyguard)
+	reach: number, -- how close it must get to catch you (bigger for big creatures)
 }
 
 local guards: { Guard } = {}
@@ -147,8 +148,11 @@ end
 -- A real Roblox R15 guard in a dark suit (cap, shades, tie, gold badge) with Roblox's own
 -- idle/run animations. Returns nil if R15 rigs can't be created (the part model is used then).
 local function buildRigGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard?
-	local rig =
-		Rig.build("guard", { head = SKIN, torso = SUIT, arms = SUIT, legs = Color3.fromRGB(18, 18, 24) })
+	-- the genre's bodyguards: black suit, classic yellow head, dark shades
+	local rig = Rig.build(
+		"guard",
+		{ head = Color3.fromRGB(245, 205, 55), torso = SUIT, arms = SUIT, legs = Color3.fromRGB(18, 18, 24) }
+	)
 	if not rig then
 		return nil
 	end
@@ -187,18 +191,6 @@ local function buildRigGuard(vaultIndex: number, home: CFrame, trim: Color3): Gu
 		newPart(rig, "Shades", Vector3.new(1.05, 0.28, 0.1), Color3.new(0, 0, 0), Enum.Material.Glass),
 		CFrame.new(0, 0.12, hf)
 	)
-	local top = head.Size.Y / 2
-	Rig.attach(head, newPart(rig, "Cap", Vector3.new(1.3, 0.45, 1.3), SUIT), CFrame.new(0, top + 0.12, 0))
-	Rig.attach(
-		head,
-		newPart(rig, "Brim", Vector3.new(1.3, 0.12, 0.6), SUIT),
-		CFrame.new(0, top - 0.05, hf - 0.25)
-	)
-	Rig.attach(
-		head,
-		newPart(rig, "CapBand", Vector3.new(1.34, 0.14, 1.34), trim),
-		CFrame.new(0, top - 0.02, 0)
-	)
 	local tag = makeTag(head, 2.4)
 	rig.Parent = workspace:FindFirstChild("Guards") or workspace
 	pcall(function()
@@ -217,6 +209,7 @@ local function buildRigGuard(vaultIndex: number, home: CFrame, trim: Color3): Gu
 		tag = tag,
 		asleep = false,
 		owner = false,
+		reach = 4.5,
 	}
 end
 
@@ -306,6 +299,7 @@ local function buildGuard(vaultIndex: number, home: CFrame, trim: Color3): Guard
 		tag = l,
 		asleep = false,
 		owner = false,
+		reach = 4.5,
 	}
 end
 
@@ -348,6 +342,94 @@ local function buildOwner(vaultIndex: number, home: CFrame): Guard?
 		tag = tag,
 		asleep = false,
 		owner = true,
+		reach = 4.5,
+	}
+end
+
+-- A big blocky green T-rex (the archeologist's guardian): parts welded to an invisible root,
+-- walked by a rigless Humanoid like the fallback guards.
+local function buildTrex(vaultIndex: number, home: CFrame): Guard
+	local model = Instance.new("Model")
+	model.Name = "Guardian"
+	model:SetAttribute("Vault", vaultIndex)
+	model:SetAttribute("Rig", "Creature")
+	local HIP = 5
+	local root = Instance.new("Part")
+	root.Name = "HumanoidRootPart"
+	root.Size = Vector3.new(4, 4, 4)
+	root.Transparency = 1
+	root.CanCollide = true
+	root.CFrame = home * CFrame.new(0, HIP - 2, 0)
+	root.Parent = model
+	model.PrimaryPart = root
+	local GREEN = Color3.fromRGB(90, 210, 70)
+	local DARK = Color3.fromRGB(56, 156, 48)
+	local function piece(name: string, size: Vector3, offset: CFrame, color: Color3): Part
+		local p = weld(model, root, name, size, offset, color)
+		p.Material = Enum.Material.Plastic
+		p.TopSurface = Enum.SurfaceType.Studs
+		return p
+	end
+	-- body + back stripes, tail tapering behind (+Z is behind: the root looks along -Z)
+	piece("Body", Vector3.new(6, 6, 11), CFrame.new(0, 1.5, 1), GREEN)
+	for i = 0, 3 do
+		piece("Stripe", Vector3.new(6.2, 1, 1.4), CFrame.new(0, 4.3, -2.5 + i * 2.6), DARK)
+	end
+	piece("Tail1", Vector3.new(4, 4, 6), CFrame.new(0, 2, 9.2), GREEN)
+	piece("Tail2", Vector3.new(2.6, 2.6, 6), CFrame.new(0, 2.6, 14.6), GREEN)
+	piece("Tail3", Vector3.new(1.4, 1.4, 4), CFrame.new(0, 3, 19.2), DARK)
+	-- neck, head with jaw, teeth and yellow eyes
+	piece("Neck", Vector3.new(3.6, 4, 3.6), CFrame.new(0, 4.5, -4.5), GREEN)
+	piece("Head", Vector3.new(5, 3.6, 7), CFrame.new(0, 7, -8), GREEN)
+	piece("Jaw", Vector3.new(4.4, 1.4, 6), CFrame.new(0, 4.6, -8.4), DARK)
+	for i = 0, 4 do
+		for _, x in { -1.8, 1.8 } do
+			piece(
+				"Tooth",
+				Vector3.new(0.5, 0.8, 0.5),
+				CFrame.new(x, 5.4, -6.2 - i * 1.1),
+				Color3.new(1, 1, 1)
+			)
+		end
+	end
+	for _, x in { -2.55, 2.55 } do
+		piece("Eye", Vector3.new(0.2, 1, 1), CFrame.new(x, 7.8, -9.6), Color3.fromRGB(255, 220, 40))
+		piece("Pupil", Vector3.new(0.25, 0.6, 0.4), CFrame.new(x * 1.01, 7.8, -9.8), Color3.new(0, 0, 0))
+	end
+	-- tiny arms + big legs down to the floor
+	for _, x in { -2.6, 2.6 } do
+		piece(
+			"Arm",
+			Vector3.new(0.8, 2.4, 0.8),
+			CFrame.new(x, 0.6, -4.6) * CFrame.Angles(math.rad(-40), 0, 0),
+			DARK
+		)
+		piece("Leg", Vector3.new(2.4, HIP + 1.5, 3), CFrame.new(x, -2 - (HIP + 1.5) / 2 + 1.5, 2), GREEN)
+		piece("Foot", Vector3.new(2.8, 1, 4.4), CFrame.new(x, -HIP - 1.5, 1), DARK)
+	end
+	local humanoid = Instance.new("Humanoid")
+	humanoid.RigType = Enum.HumanoidRigType.R15
+	humanoid.HipHeight = HIP
+	setupHumanoid(humanoid, vaultIndex)
+	humanoid.Parent = model
+	local tag = makeTag(root, 13)
+	model.Parent = workspace:FindFirstChild("Guards") or workspace
+	pcall(function()
+		root:SetNetworkOwner(nil)
+	end)
+	return {
+		model = model,
+		humanoid = humanoid,
+		root = root,
+		home = home,
+		vault = vaultIndex,
+		center = home.Position,
+		target = nil,
+		nextPatrol = 0,
+		tag = tag,
+		asleep = false,
+		owner = false,
+		reach = 10,
 	}
 end
 
@@ -355,7 +437,7 @@ local function setTag(g: Guard, mode: string)
 	-- no label while idle (a clean zone); a shout while chasing
 	g.tag.Text = if mode == "chase" and g.owner
 		then "😡 " .. string.upper(Vaults[g.vault].name)
-		elseif mode == "chase" then "❗ STOP THIEF ❗"
+		elseif mode == "chase" then "‼️"
 		elseif mode == "sleep" then "💤 ZZZ"
 		else ""
 	g.tag.TextColor3 = if mode == "chase"
@@ -436,7 +518,7 @@ local function step(g: Guard)
 		if r then
 			g.humanoid:MoveTo(r.Position)
 			local flat = Vector3.new(r.Position.X - pos.X, 0, r.Position.Z - pos.Z).Magnitude
-			if flat < 4.5 and math.abs(r.Position.Y - pos.Y) < 8 then
+			if flat < g.reach and math.abs(r.Position.Y - pos.Y) < 10 then
 				Carry.caught(
 					target,
 					if g.owner then Vaults[g.vault].name else "a bodyguard",
@@ -487,6 +569,7 @@ function Guards.start(worldInfo: any)
 		local trim = Color3.fromRGB(def.trim[1], def.trim[2], def.trim[3])
 		for i, cf in v.guardSpawns do
 			local g = (if i == 1 then buildOwner(v.index, cf) else nil)
+				or (if i == 2 and def.guardian == "trex" then buildTrex(v.index, cf) else nil)
 				or buildRigGuard(v.index, cf, trim)
 				or buildGuard(v.index, cf, trim)
 			g.center = v.center

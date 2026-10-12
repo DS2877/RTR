@@ -56,6 +56,61 @@ local LOOKS: { [string]: Look } = {
 	},
 }
 
+-- Each rich person's crates look their own (like the genre: the archeologist's wooden dig crate
+-- with a pickaxe, the mafia boss's navy safe with a gold wheel...). The rarity shows in the
+-- straps/trim color and the glow; Mythic lids glow.
+type Theme = { body: Color3, lid: Color3, emblem: string, mark: Color3 }
+local THEMES: { [string]: Theme } = {
+	Grandpa = {
+		body = Color3.fromRGB(170, 116, 68),
+		lid = Color3.fromRGB(146, 96, 54),
+		emblem = "plank",
+		mark = Color3.fromRGB(110, 72, 42),
+	},
+	Jeweler = {
+		body = Color3.fromRGB(40, 40, 52),
+		lid = Color3.fromRGB(64, 64, 80),
+		emblem = "gem",
+		mark = Color3.fromRGB(120, 220, 255),
+	},
+	Archeologist = {
+		body = Color3.fromRGB(176, 118, 66),
+		lid = Color3.fromRGB(160, 104, 56),
+		emblem = "pickaxe",
+		mark = Color3.fromRGB(60, 50, 45),
+	},
+	Mafia = {
+		body = Color3.fromRGB(40, 52, 92),
+		lid = Color3.fromRGB(30, 40, 72),
+		emblem = "wheel",
+		mark = Color3.fromRGB(255, 196, 40),
+	},
+	Celebrity = {
+		body = Color3.fromRGB(48, 40, 112),
+		lid = Color3.fromRGB(70, 52, 140),
+		emblem = "star",
+		mark = Color3.fromRGB(255, 120, 190),
+	},
+	Pirate = {
+		body = Color3.fromRGB(122, 76, 40),
+		lid = Color3.fromRGB(100, 60, 30),
+		emblem = "skull",
+		mark = Color3.fromRGB(245, 245, 240),
+	},
+	Museum = {
+		body = Color3.fromRGB(64, 42, 30),
+		lid = Color3.fromRGB(84, 58, 40),
+		emblem = "column",
+		mark = Color3.fromRGB(235, 232, 222),
+	},
+	GoldTycoon = {
+		body = Color3.fromRGB(255, 194, 40),
+		lid = Color3.fromRGB(240, 178, 30),
+		emblem = "coin",
+		mark = Color3.fromRGB(200, 140, 20),
+	},
+}
+
 local function part(model: Model, name: string, size: Vector3, cf: CFrame, color: Color3): Part
 	local p = Instance.new("Part")
 	p.Name = name
@@ -77,11 +132,23 @@ end
 export type Options = {
 	scale: number?,
 	title: string?, -- e.g. "Museum Crate" (rarity is shown above it); nil = no label
+	theme: string?, -- the rich person's id: their own crate design (else the plain rarity look)
 }
 
 -- Built around the origin, bottom at y = 0 (scale 1 = about 3.6 studs wide).
 function CrateModel.build(rarity: string, options: Options?): Model
 	local look = LOOKS[rarity] or LOOKS.Common
+	local theme = options and options.theme and THEMES[options.theme]
+	if theme then
+		local tc = (Rarity.Tiers[rarity] or Rarity.Tiers.Common).color
+		look = {
+			body = theme.body,
+			lid = theme.lid,
+			band = if rarity == "Common" then theme.mark else Color3.fromRGB(tc[1], tc[2], tc[3]),
+			lock = look.lock,
+			neon = look.neon,
+		}
+	end
 	local tier = Rarity.Tiers[rarity] or Rarity.Tiers.Common
 	local model = Instance.new("Model")
 	model.Name = "Crate_" .. rarity
@@ -113,6 +180,81 @@ function CrateModel.build(rarity: string, options: Options?): Model
 	local lock =
 		part(model, "Lock", Vector3.new(0.8, 0.9, 0.3), CFrame.new(0, H - 0.1, -D / 2 - 0.15), look.lock)
 	lock.TopSurface = Enum.SurfaceType.Smooth
+
+	-- the rich person's emblem on the front (below the lock)
+	if theme then
+		local front = -D / 2 - 0.2
+		local m = theme.mark
+		if theme.emblem == "gem" then
+			part(
+				model,
+				"Emblem",
+				Vector3.new(0.9, 0.9, 0.2),
+				CFrame.new(0, H * 0.4, front) * CFrame.Angles(0, 0, math.rad(45)),
+				m
+			).Material =
+				Enum.Material.Neon
+		elseif theme.emblem == "pickaxe" then
+			part(
+				model,
+				"Emblem",
+				Vector3.new(0.25, 1.5, 0.2),
+				CFrame.new(0, H * 0.4, front) * CFrame.Angles(0, 0, math.rad(-35)),
+				Color3.fromRGB(140, 100, 60)
+			)
+			part(
+				model,
+				"EmblemHead",
+				Vector3.new(1.4, 0.3, 0.2),
+				CFrame.new(0.3, H * 0.62, front) * CFrame.Angles(0, 0, math.rad(-35)),
+				m
+			)
+		elseif theme.emblem == "wheel" then
+			local w = part(
+				model,
+				"Emblem",
+				Vector3.new(0.2, 1.3, 1.3),
+				CFrame.new(0, H * 0.42, front) * CFrame.Angles(0, math.rad(90), 0),
+				m
+			)
+			w.Shape = Enum.PartType.Cylinder
+		elseif theme.emblem == "star" then
+			for _, a in { 0, 45 } do
+				part(
+					model,
+					"Emblem",
+					Vector3.new(0.9, 0.9, 0.2),
+					CFrame.new(0, H * 0.42, front) * CFrame.Angles(0, 0, math.rad(a)),
+					m
+				)
+			end
+		elseif theme.emblem == "skull" then
+			part(model, "Emblem", Vector3.new(0.9, 0.8, 0.2), CFrame.new(0, H * 0.45, front), m)
+			for _, x in { -0.2, 0.2 } do
+				part(
+					model,
+					"EmblemEye",
+					Vector3.new(0.2, 0.2, 0.1),
+					CFrame.new(x, H * 0.48, front - 0.12),
+					Color3.new(0, 0, 0)
+				)
+			end
+		elseif theme.emblem == "column" then
+			part(model, "Emblem", Vector3.new(0.4, 1.1, 0.2), CFrame.new(0, H * 0.4, front), m)
+			part(model, "EmblemCap", Vector3.new(0.9, 0.2, 0.2), CFrame.new(0, H * 0.4 + 0.6, front), m)
+		elseif theme.emblem == "coin" then
+			local c = part(
+				model,
+				"Emblem",
+				Vector3.new(0.2, 1.1, 1.1),
+				CFrame.new(0, H * 0.42, front) * CFrame.Angles(0, math.rad(90), 0),
+				m
+			)
+			c.Shape = Enum.PartType.Cylinder
+		else
+			part(model, "Emblem", Vector3.new(W - 0.6, 0.3, 0.15), CFrame.new(0, H * 0.35, front + 0.05), m)
+		end
+	end
 
 	local core = part(model, "Core", Vector3.new(1, 1, 1), CFrame.new(0, H / 2, 0), Color3.new(1, 1, 1))
 	core.Transparency = 1

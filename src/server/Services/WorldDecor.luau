@@ -381,7 +381,7 @@ local THEMES: { [string]: (f: Instance, at: At, trim: Color3) -> () } = {
 		for _, spot in { { -42, 18 }, { -30, 24 }, { 42, 22 }, { 30, 108 }, { -42, 112 } } do
 			part(f, "Tombstone", Vector3.new(2.6, 3.6, 1), at(spot[1], F + 1.8, spot[2]), rgb(120, 130, 150))
 		end
-		for _, spot in { { 42, 40 }, { -44, 92 }, { 44, 118 } } do
+		for _, spot in { { 42, 92 }, { -44, 96 }, { 44, 118 } } do
 			part(f, "Cactus", Vector3.new(1.6, 7, 1.6), at(spot[1], F + 3.5, spot[2]), rgb(60, 170, 70))
 			part(f, "CactusArm", Vector3.new(3.4, 1.2, 1.2), at(spot[1], F + 4.5, spot[2]), rgb(60, 170, 70))
 		end
@@ -564,6 +564,171 @@ function WorldDecor.zone(model: Model, id: string, origin: CFrame, trim: Color3)
 	local theme = THEMES[id]
 	if theme then
 		theme(f, at, trim)
+	end
+end
+
+-- ===== where the rich person sits (behind their crates, like the genre) =====
+-- `cf`: on the floor, Front (-Z) facing the street. Decoration only (nothing to bump into).
+function WorldDecor.station(model: Model, id: string, cf: CFrame)
+	local f = Instance.new("Model")
+	f.Name = "Station"
+	f.Parent = model
+	local function d(
+		name: string,
+		size: Vector3,
+		offset: CFrame,
+		color: Color3,
+		material: Enum.Material?
+	): Part
+		return deco(f, name, size, cf * offset, color, material)
+	end
+	if id == "Celebrity" then
+		-- a vanity: table, a mirror framed with light bulbs, a stool
+		d("Vanity", Vector3.new(8, 3, 3), CFrame.new(0, 1.5, 1.5), rgb(250, 245, 235))
+		d("Mirror", Vector3.new(5, 5, 0.4), CFrame.new(0, 5.5, 2.6), rgb(200, 230, 255), M.Glass)
+		for i = 0, 5 do
+			d(
+				"Bulb",
+				Vector3.new(0.6, 0.6, 0.6),
+				CFrame.new(-2.8 + i * 1.12, 8.2, 2.4),
+				rgb(255, 240, 180),
+				M.Neon
+			)
+		end
+		d("Stool", Vector3.new(2, 2, 2), CFrame.new(0, 1, -1.5), rgb(255, 140, 190))
+	elseif id == "Mafia" then
+		-- the boss's desk with stacks of cash and a lamp
+		d("Desk", Vector3.new(8, 3, 4), CFrame.new(0, 1.5, 1.5), rgb(70, 45, 30))
+		d("DeskTop", Vector3.new(8.4, 0.3, 4.4), CFrame.new(0, 3.15, 1.5), rgb(40, 26, 18))
+		for i = 0, 2 do
+			d("Cash", Vector3.new(1.4, 0.6, 0.8), CFrame.new(-2 + i * 1.6, 3.6, 1.2), rgb(90, 200, 90))
+		end
+		d("Lamp", Vector3.new(0.8, 1.6, 0.8), CFrame.new(3, 4.1, 2.2), rgb(80, 200, 120), M.Neon)
+		d("Chair", Vector3.new(3, 5, 3), CFrame.new(0, 2.5, 4.4), rgb(120, 20, 30))
+	elseif id == "Jeweler" then
+		-- a glass counter with a cash register
+		d("Counter", Vector3.new(9, 3, 3), CFrame.new(0, 1.5, 1.5), rgb(40, 40, 48))
+		local glass = d(
+			"CounterGlass",
+			Vector3.new(8.6, 1.6, 2.6),
+			CFrame.new(0, 3.8, 1.5),
+			rgb(200, 235, 255),
+			M.Glass
+		)
+		glass.Transparency = 0.5
+		d("Register", Vector3.new(2, 1.4, 1.6), CFrame.new(3, 5.3, 1.5), rgb(200, 200, 210))
+	elseif id == "Archeologist" then
+		-- a camp table with a map and a lantern, a canvas tent behind
+		d("Table", Vector3.new(6, 3, 3), CFrame.new(0, 1.5, 1.5), rgb(150, 110, 70))
+		d("Map", Vector3.new(4, 0.1, 2.4), CFrame.new(0, 3.05, 1.5), rgb(235, 215, 160))
+		d("Lantern", Vector3.new(0.8, 1.2, 0.8), CFrame.new(2.2, 3.6, 1.2), rgb(255, 210, 90), M.Neon)
+		d("Tent", Vector3.new(8, 6, 5), CFrame.new(0, 3, 5.5), rgb(214, 196, 140))
+	elseif id == "Pirate" then
+		-- a treasure throne made of barrels and a chest
+		barrel(f, cf * CFrame.new(-3, 0, 2), rgb(130, 85, 50))
+		barrel(f, cf * CFrame.new(3, 0, 2), rgb(130, 85, 50))
+		d("Throne", Vector3.new(4, 6, 2), CFrame.new(0, 3, 3), rgb(150, 30, 35))
+		chest(f, cf * CFrame.new(0, 0, -1))
+	elseif id == "Museum" then
+		-- the curator's desk with a lamp and a bust on a plinth
+		d("Desk", Vector3.new(7, 3, 3), CFrame.new(0, 1.5, 1.5), rgb(110, 75, 45))
+		d("Lamp", Vector3.new(0.8, 1.4, 0.8), CFrame.new(-2.4, 3.7, 1.5), rgb(255, 230, 150), M.Neon)
+		d("Plinth", Vector3.new(2, 4, 2), CFrame.new(5, 2, 3), rgb(235, 232, 222))
+		d("Bust", Vector3.new(1.6, 2, 1.6), CFrame.new(5, 5, 3), rgb(235, 232, 222))
+	elseif id == "GoldTycoon" then
+		-- a golden throne on a stack of gold bars
+		goldBars(f, cf * CFrame.new(0, 0, 2))
+		d("Throne", Vector3.new(4, 7, 2), CFrame.new(0, 3.5, 4), rgb(255, 200, 40))
+		d("Seat", Vector3.new(4, 1, 3), CFrame.new(0, 2, 2.5), rgb(200, 30, 40))
+	else
+		-- Grandpa: a rocking chair, a little table with a radio
+		d("Chair", Vector3.new(3, 4, 3), CFrame.new(0, 2, 2), rgb(130, 90, 55))
+		d("Table", Vector3.new(2.4, 2.4, 2.4), CFrame.new(3.2, 1.2, 1.5), rgb(150, 110, 70))
+		d("Radio", Vector3.new(1.6, 1, 0.8), CFrame.new(3.2, 2.9, 1.5), rgb(120, 80, 50))
+	end
+	for _, p in f:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.CanCollide = false
+			p.CanQuery = false
+		end
+	end
+end
+
+-- ===== little things lying around the street (bones, cash, coins, gifts...) =====
+local SCATTER: { [string]: { { size: Vector3, color: Color3, material: Enum.Material? } } } = {
+	Grandpa = {
+		{ size = Vector3.new(1, 1.4, 1), color = rgb(255, 120, 180) },
+		{ size = Vector3.new(1, 1.4, 1), color = rgb(255, 230, 80) },
+		{ size = Vector3.new(1.4, 1, 1.4), color = rgb(150, 110, 70) },
+	},
+	Jeweler = {
+		{ size = Vector3.new(0.8, 0.8, 0.8), color = rgb(120, 220, 255), material = M.Neon },
+		{ size = Vector3.new(2, 1.2, 1), color = rgb(40, 40, 48) },
+	},
+	Archeologist = {
+		{ size = Vector3.new(2.4, 0.5, 0.5), color = rgb(240, 232, 210) },
+		{ size = Vector3.new(1.6, 1, 1.4), color = rgb(150, 150, 160) },
+		{ size = Vector3.new(1, 1.6, 1), color = rgb(200, 120, 70) },
+	},
+	Mafia = {
+		{ size = Vector3.new(1.4, 0.5, 0.8), color = rgb(90, 200, 90) },
+		{ size = Vector3.new(1.6, 0.6, 0.8), color = rgb(255, 200, 40) },
+		{ size = Vector3.new(1.6, 2.4, 1.6), color = rgb(60, 70, 85) },
+	},
+	Celebrity = {
+		{ size = Vector3.new(1.4, 1.4, 1.4), color = rgb(255, 120, 190) },
+		{ size = Vector3.new(1.4, 1.4, 1.4), color = rgb(120, 200, 255) },
+		{ size = Vector3.new(1.6, 0.4, 1.2), color = rgb(160, 90, 255) },
+	},
+	Pirate = {
+		{ size = Vector3.new(1.2, 0.3, 1.2), color = rgb(255, 200, 40) },
+		{ size = Vector3.new(1.4, 0.3, 1.4), color = rgb(255, 140, 60) },
+		{ size = Vector3.new(2, 1.2, 1.6), color = rgb(140, 140, 150) },
+	},
+	Museum = {
+		{ size = Vector3.new(1.2, 1.8, 1.2), color = rgb(60, 160, 70) },
+		{ size = Vector3.new(1, 1.6, 1), color = rgb(200, 120, 70) },
+	},
+	GoldTycoon = {
+		{ size = Vector3.new(1.6, 0.6, 0.8), color = rgb(255, 205, 50) },
+		{ size = Vector3.new(1.2, 1, 1.2), color = rgb(255, 190, 30) },
+		{ size = Vector3.new(2, 2, 2), color = rgb(150, 110, 60) },
+	},
+}
+
+-- Scatters small props over the street, off the running path and away from the crate pile.
+function WorldDecor.scatter(model: Model, id: string, origin: CFrame, seed: number)
+	local kinds = SCATTER[id]
+	if not kinds then
+		return
+	end
+	local f = Instance.new("Model")
+	f.Name = "Scatter"
+	f.Parent = model
+	local rng = Random.new(seed * 131)
+	local L, HW = World.VaultSpacing, World.ZoneHalfWidth
+	local placed = 0
+	for _ = 1, 60 do
+		if placed >= 16 then
+			break
+		end
+		local lx = (if rng:NextNumber() < 0.5 then -1 else 1) * rng:NextNumber(11, HW - 6)
+		local depth = rng:NextNumber(6, L - 6)
+		local inPile = lx > 10 and lx < 44 and depth > 36 and depth < 80
+		if not inPile then
+			local k = kinds[rng:NextInteger(1, #kinds)]
+			deco(
+				f,
+				"Bit",
+				k.size,
+				origin
+					* CFrame.new(lx, F + k.size.Y / 2, -depth)
+					* CFrame.Angles(0, rng:NextNumber(0, math.pi), 0),
+				k.color,
+				k.material
+			)
+			placed += 1
+		end
 	end
 end
 

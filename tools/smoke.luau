@@ -309,9 +309,14 @@ if guardFolder then
 		check("guard root unanchored", r ~= nil and not r.Anchored)
 		if g:GetAttribute("Rig") == "R15" then
 			check(
-				"R15 chaser has a body (+ a cap on bodyguards)",
+				"R15 chaser has a body (+ shades on bodyguards)",
 				g:FindFirstChild("LeftFoot") ~= nil
-					and (g:GetAttribute("Owner") or g:FindFirstChild("Cap") ~= nil)
+					and (g:GetAttribute("Owner") or g:FindFirstChild("Shades") ~= nil)
+			)
+		elseif g:GetAttribute("Rig") == "Creature" then
+			check(
+				"guardian creature has a body",
+				g:FindFirstChild("Head") ~= nil and g:FindFirstChild("Leg") ~= nil
 			)
 		elseif h and r then
 			local legL = g:FindFirstChild("LegL") :: BasePart
@@ -326,13 +331,23 @@ if guardFolder then
 	end
 end
 check("guard count", guardCount == guardsWanted, guardCount)
+local trex = 0
+for _, g in Guards.all() do
+	if g.model:GetAttribute("Rig") == "Creature" then
+		trex += 1
+	end
+end
+check("the archeologist's T-rex guards the crates", trex == 1, trex)
 local firstGuard = guardFolder and guardFolder:GetChildren()[1]
 print("guards are " .. tostring(firstGuard and firstGuard:GetAttribute("Rig") or "part models"))
 
 -- ===== crate models =====
 for _, rarity in Rarity.Order do
 	local ok, err = pcall(function()
-		local m = CrateModel.build(rarity, { title = "Test Crate", scale = 1.25 })
+		local m = CrateModel.build(
+			rarity,
+			{ title = "Test Crate", scale = 1.25, theme = Vaults[1 + (#rarity % #Vaults)].id }
+		)
 		assert(m.PrimaryPart, "no PrimaryPart")
 		local _, size = m:GetBoundingBox()
 		assert(size.Magnitude < 9, "too big " .. tostring(size))
@@ -446,6 +461,14 @@ for i, vault in world.vaults do
 		end
 	end
 	check(id .. " crate pile is off the running path", offPath)
+	check(
+		id .. " crates on a rug with a recommended-speed sign",
+		vault.model:FindFirstChild("CrateRug") ~= nil and vault.model:FindFirstChild("SpeedSign") ~= nil
+	)
+	check(
+		id .. " owner's station + street props",
+		vault.model:FindFirstChild("Station") ~= nil and vault.model:FindFirstChild("Scatter") ~= nil
+	)
 end
 -- the island: beach + sea + mountains around the map (no edge of the world in sight)
 local surroundings = root:FindFirstChild("Surroundings")

@@ -2,6 +2,17 @@
 
 ## Klart
 
+### Gatan och vakterna närmare originalet (12 okt, natt 2)
+- **Kistor per zon** som i spelet: Grandpa vanliga trälådor, Jeweler svarta skrin med en ädelsten, Archeologist trälådor med hacka, Mafia Boss marinblå kassaskåp med guldratt, Celebrity marinblå/lila med stjärna, Pirate skattkistor med dödskalle, Museum mörka kistor med pelare, Gold Tycoon guldkistor med mynt. Sällsyntheten syns på banden och glöden.
+- **Kistorna står på en matta** i zonens färg (rosa hos Celebrity osv). Framför dem står en träskylt "⚡ 1,234 recommended", alltså farten du behöver för att springa ifrån.
+- **Ägaren har en station** bakom kistorna: sminkbord med glödlampor (Celebrity), skrivbord med sedelbuntar (Mafia Boss), glasdisk (Jeweler), tältläger med karta (Archeologist), tunnor och tron (Pirate), skrivbord och byst (Museum), guldtron (Gold Tycoon), gungstol med radio (Grandpa).
+- **Färgad golvkant** längs väggarna och smågrejer på gatan: ben och krukor, sedlar och guldtackor, presenter, guldmynt och sjöstjärnor, blommor.
+- **Vakterna**:
+  - Livvakterna har svarta kostymer, gula huvuden och solglasögon (inga kepsar).
+  - Hos Archeologist ligger en **stor grön T-rex** vid kistorna och jagar tjuvar. Den når längre när den hugger.
+  - Den som jagar visar "‼️" (ägaren visar "😡 NAMN").
+- **"You earn …/Day offline!" syns bara när du står i din egen bas.**
+
 ### Kartan 1:1 som Steal From The Rich (12 okt, natt)
 Research: spelens Roblox-sidor och bilder, fan-wikis och Philips videor bildruta för bildruta. Båda spelen har max 7 spelare och samma upplägg.
 - **Torget**: en stor limegrön gräsplan inne i jättehöga (60 studs) rutmönstrade väggar, gröna runt om och bruna/orange vid gatan, med vimplar längs kanten.

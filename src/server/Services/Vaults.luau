@@ -75,7 +75,8 @@ function spawnLoot(slot: Slot, id: string, mut: string)
 	local info = Progression.item(id) :: Progression.ItemInfo
 	local def = Vaults[slot.vault]
 	-- a locked crate: everyone sees its rarity, nobody sees what's inside (or its mutation)
-	local model = CrateModel.build(info.rarity, { title = def.name .. " Crate", scale = 1.25 })
+	local model =
+		CrateModel.build(info.rarity, { title = def.name .. " Crate", scale = 1.25, theme = def.id })
 	model:PivotTo(lootCFrame(slot.pedestal))
 	model:SetAttribute("Vault", slot.vault)
 	local core = model.PrimaryPart :: BasePart

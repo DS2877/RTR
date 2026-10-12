@@ -14,6 +14,8 @@ local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
 local Vaults = require(Shared.Config.Vaults)
 local Cosmetics = require(Shared.Config.Cosmetics)
+local Progression = require(Shared.Progression)
+local Format = require(Shared.Format)
 local WorldDecor = require(script.Parent.WorldDecor)
 local Rig = require(script.Parent.Parent.Util.Rig)
 local Palace = require(script.Parent.Parent.Util.Palace)
@@ -43,6 +45,8 @@ type ZoneStyle = {
 	wall: { number },
 	wall2: { number },
 	walls: string, -- houses | awnings | glyphs | posters | banners | planks | paintings | gears
+	rug: { number }, -- the carpet the owner's crates stand on
+	border: { number }?, -- a colored strip along both walls (nil = none)
 }
 local ZONE_STYLE: { [string]: ZoneStyle } = {
 	Grandpa = {
@@ -51,6 +55,8 @@ local ZONE_STYLE: { [string]: ZoneStyle } = {
 		wall = { 120, 186, 90 },
 		wall2 = { 98, 164, 72 },
 		walls = "houses",
+		rug = { 176, 60, 56 },
+		border = { 150, 110, 70 },
 	},
 	Jeweler = {
 		floor = { 204, 206, 212 },
@@ -58,6 +64,8 @@ local ZONE_STYLE: { [string]: ZoneStyle } = {
 		wall = { 150, 152, 160 },
 		wall2 = { 128, 130, 140 },
 		walls = "awnings",
+		rug = { 36, 36, 46 },
+		border = { 120, 122, 132 },
 	},
 	Archeologist = {
 		floor = { 238, 208, 132 },
@@ -65,6 +73,8 @@ local ZONE_STYLE: { [string]: ZoneStyle } = {
 		wall = { 206, 176, 104 },
 		wall2 = { 176, 146, 84 },
 		walls = "glyphs",
+		rug = { 150, 92, 52 },
+		border = { 120, 170, 80 },
 	},
 	Mafia = {
 		floor = { 72, 82, 98 },
@@ -72,6 +82,8 @@ local ZONE_STYLE: { [string]: ZoneStyle } = {
 		wall = { 46, 54, 66 },
 		wall2 = { 38, 44, 54 },
 		walls = "posters",
+		rug = { 130, 26, 36 },
+		border = { 230, 190, 40 },
 	},
 	Celebrity = {
 		floor = { 246, 242, 240 },
@@ -79,6 +91,8 @@ local ZONE_STYLE: { [string]: ZoneStyle } = {
 		wall = { 238, 204, 84 },
 		wall2 = { 218, 180, 62 },
 		walls = "banners",
+		rug = { 255, 140, 186 },
+		border = { 255, 160, 200 },
 	},
 	Pirate = {
 		floor = { 238, 214, 150 },
@@ -86,6 +100,7 @@ local ZONE_STYLE: { [string]: ZoneStyle } = {
 		wall = { 150, 112, 72 },
 		wall2 = { 126, 92, 56 },
 		walls = "planks",
+		rug = { 168, 120, 62 },
 	},
 	Museum = {
 		floor = { 234, 230, 182 },
@@ -93,6 +108,8 @@ local ZONE_STYLE: { [string]: ZoneStyle } = {
 		wall = { 112, 122, 62 },
 		wall2 = { 128, 98, 58 },
 		walls = "paintings",
+		rug = { 150, 28, 40 },
+		border = { 196, 150, 70 },
 	},
 	GoldTycoon = {
 		floor = { 62, 68, 82 },
@@ -100,6 +117,8 @@ local ZONE_STYLE: { [string]: ZoneStyle } = {
 		wall = { 30, 72, 82 },
 		wall2 = { 24, 58, 66 },
 		walls = "gears",
+		rug = { 255, 200, 40 },
+		border = { 40, 44, 56 },
 	},
 }
 
@@ -919,6 +938,7 @@ local function buildZone(parent: Instance, index: number, origin: CFrame): Vault
 			wall = def.color,
 			wall2 = def.trim,
 			walls = "houses",
+			rug = def.trim,
 		}
 	local L, HW, WH = World.VaultSpacing, World.ZoneHalfWidth, World.ZoneWallHeight
 
@@ -951,6 +971,20 @@ local function buildZone(parent: Instance, index: number, origin: CFrame): Vault
 		checkerWall(model, "Wall", cf, L, WH, rgb(style.wall), rgb(style.wall2), 12)
 	end
 	wallDressing(model, at, style, trim)
+	-- a colored strip along both walls (the genre's floor edging)
+	if style.border then
+		for _, side in { -1, 1 } do
+			deco(
+				brick(
+					model,
+					"Border",
+					Vector3.new(4, 0.14, L),
+					at(side * (HW - 2), FLOOR + 0.07, L / 2),
+					rgb(style.border :: { number })
+				)
+			)
+		end
+	end
 
 	-- where the zone starts: a glowing green line across the street + black iron fences at the sides
 	local line = deco(
@@ -1001,12 +1035,42 @@ local function buildZone(parent: Instance, index: number, origin: CFrame): Vault
 			table.insert(pedestals, spot)
 		end
 	end
+	-- the crates stand on the owner's carpet, with a wooden "recommended speed" sign in front
+	deco(brick(model, "CrateRug", Vector3.new(18, 0.12, 25), at(cs * 23.5, FLOOR + 0.06, 63), rgb(style.rug)))
+	local need = math.max(0, Progression.pointsFor(Progression.speedToOutrun(index)))
+	local speedSign = brick(
+		model,
+		"SpeedSign",
+		Vector3.new(0.6, 3, 6.5),
+		at(cs * 13.5, FLOOR + 3.2, 63),
+		Color3.fromRGB(196, 140, 80)
+	)
+	brick(
+		model,
+		"SpeedSignPost",
+		Vector3.new(0.5, 1.8, 0.5),
+		at(cs * 13.5, FLOOR + 0.9, 63),
+		Color3.fromRGB(130, 90, 50)
+	)
+	surfaceText(
+		speedSign,
+		if cs > 0 then Enum.NormalId.Left else Enum.NormalId.Right,
+		if need < 1 then "⚡ ANY SPEED" else "⚡ " .. Format.number(math.ceil(need)) .. "\nrecommended",
+		Color3.fromRGB(120, 255, 120)
+	)
+	WorldDecor.station(model, def.id, at(cs * 40, FLOOR, 63) * CFrame.Angles(0, math.rad(cs * 90), 0))
 	WorldDecor.zone(model, def.id, origin, trim)
+	WorldDecor.scatter(model, def.id, origin, index)
 
-	-- [1] the owner, right by their crates; bodyguards around them in the richer zones
+	-- [1] the owner, right by their crates; [2] the zone's guardian creature (if any) lying beside
+	-- them; bodyguards around them in the richer zones
 	local guardSpawns: { CFrame } = { at(cs * 34, 4, 63) * CFrame.Angles(0, math.rad(cs * 90), 0) }
 	for g = 2, def.guards do
-		table.insert(guardSpawns, at(cs * 12, 4, 44 + (g - 2) * 26))
+		if g == 2 and def.guardian then
+			table.insert(guardSpawns, at(cs * 34, 4, 40))
+		else
+			table.insert(guardSpawns, at(cs * 12, 4, 44 + (g - 2) * 26))
+		end
 	end
 
 	return {
