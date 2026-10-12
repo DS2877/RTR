@@ -97,15 +97,6 @@ local Economy = {
 		MaxGrowth = 3, -- bounty multiplier cap (reached after ~13 min)
 	},
 
-	-- Cash pickups along Rich Street: touch one for a few seconds of your income
-	Pickups = {
-		Spacing = 22, -- studs between pickups along the street
-		IncomeSeconds = 4, -- reward = this many seconds of your income...
-		MinCash = 25, -- ...but at least this much
-		Respawn = 20, -- seconds before a taken pickup comes back
-		Radius = 5, -- how close you must run
-	},
-
 	-- Friend Boost: more cash for every friend on the same server
 	FriendBoost = {
 		PerFriend = 0.1,

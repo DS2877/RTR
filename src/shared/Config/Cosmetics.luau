@@ -140,9 +140,15 @@ local Cosmetics = {
 		from = { 10, 1 },
 		to = { 11, 3 },
 	},
-	CandyPerPickup = 1,
-	BigCandyChance = 0.12, -- a pumpkin pickup worth BigCandy
-	BigCandy = 5,
+	-- 🍬 candy for every crate you bring home during the season, by the crate's rarity
+	CandyPerCrate = {
+		Common = 5,
+		Uncommon = 8,
+		Rare = 12,
+		Epic = 20,
+		Legendary = 35,
+		Mythic = 60,
+	} :: { [string]: number },
 }
 
 function Cosmetics.trail(id: string): Trail?

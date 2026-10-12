@@ -35,7 +35,6 @@ Remotes.Names = {
 	Alarm = "Alarm", -- (vaultName: string) a guard spotted you
 	CashFX = "CashFX", -- (amount: number, from: Vector3?) coins fly into the cash counter
 	Offer = "Offer", -- (kind: string) contextual shop offer ("speed" | "cash")
-	Pickup = "Pickup", -- (cash: number, candy: number, at: Vector3) you grabbed a street pickup
 	OpenTrails = "OpenTrails", -- () the trails shop prompt was used
 	Offline = "Offline", -- (earned: number, seconds: number, perDay: number)
 	OpenItems = "OpenItems", -- (mode: "items" | "sell") the SELL stall was used

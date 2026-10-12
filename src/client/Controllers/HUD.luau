@@ -406,6 +406,10 @@ function HUD.start()
 		Parent = topHolder,
 	}, Color3.fromRGB(15, 15, 20), 3)
 	HUD.offlineLabel = offlineL
+	-- while you carry loot the top belongs to RUN!!
+	player:GetAttributeChangedSignal("Carrying"):Connect(function()
+		topHolder.Visible = player:GetAttribute("Carrying") == nil
+	end)
 
 	local function refresh()
 		cashTarget = player:GetAttribute("Cash") or 0

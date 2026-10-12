@@ -62,7 +62,6 @@ local Wallet = req(Services, "Wallet")
 local Assets = req(Shared:WaitForChild("Config"), "Assets")
 local Cosmetics = req(Shared:WaitForChild("Config"), "Cosmetics")
 local Cosmetic = req(Services, "Cosmetic")
-local Pickups = req(Services, "Pickups")
 local Social = req(Services, "Social")
 local Crates = req(Services, "Crates")
 local Inventory = req(Services, "Inventory")
@@ -103,9 +102,6 @@ step("Product.start", Product.start)
 step("Admin.start", Admin.start)
 step("Cosmetic.start", function()
 	Cosmetic.start(world)
-end)
-step("Pickups.start", function()
-	Pickups.start(world)
 end)
 step("Social.start", Social.start)
 step("Crates.start", Crates.start)
@@ -470,7 +466,7 @@ check("trails shop with a prompt", world.trailsPrompt ~= nil and world.trailsPro
 for _, base in world.bases do
 	check("base " .. base.id .. " SAFE ZONE on the floor", base.model:FindFirstChild("SafeZone") ~= nil)
 end
-check("street pickups placed", #Pickups.all() >= 30, #Pickups.all())
+check("no cash pickups on the street", root:FindFirstChild("Pickups") == nil)
 local season = Cosmetic.seasonActive()
 check("Halloween decor matches the season", (root:FindFirstChild("Halloween") ~= nil) == season)
 check(
@@ -751,6 +747,9 @@ if sim and A and B then
 		assert(a.data.Crates[1].ReadyAt > workspace:GetServerTimeNow(), "crate ready at once")
 		assert(a.data.Stats.Steals == 1 and A.attrs.Steals == 1, "steal not counted")
 		assert(got(A, Remotes.Names.Deposited), "no STOLEN line")
+		if season then
+			assert(a.data.Candy > 0, "no 🍬 for a crate during Halloween")
+		end
 		local crate = nil
 		for _, m in a.base.model:GetChildren() do
 			if m:IsA("Model") and m:GetAttribute("Rarity") then
@@ -983,27 +982,6 @@ if sim and A and B then
 			end
 		end
 		assert(gold == 1 and plain == 0, "fuse gave " .. gold .. " gold / " .. plain .. " plain")
-	end)
-
-	step("street pickup: cash (+ candy in season), then it respawns later", function()
-		local pick = nil
-		for _, p in Pickups.all() do
-			if p.active then
-				pick = p
-				break
-			end
-		end
-		assert(pick, "no active pickup")
-		local cash, candy = a.data.Cash, a.data.Candy
-		moveTo(A, pick.part.Position)
-		task.wait(0.4)
-		assert(a.data.Cash > cash, "no cash from the pickup")
-		assert(not pick.active and pick.part.Transparency == 1, "pickup still there")
-		assert(got(A, Remotes.Names.Pickup), "no pickup popup")
-		if season then
-			assert(a.data.Candy > candy, "no candy during Halloween")
-		end
-		moveTo(A, Vector3.new(0, 400, 0))
 	end)
 
 	step("trails: can't afford -> refused; buy, equip, take off; pass trail needs the pass", function()

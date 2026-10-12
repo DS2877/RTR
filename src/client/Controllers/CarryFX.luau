@@ -41,11 +41,12 @@ function CarryFX.start()
 		Parent = gui,
 	}, {
 		UI.new("UIGradient", {
+			-- only the screen edges glow red; the middle stays clear so you can see where you run
 			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 0.15),
-				NumberSequenceKeypoint.new(0.3, 0.75),
-				NumberSequenceKeypoint.new(0.7, 0.75),
-				NumberSequenceKeypoint.new(1, 0.15),
+				NumberSequenceKeypoint.new(0, 0.35),
+				NumberSequenceKeypoint.new(0.12, 1),
+				NumberSequenceKeypoint.new(0.88, 1),
+				NumberSequenceKeypoint.new(1, 0.35),
 			}),
 		}),
 	})
@@ -57,8 +58,8 @@ function CarryFX.start()
 	})
 	local holder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 60),
-		Size = UDim2.fromOffset(300, 90),
+		Position = UDim2.new(0.5, 0, 0, 6),
+		Size = UDim2.fromOffset(200, 60),
 		BackgroundTransparency = 1,
 		Parent = layer,
 	})
@@ -73,13 +74,6 @@ function CarryFX.start()
 		Visible = false,
 		Parent = holder,
 	}, { UI.corner(16), UI.stroke(Color3.new(1, 1, 1), 3), UI.textStroke(Color3.new(0, 0, 0), 3) })
-	local carryName = UI.bigText({
-		Position = UDim2.new(0, -100, 1, 4),
-		Size = UDim2.new(1, 200, 0, 28),
-		Text = "",
-		Visible = false,
-		Parent = holder,
-	})
 
 	-- Drop: a red button at the bottom center (like the genre); Slap on the right edge
 	local dropHolder = UI.new("Frame", {
@@ -149,17 +143,7 @@ function CarryFX.start()
 		vignette.Visible = on
 		run.Visible = on
 		drop.Visible = on
-		carryName.Visible = on
 		if on then
-			local rarity = player:GetAttribute("CarryRarity") or "Common"
-			local mut = player:GetAttribute("CarryMut") or "None"
-			local tier = Rarity.Tiers[rarity]
-			carryName.Text = (if mut ~= "None" then mut .. " " else "")
-				.. tostring(carrying)
-				.. " ("
-				.. rarity
-				.. ")"
-			carryName.TextColor3 = if tier then UI.rgb(tier.color) else Color3.new(1, 1, 1)
 			Sound.play("Grab", 0.6)
 			Sound.play("Whoosh", 0.5)
 			Shake.kick(0.45)
@@ -176,7 +160,7 @@ function CarryFX.start()
 		local t = os.clock() - t0
 		if run.Visible then
 			local pulse = 0.5 + 0.5 * math.sin(t * 9)
-			vignette.BackgroundTransparency = 0.05 + pulse * 0.2
+			vignette.BackgroundTransparency = 0.25 + pulse * 0.2
 			run.Rotation = math.sin(t * 7) * 3
 			local base = myBase()
 			local character = player.Character
@@ -215,21 +199,10 @@ function CarryFX.start()
 		end
 	end)
 
-	-- a guard spotted you: buzzer + red flash + shake
-	Remotes.get(Remotes.Names.Alarm).OnClientEvent:Connect(function(vaultName: string)
-		Sound.play("Alarm", 0.7)
-		Shake.kick(0.25)
-		HUD.toast("😡 " .. vaultName .. " saw you! RUN!", "bad")
-		local flash = UI.new("Frame", {
-			Size = UDim2.fromScale(1, 1),
-			BackgroundColor3 = Color3.fromRGB(255, 0, 30),
-			BackgroundTransparency = 0.55,
-			Parent = gui,
-		})
-		UI.tween(flash, 0.4, { BackgroundTransparency = 1 })
-		task.delay(0.45, function()
-			flash:Destroy()
-		end)
+	-- an owner/bodyguard spotted you: just a buzzer + a small shake (no text: the screen stays calm)
+	Remotes.get(Remotes.Names.Alarm).OnClientEvent:Connect(function()
+		Sound.play("Alarm", 0.6)
+		Shake.kick(0.2)
 	end)
 
 	-- someone is carrying MY item: a beam from me to them + GO GET THEM!

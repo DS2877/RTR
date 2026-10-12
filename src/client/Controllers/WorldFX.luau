@@ -130,9 +130,10 @@ local function zoneBanner()
 					end
 				end
 			end
+			-- hidden while carrying: the top of the screen belongs to RUN!!
+			holder.Visible = found ~= nil and player:GetAttribute("Carrying") == nil
 			if found ~= current then
 				current = found
-				holder.Visible = found ~= nil
 				if found then
 					local def = Vaults[found]
 					local need = Progression.speedToOutrun(found)
@@ -152,7 +153,7 @@ local function zoneBanner()
 	end)
 end
 
--- A number that pops out at a spot in the world and floats up (treadmill, pickups, income).
+-- A number that pops out at a spot in the world and floats up (treadmill, income).
 local function worldPopup(at: Vector3, text: string, color: Color3, size: number?)
 	local anchor = Instance.new("Part")
 	anchor.Anchored = true
@@ -200,16 +201,6 @@ local function treadmillPopups()
 				"+" .. Format.number(math.max(1, math.floor(amount))) .. " ⚡",
 				Color3.fromRGB(110, 210, 255)
 			)
-		end
-	end)
-	-- street pickups: cash (and candy during Halloween)
-	Remotes.get(Remotes.Names.Pickup).OnClientEvent:Connect(function(cash: number, candy: number, at: Vector3)
-		Sound.play("Coin", 0.6, 1.1)
-		worldPopup(at + Vector3.new(0, 1, 0), "+" .. Format.cash(cash), Color3.fromRGB(120, 255, 130), 1.2)
-		if candy > 0 then
-			task.delay(0.15, function()
-				worldPopup(at + Vector3.new(0, 2.5, 0), "+" .. candy .. " 🍬", Color3.fromRGB(255, 170, 60))
-			end)
 		end
 	end)
 	-- income floating up out of every item on your plot ("+$570" every few seconds)
@@ -350,7 +341,7 @@ local function guide()
 			local ready = player:GetAttribute("CratesReady") or 0
 			local crates = player:GetAttribute("Crates") or 0
 			if player:GetAttribute("Carrying") then
-				text = (if learning then "STEP 3/5  •  " else "") .. "🏃 RUN HOME! Don't get caught!"
+				text = "" -- RUN!! already says it; the golden beam still points home
 				local floor = base and base:FindFirstChild("Floor") :: BasePart?
 				target = floor and floor.Position
 			elseif base then

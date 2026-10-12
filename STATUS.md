@@ -2,6 +2,13 @@
 
 ## Klart
 
+### Lugnare skärm + inga pengar på marken (12 okt, kväll)
+- **Cash-pickups på gatan är borttagna.** 🍬-godiset under Halloween kommer i stället från varje kista du tar hem: Common 5, Uncommon 8, Rare 12, Epic 20, Legendary 35, Mythic 60.
+- **När du bär en kista** visas bara ett mindre RUN!! överst, en röd kant runt skärmen (mitten är klar) och Drop-knappen.
+  - Borta: texten om vad du bär ("Gold Tycoon Crate (Common)"), "X saw you! RUN!"-meddelandena, den röda blixten, uppdragsraden och zonremsan.
+  - "You earn …/Day offline!" göms medan du bär.
+- **Kistornas skyltar** är mindre och syns bara på nära håll, så att en hög kistor inte blir en textvägg.
+
 ### Nivåer på bas och löpband + affärsrad (12 okt, senare)
 - **Basen växer med plot-nivån** och byggs om med nya färger och mer detaljer:
   - nivå 1: brunt **trä-skjul** (plankvägg, trästaket, enkelt tak)
@@ -179,7 +186,7 @@
 - Kameran börjar längre bak vid varje spawn.
 
 ### Från referensspelet (den här omgången, 567 kontroller i Roblox)
-- **Cash-pickups längs Rich Street** (och på rullbanden): spring igenom för 4 s av din inkomst (minst $25). De kommer tillbaka efter 20 s.
+- ~~Cash-pickups längs Rich Street~~ (borttagna 12 okt: de störde spelet).
 - **🌈 TRAILS SHOP** på torget vid porten till Rich Street:
   - 6 spår för cash: Sparkle $5K, Neon Blue $500K, Fire $50M, Money Rain $2B, Lightning $100B, Galaxy $5T.
   - 2 Halloween-spår för godis: Pumpkin 150 🍬 och Ghost 400 🍬.

@@ -22,6 +22,8 @@ local Bases = require(script.Parent.Bases)
 local Movement = require(script.Parent.Movement)
 local Wallet = require(script.Parent.Wallet)
 local Crates = require(script.Parent.Crates)
+local Cosmetic = require(script.Parent.Cosmetic)
+local Cosmetics = require(Shared.Config.Cosmetics)
 
 local Carry = {}
 
@@ -184,6 +186,10 @@ local function deposit(player: Player)
 		)
 		s.data.Stats.Steals += 1
 		player:SetAttribute("Steals", s.data.Stats.Steals + s.data.Stats.PlayerSteals)
+		-- Halloween: every crate brought home pays 🍬 candy (rarer crate, more candy)
+		if info and Cosmetic.seasonActive() then
+			Cosmetic.addCandy(player, Cosmetics.CandyPerCrate[info.rarity] or 0)
+		end
 		return
 	end
 	local slot = Bases.freeSlot(player)

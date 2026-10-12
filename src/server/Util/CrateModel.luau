@@ -159,9 +159,9 @@ function CrateModel.build(rarity: string, options: Options?): Model
 		-- rarity (in its color) over the crate's name, sized in studs so it shrinks with distance
 		local bb = Instance.new("BillboardGui")
 		bb.Name = "Label"
-		bb.Size = UDim2.new(6, 0, 1.6, 0)
+		bb.Size = UDim2.new(4.5, 0, 1.2, 0)
 		bb.StudsOffset = Vector3.new(0, 3.4, 0)
-		bb.MaxDistance = 80
+		bb.MaxDistance = 28 -- only up close: a pile of crates must not become a wall of text
 		bb.LightInfluence = 0
 		bb.Adornee = core
 		bb.Parent = core
