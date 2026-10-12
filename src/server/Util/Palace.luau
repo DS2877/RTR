@@ -158,14 +158,16 @@ function Palace.gable(
 			break
 		end
 		local y = h / 2 + i * h
-		brick(parent, "Gable", Vector3.new(w, h, depth), cf * CFrame.new(0, y, 0), fill)
+		deco(brick(parent, "Gable", Vector3.new(w, h, depth), cf * CFrame.new(0, y, 0), fill))
 		for _, side in { -1, 1 } do
-			brick(
-				parent,
-				"GableEdge",
-				Vector3.new(inset + 0.6, h + 0.2, depth + 0.6),
-				cf * CFrame.new(side * (w / 2 - inset / 2 + 0.3), y, 0),
-				edge
+			deco(
+				brick(
+					parent,
+					"GableEdge",
+					Vector3.new(inset + 0.6, h + 0.2, depth + 0.6),
+					cf * CFrame.new(side * (w / 2 - inset / 2 + 0.3), y, 0),
+					edge
+				)
 			)
 		end
 	end
@@ -298,6 +300,15 @@ local function fence(
 				look.trim
 			)
 		)
+	end
+end
+
+-- Every decoration part is walk-through: nothing a tier builds may block a path or a prompt.
+local function walkThrough(f: Instance)
+	for _, d in f:GetDescendants() do
+		if d:IsA("BasePart") then
+			deco(d)
+		end
 	end
 end
 
@@ -514,6 +525,7 @@ function Palace.dressBase(base: any, level: number): boolean
 			look.neon
 		)
 	end
+	walkThrough(f)
 	f.Parent = model
 	return true
 end
@@ -619,6 +631,7 @@ function Palace.dressTreadmill(base: any, level: number): boolean
 	if screen then
 		screen.Color = if t <= 1 then look.frame else c(30, 20, 60)
 	end
+	walkThrough(f)
 	f.Parent = model
 	return true
 end

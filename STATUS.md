@@ -2,6 +2,19 @@
 
 ## Klart
 
+### Nivåer på bas och löpband + affärsrad (12 okt, senare)
+- **Basen växer med plot-nivån** och byggs om med nya färger och mer detaljer:
+  - nivå 1: brunt **trä-skjul** (plankvägg, trästaket, enkelt tak)
+  - nivå 3: grå **sten-stuga** med rött tak och stenstolpar
+  - nivå 5: vit **herrgård** med blå detaljer, pelare och paneler
+  - nivå 7: skiffergrå **villa** med silver, torn och neon
+  - nivå 9: marinblått och guld **palats** med rosa neon
+  - nivå 12: svart, guld och lila **kungligt palats** med höga torn
+  - En notis visas när basen byter stil ("🏰 Your base is now a Manor!"). En ledig bas är ett skjul igen.
+- **Löpbandet växer med sin nivå**: Wooden (1) → Metal (4) → Turbo med båge (8) → Neon (13) → Winged med vingar (19) → Golden med gnistor (25).
+- **Affärerna står på rad** i torgets västra ände (Fuse Machine, SELL, Trails Shop), alla vända mot torget. Longest Reign-tavlan sitter upphöjd ovanför dem och WANTED-tavlan är vänd längs torget.
+- **Att sno en kista kräver att man håller in i 1,5 s** (föremål på andras plotter 1,2 s). Med Quick Hands-passet går det direkt, som passet lovar.
+
 ### Klon-omgång 12 okt ("unik klon" av Steal From The Rich)
 **Loopen som i videon:**
 - Lootet i zonerna är nu **kistor** med känd sällsynthet (trälåda → brinnande guldkista). Vad som ligger i kistan och dess mutation är hemligt.
@@ -186,6 +199,7 @@
 - Admin: `!candy 500` ger godis för att testa godis-spåren.
 
 ## Hur du testar (iPhone)
+000. **Nivåer:** en ny spelare ska ha ett brunt trä-skjul och ett trä-löpband. Uppgradera plotten till nivå 3 och 5 och löpbandet till nivå 4 och 8: allt byggs om i nya färger. Affärerna står på rad i västra änden, vända mot dig. Håll in STEAL på en kista: det tar 1,5 s.
 00. **Nytt i klon-omgången:**
    - Hemma: limegröna studs, guldstaket, rosa plattor, palatset med trappgavel. Värderaren i vit rock står till höger med sitt röda bord.
    - Stjäl en kista hos Grandpa: du bär den framför dig, skärmen blir röd, RUN!! syns och Drop-knappen nere i mitten. Ägaren jagar dig.

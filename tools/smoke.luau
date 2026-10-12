@@ -666,25 +666,23 @@ if sim and A and B then
 		a.data.PlotLevel = 13
 		a.data.Treadmill = 30
 		Bases.render(A)
-		assert(
-			model:GetAttribute("PalaceTier") == 6,
-			"palace tier " .. tostring(model:GetAttribute("PalaceTier"))
-		)
-		assert(
-			model:GetAttribute("TreadTier") == 6,
-			"tread tier " .. tostring(model:GetAttribute("TreadTier"))
-		)
-		assert(
-			count("Palace") > shack * 1.5,
-			"royal palace not grander: " .. shack .. " -> " .. count("Palace")
-		)
-		assert(count("TreadDecor") > wooden, "golden treadmill not grander")
+		local palaceTier, treadTier = model:GetAttribute("PalaceTier"), model:GetAttribute("TreadTier")
+		local royal, golden = count("Palace"), count("TreadDecor")
+		local blocking = nil
 		for _, d in model:FindFirstChild("Palace"):GetDescendants() do
-			assert(not (d:IsA("BasePart") and d.CanCollide), "palace decor blocks the way: " .. d.Name)
+			if d:IsA("BasePart") and d.CanCollide then
+				blocking = d.Name
+			end
 		end
+		-- back to the real levels before asserting, so a failure here can't break later steps
 		a.data.PlotLevel = level
 		a.data.Treadmill = tread
 		Bases.render(A)
+		assert(palaceTier == 6, "palace tier " .. tostring(palaceTier))
+		assert(treadTier == 6, "tread tier " .. tostring(treadTier))
+		assert(royal > shack * 1.5, "royal palace not grander: " .. shack .. " -> " .. royal)
+		assert(golden > wooden, "golden treadmill not grander")
+		assert(blocking == nil, "palace decor blocks the way: " .. tostring(blocking))
 		assert(model:GetAttribute("PalaceTier") == 1, "not back to the shack")
 	end)
 
