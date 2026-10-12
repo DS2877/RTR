@@ -2,6 +2,27 @@
 
 ## Klart
 
+### Klon-omgång 12 okt ("unik klon" av Steal From The Rich)
+**Loopen som i videon:**
+- Lootet i zonerna är nu **kistor** med känd sällsynthet (trälåda → brinnande guldkista). Vad som ligger i kistan och dess mutation är hemligt.
+- Spring hem med kistan: den hamnar på **värderarens bord** i din bas (en gubbe i vit rock). Varje kista har en egen nedräkning (Common 10 s → Mythic 6 min) och alla tickar samtidigt, även när du är offline. När den är **READY!** öppnar du den (prompten på kistan, panelen **APPRAISE CRATES** eller "OPEN ALL"). Då kommer ett avslöjandekort.
+- Föremålet ställs på en ledig piedestal. Är plotten full hamnar det i din **väska**.
+- **Väska + hotbar** nere i mitten: tryck på ett föremål för att ställa det på plotten. Panelen **MY ITEMS** (💰-knappen) har ⭐ EQUIP BEST, PLACE, TAKE OFF och SELL. **SELL-stånd** på torget.
+- 📦-knappen till höger visar hur många kistor du har och hur många som är redo.
+- Värderarens bord rymmer 3 kistor (+1 per 3 plot-nivåer, max 8). Fuse räknar med väskan också.
+- **Ägaren själv** står bland sina kistor och jagar dig ("😡 MUSEUM OWNER"). Livvakter finns bara i de rikare zonerna. Inga "GUARD"-skyltar i vila längre.
+- RUN!! som röd skylt överst, röd skärm och en röd **Drop**-knapp nere i mitten. Hemma: "You stole from **MUSEUM OWNER**!" i stor text.
+- Zonnamnet syns i en mörk remsa överst så länge du är i zonen.
+- **Dag/natt**: 4 min dag, 2 min lila månnatt. Nedräkningen "🌙 in 55s" sitter vid låset.
+
+**Utseendet som i videon:**
+- Allt är **LEGO-klossar** med studs: limegrönt gräs överallt (ingen asfalt), väggar med studs på sidorna, rekvisita i plast.
+- Ljusare och mer mättat ljus (normal exponering, bloom bara på neon).
+- **Voxel-palats**: guldstaket med marinblå stolpar och rosa diamanter, rosa lysande plattor i gången, pelare med guldband, magenta paneler, trappstegsgavel i guld, torn med spiror.
+- **Löpband** i lila och blått med båge och "vingar". Uppgraderingsskyltarna är träskyltar med "Upgrade Plot", "Level 1 > Level 2" och en grön prisknapp.
+- **Zonerna** är breda gator med 28 studs höga tegelväggar (pilastrar och lampor), temagolv med schackrutor och kistorna i en hög vid ägaren.
+- **Radhus** i tegel med fönster och fönsterluckor runt torget. Fuse Machine är en grå verkstad med "?"-block. "SAFE ZONE" är målat på gräset med en röd linje vid porten.
+
 ### Kärnspelet (v1 + Fas A)
 - **Världen** byggs helt i kod: torg, 8 baser (en per spelare), Rich Street med 8 valv, WANTED-tavla, topplista "Longest Reign", Fuse Machine.
 - **Löpband**: stå på det så får du speed-poäng. Det räcker att stå still (går att AFK:a på telefonen): gubben springer och bandet rullar.
@@ -165,7 +186,14 @@
 - Admin: `!candy 500` ger godis för att testa godis-spåren.
 
 ## Hur du testar (iPhone)
-0. **Nytt efter omdesignen:**
+00. **Nytt i klon-omgången:**
+   - Hemma: limegröna studs, guldstaket, rosa plattor, palatset med trappgavel. Värderaren i vit rock står till höger med sitt röda bord.
+   - Stjäl en kista hos Grandpa: du bär den framför dig, skärmen blir röd, RUN!! syns och Drop-knappen nere i mitten. Ägaren jagar dig.
+   - Hemma: "You stole from GRANDPA!" visas och kistan ställs på bordet med nedräkning. 📦-knappen till höger visar 1. När den är READY: tryck på kistan eller på 📦 → OPEN ALL. Avslöjandekortet visas och föremålet hamnar på scenen.
+   - Fyll plotten: nya föremål hamnar i hotbaren nere i mitten. Tryck på ett för att ställa ut det. 💰 → MY ITEMS → ⭐ EQUIP BEST.
+   - SELL-ståndet på torget öppnar MY ITEMS i säljläge.
+   - Vänta på natten (nedräkningen vid låset): himlen blir lila med måne.
+0. **Från förra omdesignen:**
    - Gå ut genom porten "RICH STREET" och spring rakt fram genom zonerna: Grandpa → Influencer → Pirate … Varje zon har port, rik person, ställ på båda sidor och vakter.
    - Hemma: limegrön gård, gången med lysande plattor och föremålen på scenen framför palatsfasaden.
    - HUD:en ska likna videon: ikoner till vänster, stats nere till vänster och "You earn …/Day offline!" överst.
@@ -190,6 +218,8 @@
     - 👑/💎-taggar syns i chatten.
 
 ## Saknas / att göra
+- Klon-omgången är bara testad headless (smoke). Kolla på telefon: ljusnivån, att hotbar, Drop-knapp och uppdragsrad inte krockar, och fps med alla studs.
+- Föremålen i hotbaren är emoji (riktiga 3D-ikoner kräver ViewportFrames, kan läggas till).
 - Ingen människa har spelat det här än. Testet täcker logiken, men inte känslan, prestandan på äldre telefoner eller hur UI:t ser ut på just din skärm.
 - Pass-ikonerna är Robloxs standardbild (egna ikoner kräver bilduppladdning).
 - Fas C: rebirth, dagliga belöningar och quests, likes, fler topplistor.
@@ -203,4 +233,4 @@
 `universe-places: write`, `universe.place.luau-execution-session: write`, `game-pass: read + write`, `developer-product: read + write`, `universe.place: write`.
 
 ## Balans (tools/simulate, aktiv spelare)
-Museum Owner ~7 min, Gold Tycoon ~11 min, Mega Yacht ~29 min, Tech Billionaire ~65 min, THE BILLIONAIRE ~3 h. Rullbanden gör det i praktiken lite snabbare tidigt.
+Museum Owner ~7 min, Gold Tycoon ~13 min, Yacht Owner ~29 min, Tech Billionaire ~65 min, THE BILLIONAIRE ~3 h (simulate räknar inte värderingstiden: den första kistan tar 10 s och de dyraste upp till 6 min, men flera tickar samtidigt).
