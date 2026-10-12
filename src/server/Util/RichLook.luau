@@ -12,13 +12,13 @@ end
 
 RichLook.Styles = {
 	Grandpa = { suit = rgb(130, 95, 70), hat = "cap" },
-	Influencer = { suit = rgb(255, 120, 190), hat = "none" },
+	Jeweler = { suit = rgb(70, 72, 84), hat = "top" },
+	Archeologist = { suit = rgb(196, 170, 112), hat = "safari" },
+	Mafia = { suit = rgb(22, 22, 26), hat = "fedora" },
+	Celebrity = { suit = rgb(255, 120, 190), hat = "shades" },
 	Pirate = { suit = rgb(140, 30, 35), hat = "tricorn" },
 	Museum = { suit = rgb(240, 240, 245), hat = "none" }, -- white shirt, like a curator
 	GoldTycoon = { suit = rgb(255, 200, 40), hat = "top" },
-	Yacht = { suit = rgb(250, 250, 255), hat = "captain" },
-	TechBillionaire = { suit = rgb(40, 40, 50), hat = "none" },
-	Billionaire = { suit = rgb(20, 20, 25), hat = "top" },
 } :: { [string]: { suit: Color3, hat: string } }
 
 local function part(
@@ -71,6 +71,16 @@ function RichLook.build(def: any): Model?
 	elseif style.hat == "tricorn" then
 		hat("Tricorn", Vector3.new(1.9, 0.5, 1.4), CFrame.new(0, top + 0.2, 0), rgb(25, 25, 30))
 		hat("TricornTrim", Vector3.new(1.95, 0.12, 1.45), CFrame.new(0, top, 0), rgb(255, 200, 40))
+	elseif style.hat == "safari" then
+		hat("SafariHat", Vector3.new(1.3, 0.6, 1.3), CFrame.new(0, top + 0.25, 0), rgb(214, 196, 140))
+		hat("SafariBrim", Vector3.new(2, 0.12, 2), CFrame.new(0, top + 0.02, 0), rgb(200, 180, 124))
+	elseif style.hat == "fedora" then
+		hat("Fedora", Vector3.new(1.25, 0.6, 1.25), CFrame.new(0, top + 0.28, 0), rgb(20, 20, 24))
+		hat("FedoraBrim", Vector3.new(1.9, 0.12, 1.9), CFrame.new(0, top + 0.02, 0), rgb(20, 20, 24))
+		hat("FedoraBand", Vector3.new(1.28, 0.16, 1.28), CFrame.new(0, top + 0.1, 0), rgb(200, 40, 50))
+	elseif style.hat == "shades" then
+		hat("Shades", Vector3.new(1.1, 0.3, 0.12), CFrame.new(0, 0.12, hf - 0.06), rgb(20, 20, 25))
+		hat("Hair", Vector3.new(1.25, 0.45, 1.25), CFrame.new(0, top + 0.1, 0.05), rgb(250, 220, 120))
 	elseif style.hat == "captain" then
 		hat("CaptainHat", Vector3.new(1.4, 0.5, 1.4), CFrame.new(0, top + 0.2, 0), rgb(255, 255, 255))
 		hat("CaptainBrim", Vector3.new(1.4, 0.12, 0.6), CFrame.new(0, top, hf - 0.25), rgb(20, 30, 80))
@@ -84,7 +94,7 @@ function RichLook.build(def: any): Model?
 		part(rig, "Tie", Vector3.new(0.3, 1.1, 0.1), trim),
 		CFrame.new(0, 0.1, -chest.Size.Z / 2 - 0.05)
 	)
-	if def.id == "GoldTycoon" or def.id == "Billionaire" then
+	if def.id == "GoldTycoon" or def.id == "Mafia" then
 		Rig.attach(
 			chest,
 			part(rig, "Chain", Vector3.new(1.1, 0.15, 0.1), rgb(255, 210, 60), Enum.Material.Neon),

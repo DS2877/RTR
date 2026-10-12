@@ -57,7 +57,7 @@ end
 local function attachModel(player: Player, carry: State.Carry)
 	local character = player.Character
 	if carry.source == "vault" then
-		-- a crate is hugged in front of you
+		-- a crate is lifted over your head with both arms (like the genre)
 		local root = character and character:FindFirstChild("HumanoidRootPart")
 		if not root or not root:IsA("BasePart") then
 			return
@@ -65,7 +65,7 @@ local function attachModel(player: Player, carry: State.Carry)
 		local info = Progression.item(carry.id)
 		local crate = CrateModel.build(if info then info.rarity else "Common", { scale = 0.9 })
 		crate.Name = "CarriedLoot"
-		ItemModel.weldTo(crate, root, CFrame.new(0, 0.6, -2.3))
+		ItemModel.weldTo(crate, root, CFrame.new(0, 4.9, -0.2))
 		crate.Parent = character
 		carry.model = crate
 		return

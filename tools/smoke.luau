@@ -163,7 +163,7 @@ for _, base in world.bases do
 	check(id .. " has 30 pedestals", #base.pedestals == 30, #base.pedestals)
 	local sign = model:FindFirstChild("Sign") :: BasePart
 	check(id .. " entrance sign faces the plaza", anyFaces(sign, toPlaza))
-	check(id .. " sign faces the plaza side (z)", (toPlaza.Z > 0) == (origin.Position.Z < 0))
+	check(id .. " faces across the plaza at the street (+X)", toPlaza.X > 0.99)
 	local spawnPos = base.spawnCFrame.Position
 	check(id .. " spawn is inside the base", Bases.contains(base, spawnPos))
 	check(id .. " spawn looks at the entrance", base.spawnCFrame.LookVector:Dot(toPlaza) > 0.9)
@@ -221,7 +221,8 @@ for _, base in world.bases do
 		end
 	end
 	-- everything inside, nothing on top of a pedestal
-	for _, part in { base.collectPad, plot, tread, belt } do
+	check(id .. " treadmill stands out on the plaza", not Bases.contains(base, belt.Position))
+	for _, part in { base.collectPad, plot } do
 		check(id .. " " .. part.Name .. " inside base", Bases.contains(base, part.Position))
 		for i, ped in base.pedestals do
 			if overlaps(origin, ped, part) then
@@ -235,10 +236,14 @@ for _, base in world.bases do
 		end
 	end
 end
-check(
-	"base 1 and 5 face opposite ways",
-	world.bases[1].origin.LookVector:Dot(world.bases[5].origin.LookVector) < -0.9
-)
+-- one row: every base side by side, none overlapping
+for i = 2, #world.bases do
+	local a, b = world.bases[i - 1].origin.Position, world.bases[i].origin.Position
+	check(
+		"bases " .. (i - 1) .. "/" .. i .. " side by side",
+		math.abs(a.X - b.X) < 0.01 and math.abs(a.Z - b.Z) >= World.BaseWidth
+	)
+end
 
 -- ===== vaults =====
 local guardsWanted = 0
@@ -246,8 +251,7 @@ for _, vault in world.vaults do
 	local def = Vaults[vault.index]
 	guardsWanted += def.guards
 	local id = "vault " .. def.id
-	local sign = vault.model:FindFirstChild("Sign") :: BasePart
-	check(id .. " arch sign faces the way in (toward home)", anyFaces(sign, Vector3.new(-1, 0, 0)))
+	check(id .. " starts with a green line", vault.model:FindFirstChild("ZoneLine") ~= nil)
 	check(id .. " 6 pedestals", #vault.pedestals == 6, #vault.pedestals)
 	local loot = 0
 	for _, m in vault.model:GetChildren() do
@@ -281,16 +285,16 @@ for _, sg in gate:GetChildren() do
 	end
 end
 local reign = root:FindFirstChild("ReignBoard") :: BasePart
-check("reign board faces the plaza", anyFaces(reign, towardStreet))
+check("reign board faces the bases", anyFaces(reign, -towardStreet))
 local fuseSign = root:FindFirstChild("FuseSign") :: BasePart
-check("fuse sign faces the plaza", anyFaces(fuseSign, towardStreet))
+check("fuse sign faces the bases", anyFaces(fuseSign, -towardStreet))
 local stallSign = root:FindFirstChild("StallSign") :: BasePart
-check("SELL sign faces the plaza", stallSign ~= nil and anyFaces(stallSign, towardStreet))
+check("SELL sign faces the bases", stallSign ~= nil and anyFaces(stallSign, -towardStreet))
 local trailsShop = root:FindFirstChild("TrailsShop")
 local trailsSign = trailsShop and trailsShop:FindFirstChild("Sign") :: BasePart?
-check("trails sign faces the plaza", trailsSign ~= nil and anyFaces(trailsSign :: BasePart, towardStreet))
+check("trails sign faces the bases", trailsSign ~= nil and anyFaces(trailsSign :: BasePart, -towardStreet))
 local wantedBoard = root:FindFirstChild("WantedBoard") :: BasePart
-check("WANTED board faces along the plaza", anyFaces(wantedBoard, towardStreet))
+check("WANTED board faces the bases", anyFaces(wantedBoard, -towardStreet))
 check("wanted title set", world.wanted.Title[1].Text ~= "", world.wanted.Title[1].Text)
 
 -- ===== guards =====
@@ -462,6 +466,28 @@ local okSea, sea = pcall(function()
 	return materials[1][1][1]
 end)
 check("ocean around the island", okSea and sea == Enum.Material.Water, sea)
+-- the plaza: giant walls all round, the street's mouth open in the middle of the east wall
+local plazaWalls = root:FindFirstChild("PlazaWalls")
+local tallWalls, mouthBlocked = 0, false
+if plazaWalls then
+	for _, w in plazaWalls:GetChildren() do
+		if w:IsA("BasePart") and w.Name:match("Wall$") and w.Size.Y >= World.PlazaWallHeight then
+			tallWalls += 1
+			local half = w.CFrame:VectorToWorldSpace(w.Size / 2)
+			local zMin = w.Position.Z - math.abs(half.Z)
+			local zMax = w.Position.Z + math.abs(half.Z)
+			if
+				math.abs(w.Position.X - World.StreetStartX) < 5
+				and zMin < World.ZoneHalfWidth - 1
+				and zMax > -World.ZoneHalfWidth + 1
+			then
+				mouthBlocked = true
+			end
+		end
+	end
+end
+check("giant walls around the plaza", tallWalls == 5, tallWalls)
+check("the street's mouth is open", not mouthBlocked)
 check("trails shop with a prompt", world.trailsPrompt ~= nil and world.trailsPrompt:IsA("ProximityPrompt"))
 for _, base in world.bases do
 	check("base " .. base.id .. " SAFE ZONE on the floor", base.model:FindFirstChild("SafeZone") ~= nil)

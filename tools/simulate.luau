@@ -32,7 +32,8 @@ local function advance(dt: number)
 	cash += income() * dt
 end
 local function vaultX(i: number): number
-	return World.StreetStartX + World.ZoneGap + (i - 0.5) * World.VaultSpacing
+	-- walking distance from your base's entrance to the middle of zone i
+	return World.StreetStartX - World.BaseFrontX + World.ZoneGap + (i - 0.5) * World.VaultSpacing
 end
 
 while t < 6 * 3600 do

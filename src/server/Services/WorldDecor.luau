@@ -263,55 +263,6 @@ local function frame(parent: Instance, cf: CFrame, w: number, h: number, art: st
 	label(canvas, Enum.NormalId.Front, art, rgb(255, 255, 255), Enum.Font.GothamBold)
 end
 
-local function rocket(parent: Instance, cf: CFrame)
-	cyl(parent, "RocketBody", 14, 4, cf * CFrame.new(0, 8, 0), rgb(235, 235, 245), M.Metal)
-	part(
-		parent,
-		"RocketNose",
-		Vector3.new(4, 4, 4),
-		cf * CFrame.new(0, 17, 0),
-		rgb(230, 40, 50),
-		M.SmoothPlastic,
-		Enum.PartType.Ball
-	)
-	for i = 0, 2 do
-		local a = math.rad(i * 120)
-		part(
-			parent,
-			"Fin",
-			Vector3.new(0.4, 4, 3),
-			cf * CFrame.Angles(0, a, 0) * CFrame.new(0, 2.5, 2.5),
-			rgb(230, 40, 50),
-			M.SmoothPlastic
-		)
-	end
-	local flame = deco(
-		parent,
-		"Flame",
-		Vector3.new(2.6, 2.6, 2.6),
-		cf * CFrame.new(0, 0.6, 0),
-		rgb(255, 140, 40),
-		M.Neon,
-		Enum.PartType.Ball
-	)
-	light(flame, rgb(255, 150, 60), 14, 2)
-end
-
-local function serverRack(parent: Instance, cf: CFrame)
-	part(parent, "Rack", Vector3.new(3, 8, 3), cf * CFrame.new(0, 4, 0), rgb(30, 32, 40), M.Metal)
-	for i = 0, 5 do
-		local led = part(
-			parent,
-			"Led",
-			Vector3.new(2.4, 0.2, 0.1),
-			cf * CFrame.new(0, 1.2 + i * 1.1, -1.55),
-			if i % 2 == 0 then rgb(0, 220, 255) else rgb(80, 255, 140),
-			M.Neon
-		)
-		CollectionService:AddTag(led, "Blink")
-	end
-end
-
 local function statue(parent: Instance, cf: CFrame, scale: number)
 	local gold = rgb(255, 200, 40)
 	part(
@@ -385,6 +336,62 @@ local FACE_RIGHT = CFrame.Angles(0, math.rad(-90), 0) -- a part's Front faces +l
 local FACE_LEFT = CFrame.Angles(0, math.rad(90), 0) -- a part's Front faces -lx (right wall)
 
 local THEMES: { [string]: (f: Instance, at: At, trim: Color3) -> () } = {
+	Jeweler = function(f, at, trim)
+		-- glass display cases with gems along the left wall, lamp posts and benches
+		for i = 0, 4 do
+			local d = 14 + i * 24
+			part(f, "CaseStand", Vector3.new(5, 3, 7), at(-40, F + 1.5, d), rgb(40, 40, 48))
+			local glass = part(
+				f,
+				"CaseGlass",
+				Vector3.new(4.4, 3, 6.4),
+				at(-40, F + 4.5, d),
+				rgb(200, 235, 255),
+				M.Glass
+			)
+			glass.Transparency = 0.6
+			local gem = deco(
+				f,
+				"Gem",
+				Vector3.new(1.4, 1.4, 1.4),
+				at(-40, F + 4.4, d) * CFrame.Angles(math.rad(45), 0, math.rad(45)),
+				Color3.fromHSV(i / 5, 0.6, 1),
+				M.Neon
+			)
+			CollectionService:AddTag(gem, "Spin")
+		end
+		for _, d in { 30, 100 } do
+			part(f, "LampPost", Vector3.new(0.8, 12, 0.8), at(40, F + 6, d), rgb(30, 30, 35))
+			local bulb = part(f, "Lamp", Vector3.new(1.6, 1.6, 1.6), at(40, F + 12.6, d), trim, M.Neon)
+			light(bulb, rgb(200, 240, 255), 16, 1)
+			part(f, "Bench", Vector3.new(2.4, 1.2, 7), at(42, F + 0.6, d + 8), rgb(110, 80, 50))
+		end
+	end,
+	Archeologist = function(f, at, _trim)
+		-- a T-rex skeleton roped off on the left, tombstones, cactus, clay pots, dig crates
+		local bone = rgb(240, 232, 210)
+		part(f, "Spine", Vector3.new(1.2, 1.2, 22), at(-38, 9, 65), bone)
+		part(f, "Skull", Vector3.new(3, 3.4, 5), at(-38, 11.4, 52) * CFrame.Angles(math.rad(15), 0, 0), bone)
+		for i = 0, 6 do
+			part(f, "Rib", Vector3.new(0.5, 4, 0.5), at(-38, 7, 58 + i * 2.4), bone)
+		end
+		for _, d in { 58, 72 } do
+			part(f, "Leg", Vector3.new(1, 8.6, 1), at(-38, 4.7, d), bone)
+		end
+		for _, spot in { { -42, 18 }, { -30, 24 }, { 42, 22 }, { 30, 108 }, { -42, 112 } } do
+			part(f, "Tombstone", Vector3.new(2.6, 3.6, 1), at(spot[1], F + 1.8, spot[2]), rgb(120, 130, 150))
+		end
+		for _, spot in { { 42, 40 }, { -44, 92 }, { 44, 118 } } do
+			part(f, "Cactus", Vector3.new(1.6, 7, 1.6), at(spot[1], F + 3.5, spot[2]), rgb(60, 170, 70))
+			part(f, "CactusArm", Vector3.new(3.4, 1.2, 1.2), at(spot[1], F + 4.5, spot[2]), rgb(60, 170, 70))
+		end
+		for i = 0, 3 do
+			cyl(f, "ClayPot", 2.6, 2, at(-44, F + 1.3, 30 + i * 3), rgb(200, 120, 70))
+		end
+		for _, d in { 96, 104 } do
+			chest(f, at(40, F, d))
+		end
+	end,
 	Grandpa = function(f, at, _trim)
 		car(f, at(-38, F, 50), rgb(90, 140, 200))
 		car(f, at(38, F, 108), rgb(200, 60, 50))
@@ -406,7 +413,7 @@ local THEMES: { [string]: (f: Instance, at: At, trim: Color3) -> () } = {
 			Enum.PartType.Cylinder
 		)
 	end,
-	Influencer = function(f, at, trim)
+	Celebrity = function(f, at, trim)
 		part(f, "Couch", Vector3.new(6, 2, 16), at(-40, F + 1, 45), rgb(255, 120, 190), M.Fabric)
 		part(f, "CouchBack", Vector3.new(1.5, 3, 16), at(-43.5, F + 2.6, 45), rgb(255, 100, 180), M.Fabric)
 		ringLight(f, at(-38, F, 20))
@@ -523,73 +530,13 @@ local THEMES: { [string]: (f: Instance, at: At, trim: Color3) -> () } = {
 			label(bag, Enum.NormalId.Right, "$", rgb(255, 255, 255))
 		end
 	end,
-	Yacht = function(f, at, _trim)
-		part(f, "PoolRim", Vector3.new(10, 1, 30), at(-39, F + 0.5, 50), rgb(240, 240, 250), M.Marble)
-		local water =
-			part(f, "Water", Vector3.new(8.4, 1.1, 28.4), at(-39, F + 0.55, 50), rgb(40, 170, 255), M.Glass)
-		water.Transparency = 0.25
-		water.CanCollide = false
-		light(water, rgb(80, 200, 255), 16, 1)
-		for i = 0, 2 do
-			part(
-				f,
-				"DeckChair",
-				Vector3.new(3, 1, 6),
-				at(40, F + 0.5, 20 + i * 9),
-				rgb(255, 255, 255),
-				M.Fabric
-			)
-			part(
-				f,
-				"ChairBack",
-				Vector3.new(3, 3, 1),
-				at(40, F + 1.8, 17.2 + i * 9) * CFrame.Angles(math.rad(25), 0, 0),
-				rgb(30, 60, 140),
-				M.Fabric
-			)
-		end
-		part(f, "BoatHull", Vector3.new(6, 3, 14), at(-39, F + 1.5, 105), rgb(250, 250, 255), M.SmoothPlastic)
-		part(
-			f,
-			"BoatStripe",
-			Vector3.new(6.1, 0.6, 14.1),
-			at(-39, F + 1.9, 105),
-			rgb(30, 60, 140),
-			M.SmoothPlastic
-		)
-		part(f, "BoatCabin", Vector3.new(4, 2, 5), at(-39, F + 4, 106), rgb(150, 200, 230), M.Glass)
-		for _, spot in { { -46.6, 22 }, { 46.6, 112 } } do
-			part(
-				f,
-				"LifeRing",
-				Vector3.new(0.6, 3, 3),
-				at(spot[1], 7, spot[2]),
-				rgb(255, 80, 60),
-				M.SmoothPlastic,
-				Enum.PartType.Cylinder
-			)
-		end
-	end,
-	TechBillionaire = function(f, at, trim)
-		for i = 0, 4 do
-			serverRack(f, at(-42, F, 14 + i * 4) * FACE_RIGHT)
-			serverRack(f, at(-42, F, 96 + i * 4) * FACE_RIGHT)
-		end
-		rocket(f, at(40, F, 105))
-		local holo = part(f, "Hologram", Vector3.new(0.3, 7, 24), at(-46.6, 11, 65), trim, M.Neon)
-		holo.Transparency = 0.35
-		label(holo, Enum.NormalId.Right, "🚀 TO MARS 🚀", rgb(255, 255, 255))
-		part(f, "Desk", Vector3.new(4, 3, 10), at(40, F + 1.5, 30), rgb(240, 240, 250), M.SmoothPlastic)
-		local screen = part(f, "Screen", Vector3.new(0.3, 3, 6), at(38.2, 5, 30), rgb(0, 200, 255), M.Neon)
-		CollectionService:AddTag(screen, "Blink")
-	end,
-	Billionaire = function(f, at, trim)
+	Mafia = function(f, at, trim)
 		statue(f, at(-38, F, 65), 1.25)
 		coinPile(f, at(-40, F, 15), 1.5)
 		coinPile(f, at(40, F, 15), 1.5)
 		goldBars(f, at(-40, F, 40))
 		goldBars(f, at(40, F, 40))
-		car(f, at(-38, F, 105), rgb(255, 200, 40))
+		car(f, at(-38, F, 105), rgb(25, 25, 30))
 		local chand =
 			deco(f, "Chandelier", Vector3.new(6, 2, 6), at(0, 18, 65), trim, M.Neon, Enum.PartType.Ball)
 		light(chand, rgb(255, 220, 140), 30, 2)
@@ -998,8 +945,8 @@ function WorldDecor.halloween(parent: Instance, bases: { any }, vaults: { any },
 			6
 		)
 	end
-	for x = -150, 200, 50 do
-		pumpkin(f, CFrame.new(x, 0.3, if (x // 50) % 2 == 0 then 7 else -7), 0.9)
+	for z = -300, 300, 75 do
+		pumpkin(f, CFrame.new(-90, 0.3, z), 0.9) -- across the plaza, between the treadmills and the shops
 	end
 end
 

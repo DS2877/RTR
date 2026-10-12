@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ProfileStore = require(script.Parent.Parent.Packages.ProfileStore)
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
+local Progression = require(ReplicatedStorage.Shared.Progression)
 
 export type SlotItem = { Id: string, Mut: string }
 -- A stolen crate at the appraiser: the item inside is already decided (shown when it opens).
@@ -77,6 +78,58 @@ local MIGRATIONS: { [number]: (data: PlayerData) -> () } = {}
 
 local Data = {}
 
+-- Items from before the zones were rearranged to match the genre (12 Oct) -> today's items.
+local RENAMED: { [string]: string } = {
+	Sneakers = "PearlEarrings",
+	SelfieStick = "EmeraldNecklace",
+	DiamondTub = "VaultSafe",
+	MoneyGun = "GoldenGun",
+	InfinityGem = "MidasHand",
+	GoldLambo = "GoldToilet",
+	VaultKey = "BossRing",
+	CaptainHat = "Fedora",
+	Champagne = "RumBarrel",
+	JetSki = "TreasureMap",
+	Anchor = "Cutlass",
+	YachtWheel = "Compass",
+	IslandDeed = "KrakenEgg",
+	GamingPC = "Vase",
+	RobotDog = "Statue",
+	AIBrain = "Sword",
+	QuantumChip = "CrystalSkull",
+	RocketEngine = "Painting",
+	MarsTicket = "Meteorite",
+	GoldDuck = "GoldenGoose",
+}
+
+-- Every saved item id must exist (an unknown id would break plot rendering).
+local function fixItem(item: { Id: string })
+	if not Progression.item(item.Id) then
+		item.Id = RENAMED[item.Id] or Economy.StarterItem
+	end
+end
+
+function Data.sanitize(data: PlayerData)
+	for _, item in data.Slots do
+		fixItem(item)
+	end
+	for _, item in data.Inventory do
+		fixItem(item)
+	end
+	for _, crate in data.Crates do
+		fixItem(crate)
+	end
+	for id in table.clone(data.Found) do
+		if not Progression.item(id) then
+			data.Found[id] = nil
+			local now = RENAMED[id]
+			if now then
+				data.Found[now] = true
+			end
+		end
+	end
+end
+
 local store = ProfileStore.New(Economy.DataStoreName, TEMPLATE)
 local profiles: { [Player]: any } = {}
 
@@ -116,6 +169,7 @@ function Data.load(player: Player): PlayerData?
 	profile:AddUserId(player.UserId)
 	profile:Reconcile()
 	migrate(profile.Data)
+	Data.sanitize(profile.Data)
 	profile.OnSessionEnd:Connect(function()
 		profiles[player] = nil
 		if player.Parent == Players then

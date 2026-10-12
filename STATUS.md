@@ -2,6 +2,22 @@
 
 ## Klart
 
+### Kartan 1:1 som Steal From The Rich (12 okt, natt)
+Research: spelens Roblox-sidor och bilder, fan-wikis och Philips videor bildruta för bildruta. Båda spelen har max 7 spelare och samma upplägg.
+- **Torget**: en stor limegrön gräsplan inne i jättehöga (60 studs) rutmönstrade väggar, gröna runt om och bruna/orange vid gatan, med vimplar längs kanten.
+- **Alla 8 baser står på en rad** på västra sidan, sida vid sida, vända rakt mot gatan.
+- **Löpbanden står ute på gräset** framför varje bas, med uppgraderingsskylten bredvid.
+- **Rich Street** går ut från mitten av östra väggen och pekar rakt mot baserna, med "SAFE ZONE" och en röd linje framför.
+  - SELL, Fuse Machine och Trails Shop står vid gatans mynning, vända mot baserna.
+  - WANTED- och Longest Reign-tavlan hänger på östra väggen.
+- **Zonerna i spelets ordning**: Grandpa (by med gröna hus) → Jeweler (grå gata med markiser och diamantbanderoller) → Archeologist (sand, hieroglyfer, T-rex-skelett, kaktusar, gravstenar) → Mafia Boss (mörk lagergata, affischer, kameror) → Celebrity (gula rutväggar, rosa banderoller) → Pirate Captain (strand med vatten, planket) → Museum Owner (gröna galleriväggar, tavlor, lampor) → Gold Tycoon (mörk turkos, guldkugghjul, guldränder).
+  - Varje zon är en bred gata med höga rutmönstrade väggar i två toner och en lysande grön linje i golvet där den börjar, med svarta järnstaket vid sidorna.
+  - Kistorna ligger i en hög till höger, där ägaren står.
+- **Ägarna** har egen stil: safarihatt (Archeologist), svart fedora (Mafia Boss), solglasögon (Celebrity) osv.
+- **Hemma** står kistorna längst fram på scenen med värderaren bredvid, som i spelet.
+- **Kistan bärs över huvudet** med båda armarna.
+- Gamla föremål från de borttagna zonerna (Influencer, Yacht, Tech, Billionaire) byts automatiskt mot motsvarande nya när man går med. Inget försvinner.
+
 ### Lugnare skärm + inga pengar på marken (12 okt, kväll)
 - **Cash-pickups på gatan är borttagna.** 🍬-godiset under Halloween kommer i stället från varje kista du tar hem: Common 5, Uncommon 8, Rare 12, Epic 20, Legendary 35, Mythic 60.
 - **När du bär en kista** visas bara ett mindre RUN!! överst, en röd kant runt skärmen (mitten är klar) och Drop-knappen.
@@ -206,6 +222,7 @@
 - Admin: `!candy 500` ger godis för att testa godis-spåren.
 
 ## Hur du testar (iPhone)
+0000. **Nya kartan:** från din bas ser du rakt över torget mot gatans mynning i den bruna väggen. Löpbandet står på gräset framför din bas. Spring ut genom SAFE ZONE: Grandpa (gröna hus) → Jeweler (grå gata) → Archeologist (sand) … Varje zon börjar med en grön linje. Kistorna ligger till höger hos ägaren. Bär kistan över huvudet hem, där den ställs längst fram på scenen.
 000. **Nivåer:** en ny spelare ska ha ett brunt trä-skjul och ett trä-löpband. Uppgradera plotten till nivå 3 och 5 och löpbandet till nivå 4 och 8: allt byggs om i nya färger. Affärerna står på rad i västra änden, vända mot dig. Håll in STEAL på en kista: det tar 1,5 s.
 00. **Nytt i klon-omgången:**
    - Hemma: limegröna studs, guldstaket, rosa plattor, palatset med trappgavel. Värderaren i vit rock står till höger med sitt röda bord.

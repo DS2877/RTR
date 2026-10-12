@@ -1,10 +1,11 @@
 --!strict
--- Builds the whole map at runtime in the genre's look: everything is LEGO bricks (studded plastic),
--- bright lime grass, voxel palaces in navy + gold + pink. A grass plaza with 8 palace bases (two
--- rows) framed by brick townhouses, and Rich Street: one long corridor where the rich people's
--- zones follow each other (wide streets between tall brick walls, crates piled up around the
--- owner). Also the WANTED board, the reign board, the SELL stall, the fuse machine and the trails
--- shop.
+-- Builds the whole map at runtime, laid out like the genre: everything is LEGO bricks (studded
+-- plastic). A big lime grass plaza inside giant checker walls; all 8 bases side by side in one row
+-- on the west side (shack -> palace as they level up) with their treadmills out on the grass in
+-- front; Rich Street leaves from the middle of the east wall, pointing straight at the bases, and
+-- runs through the rich people's zones one after another (wide streets between tall checker
+-- walls, a green line where each starts, crates piled up around the owner). The shops (SELL,
+-- fuse machine, trails), the WANTED board and the reign board stand by the street's mouth.
 
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,10 +22,10 @@ local WorldBuilder = {}
 
 local FLOOR = 0.4 -- top of base/zone floors
 local BARRIER_HEIGHT = 50 -- invisible wall above the low base fences (no jumping in)
-local GROUND_DEPTH = 420 -- the island's grass, across (z)
 local FACADE = 24 -- the invisible back wall behind the stage (the visible one grows per level)
-local BELT_X = -World.BaseWidth / 2 + 16 -- treadmill, front-left yard
-local BELT_DEPTH = 24
+-- the treadmill stands OUT on the plaza grass, in front of the base left of the entrance
+local BELT_X = -26
+local BELT_DEPTH = -18
 
 -- palette (the genre's palace look)
 local NAVY = Color3.fromRGB(38, 40, 92)
@@ -34,16 +35,72 @@ local PINK = Color3.fromRGB(255, 70, 220)
 local LIME = Color3.fromRGB(88, 214, 38)
 local WOOD = Color3.fromRGB(196, 140, 80)
 
--- each rich person's street: floor + its checker patches + the tall side walls
-local ZONE_STYLE: { [string]: { floor: { number }, patch: { number }, wall: { number } } } = {
-	Grandpa = { floor = { 200, 170, 130 }, patch = { 178, 146, 108 }, wall = { 150, 105, 70 } },
-	Influencer = { floor = { 250, 240, 245 }, patch = { 255, 190, 220 }, wall = { 230, 200, 80 } },
-	Pirate = { floor = { 236, 214, 150 }, patch = { 212, 188, 124 }, wall = { 120, 90, 60 } },
-	Museum = { floor = { 230, 228, 180 }, patch = { 210, 205, 150 }, wall = { 110, 100, 60 } },
-	GoldTycoon = { floor = { 60, 70, 90 }, patch = { 255, 200, 40 }, wall = { 30, 60, 70 } },
-	Yacht = { floor = { 235, 240, 250 }, patch = { 120, 190, 240 }, wall = { 40, 70, 140 } },
-	TechBillionaire = { floor = { 60, 66, 84 }, patch = { 0, 190, 230 }, wall = { 34, 36, 48 } },
-	Billionaire = { floor = { 44, 40, 52 }, patch = { 255, 200, 40 }, wall = { 22, 20, 28 } },
+-- each rich person's street (like the genre): floor + its checker patches, the two tones of the
+-- tall checker walls, and what hangs on the walls
+type ZoneStyle = {
+	floor: { number },
+	patch: { number },
+	wall: { number },
+	wall2: { number },
+	walls: string, -- houses | awnings | glyphs | posters | banners | planks | paintings | gears
+}
+local ZONE_STYLE: { [string]: ZoneStyle } = {
+	Grandpa = {
+		floor = { 104, 196, 66 },
+		patch = { 86, 176, 54 },
+		wall = { 120, 186, 90 },
+		wall2 = { 98, 164, 72 },
+		walls = "houses",
+	},
+	Jeweler = {
+		floor = { 204, 206, 212 },
+		patch = { 176, 178, 186 },
+		wall = { 150, 152, 160 },
+		wall2 = { 128, 130, 140 },
+		walls = "awnings",
+	},
+	Archeologist = {
+		floor = { 238, 208, 132 },
+		patch = { 214, 184, 110 },
+		wall = { 206, 176, 104 },
+		wall2 = { 176, 146, 84 },
+		walls = "glyphs",
+	},
+	Mafia = {
+		floor = { 72, 82, 98 },
+		patch = { 56, 64, 78 },
+		wall = { 46, 54, 66 },
+		wall2 = { 38, 44, 54 },
+		walls = "posters",
+	},
+	Celebrity = {
+		floor = { 246, 242, 240 },
+		patch = { 255, 186, 206 },
+		wall = { 238, 204, 84 },
+		wall2 = { 218, 180, 62 },
+		walls = "banners",
+	},
+	Pirate = {
+		floor = { 238, 214, 150 },
+		patch = { 214, 190, 126 },
+		wall = { 150, 112, 72 },
+		wall2 = { 126, 92, 56 },
+		walls = "planks",
+	},
+	Museum = {
+		floor = { 234, 230, 182 },
+		patch = { 212, 206, 156 },
+		wall = { 112, 122, 62 },
+		wall2 = { 128, 98, 58 },
+		walls = "paintings",
+	},
+	GoldTycoon = {
+		floor = { 62, 68, 82 },
+		patch = { 255, 200, 40 },
+		wall = { 30, 72, 82 },
+		wall2 = { 24, 58, 66 },
+		walls = "gears",
+	},
 }
 
 export type BaseRecord = {
@@ -297,28 +354,6 @@ local function setupLighting()
 	cc.Parent = Lighting
 end
 
--- A blocky voxel tree.
-local function tree(parent: Instance, pos: Vector3, scale: number)
-	brick(
-		parent,
-		"Trunk",
-		Vector3.new(2, 8, 2) * scale,
-		CFrame.new(pos + Vector3.new(0, 4 * scale, 0)),
-		Color3.fromRGB(120, 80, 45)
-	)
-	for _, o in
-		{ Vector3.new(0, 10, 0), Vector3.new(2.5, 8.5, 1), Vector3.new(-2, 9, -2), Vector3.new(0, 12.5, 0) }
-	do
-		brick(
-			parent,
-			"Leaves",
-			(if o.Y > 12 then Vector3.new(4, 3, 4) else Vector3.new(7, 6, 7)) * scale,
-			CFrame.new(pos + o * scale),
-			Color3.fromRGB(50, 180, 60)
-		)
-	end
-end
-
 -- The appraiser: an old expert in a white coat beside the crate table (anchored, idle animation).
 local function appraiser(parent: Instance, cf: CFrame)
 	local rig = Rig.build("appraiser", {
@@ -486,7 +521,8 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 		end
 	end
 
-	-- the treadmill in the front-left yard (standing on it = training; its frame is Palace decor)
+	-- the treadmill out on the plaza in front of the base (standing on it = training; its frame
+	-- is Palace decor that grows with the treadmill level)
 	local belt = smooth(
 		model,
 		"Treadmill",
@@ -507,7 +543,7 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 
 	-- upgrade signs (wooden boards): far enough from the belt that the prompt never pops up there
 	local treadSign =
-		woodSign(model, "TreadSign", at(BELT_X + 15, FLOOR + 4.6, BELT_DEPTH - 4), "Upgrade Treadmill")
+		woodSign(model, "TreadSign", at(BELT_X - 13, FLOOR + 4.2, BELT_DEPTH + 2), "Upgrade Treadmill")
 	local plotSign = woodSign(model, "PlotSign", at(-20, FLOOR + 4.6, 6), "Upgrade Plot")
 
 	-- collect pad by the entrance (front right): gold rim, green glow
@@ -537,19 +573,14 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 	ps.Parent = pendingLabel
 	pendingLabel.Parent = bb
 
-	-- the appraiser's table (right side): a rug with 8 crate spots, the appraiser behind it
-	deco(
-		brick(model, "Rug", Vector3.new(17, 0.2, 26), at(34.5, FLOOR + 0.1, 27), Color3.fromRGB(150, 30, 50))
-	)
-	deco(brick(model, "RugTrim", Vector3.new(18, 0.16, 27), at(34.5, FLOOR + 0.08, 27), GOLD))
+	-- crates wait on the front edge of the stage (in front of the podiums, both sides of the
+	-- steps) with the appraiser standing beside them, like the genre
 	local crateSpots: { CFrame } = {}
-	for _, depth in { 18, 24, 30, 36 } do
-		for _, lx in { 30.5, 38.5 } do
-			-- crates face the path (-X side of the base)
-			table.insert(crateSpots, at(lx, FLOOR + 0.2, depth) * CFrame.Angles(0, math.rad(90), 0))
-		end
+	for _, lx in { -10.5, 10.5, -17.5, 17.5, -24.5, 24.5, -31.5, 31.5 } do
+		-- the lock faces the entrance
+		table.insert(crateSpots, at(lx, stageTop, SD + 2.6) * CFrame.Angles(0, math.rad(180), 0))
 	end
-	appraiser(model, at(44.5, FLOOR, 27) * CFrame.Angles(0, math.rad(90), 0))
+	appraiser(model, at(38.5, stageTop, SD + 2.6) * CFrame.Angles(0, math.rad(180), 0))
 
 	-- crown beam (visible when this base belongs to THE RICHEST)
 	local beam = smooth(
@@ -593,9 +624,287 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 	return record
 end
 
+-- A giant studded wall in two-tone checker squares with bunting along the top.
+-- `cf`: bottom center; the wall runs along local X, its inner face looks along local -Z.
+local function checkerWall(
+	parent: Instance,
+	name: string,
+	cf: CFrame,
+	length: number,
+	height: number,
+	a: Color3,
+	b: Color3,
+	square: number
+)
+	brick(parent, name, Vector3.new(length, height, 4), cf * CFrame.new(0, height / 2, 0), a, true)
+	local cols = math.floor(length / square)
+	local rows = math.floor(height / square)
+	local x0 = -cols * square / 2 + square / 2
+	for c = 0, cols - 1 do
+		for r = 0, rows - 1 do
+			if (c + r) % 2 == 0 then
+				deco(
+					brick(
+						parent,
+						"Checker",
+						Vector3.new(square, square, 0.4),
+						cf * CFrame.new(x0 + c * square, r * square + square / 2, -2.2),
+						b,
+						true
+					)
+				)
+			end
+		end
+	end
+	brick(
+		parent,
+		name .. "Top",
+		Vector3.new(length + 2, 2, 6),
+		cf * CFrame.new(0, height + 1, 0),
+		b:Lerp(Color3.new(0, 0, 0), 0.2)
+	)
+	-- bunting: little colored flags along the top of the inner face
+	local flags = {
+		Color3.fromRGB(255, 140, 30),
+		Color3.fromRGB(150, 60, 220),
+		Color3.fromRGB(255, 220, 60),
+		Color3.fromRGB(80, 200, 255),
+	}
+	local i = 0
+	for x = -length / 2 + 4, length / 2 - 4, 8 do
+		i += 1
+		local flag = deco(
+			brick(
+				parent,
+				"Bunting",
+				Vector3.new(2.4, 2.4, 0.3),
+				cf * CFrame.new(x, height - 2.2, -2.6) * CFrame.Angles(0, 0, math.rad(45)),
+				flags[i % #flags + 1]
+			)
+		)
+		flag.CastShadow = false
+	end
+end
+
+-- What hangs on a zone's walls (inner faces), by style. `at` is the zone's local frame.
+local function wallDressing(
+	model: Instance,
+	at: (number, number, number) -> CFrame,
+	style: ZoneStyle,
+	trim: Color3
+)
+	local L, HW = World.VaultSpacing, World.ZoneHalfWidth
+	local kind = style.walls
+	for _, side in { -1, 1 } do
+		local x = side * (HW - 1.3) -- just in front of the wall's inner face
+		local faceIn = CFrame.Angles(0, math.rad(side * 90), 0) -- a part's Front looks toward the street
+		if kind == "houses" or kind == "awnings" then
+			-- building fronts: framed windows, flower boxes; awnings + diamond banners on the shop street
+			for depth = 10, L - 8, 16 do
+				for _, y in { 8, 19 } do
+					brick(
+						model,
+						"WindowFrame",
+						Vector3.new(5, 6, 0.5),
+						at(x, y, depth) * faceIn,
+						Color3.fromRGB(245, 245, 240)
+					)
+					deco(
+						smooth(
+							model,
+							"Window",
+							Vector3.new(4, 5, 0.4),
+							at(x - side * 0.2, y, depth) * faceIn,
+							Color3.fromRGB(110, 180, 230),
+							Enum.Material.Glass
+						)
+					)
+				end
+				if kind == "awnings" then
+					deco(
+						brick(
+							model,
+							"Awning",
+							Vector3.new(8, 0.6, 3),
+							at(x - side * 1.5, 12.5, depth) * faceIn * CFrame.Angles(math.rad(-15), 0, 0),
+							Color3.fromRGB(30, 30, 35)
+						)
+					)
+					deco(
+						brick(
+							model,
+							"DiamondBanner",
+							Vector3.new(3, 5, 0.3),
+							at(x - side * 0.3, 24, depth + 8) * faceIn,
+							Color3.fromRGB(25, 25, 30)
+						)
+					)
+					deco(
+						brick(
+							model,
+							"BannerGem",
+							Vector3.new(1.4, 1.4, 0.3),
+							at(x - side * 0.5, 24, depth + 8) * faceIn * CFrame.Angles(0, 0, math.rad(45)),
+							Color3.fromRGB(120, 220, 255)
+						)
+					)
+				else
+					deco(
+						brick(
+							model,
+							"FlowerBox",
+							Vector3.new(5, 1, 1.2),
+							at(x - side * 0.6, 4.6, depth) * faceIn,
+							Color3.fromRGB(150, 100, 60)
+						)
+					)
+				end
+			end
+		elseif kind == "posters" then
+			for depth = 12, L - 8, 22 do
+				deco(
+					brick(
+						model,
+						"Poster",
+						Vector3.new(7, 9, 0.3),
+						at(x, 11, depth) * faceIn,
+						Color3.fromRGB(235, 230, 220)
+					)
+				)
+				deco(
+					brick(
+						model,
+						"PosterInk",
+						Vector3.new(5, 0.8, 0.2),
+						at(x - side * 0.2, 13, depth) * faceIn,
+						Color3.fromRGB(200, 40, 50)
+					)
+				)
+				brick(
+					model,
+					"Camera",
+					Vector3.new(1.2, 1.2, 2.4),
+					at(x - side * 1.2, 22, depth + 11) * faceIn,
+					Color3.fromRGB(220, 220, 225)
+				)
+			end
+		elseif kind == "banners" then
+			for depth = 9, L - 4, 18 do
+				deco(
+					brick(
+						model,
+						"Banner",
+						Vector3.new(4, 12, 0.3),
+						at(x, 19, depth) * faceIn,
+						Color3.fromRGB(255, 120, 190)
+					)
+				)
+				deco(
+					brick(
+						model,
+						"BannerStar",
+						Vector3.new(2, 2, 0.3),
+						at(x - side * 0.2, 21, depth) * faceIn * CFrame.Angles(0, 0, math.rad(45)),
+						Color3.fromRGB(255, 240, 120)
+					)
+				)
+			end
+		elseif kind == "glyphs" then
+			local rng = Random.new(77)
+			for depth = 6, L - 4, 7 do
+				for _, y in { 9, 15, 21 } do
+					if rng:NextNumber() < 0.6 then
+						deco(
+							brick(
+								model,
+								"Glyph",
+								Vector3.new(2, 2.4, 0.3),
+								at(x, y + rng:NextNumber(-1, 1), depth) * faceIn,
+								Color3.fromRGB(120, 90, 50)
+							)
+						)
+					end
+				end
+			end
+		elseif kind == "planks" then
+			for y = 5, 26, 6 do
+				deco(
+					brick(
+						model,
+						"Plank",
+						Vector3.new(0.3, 1, L - 2),
+						at(x, y, L / 2),
+						Color3.fromRGB(100, 72, 44)
+					)
+				)
+			end
+			-- the sea laps at the sides of the beach street
+			for depth = 6, L - 6, 14 do
+				deco(
+					smooth(
+						model,
+						"Water",
+						Vector3.new(10, 0.15, 12),
+						at(side * (HW - 6), FLOOR + 0.08, depth),
+						Color3.fromRGB(70, 170, 245)
+					)
+				)
+			end
+		elseif kind == "paintings" then
+			for depth = 12, L - 8, 20 do
+				brick(
+					model,
+					"PaintingFrame",
+					Vector3.new(9, 7, 0.5),
+					at(x, 12, depth) * faceIn,
+					Color3.fromRGB(190, 140, 50)
+				)
+				deco(
+					brick(
+						model,
+						"Canvas",
+						Vector3.new(7.4, 5.4, 0.3),
+						at(x - side * 0.3, 12, depth) * faceIn,
+						Color3.fromHSV((depth % 37) / 37, 0.55, 0.75)
+					)
+				)
+				local lamp = deco(
+					brick(
+						model,
+						"GalleryLamp",
+						Vector3.new(2, 0.6, 1.2),
+						at(x - side * 0.8, 16.5, depth) * faceIn,
+						Color3.fromRGB(255, 230, 150)
+					)
+				)
+				lamp.Material = Enum.Material.Neon
+			end
+		elseif kind == "gears" then
+			for depth = 12, L - 8, 24 do
+				local gear = deco(smooth(model, "Gear", Vector3.new(0.6, 9, 9), at(x, 15, depth), trim))
+				gear.Shape = Enum.PartType.Cylinder
+				deco(
+					brick(
+						model,
+						"GearHub",
+						Vector3.new(0.8, 3, 3),
+						at(x - side * 0.2, 15, depth),
+						Color3.fromRGB(40, 40, 45)
+					)
+				)
+			end
+			-- gold lane stripes down the floor
+			for _, lx in { -9, 9 } do
+				deco(brick(model, "GoldStripe", Vector3.new(1, 0.12, L), at(lx, FLOOR + 0.06, L / 2), trim))
+			end
+		end
+	end
+end
+
 -- ===== A rich person's street on the corridor =====
--- A wide studded floor with checker patches between tall brick walls, themed props along the
--- walls, and the owner's crates piled on one side (they stand among them and chase thieves).
+-- A wide studded street between tall two-tone checker walls dressed in the zone's style, a
+-- glowing green line where it starts (black iron fences at the sides), themed props along the
+-- walls, and the owner's crates piled up on the right (they stand among them and chase thieves).
 local function buildZone(parent: Instance, index: number, origin: CFrame): VaultRecord
 	local def = Vaults[index]
 	local model = Instance.new("Model")
@@ -603,8 +912,14 @@ local function buildZone(parent: Instance, index: number, origin: CFrame): Vault
 	model:SetAttribute("VaultIndex", index)
 	model.Parent = parent
 	local trim = rgb(def.trim)
-	local style = ZONE_STYLE[def.id]
-		or { floor = { 230, 225, 210 }, patch = { 205, 200, 185 }, wall = def.color }
+	local style: ZoneStyle = ZONE_STYLE[def.id]
+		or {
+			floor = { 230, 225, 210 },
+			patch = { 205, 200, 185 },
+			wall = def.color,
+			wall2 = def.trim,
+			walls = "houses",
+		}
 	local L, HW, WH = World.VaultSpacing, World.ZoneHalfWidth, World.ZoneWallHeight
 
 	local function at(lx: number, ly: number, depth: number): CFrame
@@ -614,7 +929,7 @@ local function buildZone(parent: Instance, index: number, origin: CFrame): Vault
 	brick(model, "Floor", Vector3.new(HW * 2, FLOOR, L), at(0, FLOOR / 2, L / 2), rgb(style.floor))
 	-- checker patches (2x2 tiles of 6 studs) scattered over the floor
 	local rng = Random.new(index * 97)
-	for _ = 1, 16 do
+	for _ = 1, 18 do
 		local px = rng:NextInteger(-6, 5) * 6 + 3
 		local pd = rng:NextInteger(1, math.floor(L / 6) - 2) * 6
 		for _, o in { Vector2.new(0, 0), Vector2.new(6, 6) } do
@@ -630,53 +945,52 @@ local function buildZone(parent: Instance, index: number, origin: CFrame): Vault
 		end
 	end
 
-	-- tall studded side walls with pilasters and lamps
-	local wallColor = rgb(style.wall)
+	-- the tall two-tone checker walls (inner faces toward the street)
 	for _, side in { -1, 1 } do
-		brick(model, "Wall", Vector3.new(2, WH, L), at(side * HW, WH / 2, L / 2), wallColor, true)
-		brick(model, "WallTrim", Vector3.new(3, 1.4, L + 0.4), at(side * HW, WH + 0.7, L / 2), trim)
-		for depth = 8, L - 4, 18 do
-			brick(
-				model,
-				"Pilaster",
-				Vector3.new(1.6, WH, 3),
-				at(side * (HW - 1.6), WH / 2, depth),
-				wallColor:Lerp(Color3.new(0, 0, 0), 0.25),
-				true
-			)
-			local lamp = deco(
-				brick(
-					model,
-					"Lamp",
-					Vector3.new(1, 1.6, 1.4),
-					at(side * (HW - 2.8), 10, depth),
-					Color3.fromRGB(255, 220, 120)
-				)
-			)
-			lamp.Material = Enum.Material.Neon
-		end
+		local cf = at(side * (HW + 1), 0, L / 2) * CFrame.Angles(0, math.rad(side * 90), 0)
+		checkerWall(model, "Wall", cf, L, WH, rgb(style.wall), rgb(style.wall2), 12)
 	end
-	-- the arch at the zone's entrance with the rich person's name (both sides)
-	for _, side in { -1, 1 } do
+	wallDressing(model, at, style, trim)
+
+	-- where the zone starts: a glowing green line across the street + black iron fences at the sides
+	local line = deco(
 		brick(
 			model,
-			"ArchPillar",
-			Vector3.new(5, WH + 10, 5),
-			at(side * (HW - 2.5), (WH + 10) / 2, 0),
-			trim,
-			true
+			"ZoneLine",
+			Vector3.new(HW * 2, 0.12, 1.2),
+			at(0, FLOOR + 0.06, 0.6),
+			Color3.fromRGB(80, 255, 90)
 		)
+	)
+	line.Material = Enum.Material.Neon
+	for _, side in { -1, 1 } do
+		for k = 0, 4 do
+			brick(
+				model,
+				"FencePost",
+				Vector3.new(0.6, 7, 0.6),
+				at(side * (HW - 1 - k * 4), FLOOR + 3.5, 0),
+				Color3.fromRGB(25, 25, 30)
+			)
+		end
+		for _, y in { 2.5, 6 } do
+			deco(
+				brick(
+					model,
+					"FenceBar",
+					Vector3.new(16, 0.4, 0.4),
+					at(side * (HW - 9), FLOOR + y, 0),
+					Color3.fromRGB(25, 25, 30)
+				)
+			)
+		end
 	end
-	local sign = smooth(model, "Sign", Vector3.new(HW * 2, 7, 1.5), at(0, WH + 6, 0), trim)
-	local title = def.emoji .. " " .. string.upper(def.name)
-	surfaceText(sign, Enum.NormalId.Back, title, Color3.new(1, 1, 1)) -- seen arriving from home
-	surfaceText(sign, Enum.NormalId.Front, title, Color3.new(1, 1, 1)) -- seen running back
 
-	-- the owner's crate pile: 6 spots (3 x 2) on one side; zones alternate sides
-	local cs = if index % 2 == 1 then -1 else 1
+	-- the owner's crate pile: 6 spots (3 x 2) on the right side of the street
+	local cs = 1
 	local pedestals: { BasePart } = {}
-	for _, depth in { 56, 64, 72 } do
-		for _, lx in { 18, 26 } do
+	for _, depth in { 56, 63, 70 } do
+		for _, lx in { 20, 27 } do
 			local spot = brick(
 				model,
 				"Pedestal",
@@ -690,9 +1004,9 @@ local function buildZone(parent: Instance, index: number, origin: CFrame): Vault
 	WorldDecor.zone(model, def.id, origin, trim)
 
 	-- [1] the owner, right by their crates; bodyguards around them in the richer zones
-	local guardSpawns: { CFrame } = { at(cs * 34, 4, 64) * CFrame.Angles(0, math.rad(cs * 90), 0) }
+	local guardSpawns: { CFrame } = { at(cs * 34, 4, 63) * CFrame.Angles(0, math.rad(cs * 90), 0) }
 	for g = 2, def.guards do
-		table.insert(guardSpawns, at(cs * 12, 4, 44 + (g - 2) * 28))
+		table.insert(guardSpawns, at(cs * 12, 4, 44 + (g - 2) * 26))
 	end
 
 	return {
@@ -703,69 +1017,6 @@ local function buildZone(parent: Instance, index: number, origin: CFrame): Vault
 		pedestals = pedestals,
 		guardSpawns = guardSpawns,
 	}
-end
-
--- A brick townhouse facade (behind the bases), front facing `cf`'s -Z.
-local function townhouse(parent: Instance, cf: CFrame, width: number, height: number, color: Color3)
-	brick(parent, "House", Vector3.new(width, height, 14), cf * CFrame.new(0, height / 2, 0), color, true)
-	brick(
-		parent,
-		"HouseTrim",
-		Vector3.new(width + 1, 1.4, 15),
-		cf * CFrame.new(0, height + 0.7, 0),
-		color:Lerp(Color3.new(1, 1, 1), 0.35)
-	)
-	Palace.gable(
-		parent,
-		cf * CFrame.new(0, height + 1.4, 3),
-		width - 4,
-		3,
-		3,
-		6,
-		color:Lerp(Color3.new(0, 0, 0), 0.45),
-		Color3.fromRGB(240, 240, 235)
-	)
-	local cols = math.max(2, math.floor(width / 8))
-	for floor = 0, math.floor(height / 9) - 1 do
-		for c = 1, cols do
-			local x = (c - (cols + 1) / 2) * (width / cols)
-			local y = 7 + floor * 9
-			if not (floor == 0 and c == math.ceil(cols / 2)) then
-				brick(
-					parent,
-					"WindowFrame",
-					Vector3.new(4.4, 5, 0.4),
-					cf * CFrame.new(x, y, -7.1),
-					Color3.new(1, 1, 1)
-				)
-				deco(
-					smooth(
-						parent,
-						"Window",
-						Vector3.new(3.4, 4, 0.3),
-						cf * CFrame.new(x, y, -7.3),
-						Color3.fromRGB(110, 180, 230),
-						Enum.Material.Glass
-					)
-				)
-				brick(
-					parent,
-					"Shutter",
-					Vector3.new(1, 5, 0.4),
-					cf * CFrame.new(x - 2.8, y, -7.1),
-					Color3.fromRGB(60, 140, 70)
-				)
-				brick(
-					parent,
-					"Shutter",
-					Vector3.new(1, 5, 0.4),
-					cf * CFrame.new(x + 2.8, y, -7.1),
-					Color3.fromRGB(60, 140, 70)
-				)
-			end
-		end
-	end
-	brick(parent, "Door", Vector3.new(4, 7, 0.4), cf * CFrame.new(0, 3.5, -7.1), Color3.fromRGB(110, 70, 40))
 end
 
 -- A market stall with a striped awning (SELL), front facing `cf`'s -Z.
@@ -814,19 +1065,24 @@ function WorldBuilder.build(): WorldInfo
 	root.Name = "World"
 	root.Parent = workspace
 
-	local zonesStart = World.StreetStartX + World.ZoneGap
+	local HW = World.ZoneHalfWidth
+	local n = World.BaseCount
+	local pitch = World.BaseWidth + World.BaseGap
+	local halfZ = n * pitch / 2 + 12 -- the plaza runs along z, as long as the row of bases
+	local westX = World.BaseFrontX - World.BaseDepth - 10 -- the wall behind the bases
+	local eastX = World.StreetStartX -- the wall with the street's mouth
+	local zonesStart = eastX + World.ZoneGap
 	local streetEnd = zonesStart + #Vaults * World.VaultSpacing
-	local minX = -World.PlazaHalfWidth - 60
-	local groundW = streetEnd - minX + 140
-	local groundCenterX = (streetEnd + minX) / 2
-	brick(root, "Ground", Vector3.new(groundW, 4, GROUND_DEPTH), CFrame.new(groundCenterX, -2, 0), LIME)
+	local groundDepth = halfZ * 2 + 40
+	local minX = westX - 20
+	local groundW = streetEnd + 60 - minX
+	local groundCenterX = (streetEnd + 60 + minX) / 2
+	brick(root, "Ground", Vector3.new(groundW, 4, groundDepth), CFrame.new(groundCenterX, -2, 0), LIME)
 
-	-- the island: beach, ocean and a ring of mountains instead of the world just ending
+	-- the island: beach, ocean and a ring of mountains (seen over the walls: the world never ends)
 	local BEACH = 18
-	WorldDecor.surroundings(root, groundCenterX, groundW, GROUND_DEPTH, BEACH)
-
-	-- invisible map bounds at the waterline (you can walk on the beach, not into the sea)
-	local bw, bd = groundW + BEACH * 2 - 6, GROUND_DEPTH + BEACH * 2 - 6
+	WorldDecor.surroundings(root, groundCenterX, groundW, groundDepth, BEACH)
+	local bw, bd = groundW + BEACH * 2 - 6, groundDepth + BEACH * 2 - 6
 	for _, b in
 		{
 			{ Vector3.new(bw, 80, 2), Vector3.new(groundCenterX, 40, bd / 2) },
@@ -842,58 +1098,70 @@ function WorldBuilder.build(): WorldInfo
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Anchored = true
 	spawn.Size = Vector3.new(10, 0.4, 10)
-	spawn.CFrame = CFrame.new(-60, 0.3, 0)
+	spawn.CFrame = CFrame.new(World.BaseFrontX + 50, 0.3, 0)
 	spawn.Transparency = 1
 	spawn.CanCollide = false
 	spawn.Neutral = true
 	spawn.Duration = 0
 	spawn.Parent = root
 
-	-- bases: row A (z < 0) faces -Z into the base, row B (z > 0) faces +Z
+	-- the bases: one row along the west side, all facing east across the plaza at the street
 	local bases: { BaseRecord } = {}
 	local basesFolder = Instance.new("Folder")
 	basesFolder.Name = "Bases"
 	basesFolder.Parent = workspace
-	for i = 1, World.BaseCount do
-		local col = World.BaseColumns[((i - 1) % 4) + 1]
-		local side = if i <= 4 then -1 else 1
-		local front = Vector3.new(col, 0, side * World.BaseRowZ)
-		local origin = CFrame.lookAt(front, front + Vector3.new(0, 0, side))
+	for i = 1, n do
+		local front = Vector3.new(World.BaseFrontX, 0, (i - (n + 1) / 2) * pitch)
+		local origin = CFrame.lookAt(front, front - Vector3.xAxis) -- LookVector points into the base
 		table.insert(bases, buildBase(basesFolder, i, origin))
 	end
 
-	-- brick townhouses behind both rows of bases (the town around the plaza)
-	local decor = Instance.new("Folder")
-	decor.Name = "Decor"
-	decor.Parent = root
-	local houseColors = {
-		Color3.fromRGB(200, 90, 60),
-		Color3.fromRGB(230, 150, 70),
-		Color3.fromRGB(120, 170, 90),
-		Color3.fromRGB(210, 190, 140),
-		Color3.fromRGB(150, 110, 90),
-		Color3.fromRGB(190, 120, 160),
-	}
+	-- the giant checker walls around the plaza (the east one has the street's mouth in the middle)
+	local H = World.PlazaWallHeight
+	local walls = Instance.new("Folder")
+	walls.Name = "PlazaWalls"
+	walls.Parent = root
+	local greenA, greenB = Color3.fromRGB(110, 196, 70), Color3.fromRGB(88, 170, 52)
+	local brownA, brownB = Color3.fromRGB(196, 116, 64), Color3.fromRGB(224, 146, 76)
+	local function face(pos: Vector3, inward: Vector3): CFrame
+		return CFrame.lookAt(pos, pos + inward)
+	end
+	checkerWall(
+		walls,
+		"WestWall",
+		face(Vector3.new(westX - 2, 0, 0), Vector3.xAxis),
+		halfZ * 2,
+		H,
+		greenA,
+		greenB,
+		16
+	)
 	for _, side in { -1, 1 } do
-		local i = 0
-		for x = -World.PlazaHalfWidth + 15, World.StreetStartX - 30, 34 do
-			i += 1
-			local pos = Vector3.new(x, 0, side * 128)
-			-- front faces the plaza
-			local cf = CFrame.lookAt(pos, pos + Vector3.new(0, 0, side))
-			townhouse(
-				decor,
-				cf,
-				30,
-				18 + (i % 3) * 9,
-				houseColors[(i + (if side > 0 then 2 else 0)) % #houseColors + 1]
-			)
-		end
+		checkerWall(
+			walls,
+			if side > 0 then "NorthWall" else "SouthWall",
+			face(Vector3.new((westX + eastX) / 2, 0, side * (halfZ + 2)), Vector3.zAxis * -side),
+			eastX - westX + 8,
+			H,
+			greenA,
+			greenB,
+			16
+		)
+		local len = halfZ - HW
+		checkerWall(
+			walls,
+			"EastWall",
+			face(Vector3.new(eastX + 2, 0, side * (HW + len / 2)), -Vector3.xAxis),
+			len,
+			H,
+			brownA,
+			brownB,
+			16
+		)
 	end
 
-	-- Rich Street: gate, entry hall, then the zones one after another
-	local HW = World.ZoneHalfWidth
-	local gx = World.StreetStartX
+	-- Rich Street's mouth: gate posts, the sign, a short hall into the first zone
+	local gx = eastX
 	brick(
 		root,
 		"EntryHall",
@@ -902,30 +1170,37 @@ function WorldBuilder.build(): WorldInfo
 		Color3.fromRGB(205, 205, 210)
 	)
 	for _, side in { -1, 1 } do
-		brick(root, "GatePost", Vector3.new(6, 32, 6), CFrame.new(gx, 16, side * (HW + 3)), NAVY, true)
-		for y = 4, 30, 6 do
+		brick(
+			root,
+			"GatePost",
+			Vector3.new(6, H + 4, 6),
+			CFrame.new(gx, (H + 4) / 2, side * (HW + 3)),
+			NAVY,
+			true
+		)
+		for y = 6, H, 8 do
 			brick(root, "GateBand", Vector3.new(6.8, 1, 6.8), CFrame.new(gx, y, side * (HW + 3)), GOLD)
 		end
 		brick(
 			root,
 			"HallWall",
 			Vector3.new(World.ZoneGap, World.ZoneWallHeight, 2),
-			CFrame.new(gx + World.ZoneGap / 2, World.ZoneWallHeight / 2, side * HW),
+			CFrame.new(gx + World.ZoneGap / 2, World.ZoneWallHeight / 2, side * (HW + 1)),
 			Color3.fromRGB(150, 150, 160),
 			true
 		)
 	end
 	local gateSign =
-		smooth(root, "GateSign", Vector3.new(3, 10, HW * 2 + 12), CFrame.new(gx, 30, 0), NAVY_DARK)
+		smooth(root, "GateSign", Vector3.new(3, 10, HW * 2 + 12), CFrame.new(gx, 40, 0), NAVY_DARK)
 	surfaceText(gateSign, Enum.NormalId.Left, "💰 RICH STREET 💰", GOLD)
 	surfaceText(gateSign, Enum.NormalId.Right, "🏠 HOME 🏠", Color3.fromRGB(120, 255, 130))
-	-- SAFE ZONE painted on the grass with a red line, in front of the gate (like the genre)
+	-- SAFE ZONE painted on the grass with a red line, in front of the street's mouth
 	local line = deco(
 		brick(
 			root,
 			"SafeLine",
 			Vector3.new(1, 0.1, HW * 2),
-			CFrame.new(gx - 8, 0.05, 0),
+			CFrame.new(gx - 6, 0.05, 0),
 			Color3.fromRGB(230, 30, 40)
 		)
 	)
@@ -934,7 +1209,7 @@ function WorldBuilder.build(): WorldInfo
 		root,
 		"SafeZonePaint",
 		Vector3.new(40, 0.05, 10),
-		CFrame.new(gx - 15, 0.08, 0) * CFrame.Angles(0, math.rad(-90), 0), -- reads walking out to the street
+		CFrame.new(gx - 14, 0.08, 0) * CFrame.Angles(0, math.rad(-90), 0), -- reads walking out to the street
 		Color3.new(1, 1, 1)
 	))
 	paint.Transparency = 1
@@ -949,106 +1224,73 @@ function WorldBuilder.build(): WorldInfo
 		local origin = CFrame.lookAt(Vector3.new(x0, 0, 0), Vector3.new(x0 + 1, 0, 0))
 		table.insert(vaults, buildZone(vaultFolder, i, origin))
 	end
-	-- end of the corridor
 	local endWall =
 		brick(root, "EndWall", Vector3.new(2, 32, HW * 2), CFrame.new(streetEnd + 1, 16, 0), NAVY_DARK, true)
 	surfaceText(endWall, Enum.NormalId.Left, "🚧 MORE RICH PEOPLE COMING SOON 🚧", GOLD)
 
-	-- trees out past the townhouses and along the outside of the corridor
-	for i = 1, 60 do
-		local rng = Random.new(i)
-		local x = rng:NextNumber(minX, streetEnd)
-		local nearHome = x < World.StreetStartX - 10
-		local zMin = if nearHome then 150 else HW + 14
-		local z = (if rng:NextNumber() < 0.5 then -1 else 1) * rng:NextNumber(zMin, 200)
-		tree(decor, Vector3.new(x, 0, z), rng:NextNumber(0.9, 1.5))
+	-- the shops stand along the east wall beside the street's mouth, facing the bases (-X)
+	local function facingBases(z: number): CFrame
+		local pos = Vector3.new(eastX - 14, 0.3, z)
+		return CFrame.lookAt(pos, pos - Vector3.xAxis)
 	end
-	WorldDecor.fountain(root, Vector3.new(110, 0, 0))
 
-	-- WANTED board in the plaza center, double sided and facing along the plaza (you see it
-	-- straight on whether you walk out to the street or back home)
+	-- WANTED board (the richest player) on the east wall, south of the street
+	local wantedZ = -(HW + 70)
 	local board = smooth(
 		root,
 		"WantedBoard",
 		Vector3.new(30, 18, 1),
-		CFrame.new(0, 16, 0) * CFrame.Angles(0, math.rad(90), 0),
+		CFrame.lookAt(Vector3.new(eastX - 0.6, 22, wantedZ), Vector3.new(eastX - 1.6, 22, wantedZ)),
 		Color3.fromRGB(240, 220, 170)
 	)
-	for _, z in { -12, 12 } do
-		brick(
-			root,
-			"WantedPost",
-			Vector3.new(1.5, 7, 1.5),
-			CFrame.new(0, 3.5, z),
-			Color3.fromRGB(110, 70, 40)
-		)
-	end
 	local wanted: { [string]: any } = { Image = {}, Title = {}, Name = {}, Bounty = {} }
-	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
-		local sg = Instance.new("SurfaceGui")
-		sg.Face = face
-		sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		sg.PixelsPerStud = 25
-		sg.LightInfluence = 0
-		sg.Parent = board
-		local function txt(y: number, h: number, color: Color3): TextLabel
-			local l = Instance.new("TextLabel")
-			l.BackgroundTransparency = 1
-			l.Position = UDim2.fromScale(0.36, y)
-			l.Size = UDim2.fromScale(0.6, h)
-			l.Font = Enum.Font.LuckiestGuy
-			l.TextScaled = true
-			l.TextColor3 = color
-			l.Text = ""
-			local s = Instance.new("UIStroke")
-			s.Thickness = 3
-			s.Color = Color3.fromRGB(60, 30, 10)
-			s.Parent = l
-			l.Parent = sg
-			return l
-		end
-		local img = Instance.new("ImageLabel")
-		img.BackgroundColor3 = Color3.fromRGB(255, 245, 220)
-		img.Position = UDim2.fromScale(0.04, 0.15)
-		img.Size = UDim2.fromScale(0.3, 0.7)
-		img.Image = ""
-		local ic = Instance.new("UIStroke")
-		ic.Thickness = 6
-		ic.Color = Color3.fromRGB(90, 50, 20)
-		ic.Parent = img
-		img.Parent = sg
-		table.insert(wanted.Image, img)
-		table.insert(wanted.Title, txt(0.06, 0.26, Color3.fromRGB(220, 40, 40)))
-		table.insert(wanted.Name, txt(0.36, 0.22, Color3.fromRGB(255, 255, 255)))
-		table.insert(wanted.Bounty, txt(0.62, 0.3, Color3.fromRGB(255, 215, 60)))
+	local sg = Instance.new("SurfaceGui")
+	sg.Face = Enum.NormalId.Front -- faces the plaza
+	sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	sg.PixelsPerStud = 25
+	sg.LightInfluence = 0
+	sg.Parent = board
+	local function txt(y: number, h: number, color: Color3): TextLabel
+		local l = Instance.new("TextLabel")
+		l.BackgroundTransparency = 1
+		l.Position = UDim2.fromScale(0.36, y)
+		l.Size = UDim2.fromScale(0.6, h)
+		l.Font = Enum.Font.LuckiestGuy
+		l.TextScaled = true
+		l.TextColor3 = color
+		l.Text = ""
+		local st = Instance.new("UIStroke")
+		st.Thickness = 3
+		st.Color = Color3.fromRGB(60, 30, 10)
+		st.Parent = l
+		l.Parent = sg
+		return l
 	end
+	local img = Instance.new("ImageLabel")
+	img.BackgroundColor3 = Color3.fromRGB(255, 245, 220)
+	img.Position = UDim2.fromScale(0.04, 0.15)
+	img.Size = UDim2.fromScale(0.3, 0.7)
+	img.Image = ""
+	local ic = Instance.new("UIStroke")
+	ic.Thickness = 6
+	ic.Color = Color3.fromRGB(90, 50, 20)
+	ic.Parent = img
+	img.Parent = sg
+	table.insert(wanted.Image, img)
+	table.insert(wanted.Title, txt(0.06, 0.26, Color3.fromRGB(220, 40, 40)))
+	table.insert(wanted.Name, txt(0.36, 0.22, Color3.fromRGB(255, 255, 255)))
+	table.insert(wanted.Bounty, txt(0.62, 0.3, Color3.fromRGB(255, 215, 60)))
 
-	-- Market row at the west end of the plaza: the shops stand side by side, all facing down the
-	-- plaza (+X), with the Longest Reign board raised on posts above and behind them.
-	local MARKET_X = -World.PlazaHalfWidth + 25
-	local function facingPlaza(z: number): CFrame
-		local pos = Vector3.new(MARKET_X, 0.3, z)
-		return CFrame.lookAt(pos, pos + Vector3.new(1, 0, 0))
-	end
-	local reignX = MARKET_X - 14
+	-- Longest Reign board on the east wall, north of the street
 	local reign = smooth(
 		root,
 		"ReignBoard",
 		Vector3.new(1, 22, 26),
-		CFrame.new(reignX, 32, 0),
+		CFrame.new(eastX - 0.6, 24, HW + 110),
 		Color3.fromRGB(30, 25, 35)
 	)
-	for _, z in { -11, 11 } do
-		brick(
-			root,
-			"ReignPost",
-			Vector3.new(1.6, 21, 1.6),
-			CFrame.new(reignX, 10.5, z),
-			Color3.fromRGB(60, 50, 70)
-		)
-	end
 	local rsg = Instance.new("SurfaceGui")
-	rsg.Face = Enum.NormalId.Right
+	rsg.Face = Enum.NormalId.Left -- faces the plaza (-X)
 	rsg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	rsg.PixelsPerStud = 25
 	rsg.LightInfluence = 0
@@ -1072,8 +1314,8 @@ function WorldBuilder.build(): WorldInfo
 		end
 	end
 
-	-- Fuse machine: a grey workshop with a big mystery block on the roof
-	local fcf = facingPlaza(-18)
+	-- Fuse machine (grey workshop with a mystery block) and the SELL stall, north of the street
+	local fcf = facingBases(HW + 62)
 	local machine = brick(
 		root,
 		"FuseMachine",
@@ -1119,12 +1361,12 @@ function WorldBuilder.build(): WorldInfo
 	local fusePrompt = prompt(machine, "Fuse", "3 identical → 1 better", 0)
 	fusePrompt.MaxActivationDistance = 16
 
-	-- SELL stall (opens your items to sell) in the middle, the trails shop on the other side
-	local sellCounter = stall(root, facingPlaza(0), "SELL", Color3.fromRGB(230, 40, 50))
+	local sellCounter = stall(root, facingBases(HW + 30), "SELL", Color3.fromRGB(230, 40, 50))
 	local sellPrompt = prompt(sellCounter, "Sell", "Sell your items", 0)
 	sellPrompt.MaxActivationDistance = 14
 
-	local trailsPrompt = WorldDecor.trailsShop(root, facingPlaza(18))
+	-- the trails shop, south of the street
+	local trailsPrompt = WorldDecor.trailsShop(root, facingBases(-(HW + 30)))
 
 	-- seasonal dressing (Config/Cosmetics.Season decides the dates)
 	local d = os.date("!*t") :: any
