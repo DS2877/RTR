@@ -746,11 +746,8 @@ if sim and A and B then
 	local function stealFromVault(p: any): boolean
 		local ped = vault1.pedestals[1]
 		moveTo(p, ped.Position + Vector3.new(0, 3, -6))
-		for _ = 1, 30 do
-			if VaultLoot.lootAt(1, 1) then
-				break
-			end
-			task.wait(0.5)
+		if not VaultLoot.lootAt(1, 1) then
+			VaultLoot.rerollAll() -- a restock refills every spot at once (a normal refill takes 20-35 s)
 		end
 		return VaultLoot.stealAt(1, 1, p)
 	end
@@ -939,11 +936,8 @@ if sim and A and B then
 		a.data.Speed = 0
 		local ped = world.vaults[2].pedestals[1]
 		moveTo(A, ped.Position + Vector3.new(0, 3, -6))
-		for _ = 1, 30 do
-			if VaultLoot.lootAt(2, 1) then
-				break
-			end
-			task.wait(0.5)
+		if not VaultLoot.lootAt(2, 1) then
+			VaultLoot.rerollAll()
 		end
 		local ok = VaultLoot.stealAt(2, 1, A)
 		a.data.Speed = speed
