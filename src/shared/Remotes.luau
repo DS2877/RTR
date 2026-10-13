@@ -23,6 +23,7 @@ Remotes.Names = {
 	Unequip = "Unequip", -- (slot: string) take an item off its pedestal into your bag
 	EquipBest = "EquipBest", -- () best earners on the pedestals
 	SellItem = "SellItem", -- (kind: "bag" | "slot", key: number | string)
+	PlaceTrap = "PlaceTrap", -- () drop a bear trap at your feet (while carrying, or the Richest at home)
 	-- server -> client
 	Notice = "Notice", -- (text: string, kind: string) small toast for one player
 	Announce = "Announce", -- (text: string, color: {number}, sound: string?) server-wide message
@@ -38,7 +39,7 @@ Remotes.Names = {
 	OpenTrails = "OpenTrails", -- () the trails shop prompt was used
 	Offline = "Offline", -- (earned: number, seconds: number, perDay: number)
 	OpenItems = "OpenItems", -- (mode: "items" | "sell") the SELL stall was used
-	Revealed = "Revealed", -- (itemName, rarity, mutation, income, where: "base" | "bag") a crate opened
+	Revealed = "Revealed", -- (itemName, rarity, mutation, income, where: "base" | "bag", bonus: number) a crate opened
 }
 
 local FOLDER_NAME = "Remotes"

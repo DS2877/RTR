@@ -80,7 +80,7 @@ local Products = {
 			name = "Rainbow Trail",
 			emoji = "🌈",
 			price = 79,
-			desc = "A rainbow trail behind you while you run. Equip it in the Trails shop.",
+			desc = "A rainbow trail + x5 treadmill Speed while equipped. Equip it in the Trails shop.",
 		},
 		{
 			key = "LongLock",

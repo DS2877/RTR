@@ -101,6 +101,34 @@ function CarryFX.start()
 		Remotes.get(Remotes.Names.Drop):FireServer()
 	end)
 
+	-- 🪤 TRAP: drop a bear trap behind you (while carrying; the Richest also at home)
+	local trapHolder = UI.new("Frame", {
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0.5, 100, 1, -96),
+		Size = UDim2.fromOffset(110, 50),
+		BackgroundTransparency = 1,
+		Parent = layer,
+	})
+	UI.scaleObject(trapHolder, 1.2)
+	local trap: TextButton = UI.new("TextButton", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Color3.fromRGB(90, 96, 110),
+		Text = "",
+		Visible = false,
+		Parent = trapHolder,
+	}, { UI.corner(10), UI.stroke(Color3.fromRGB(255, 200, 60), 2) })
+	local trapText = UI.bigText({
+		Position = UDim2.fromOffset(6, 6),
+		Size = UDim2.new(1, -12, 1, -12),
+		Text = "🪤 x3",
+		Parent = trap,
+	})
+	trap.Activated:Connect(function()
+		Remotes.get(Remotes.Names.PlaceTrap):FireServer()
+		UI.bump(trap, 0.2)
+		Sound.play("Click", 0.6)
+	end)
+
 	local slapHolder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, -16, 0.5, -45),
@@ -196,6 +224,25 @@ function CarryFX.start()
 			end
 			slapTarget = best
 			slap.Visible = best ~= nil
+			-- TRAP button: out on the street with loot, or the Richest inside their own base
+			local left = player:GetAttribute("TrapsLeft")
+			local canTrap = false
+			if typeof(left) == "number" and left > 0 and root then
+				if player:GetAttribute("Carrying") then
+					canTrap = root.Position.X > 4
+				elseif player:GetAttribute("Richest") then
+					local base = myBase()
+					local floor = base and base:FindFirstChild("Floor") :: BasePart?
+					if floor then
+						local l = floor.CFrame:PointToObjectSpace(root.Position)
+						canTrap = math.abs(l.X) < floor.Size.X / 2 and math.abs(l.Z) < floor.Size.Z / 2
+					end
+				end
+			end
+			trap.Visible = canTrap
+			if canTrap then
+				trapText.Text = "🪤 x" .. tostring(left)
+			end
 		end
 	end)
 

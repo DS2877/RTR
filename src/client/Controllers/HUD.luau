@@ -432,7 +432,13 @@ function HUD.start()
 		rateL.Text = "+" .. Format.cash(perSec) .. "/s"
 		local boost = player:GetAttribute("FriendBoost") or 0
 		boostL.Text = string.format("Friend Boost: +%d%%", math.floor(boost * 100 + 0.5))
+		local mult = player:GetAttribute("SpeedMult") or 1
 		speedL.Text = Format.number(player:GetAttribute("SpeedPoints") or 0)
+			.. (
+				if mult > 1
+					then " (x" .. (if mult % 1 == 0 then tostring(mult) else string.format("%.1f", mult)) .. ")"
+					else ""
+			)
 		local perDay = perSec * Economy.OfflineRate * math.min(86400, Economy.OfflineMaxHours * 3600)
 		offlineL.Text = if perDay > 0
 			then string.format(
@@ -441,7 +447,7 @@ function HUD.start()
 			)
 			else ""
 	end
-	for _, a in { "Cash", "CashPerSec", "SpeedPoints", "FriendBoost" } do
+	for _, a in { "Cash", "CashPerSec", "SpeedPoints", "FriendBoost", "SpeedMult" } do
 		player:GetAttributeChangedSignal(a):Connect(refresh)
 	end
 	player:GetAttributeChangedSignal("Cash"):Connect(function()
@@ -525,7 +531,7 @@ function HUD.start()
 	local eventTimer = UI.bigText({
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, -66, 0, 28),
-		Size = UDim2.fromOffset(190, 30),
+		Size = UDim2.fromOffset(280, 30),
 		Text = "",
 		TextXAlignment = Enum.TextXAlignment.Right,
 		Parent = lockHolder,
@@ -543,9 +549,15 @@ function HUD.start()
 			local endsAt = workspace:GetAttribute("PhaseEndsAt") or 0
 			local left = math.max(0, math.ceil(endsAt - t))
 			local icon = if workspace:GetAttribute("DayPhase") == "Night" then "☀️" else "🌙"
-			eventTimer.Text = if endsAt <= 0
+			local phase = if endsAt <= 0
 				then ""
 				else icon .. " in " .. (if left < 60 then left .. "s" else Format.duration(left))
+			-- the restock clock: every crate in every zone is rerolled when it hits zero
+			local restockAt = workspace:GetAttribute("RestockAt") or 0
+			local restock = math.max(0, math.ceil(restockAt - t))
+			eventTimer.Text = if restockAt <= 0
+				then phase
+				else "📦 " .. Format.duration(restock) .. "   " .. phase
 			local bases = workspace:FindFirstChild("Bases")
 			local base = bases and bases:FindFirstChild("Base_" .. tostring(player:GetAttribute("BaseId")))
 			if base then

@@ -1,7 +1,9 @@
 --!strict
--- The rich people along Rich Street, ordered by distance from home (farther = richer + faster).
--- Their loot is crates ("<name> Crate"); the appraiser at your base opens them.
--- Each vault has one item per rarity (Common..Mythic). Income = BaseIncome * Rarity.mult * mutation.
+-- The zones along Rich Street, ordered by distance from home: farther = richer, faster guard,
+-- higher Speed requirement (about x6-10 per zone, like the genre). Every zone has ONE guard that
+-- sleeps beside the crates and wakes when someone steals one. The loot is crates
+-- ("<zone> Crate"); the appraiser at your base opens them.
+-- Each zone has one item per rarity (Common..Mythic). Income = baseIncome * Rarity.mult * mutation.
 
 export type Item = {
 	id: string,
@@ -15,14 +17,15 @@ export type Vault = {
 	id: string,
 	name: string,
 	emoji: string,
-	color: { number }, -- walls
-	trim: { number }, -- roof, pillars, sign
-	baseIncome: number, -- $/s for a Common item from this vault
-	guards: number,
+	color: { number }, -- the zone's main color (walls)
+	trim: { number }, -- its accent (gate, trim, name banner)
+	tint: { number }, -- the light tint while you're in the zone (each zone has its own mood)
+	baseIncome: number, -- $/s for a Common item from this zone
+	speedRequired: number, -- Speed (treadmill points) to pass the zone's gate
+	guard: string, -- "dog" | "butler" | "security" | "robot" | "captain" | "croupier" | "billionaire" | "ai"
+	guardName: string,
 	guardSpeed: number,
-	aggro: number, -- studs from the vault center where guards notice a carrier
-	leash: number, -- guards give up beyond this distance from home
-	guardian: string?, -- a creature that guards the crates too ("trex"), counted in `guards`
+	guardScale: number, -- guards get bigger (and scarier) farther out
 	items: { Item }, -- index = rarity order (1 Common .. 6 Mythic)
 }
 
@@ -32,164 +35,179 @@ end
 
 local Vaults: { Vault } = {
 	{
-		id = "Grandpa",
-		name = "Grandpa",
-		emoji = "👴",
-		color = { 120, 190, 90 }, -- the village: green brick houses on a grass street
-		trim = { 90, 60, 40 },
+		id = "Suburbs",
+		name = "Suburbs",
+		emoji = "🏡",
+		color = { 120, 190, 90 }, -- green lawns, villas
+		trim = { 255, 255, 255 },
+		tint = { 255, 255, 245 },
 		baseIncome = 5,
-		guards = 1,
+		speedRequired = 0,
+		guard = "dog",
+		guardName = "Guard Dog",
 		guardSpeed = 12,
-		aggro = 45,
-		leash = 110,
+		guardScale = 1,
 		items = {
 			item("Wrench", "Rusty Wrench", "🔧", "bar", { 140, 90, 60 }),
 			item("Radio", "Old Radio", "📻", "box", { 120, 80, 50 }),
-			item("Clock", "Antique Clock", "🕰️", "tall", { 170, 120, 70 }),
-			item("Dentures", "Golden Dentures", "🦷", "orb", { 255, 220, 120 }),
+			item("GardenGnome", "Garden Gnome", "🧙", "tall", { 220, 60, 60 }),
+			item("LawnMower", "Golden Lawn Mower", "🚜", "box", { 255, 200, 60 }),
 			item("CarKeys", "Vintage Car Keys", "🔑", "gem", { 230, 190, 60 }),
-			item("GoldWatch", "Grandpa's Gold Watch", "⌚", "orb", { 255, 200, 40 }),
+			item("GoldWatch", "Gold Watch", "⌚", "orb", { 255, 200, 40 }),
 		},
 	},
 	{
-		id = "Jeweler",
-		name = "Jeweler",
-		emoji = "💎",
-		color = { 150, 152, 160 }, -- the gray street
-		trim = { 120, 220, 255 },
+		id = "PoolVillas",
+		name = "Pool Villas",
+		emoji = "🏊",
+		color = { 240, 248, 250 }, -- white villas, turquoise water
+		trim = { 40, 200, 210 },
+		tint = { 225, 250, 255 },
 		baseIncome = 35,
-		guards = 1,
+		speedRequired = 35,
+		guard = "butler",
+		guardName = "The Butler",
 		guardSpeed = 22,
-		aggro = 50,
-		leash = 120,
+		guardScale = 1.1,
 		items = {
-			item("SilverRing", "Silver Ring", "💍", "orb", { 210, 210, 220 }),
-			item("PearlEarrings", "Pearl Earrings", "🦪", "orb", { 250, 245, 235 }),
-			item("RubyBrooch", "Ruby Brooch", "♦️", "gem", { 220, 30, 60 }),
-			item("EmeraldNecklace", "Emerald Necklace", "📿", "gem", { 40, 200, 110 }),
-			item("SapphireCrown", "Sapphire Tiara", "👑", "tall", { 60, 110, 255 }),
-			item("HopeDiamond", "Giant Blue Diamond", "💎", "gem", { 120, 220, 255 }),
+			item("BeachBall", "Beach Ball", "🏐", "orb", { 255, 120, 120 }),
+			item("Flamingo", "Flamingo Float", "🦩", "egg", { 255, 130, 190 }),
+			item("SilverTray", "Silver Tray", "🍽️", "frame", { 210, 210, 220 }),
+			item("Champagne", "Champagne Tower", "🍾", "tall", { 240, 230, 160 }),
+			item("PoolCrown", "Diamond Pool Float", "💎", "gem", { 120, 230, 255 }),
+			item("GoldDuck", "Gold Rubber Duck", "🦆", "egg", { 255, 215, 0 }),
 		},
 	},
 	{
-		id = "Archeologist",
-		name = "Archeologist",
-		emoji = "🏺",
-		color = { 225, 196, 120 }, -- sandstone
-		trim = { 140, 100, 50 },
+		id = "Mansion",
+		name = "Mansion",
+		emoji = "🏰",
+		color = { 150, 96, 56 }, -- warm wood, gold
+		trim = { 255, 196, 60 },
+		tint = { 255, 236, 205 },
 		baseIncome = 245,
-		guards = 2,
-		guardian = "trex", -- a big green T-rex lies by the crates and chases thieves
+		speedRequired = 250,
+		guard = "security",
+		guardName = "Security",
 		guardSpeed = 34,
-		aggro = 55,
-		leash = 130,
+		guardScale = 1.15,
 		items = {
-			item("ClayPot", "Clay Pot", "🏺", "tall", { 200, 120, 70 }),
-			item("Trowel", "Old Trowel", "🪏", "bar", { 160, 160, 170 }),
-			item("Fossil", "Dino Fossil", "🦴", "bar", { 235, 225, 200 }),
-			item("ScarabAmulet", "Scarab Amulet", "🪲", "gem", { 40, 180, 160 }),
-			item("PharaohMask", "Pharaoh Mask", "🎭", "gem", { 255, 190, 40 }),
-			item("TrexEgg", "T-Rex Egg", "🥚", "egg", { 200, 140, 70 }),
+			item("Candlestick", "Silver Candlestick", "🕯️", "tall", { 220, 220, 230 }),
+			item("Vase", "Antique Vase", "🏺", "tall", { 200, 120, 70 }),
+			item("Painting", "Mona Llama Painting", "🖼️", "frame", { 160, 120, 60 }),
+			item("Chandelier", "Crystal Chandelier", "💡", "orb", { 200, 240, 255 }),
+			item("Statue", "Marble Bust", "🗿", "tall", { 235, 232, 222 }),
+			item("RoyalCrown", "Royal Crown", "👑", "gem", { 255, 200, 40 }),
 		},
 	},
 	{
-		id = "Mafia",
-		name = "Mafia Boss",
-		emoji = "🕴️",
-		color = { 52, 62, 76 }, -- dark warehouse street
-		trim = { 230, 70, 80 },
+		id = "BankVault",
+		name = "Bank Vault",
+		emoji = "🏦",
+		color = { 150, 156, 166 }, -- steel, green lasers
+		trim = { 70, 255, 120 },
+		tint = { 225, 255, 230 },
 		baseIncome = 1700,
-		guards = 2,
+		speedRequired = 1500,
+		guard = "robot",
+		guardName = "Robo-Guard",
 		guardSpeed = 48,
-		aggro = 60,
-		leash = 140,
+		guardScale = 1.25,
 		items = {
 			item("CashStack", "Cash Stack", "💵", "box", { 90, 200, 90 }),
-			item("Fedora", "Boss Fedora", "🎩", "tall", { 30, 30, 35 }),
-			item("Briefcase", "Money Briefcase", "💼", "box", { 110, 70, 40 }),
-			item("GoldenGun", "Golden Tommy Gun", "🔫", "bar", { 255, 200, 40 }),
-			item("BossRing", "Boss Signet Ring", "💍", "orb", { 255, 210, 60 }),
-			item("VaultSafe", "Diamond Safe", "🔐", "box", { 150, 230, 255 }),
-		},
-	},
-	{
-		id = "Celebrity",
-		name = "Celebrity",
-		emoji = "🌟",
-		color = { 240, 200, 80 }, -- yellow checker walls, pink carpets
-		trim = { 255, 110, 190 },
-		baseIncome = 12000,
-		guards = 2,
-		guardSpeed = 64,
-		aggro = 65,
-		leash = 150,
-		items = {
-			item("Sunglasses", "Star Sunglasses", "🕶️", "box", { 30, 30, 35 }),
-			item("RingLight", "Ring Light", "💡", "orb", { 255, 255, 230 }),
-			item("ViralPhone", "Viral Phone", "📱", "frame", { 40, 40, 50 }),
-			item("GoldMic", "Golden Microphone", "🎤", "tall", { 255, 200, 40 }),
-			item("PlayButton", "Diamond Play Button", "▶️", "frame", { 180, 240, 255 }),
-			item("StarTrophy", "Walk of Fame Star", "⭐", "gem", { 255, 120, 200 }),
-		},
-	},
-	{
-		id = "Pirate",
-		name = "Pirate Captain",
-		emoji = "☠️",
-		color = { 236, 214, 150 }, -- the beach
-		trim = { 30, 30, 35 },
-		baseIncome = 84000,
-		guards = 3,
-		guardSpeed = 82,
-		aggro = 70,
-		leash = 160,
-		items = {
-			item("RumBarrel", "Rum Barrel", "🛢️", "tall", { 120, 70, 40 }),
-			item("Compass", "Silver Compass", "🧭", "orb", { 200, 200, 210 }),
-			item("TreasureMap", "Treasure Map", "🗺️", "frame", { 230, 200, 140 }),
-			item("Pearls", "Pearl Necklace", "📿", "orb", { 250, 245, 235 }),
-			item("Cutlass", "Ruby Cutlass", "🗡️", "bar", { 220, 30, 60 }),
-			item("KrakenEgg", "Kraken Egg", "🥚", "egg", { 60, 200, 170 }),
-		},
-	},
-	{
-		id = "Museum",
-		name = "Museum Owner",
-		emoji = "🏛️",
-		color = { 110, 120, 60 }, -- green gallery walls, beige checker floor
-		trim = { 230, 228, 180 },
-		baseIncome = 588000,
-		guards = 3,
-		guardSpeed = 98,
-		aggro = 75,
-		leash = 170,
-		items = {
-			item("Vase", "Ancient Vase", "🏺", "tall", { 200, 120, 70 }),
-			item("Painting", "Mona Llama Painting", "🖼️", "frame", { 160, 120, 60 }),
-			item("Statue", "Marble Bust", "🗿", "tall", { 235, 232, 222 }),
-			item("Sword", "Sword of Kings", "🗡️", "bar", { 220, 220, 230 }),
-			item("CrystalSkull", "Crystal Skull", "💀", "orb", { 180, 240, 255 }),
-			item("Meteorite", "Living Meteorite", "☄️", "egg", { 255, 110, 40 }),
-		},
-	},
-	{
-		id = "GoldTycoon",
-		name = "Gold Tycoon",
-		emoji = "🏆",
-		color = { 30, 70, 80 }, -- dark teal walls with gold gears
-		trim = { 255, 200, 40 },
-		baseIncome = 4100000,
-		guards = 4,
-		guardSpeed = 116,
-		aggro = 85,
-		leash = 180,
-		items = {
-			item("CoinStack", "Gold Coin Stack", "🪙", "tall", { 255, 200, 40 }),
+			item("CoinBag", "Coin Bag", "💰", "orb", { 200, 160, 80 }),
 			item("GoldBar", "Gold Bar", "🧈", "bar", { 255, 205, 50 }),
-			item("GoldToilet", "Golden Toilet", "🚽", "box", { 255, 210, 60 }),
-			item("GoldenGoose", "Golden Goose", "🪿", "egg", { 255, 230, 120 }),
-			item("MidasHand", "Midas Hand", "✋", "gem", { 255, 180, 0 }),
+			item("DepositBox", "Deposit Box", "🗃️", "box", { 120, 130, 140 }),
+			item("DiamondCase", "Diamond Briefcase", "💼", "box", { 150, 230, 255 }),
+			item("VaultKey", "Master Vault Key", "🗝️", "gem", { 255, 220, 120 }),
+		},
+	},
+	{
+		id = "YachtHarbor",
+		name = "Yacht Harbor",
+		emoji = "🛥️",
+		color = { 30, 50, 110 }, -- navy blue, sunset
+		trim = { 255, 150, 70 },
+		tint = { 255, 215, 185 },
+		baseIncome = 12000,
+		speedRequired = 12000,
+		guard = "captain",
+		guardName = "The Captain",
+		guardSpeed = 64,
+		guardScale = 1.35,
+		items = {
+			item("CaptainHat", "Captain's Hat", "🧢", "box", { 255, 255, 255 }),
+			item("LifeRing", "Life Ring", "🛟", "orb", { 255, 80, 60 }),
+			item("Compass", "Silver Compass", "🧭", "orb", { 200, 200, 210 }),
+			item("ShipWheel", "Golden Ship Wheel", "☸️", "orb", { 255, 200, 40 }),
+			item("JetSki", "Jet Ski", "🚤", "box", { 40, 120, 220 }),
+			item("BlackPearl", "Black Pearl", "⚫", "orb", { 40, 30, 60 }),
+		},
+	},
+	{
+		id = "Casino",
+		name = "Casino",
+		emoji = "🎰",
+		color = { 30, 20, 26 }, -- black + neon red
+		trim = { 255, 40, 70 },
+		tint = { 255, 205, 215 },
+		baseIncome = 84000,
+		speedRequired = 120000,
+		guard = "croupier",
+		guardName = "Croupier Boss",
+		guardSpeed = 82,
+		guardScale = 1.45,
+		items = {
+			item("PokerChips", "Poker Chips", "🪙", "tall", { 220, 40, 50 }),
+			item("GoldenDice", "Golden Dice", "🎲", "box", { 255, 210, 60 }),
+			item("SlotMachine", "Slot Machine", "🎰", "box", { 200, 30, 40 }),
+			item("Roulette", "Roulette Wheel", "🎡", "orb", { 30, 140, 60 }),
+			item("RoyalFlush", "Royal Flush", "🃏", "frame", { 255, 255, 255 }),
+			item("JackpotEgg", "Jackpot Egg", "🥚", "egg", { 255, 60, 120 }),
+		},
+	},
+	{
+		id = "PrivateIsland",
+		name = "Private Island",
+		emoji = "🏝️",
+		color = { 240, 214, 150 }, -- tropical sand, gold
+		trim = { 255, 200, 40 },
+		tint = { 255, 245, 210 },
+		baseIncome = 588000,
+		speedRequired = 1e6,
+		guard = "billionaire",
+		guardName = "The Billionaire",
+		guardSpeed = 98,
+		guardScale = 1.55,
+		items = {
+			item("Coconut", "Golden Coconut", "🥥", "orb", { 160, 110, 60 }),
+			item("TikiMask", "Tiki Mask", "🗿", "tall", { 170, 100, 50 }),
+			item("GoldStatue", "Gold Statue", "🏆", "tall", { 255, 200, 40 }),
+			item("IslandDeed", "Island Deed", "📜", "frame", { 230, 210, 160 }),
+			item("GoldLambo", "Golden Supercar", "🏎️", "box", { 255, 200, 40 }),
 			item("BillionEgg", "Billion Dollar Egg", "🥚", "egg", { 255, 230, 60 }),
+		},
+	},
+	{
+		id = "SpaceVault",
+		name = "Space Vault",
+		emoji = "🚀",
+		color = { 40, 22, 70 }, -- purple, stars
+		trim = { 190, 110, 255 },
+		tint = { 225, 210, 255 },
+		baseIncome = 4100000,
+		speedRequired = 10e6,
+		guard = "ai",
+		guardName = "A.I. Sentinel",
+		guardSpeed = 116,
+		guardScale = 1.7,
+		items = {
+			item("MoonRock", "Moon Rock", "🌑", "orb", { 170, 170, 180 }),
+			item("AstroHelmet", "Astro Helmet", "👨‍🚀", "orb", { 240, 240, 250 }),
+			item("Rocket", "Mini Rocket", "🚀", "tall", { 230, 230, 240 }),
+			item("QuantumChip", "Quantum Chip", "💾", "gem", { 0, 255, 200 }),
+			item("Meteorite", "Living Meteorite", "☄️", "egg", { 255, 110, 40 }),
+			item("GalaxyGem", "Galaxy Gem", "🌌", "gem", { 170, 80, 255 }),
 		},
 	},
 }

@@ -602,10 +602,14 @@ function Items.start()
 		BackgroundTransparency = 1,
 		Parent = gui,
 	})
-	Remotes.get(Remotes.Names.Revealed).OnClientEvent
-		:Connect(function(name: string, rarity: string, mut: string, income: number, where: string)
+	Remotes.get(Remotes.Names.Revealed).OnClientEvent:Connect(
+		function(name: string, rarity: string, mut: string, income: number, where: string, bonus: number?)
 			reveal(layer, name, rarity, mut, income, where)
-		end)
+			if bonus and bonus > 0 then
+				HUD.toast("💰 Opening bonus +" .. Format.cash(bonus), "cash")
+			end
+		end
+	)
 end
 
 return Items

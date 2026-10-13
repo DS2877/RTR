@@ -1,5 +1,5 @@
 --!strict
--- Stand on your own treadmill to earn speed points. Standing still is enough (AFK-friendly on a
+-- Stand on your own treadmill to earn speed points (x2 with the pass, x your trail's multiplier). Standing still is enough (AFK-friendly on a
 -- phone): your character plays a run animation and the belt stripes scroll (both client side).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Progression = require(Shared.Progression)
 local Remotes = require(Shared.Remotes)
+local Cosmetics = require(Shared.Config.Cosmetics)
 
 local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
@@ -33,8 +34,10 @@ function Treadmill.start(_worldInfo: any)
 			for player, s in State.all() do
 				local r = State.root(player)
 				if s.base and r and not s.carry and Treadmill.onBelt(s.base, r.Position) then
-					local rate = Progression.treadmillRate(s.data.Treadmill)
-						* (if s.passes.DoubleSpeed then 2 else 1)
+					-- 2x Treadmill pass and the equipped trail multiply your Speed (like the genre)
+					local mult = (if s.passes.DoubleSpeed then 2 else 1) * Cosmetics.trailMult(s.data.Trail)
+					player:SetAttribute("SpeedMult", mult)
+					local rate = Progression.treadmillRate(s.data.Treadmill) * mult
 					local gain = rate * dt
 					s.data.Speed += gain
 					buffered[player] = (buffered[player] or 0) + gain

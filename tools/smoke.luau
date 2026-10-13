@@ -6,6 +6,7 @@
 -- faces, item/crown models, prompts, treadmill, guards' humanoid setup and spawn positions.
 -- Returns { passed, failed, failures } (CI fails the build when failed > 0).
 
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -66,6 +67,7 @@ local Social = req(Services, "Social")
 local Crates = req(Services, "Crates")
 local Inventory = req(Services, "Inventory")
 local DayNight = req(Services, "DayNight")
+local Traps = req(Services, "Traps")
 local CrateModel = req(Server:WaitForChild("Util"), "CrateModel")
 local Rarity = req(Shared:WaitForChild("Config"), "Rarity")
 
@@ -107,6 +109,7 @@ step("Social.start", Social.start)
 step("Crates.start", Crates.start)
 step("Inventory.start", Inventory.start)
 step("DayNight.start", DayNight.start)
+step("Traps.start", Traps.start)
 
 -- ===== helpers =====
 local function faceNormal(part: BasePart, face: Enum.NormalId): Vector3
@@ -221,8 +224,7 @@ for _, base in world.bases do
 		end
 	end
 	-- everything inside, nothing on top of a pedestal
-	check(id .. " treadmill stands out on the plaza", not Bases.contains(base, belt.Position))
-	for _, part in { base.collectPad, plot } do
+	for _, part in { base.collectPad, plot, tread, belt } do
 		check(id .. " " .. part.Name .. " inside base", Bases.contains(base, part.Position))
 		for i, ped in base.pedestals do
 			if overlaps(origin, ped, part) then
@@ -246,13 +248,19 @@ for i = 2, #world.bases do
 end
 
 -- ===== vaults =====
-local guardsWanted = 0
+local guardsWanted = #Vaults -- one guard per zone
 for _, vault in world.vaults do
 	local def = Vaults[vault.index]
-	guardsWanted += def.guards
 	local id = "vault " .. def.id
 	check(id .. " starts with a green line", vault.model:FindFirstChild("ZoneLine") ~= nil)
 	check(id .. " 6 pedestals", #vault.pedestals == 6, #vault.pedestals)
+	local gate = vault.model:FindFirstChild("Gate") :: BasePart?
+	check(
+		id .. " has a speed gate with its requirement",
+		gate ~= nil
+			and gate:GetAttribute("SpeedRequired") == def.speedRequired
+			and CollectionService:HasTag(gate, "SpeedGate")
+	)
 	local loot = 0
 	for _, m in vault.model:GetChildren() do
 		if m:IsA("Model") and m:GetAttribute("Rarity") and m:GetAttribute("Vault") then
@@ -268,6 +276,7 @@ for _, vault in world.vaults do
 	end
 	check(id .. " 6 crates spawned", loot == 6, loot)
 end
+check("restock clock is running", (workspace:GetAttribute("RestockAt") or 0) > workspace:GetServerTimeNow())
 
 -- ===== plaza boards =====
 local root = workspace:FindFirstChild("World") :: Folder
@@ -309,35 +318,28 @@ if guardFolder then
 		check("guard root unanchored", r ~= nil and not r.Anchored)
 		if g:GetAttribute("Rig") == "R15" then
 			check(
-				"R15 chaser has a body (+ shades on bodyguards)",
-				g:FindFirstChild("LeftFoot") ~= nil
-					and (g:GetAttribute("Owner") or g:FindFirstChild("Shades") ~= nil)
+				"R15 guard has a body + shades",
+				g:FindFirstChild("LeftFoot") ~= nil and g:FindFirstChild("Shades") ~= nil
 			)
-		elseif g:GetAttribute("Rig") == "Creature" then
-			check(
-				"guardian creature has a body",
-				g:FindFirstChild("Head") ~= nil and g:FindFirstChild("Leg") ~= nil
-			)
-		elseif h and r then
-			local legL = g:FindFirstChild("LegL") :: BasePart
-			local feet = legL.Position.Y - legL.Size.Y / 2
-			local rootBottom = r.Position.Y - r.Size.Y / 2
-			check(
-				"guard legs reach HipHeight",
-				math.abs((rootBottom - feet) - h.HipHeight) < 0.3,
-				rootBottom - feet
-			)
+		else
+			check("creature guard has a body", g:GetAttribute("Rig") == "Creature" and #g:GetChildren() >= 6)
 		end
 	end
 end
-check("guard count", guardCount == guardsWanted, guardCount)
-local trex = 0
+check("guard count (one per zone)", guardCount == guardsWanted, guardCount)
+local zonesGuarded: { [number]: boolean } = {}
 for _, g in Guards.all() do
-	if g.model:GetAttribute("Rig") == "Creature" then
-		trex += 1
-	end
+	zonesGuarded[g.vault] = true
+	check("guard " .. g.vault .. " starts asleep by the crates", g.mode == "sleep")
+	check(
+		"guard " .. g.vault .. " fits its zone",
+		g.model:GetAttribute("Kind") == Vaults[g.vault].guard,
+		g.model:GetAttribute("Kind")
+	)
 end
-check("the archeologist's T-rex guards the crates", trex == 1, trex)
+for i in Vaults do
+	check("zone " .. i .. " has its guard", zonesGuarded[i] == true)
+end
 local firstGuard = guardFolder and guardFolder:GetChildren()[1]
 print("guards are " .. tostring(firstGuard and firstGuard:GetAttribute("Rig") or "part models"))
 
@@ -428,16 +430,15 @@ for i, vault in world.vaults do
 			math.abs((vault.origin.Position.X - prev.origin.Position.X) - World.VaultSpacing) < 0.01
 		)
 	end
-	local owner = false
-	for _, g in Guards.all() do
-		if g.vault == vault.index and g.owner then
-			owner = true
-		end
-	end
-	check(id .. " has its rich person (chasing owner)", owner)
 	local blocked = nil
 	for _, d in vault.model:GetDescendants() do
-		if d:IsA("BasePart") and d.CanCollide and d.Name ~= "Floor" and d.Name ~= "Path" then
+		if
+			d:IsA("BasePart")
+			and d.CanCollide
+			and d.Name ~= "Floor"
+			and d.Name ~= "Path"
+			and d.Name ~= "Gate"
+		then
 			local l = vault.origin:PointToObjectSpace(d.Position)
 			-- the part's real half-extent across the corridor and downward (rotation aware)
 			local function halfAlong(axis: Vector3): number
@@ -466,7 +467,7 @@ for i, vault in world.vaults do
 		vault.model:FindFirstChild("CrateRug") ~= nil and vault.model:FindFirstChild("SpeedSign") ~= nil
 	)
 	check(
-		id .. " owner's station + street props",
+		id .. " themed station + street props",
 		vault.model:FindFirstChild("Station") ~= nil and vault.model:FindFirstChild("Scatter") ~= nil
 	)
 end
@@ -828,7 +829,9 @@ if sim and A and B then
 		for _ in a.data.Slots do
 			before += 1
 		end
+		local cash = a.data.Cash
 		assert(Crates.appraise(A, 1), "ready crate didn't open")
+		assert(a.data.Cash > cash, "no opening bonus")
 		local after = 0
 		for _ in a.data.Slots do
 			after += 1
@@ -931,6 +934,73 @@ if sim and A and B then
 		Events.stop()
 	end)
 
+	step("speed gate: too slow for a far zone -> can't steal there", function()
+		local speed = a.data.Speed
+		a.data.Speed = 0
+		local ped = world.vaults[2].pedestals[1]
+		moveTo(A, ped.Position + Vector3.new(0, 3, -6))
+		for _ = 1, 30 do
+			if VaultLoot.lootAt(2, 1) then
+				break
+			end
+			task.wait(0.5)
+		end
+		local ok = VaultLoot.stealAt(2, 1, A)
+		a.data.Speed = speed
+		assert(not ok and a.carry == nil, "stole without the Speed")
+		assert(got(A, Remotes.Names.Notice, "Speed for this zone"), "no speed notice")
+	end)
+
+	step("traps: 3 per carry, street only; a guard / player who steps in is stuck", function()
+		assert(stealFromVault(A), "steal failed")
+		local guard = nil
+		for _, g in Guards.all() do
+			if g.vault == 1 then
+				guard = g
+			end
+		end
+		local spot = vault1.origin * CFrame.new(0, 3, -20)
+		moveTo(A, Vector3.new(World.StreetStartX - 20, 3, 0))
+		assert(Traps.place(A) == "street only", "a trap in the plaza")
+		moveTo(A, spot.Position)
+		assert(Traps.place(A) == nil, "first trap failed")
+		assert(A.attrs.TrapsLeft == Economy.Traps.PerCarry - 1, "TrapsLeft " .. tostring(A.attrs.TrapsLeft))
+		assert(Traps.place(A) == "too close", "two traps on one spot")
+		moveTo(A, (spot * CFrame.new(8, 0, 0)).Position)
+		assert(Traps.place(A) == nil, "second trap failed")
+		moveTo(A, (spot * CFrame.new(-8, 0, 0)).Position)
+		assert(Traps.place(A) == nil, "third trap failed")
+		moveTo(A, (spot * CFrame.new(0, 0, -8)).Position)
+		assert(Traps.place(A) == "none left", "a fourth trap")
+		local list = Traps.all()
+		assert(#list == 3 and workspace:FindFirstChild("Traps"), "traps " .. #list)
+		-- the guard runs into the first one
+		local first = list[1]
+		guard.model:PivotTo(CFrame.new(first.pos + Vector3.new(0, 3, 0)))
+		Traps.check()
+		assert(guard.stunnedUntil > os.clock() + 5, "guard not stuck")
+		assert(#Traps.all() == 2, "the trap didn't snap")
+		-- Bob runs into the second
+		local second = Traps.all()[1]
+		moveTo(B, second.pos + Vector3.new(0, 3, 0))
+		Traps.check()
+		assert(b.stunUntil > os.clock() + 5, "Bob not stuck")
+		assert(B.Character:FindFirstChildOfClass("Humanoid").WalkSpeed == 0, "Bob can still run")
+		assert(got(B, Remotes.Names.Notice, "trap"), "Bob not told")
+		-- the owner never springs their own trap
+		local third = Traps.all()[1]
+		moveTo(A, third.pos + Vector3.new(0, 3, 0))
+		Traps.check()
+		assert(a.stunUntil < os.clock() and #Traps.all() == 1, "Alice sprang her own trap")
+		-- clean up
+		Carry.drop(A)
+		Traps.onLeaving(A)
+		b.stunUntil = 0
+		guard.stunnedUntil = 0
+		moveTo(B, Vector3.new(0, 420, 0))
+		assert(#Traps.all() == 0, "traps left behind")
+	end)
+
 	step("CASH FRENZY doubles income; GOLD RUSH restocks the vaults", function()
 		local base = Bases.incomePerSecond(A)
 		Events.start("CashFrenzy", 30)
@@ -993,6 +1063,20 @@ if sim and A and B then
 		assert(b.data.Cash >= cash + bounty, "bounty not paid: " .. (b.data.Cash - cash) .. " < " .. bounty)
 		assert(b.data.Stats.RobbedRichest == robbed + 1, "robbery not counted")
 		assert(announced("ROBBED THE RICHEST"), "robbery not announced")
+		-- seen from everywhere: a gold pillar over the player + a gold $/s sign on the base
+		Richest.evaluate()
+		if a.isRichest then
+			assert(A.Character.HumanoidRootPart:FindFirstChild("RichPillar"), "no light pillar")
+			local sign = a.base.signLabel.Text
+			assert(string.find(sign, "/s", 1, true), "base sign " .. sign)
+			-- defense: the richest can trap their own base (they can't lock it)
+			local spot = (a.base.origin * CFrame.new(12, 3, -20)).Position
+			assert(Bases.contains(a.base, spot), "defense spot outside the base")
+			moveTo(A, spot)
+			assert(Traps.place(A) == nil, "no defense trap")
+			assert(Traps.all()[1].defense == true, "not a defense trap")
+			Traps.onLeaving(A)
+		end
 	end)
 
 	step("lock: intruders are teleported out and kept out", function()

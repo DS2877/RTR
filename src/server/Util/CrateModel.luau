@@ -56,58 +56,58 @@ local LOOKS: { [string]: Look } = {
 	},
 }
 
--- Each rich person's crates look their own (like the genre: the archeologist's wooden dig crate
--- with a pickaxe, the mafia boss's navy safe with a gold wheel...). The rarity shows in the
--- straps/trim color and the glow; Mythic lids glow.
+-- Each zone's crates look their own (a wooden box in the suburbs, a steel safe with a wheel in the
+-- bank vault, a gold-lidded chest on the island...). The rarity shows in the straps/trim color
+-- and the glow; Mythic lids glow.
 type Theme = { body: Color3, lid: Color3, emblem: string, mark: Color3 }
 local THEMES: { [string]: Theme } = {
-	Grandpa = {
+	Suburbs = {
 		body = Color3.fromRGB(170, 116, 68),
 		lid = Color3.fromRGB(146, 96, 54),
 		emblem = "plank",
 		mark = Color3.fromRGB(110, 72, 42),
 	},
-	Jeweler = {
-		body = Color3.fromRGB(40, 40, 52),
-		lid = Color3.fromRGB(64, 64, 80),
-		emblem = "gem",
-		mark = Color3.fromRGB(120, 220, 255),
-	},
-	Archeologist = {
-		body = Color3.fromRGB(176, 118, 66),
-		lid = Color3.fromRGB(160, 104, 56),
-		emblem = "pickaxe",
-		mark = Color3.fromRGB(60, 50, 45),
-	},
-	Mafia = {
-		body = Color3.fromRGB(40, 52, 92),
-		lid = Color3.fromRGB(30, 40, 72),
-		emblem = "wheel",
-		mark = Color3.fromRGB(255, 196, 40),
-	},
-	Celebrity = {
-		body = Color3.fromRGB(48, 40, 112),
-		lid = Color3.fromRGB(70, 52, 140),
+	PoolVillas = {
+		body = Color3.fromRGB(245, 245, 250),
+		lid = Color3.fromRGB(40, 200, 210),
 		emblem = "star",
-		mark = Color3.fromRGB(255, 120, 190),
+		mark = Color3.fromRGB(40, 200, 210),
 	},
-	Pirate = {
-		body = Color3.fromRGB(122, 76, 40),
-		lid = Color3.fromRGB(100, 60, 30),
+	Mansion = {
+		body = Color3.fromRGB(110, 60, 36),
+		lid = Color3.fromRGB(130, 74, 44),
+		emblem = "column",
+		mark = Color3.fromRGB(255, 200, 60),
+	},
+	BankVault = {
+		body = Color3.fromRGB(150, 156, 166),
+		lid = Color3.fromRGB(120, 126, 136),
+		emblem = "wheel",
+		mark = Color3.fromRGB(70, 255, 120),
+	},
+	YachtHarbor = {
+		body = Color3.fromRGB(30, 50, 110),
+		lid = Color3.fromRGB(250, 250, 255),
+		emblem = "wheel",
+		mark = Color3.fromRGB(255, 200, 40),
+	},
+	Casino = {
+		body = Color3.fromRGB(30, 20, 26),
+		lid = Color3.fromRGB(170, 20, 35),
+		emblem = "gem",
+		mark = Color3.fromRGB(255, 40, 70),
+	},
+	PrivateIsland = {
+		body = Color3.fromRGB(160, 110, 60),
+		lid = Color3.fromRGB(255, 200, 40),
 		emblem = "skull",
 		mark = Color3.fromRGB(245, 245, 240),
 	},
-	Museum = {
-		body = Color3.fromRGB(64, 42, 30),
-		lid = Color3.fromRGB(84, 58, 40),
-		emblem = "column",
-		mark = Color3.fromRGB(235, 232, 222),
-	},
-	GoldTycoon = {
-		body = Color3.fromRGB(255, 194, 40),
-		lid = Color3.fromRGB(240, 178, 30),
+	SpaceVault = {
+		body = Color3.fromRGB(40, 22, 70),
+		lid = Color3.fromRGB(70, 40, 120),
 		emblem = "coin",
-		mark = Color3.fromRGB(200, 140, 20),
+		mark = Color3.fromRGB(190, 110, 255),
 	},
 }
 

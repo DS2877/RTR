@@ -7,6 +7,7 @@
 -- walls, a green line where each starts, crates piled up around the owner). The shops (SELL,
 -- fuse machine, trails), the WANTED board and the reign board stand by the street's mouth.
 
+local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -14,7 +15,6 @@ local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
 local Vaults = require(Shared.Config.Vaults)
 local Cosmetics = require(Shared.Config.Cosmetics)
-local Progression = require(Shared.Progression)
 local Format = require(Shared.Format)
 local WorldDecor = require(script.Parent.WorldDecor)
 local Rig = require(script.Parent.Parent.Util.Rig)
@@ -25,9 +25,9 @@ local WorldBuilder = {}
 local FLOOR = 0.4 -- top of base/zone floors
 local BARRIER_HEIGHT = 50 -- invisible wall above the low base fences (no jumping in)
 local FACADE = 24 -- the invisible back wall behind the stage (the visible one grows per level)
--- the treadmill stands OUT on the plaza grass, in front of the base left of the entrance
-local BELT_X = -26
-local BELT_DEPTH = -18
+-- the treadmill stands in the front-left of your yard: you train at home, where you can guard it
+local BELT_X = -32
+local BELT_DEPTH = 22
 
 -- palette (the genre's palace look)
 local NAVY = Color3.fromRGB(38, 40, 92)
@@ -44,81 +44,80 @@ type ZoneStyle = {
 	patch: { number },
 	wall: { number },
 	wall2: { number },
-	walls: string, -- houses | awnings | glyphs | posters | banners | planks | paintings | gears
+	walls: string, -- houses | awnings | paintings | steel | planks | neon | bamboo | stars
 	rug: { number }, -- the carpet the owner's crates stand on
 	border: { number }?, -- a colored strip along both walls (nil = none)
 }
 local ZONE_STYLE: { [string]: ZoneStyle } = {
-	Grandpa = {
+	Suburbs = {
 		floor = { 104, 196, 66 },
 		patch = { 86, 176, 54 },
-		wall = { 120, 186, 90 },
-		wall2 = { 98, 164, 72 },
+		wall = { 236, 226, 200 },
+		wall2 = { 214, 200, 170 },
 		walls = "houses",
 		rug = { 176, 60, 56 },
 		border = { 150, 110, 70 },
 	},
-	Jeweler = {
-		floor = { 204, 206, 212 },
-		patch = { 176, 178, 186 },
-		wall = { 150, 152, 160 },
-		wall2 = { 128, 130, 140 },
+	PoolVillas = {
+		floor = { 245, 245, 240 },
+		patch = { 120, 220, 230 },
+		wall = { 250, 250, 252 },
+		wall2 = { 225, 240, 242 },
 		walls = "awnings",
-		rug = { 36, 36, 46 },
-		border = { 120, 122, 132 },
+		rug = { 40, 200, 210 },
+		border = { 60, 200, 220 },
 	},
-	Archeologist = {
-		floor = { 238, 208, 132 },
-		patch = { 214, 184, 110 },
-		wall = { 206, 176, 104 },
-		wall2 = { 176, 146, 84 },
-		walls = "glyphs",
-		rug = { 150, 92, 52 },
-		border = { 120, 170, 80 },
-	},
-	Mafia = {
-		floor = { 72, 82, 98 },
-		patch = { 56, 64, 78 },
-		wall = { 46, 54, 66 },
-		wall2 = { 38, 44, 54 },
-		walls = "posters",
-		rug = { 130, 26, 36 },
-		border = { 230, 190, 40 },
-	},
-	Celebrity = {
-		floor = { 246, 242, 240 },
-		patch = { 255, 186, 206 },
-		wall = { 238, 204, 84 },
-		wall2 = { 218, 180, 62 },
-		walls = "banners",
-		rug = { 255, 140, 186 },
-		border = { 255, 160, 200 },
-	},
-	Pirate = {
-		floor = { 238, 214, 150 },
-		patch = { 214, 190, 126 },
-		wall = { 150, 112, 72 },
-		wall2 = { 126, 92, 56 },
-		walls = "planks",
-		rug = { 168, 120, 62 },
-	},
-	Museum = {
-		floor = { 234, 230, 182 },
-		patch = { 212, 206, 156 },
-		wall = { 112, 122, 62 },
-		wall2 = { 128, 98, 58 },
+	Mansion = {
+		floor = { 150, 100, 60 },
+		patch = { 130, 84, 48 },
+		wall = { 120, 74, 44 },
+		wall2 = { 100, 60, 36 },
 		walls = "paintings",
 		rug = { 150, 28, 40 },
-		border = { 196, 150, 70 },
+		border = { 255, 196, 60 },
 	},
-	GoldTycoon = {
-		floor = { 62, 68, 82 },
-		patch = { 255, 200, 40 },
-		wall = { 30, 72, 82 },
-		wall2 = { 24, 58, 66 },
-		walls = "gears",
+	BankVault = {
+		floor = { 130, 136, 146 },
+		patch = { 110, 116, 126 },
+		wall = { 150, 156, 166 },
+		wall2 = { 120, 126, 136 },
+		walls = "steel",
+		rug = { 40, 120, 60 },
+		border = { 70, 255, 120 },
+	},
+	YachtHarbor = {
+		floor = { 200, 170, 120 },
+		patch = { 180, 150, 100 },
+		wall = { 30, 50, 110 },
+		wall2 = { 24, 40, 90 },
+		walls = "planks",
+		rug = { 30, 50, 110 },
+	},
+	Casino = {
+		floor = { 40, 14, 20 },
+		patch = { 120, 20, 30 },
+		wall = { 30, 20, 26 },
+		wall2 = { 20, 14, 18 },
+		walls = "neon",
+		rug = { 150, 20, 35 },
+		border = { 255, 200, 40 },
+	},
+	PrivateIsland = {
+		floor = { 240, 214, 150 },
+		patch = { 214, 190, 126 },
+		wall = { 120, 190, 90 },
+		wall2 = { 100, 160, 70 },
+		walls = "bamboo",
 		rug = { 255, 200, 40 },
-		border = { 40, 44, 56 },
+	},
+	SpaceVault = {
+		floor = { 36, 24, 60 },
+		patch = { 70, 40, 120 },
+		wall = { 40, 22, 70 },
+		wall2 = { 28, 14, 50 },
+		walls = "stars",
+		rug = { 190, 110, 255 },
+		border = { 190, 110, 255 },
 	},
 }
 
@@ -147,7 +146,7 @@ export type VaultRecord = {
 	center: Vector3,
 	model: Model,
 	pedestals: { BasePart }, -- crate spots (floor plates)
-	guardSpawns: { CFrame }, -- [1] = the owner, among their crates
+	guardSpawns: { CFrame }, -- [1] = where the zone's guard sleeps, beside the crates
 }
 
 export type WorldInfo = {
@@ -540,8 +539,8 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 		end
 	end
 
-	-- the treadmill out on the plaza in front of the base (standing on it = training; its frame
-	-- is Palace decor that grows with the treadmill level)
+	-- the treadmill in the yard (standing on it = training; its frame is Palace decor that grows
+	-- with the treadmill level)
 	local belt = smooth(
 		model,
 		"Treadmill",
@@ -562,7 +561,7 @@ local function buildBase(parent: Instance, id: number, origin: CFrame): BaseReco
 
 	-- upgrade signs (wooden boards): far enough from the belt that the prompt never pops up there
 	local treadSign =
-		woodSign(model, "TreadSign", at(BELT_X - 13, FLOOR + 4.2, BELT_DEPTH + 2), "Upgrade Treadmill")
+		woodSign(model, "TreadSign", at(BELT_X + 15, FLOOR + 4.2, BELT_DEPTH - 6), "Upgrade Treadmill")
 	local plotSign = woodSign(model, "PlotSign", at(-20, FLOOR + 4.6, 6), "Upgrade Plot")
 
 	-- collect pad by the entrance (front right): gold rim, green glow
@@ -746,7 +745,7 @@ local function wallDressing(
 							"Awning",
 							Vector3.new(8, 0.6, 3),
 							at(x - side * 1.5, 12.5, depth) * faceIn * CFrame.Angles(math.rad(-15), 0, 0),
-							Color3.fromRGB(30, 30, 35)
+							trim
 						)
 					)
 					deco(
@@ -755,7 +754,7 @@ local function wallDressing(
 							"DiamondBanner",
 							Vector3.new(3, 5, 0.3),
 							at(x - side * 0.3, 24, depth + 8) * faceIn,
-							Color3.fromRGB(25, 25, 30)
+							trim
 						)
 					)
 					deco(
@@ -764,7 +763,7 @@ local function wallDressing(
 							"BannerGem",
 							Vector3.new(1.4, 1.4, 0.3),
 							at(x - side * 0.5, 24, depth + 8) * faceIn * CFrame.Angles(0, 0, math.rad(45)),
-							Color3.fromRGB(120, 220, 255)
+							Color3.new(1, 1, 1)
 						)
 					)
 				else
@@ -777,72 +776,6 @@ local function wallDressing(
 							Color3.fromRGB(150, 100, 60)
 						)
 					)
-				end
-			end
-		elseif kind == "posters" then
-			for depth = 12, L - 8, 22 do
-				deco(
-					brick(
-						model,
-						"Poster",
-						Vector3.new(7, 9, 0.3),
-						at(x, 11, depth) * faceIn,
-						Color3.fromRGB(235, 230, 220)
-					)
-				)
-				deco(
-					brick(
-						model,
-						"PosterInk",
-						Vector3.new(5, 0.8, 0.2),
-						at(x - side * 0.2, 13, depth) * faceIn,
-						Color3.fromRGB(200, 40, 50)
-					)
-				)
-				brick(
-					model,
-					"Camera",
-					Vector3.new(1.2, 1.2, 2.4),
-					at(x - side * 1.2, 22, depth + 11) * faceIn,
-					Color3.fromRGB(220, 220, 225)
-				)
-			end
-		elseif kind == "banners" then
-			for depth = 9, L - 4, 18 do
-				deco(
-					brick(
-						model,
-						"Banner",
-						Vector3.new(4, 12, 0.3),
-						at(x, 19, depth) * faceIn,
-						Color3.fromRGB(255, 120, 190)
-					)
-				)
-				deco(
-					brick(
-						model,
-						"BannerStar",
-						Vector3.new(2, 2, 0.3),
-						at(x - side * 0.2, 21, depth) * faceIn * CFrame.Angles(0, 0, math.rad(45)),
-						Color3.fromRGB(255, 240, 120)
-					)
-				)
-			end
-		elseif kind == "glyphs" then
-			local rng = Random.new(77)
-			for depth = 6, L - 4, 7 do
-				for _, y in { 9, 15, 21 } do
-					if rng:NextNumber() < 0.6 then
-						deco(
-							brick(
-								model,
-								"Glyph",
-								Vector3.new(2, 2.4, 0.3),
-								at(x, y + rng:NextNumber(-1, 1), depth) * faceIn,
-								Color3.fromRGB(120, 90, 50)
-							)
-						)
-					end
 				end
 			end
 		elseif kind == "planks" then
@@ -898,24 +831,132 @@ local function wallDressing(
 				)
 				lamp.Material = Enum.Material.Neon
 			end
-		elseif kind == "gears" then
-			for depth = 12, L - 8, 24 do
-				local gear = deco(smooth(model, "Gear", Vector3.new(0.6, 9, 9), at(x, 15, depth), trim))
-				gear.Shape = Enum.PartType.Cylinder
+		elseif kind == "steel" then
+			-- vault steel: rivet bands, green laser lines and a round vault door
+			for y = 4, 26, 7 do
 				deco(
 					brick(
 						model,
-						"GearHub",
-						Vector3.new(0.8, 3, 3),
-						at(x - side * 0.2, 15, depth),
-						Color3.fromRGB(40, 40, 45)
+						"RivetBand",
+						Vector3.new(0.4, 0.8, L - 2),
+						at(x, y, L / 2),
+						Color3.fromRGB(100, 106, 116)
 					)
 				)
 			end
-			-- gold lane stripes down the floor
-			for _, lx in { -9, 9 } do
-				deco(brick(model, "GoldStripe", Vector3.new(1, 0.12, L), at(lx, FLOOR + 0.06, L / 2), trim))
+			for _, y in { 6, 13 } do
+				local laser = deco(
+					smooth(
+						model,
+						"Laser",
+						Vector3.new(0.2, 0.2, L - 4),
+						at(x - side * 0.4, y, L / 2),
+						Color3.fromRGB(70, 255, 120),
+						Enum.Material.Neon
+					)
+				)
+				laser.CastShadow = false
 			end
+			local door = deco(
+				smooth(
+					model,
+					"VaultDoor",
+					Vector3.new(1, 14, 14),
+					at(x - side * 0.4, 9, 100),
+					Color3.fromRGB(190, 196, 206)
+				)
+			)
+			door.Shape = Enum.PartType.Cylinder
+			local wheel =
+				deco(smooth(model, "VaultWheel", Vector3.new(1.4, 5, 5), at(x - side * 0.9, 9, 100), trim))
+			wheel.Shape = Enum.PartType.Cylinder
+		elseif kind == "neon" then
+			-- casino lights: neon strips and marquee bulbs along the walls
+			for _, y in { 8, 20 } do
+				local strip = deco(
+					smooth(
+						model,
+						"NeonStrip",
+						Vector3.new(0.3, 0.6, L - 2),
+						at(x - side * 0.2, y, L / 2),
+						trim,
+						Enum.Material.Neon
+					)
+				)
+				strip.CastShadow = false
+			end
+			for depth = 6, L - 4, 6 do
+				deco(
+					smooth(
+						model,
+						"Bulb",
+						Vector3.new(0.8, 0.8, 0.8),
+						at(x - side * 0.4, 14, depth),
+						Color3.fromRGB(255, 230, 140),
+						Enum.Material.Neon
+					)
+				)
+			end
+		elseif kind == "bamboo" then
+			-- island huts: bamboo poles, the sea at the sides
+			for depth = 6, L - 4, 8 do
+				deco(
+					brick(
+						model,
+						"Bamboo",
+						Vector3.new(1, 24, 1),
+						at(x - side * 0.4, 12, depth),
+						Color3.fromRGB(190, 170, 90)
+					)
+				)
+			end
+			for depth = 6, L - 6, 14 do
+				deco(
+					smooth(
+						model,
+						"Water",
+						Vector3.new(10, 0.15, 12),
+						at(side * (HW - 6), FLOOR + 0.08, depth),
+						Color3.fromRGB(60, 200, 230)
+					)
+				)
+			end
+		elseif kind == "stars" then
+			-- deep space: glowing stars scattered over the walls and a ringed planet
+			local rng = Random.new(808)
+			for _ = 1, 26 do
+				local star = deco(
+					smooth(
+						model,
+						"Star",
+						Vector3.new(0.6, 0.6, 0.6),
+						at(x - side * 0.4, rng:NextNumber(4, 26), rng:NextNumber(3, L - 3)),
+						Color3.fromRGB(255, 255, 230),
+						Enum.Material.Neon
+					)
+				)
+				star.CastShadow = false
+			end
+			local planet = deco(
+				smooth(
+					model,
+					"Planet",
+					Vector3.new(9, 9, 9),
+					at(x - side * 3, 18, 40 + (side + 1) * 25),
+					Color3.fromRGB(255, 140, 90)
+				)
+			)
+			planet.Shape = Enum.PartType.Ball
+			deco(
+				smooth(
+					model,
+					"PlanetRing",
+					Vector3.new(14, 0.4, 14),
+					at(x - side * 3, 18, 40 + (side + 1) * 25) * CFrame.Angles(math.rad(20), 0, 0),
+					trim,
+					Enum.Material.Neon
+				)
+			)
 		end
 	end
 end
@@ -986,6 +1027,47 @@ local function buildZone(parent: Instance, index: number, origin: CFrame): Vault
 		end
 	end
 
+	-- the zone's gate: pillars + a sign with the Speed you need, and a see-through barrier. You can
+	-- look into the next zone but only pass once your Speed is high enough (your client opens it
+	-- for you; stealing checks it on the server). Guards never get through: chases end here.
+	for _, side in { -1, 1 } do
+		brick(
+			model,
+			"GatePillar",
+			Vector3.new(5, WH + 8, 5),
+			at(side * (HW - 2.5), (WH + 8) / 2, 0),
+			trim,
+			true
+		)
+	end
+	local gateSign =
+		smooth(model, "GateSign", Vector3.new(HW * 2, 6, 1.4), at(0, WH + 5, 0), Color3.fromRGB(25, 25, 32))
+	local req = def.speedRequired
+	surfaceText(
+		gateSign,
+		Enum.NormalId.Back, -- read walking out from home
+		def.emoji
+			.. " "
+			.. string.upper(def.name)
+			.. "  •  "
+			.. (if req > 0 then "⚡ " .. Format.number(req) .. " SPEED" else "FREE"),
+		Color3.new(1, 1, 1)
+	)
+	surfaceText(gateSign, Enum.NormalId.Front, "🏠 HOME", Color3.fromRGB(120, 255, 130))
+	local gate = smooth(
+		model,
+		"Gate",
+		Vector3.new(HW * 2 - 10, WH, 0.6),
+		at(0, WH / 2, 0.3),
+		trim,
+		Enum.Material.ForceField
+	)
+	gate.Transparency = 0.35
+	gate.CanQuery = false
+	gate.CastShadow = false
+	gate:SetAttribute("SpeedRequired", req)
+	CollectionService:AddTag(gate, "SpeedGate")
+
 	-- where the zone starts: a glowing green line across the street + black iron fences at the sides
 	local line = deco(
 		brick(
@@ -1037,7 +1119,7 @@ local function buildZone(parent: Instance, index: number, origin: CFrame): Vault
 	end
 	-- the crates stand on the owner's carpet, with a wooden "recommended speed" sign in front
 	deco(brick(model, "CrateRug", Vector3.new(18, 0.12, 25), at(cs * 23.5, FLOOR + 0.06, 63), rgb(style.rug)))
-	local need = math.max(0, Progression.pointsFor(Progression.speedToOutrun(index)))
+	local need = def.speedRequired
 	local speedSign = brick(
 		model,
 		"SpeedSign",
@@ -1055,23 +1137,15 @@ local function buildZone(parent: Instance, index: number, origin: CFrame): Vault
 	surfaceText(
 		speedSign,
 		if cs > 0 then Enum.NormalId.Left else Enum.NormalId.Right,
-		if need < 1 then "⚡ ANY SPEED" else "⚡ " .. Format.number(math.ceil(need)) .. "\nrecommended",
+		if need < 1 then "⚡ FREE" else "⚡ " .. Format.number(need) .. "\nSPEED",
 		Color3.fromRGB(120, 255, 120)
 	)
 	WorldDecor.station(model, def.id, at(cs * 40, FLOOR, 63) * CFrame.Angles(0, math.rad(cs * 90), 0))
 	WorldDecor.zone(model, def.id, origin, trim)
 	WorldDecor.scatter(model, def.id, origin, index)
 
-	-- [1] the owner, right by their crates; [2] the zone's guardian creature (if any) lying beside
-	-- them; bodyguards around them in the richer zones
-	local guardSpawns: { CFrame } = { at(cs * 34, 4, 63) * CFrame.Angles(0, math.rad(cs * 90), 0) }
-	for g = 2, def.guards do
-		if g == 2 and def.guardian then
-			table.insert(guardSpawns, at(cs * 34, 4, 40))
-		else
-			table.insert(guardSpawns, at(cs * 12, 4, 44 + (g - 2) * 26))
-		end
-	end
+	-- the zone's guard sleeps right beside the crates
+	local guardSpawns: { CFrame } = { at(cs * 33, 4, 63) * CFrame.Angles(0, math.rad(cs * 90), 0) }
 
 	return {
 		index = index,

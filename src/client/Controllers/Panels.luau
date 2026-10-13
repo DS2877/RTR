@@ -384,7 +384,7 @@ local function buildTrails(panel: Panel.Panel)
 			UI.bigText({
 				Position = UDim2.fromOffset(6, 48),
 				Size = UDim2.new(1, -12, 0, 24),
-				Text = t.name,
+				Text = t.name .. "  ⚡x" .. t.mult,
 				Parent = c,
 			}, Color3.fromRGB(70, 20, 110), 2)
 			-- color preview

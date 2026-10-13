@@ -111,6 +111,9 @@ local function zoneBanner()
 		end
 		return (if lum(a) > 0.4 then a else b):Lerp(Color3.new(1, 1, 1), 0.15)
 	end
+	local tint = Instance.new("ColorCorrectionEffect")
+	tint.Name = "ZoneTint"
+	tint.Parent = game:GetService("Lighting")
 	local current: number? = nil
 	task.spawn(function()
 		while true do
@@ -134,16 +137,21 @@ local function zoneBanner()
 			holder.Visible = found ~= nil and player:GetAttribute("Carrying") == nil
 			if found ~= current then
 				current = found
+				-- every zone has its own light (warm in the mansion, green in the vault, purple in space)
+				UI.tween(
+					tint,
+					1.2,
+					{ TintColor = if found then UI.rgb(Vaults[found].tint) else Color3.new(1, 1, 1) }
+				)
 				if found then
 					local def = Vaults[found]
-					local need = Progression.speedToOutrun(found)
-					local mine = Progression.walkSpeed(player:GetAttribute("SpeedPoints") or 0)
 					banner.Text = def.name .. " " .. def.emoji
 					banner.TextColor3 = nameColor(def)
 					UI.bump(holder, 0.12)
-					if mine < need then
+					local mine = Progression.walkSpeed(player:GetAttribute("SpeedPoints") or 0)
+					if mine * Economy.CarrySlowdown.Common < def.guardSpeed then
 						HUD.toast(
-							"⚠️ " .. def.name .. " is faster than you! Train on your treadmill.",
+							"⚠️ " .. def.guardName .. " is faster than you! Train on your treadmill.",
 							"bad"
 						)
 					end
@@ -247,6 +255,27 @@ local function rainbow()
 	end)
 end
 
+-- Zone gates: solid until your Speed reaches the zone's requirement, then you walk right through
+-- (your client decides collisions for your own character; the server still checks every steal).
+local function speedGates()
+	local function apply(gate: Instance)
+		if not gate:IsA("BasePart") then
+			return
+		end
+		local open = (player:GetAttribute("SpeedPoints") or 0) >= (gate:GetAttribute("SpeedRequired") or 0)
+		gate.CanCollide = not open
+		gate.Transparency = if open then 0.85 else 0.35
+	end
+	local function all()
+		for _, g in CollectionService:GetTagged("SpeedGate") do
+			apply(g)
+		end
+	end
+	CollectionService:GetInstanceAddedSignal("SpeedGate"):Connect(apply)
+	player:GetAttributeChangedSignal("SpeedPoints"):Connect(all)
+	all()
+end
+
 -- Your own laser never blocks you (collision is decided by your own client for your character).
 local function ownLaser()
 	local function apply()
@@ -324,7 +353,6 @@ local function guide()
 			local text = ""
 			local target: Vector3? = nil
 			local pts = player:GetAttribute("SpeedPoints") or 0
-			local speed = Progression.walkSpeed(pts)
 			local learning = not player:GetAttribute("TutorialDone")
 			local steals = player:GetAttribute("Steals") or 0
 			local function vaultTarget(i: number): Vector3?
@@ -345,10 +373,10 @@ local function guide()
 				local floor = base and base:FindFirstChild("Floor") :: BasePart?
 				target = floor and floor.Position
 			elseif base then
-				-- best zone you can outrun
+				-- the richest zone your Speed opens
 				local best = 0
 				for i = 1, #Vaults do
-					if speed * Economy.CarrySlowdown.Common > Vaults[i].guardSpeed then
+					if pts >= Vaults[i].speedRequired then
 						best = i
 					end
 				end
@@ -432,6 +460,7 @@ function WorldFX.start()
 	treadmillPopups()
 	rainbow()
 	ownLaser()
+	speedGates()
 	guide()
 end
 

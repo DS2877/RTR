@@ -126,6 +126,37 @@ local function crownScale(player: Player): number
 	return 1 + (growth(player) - 1) * 0.35 -- up to 1.7x at max growth
 end
 
+-- A golden light pillar that follows the richest player: visible from anywhere on the map.
+local function putPillar(character: Model)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root or not root:IsA("BasePart") or root:FindFirstChild("RichPillar") then
+		return
+	end
+	local a0 = Instance.new("Attachment")
+	a0.Name = "RichPillarBottom"
+	a0.Position = Vector3.new(0, 4, 0)
+	a0.Parent = root
+	local a1 = Instance.new("Attachment")
+	a1.Name = "RichPillarTop"
+	a1.Position = Vector3.new(0, R.PillarHeight, 0)
+	a1.Parent = root
+	local beam = Instance.new("Beam")
+	beam.Name = "RichPillar"
+	beam.Attachment0 = a0
+	beam.Attachment1 = a1
+	beam.Width0 = 5
+	beam.Width1 = 5
+	beam.FaceCamera = true
+	beam.LightEmission = 1
+	beam.LightInfluence = 0
+	beam.Color = ColorSequence.new(Color3.fromRGB(255, 215, 60))
+	beam.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.2),
+		NumberSequenceKeypoint.new(1, 0.85),
+	})
+	beam.Parent = root
+end
+
 local function putCrown(player: Player)
 	local character = player.Character
 	local head = character and character:FindFirstChild("Head")
@@ -133,6 +164,7 @@ local function putCrown(player: Player)
 		return
 	end
 	Richest.attachCrown(head, character, crownScale(player))
+	putPillar(character)
 	crownTier[player] = math.floor(growth(player) * 4)
 end
 
@@ -142,6 +174,35 @@ local function removeCrown(player: Player)
 	local crown = character and character:FindFirstChild("Crown")
 	if crown then
 		crown:Destroy()
+	end
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if root then
+		for _, name in { "RichPillar", "RichPillarBottom", "RichPillarTop" } do
+			local x = root:FindFirstChild(name)
+			if x then
+				x:Destroy()
+			end
+		end
+	end
+end
+
+-- The richest base's sign turns gold and shows what it earns: everyone knows where the money is.
+local function baseSign(player: Player, isRichest: boolean)
+	local s = State.get(player)
+	if not s or not s.base then
+		return
+	end
+	local label = s.base.signLabel :: TextLabel
+	if isRichest then
+		label.Text = "👑 "
+			.. string.upper(player.DisplayName)
+			.. " • "
+			.. Format.cash(Bases.incomePerSecond(player))
+			.. "/s"
+		label.TextColor3 = Color3.fromRGB(255, 215, 60)
+	else
+		label.Text = string.upper(player.DisplayName) .. "'S BASE"
+		label.TextColor3 = Color3.new(1, 1, 1)
 	end
 end
 
@@ -218,6 +279,7 @@ local function dethrone(reason: string?)
 			s.base.beam.Size = Vector3.new(s.base.beam.Size.X, 10, 10)
 		end
 		Bases.changed(old)
+		baseSign(old, false)
 	end
 	old:SetAttribute("Richest", nil)
 	removeCrown(old)
@@ -313,6 +375,7 @@ local function evaluate()
 		workspace:SetAttribute("RichestBounty", bounty(current))
 		workspace:SetAttribute("RichestGrowth", growth(current))
 		growCrown(current)
+		baseSign(current, true)
 		setWanted(current)
 	end
 end

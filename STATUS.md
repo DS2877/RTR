@@ -2,6 +2,34 @@
 
 ## Klart
 
+### Omtänkt efter genre-analysen (13 okt)
+Philips analys av de tre spelen ligger till grund. Det här är vår egen variant: samma loop, egna zoner och namn.
+- **8 rika zoner längs en rak gata**, var och en med egen färg och eget ljus (skärmen tonas när du går in):
+  1. 🏡 Suburbs – vakthund, gratis
+  2. 🏊 Pool Villas – butler, ⚡35
+  3. 🏰 Mansion – säkerhetsvakt, ⚡250
+  4. 🏦 Bank Vault – robotvakt, ⚡1,500
+  5. 🛥️ Yacht Harbor – kapten, ⚡12K
+  6. 🎰 Casino – croupier-boss, ⚡120K
+  7. 🏝️ Private Island – miljardär, ⚡1M
+  8. 🚀 Space Vault – A.I.-vakt, ⚡10M
+- **Fartgrindar**: varje zon börjar med en genomskinlig vägg i zonens färg och en skylt "⚡ X SPEED". Du ser in men kommer inte igenom förrän din Speed räcker. Då bleknar grinden och du springer rakt igenom. Servern kontrollerar också kravet när du stjäl.
+- **En vakt per zon** som sover (💤) bredvid kistorna. Den vaknar när någon tar en kista (‼️) och jagar tjuven till zonens gräns. Sedan går den hem och somnar igen. Vakterna blir större och snabbare längre ut.
+- **Varje zon har eget tema**: villor med staket och hundkoja, pool med solstolar och palmer, herrgård med pelare och ljuskronor, bankvalv med guldtackor och lasrar, hamn med yacht, kasino med enarmade banditer och roulette, ö med tikibar och helikopterplatta, rymdbas med raket och svävande guld. Kistorna har zonens utseende.
+- **Löpbandet står inne i basen** igen.
+- **Trails är fartmultiplikatorer** med egna namn: Bronze x1.5 → Silver x2 → Gold x3 → Emerald x4 → Ruby x6 → Galaxy x10 (Rainbow-passet x5). Fart-HUD:en visar t.ex. "(x3)".
+- **Restock var 5:e minut**: alla kistor i alla zoner slumpas om. Nedräkningen "📦 4:59" står uppe till höger bredvid dag/natt.
+- **Natt** = sällsynta kistor (Rare och uppåt) dubbelt så vanliga.
+- **Events var 30:e minut** (Gold Rush, Guard Strike, Cash Frenzy).
+- **Öppningsbonus**: när en kista öppnas får du 100 sekunders inkomst av föremålet direkt ("💰 Opening bonus +$X"), utöver den passiva inkomsten.
+- **🪤 Björnfällor**: medan du bär loot ute på gatan kan du lägga 3 fällor bakom dig (knappen bredvid Drop). Den som kliver i en fälla fastnar i 7 s, både vakter och andra spelare. Du utlöser aldrig dina egna. Fällor som inte utlösts försvinner efter 40 s. Det går inte att lägga fällor på torget.
+- **👑 Den rikaste syns överallt**:
+  - en guldpelare av ljus följer spelaren och syns över hela kartan, utöver kronan
+  - basens skylt blir guld och visar "👑 NAMN • $X/s"
+  - banner när kronan byter ägare, och bounty för att råna den rikaste (fanns redan)
+- **Försvar för den rikaste** (som inte kan låsa): upp till 3 guldglödande fällor inne i den egna basen. Bara inkräktare utlöser dem.
+- Gamla föremål från de tidigare zonerna byts automatiskt mot motsvarande föremål i de nya zonerna. Inget försvinner.
+
 ### Gatan och vakterna närmare originalet (12 okt, natt 2)
 - **Kistor per zon** som i spelet: Grandpa vanliga trälådor, Jeweler svarta skrin med en ädelsten, Archeologist trälådor med hacka, Mafia Boss marinblå kassaskåp med guldratt, Celebrity marinblå/lila med stjärna, Pirate skattkistor med dödskalle, Museum mörka kistor med pelare, Gold Tycoon guldkistor med mynt. Sällsyntheten syns på banden och glöden.
 - **Kistorna står på en matta** i zonens färg (rosa hos Celebrity osv). Framför dem står en träskylt "⚡ 1,234 recommended", alltså farten du behöver för att springa ifrån.
@@ -233,6 +261,14 @@ Research: spelens Roblox-sidor och bilder, fan-wikis och Philips videor bildruta
 - Admin: `!candy 500` ger godis för att testa godis-spåren.
 
 ## Hur du testar (iPhone)
+00000. **Nya zonerna (13 okt):**
+   - Spring ut från basen: Suburbs är öppen. Grinden till Pool Villas visar "⚡ 35 SPEED" och stoppar dig tills du har 35 Speed från löpbandet.
+   - Hunden sover vid kistorna (💤). Ta en kista: den vaknar (‼️) och jagar dig, men ger upp vid zonens gräns.
+   - Medan du bär kistan: tryck 🪤 bredvid Drop för att lägga en fälla. Låt vakten springa i den: den står still i 7 s.
+   - Öppna en kista hemma: "💰 Opening bonus" ska visas.
+   - Uppe till höger: "📦 M:SS" (restock) bredvid dag/natt-nedräkningen.
+   - Köp Bronze-trail: fart-HUD:en visar "(x1.5)" och löpbandet ger mer Speed.
+   - Med en kompis: den rikaste har en guldpelare som syns från hela kartan och basskylten visar $/s. Den rikaste får 🪤-knappen inne i sin bas.
 0000. **Nya kartan:** från din bas ser du rakt över torget mot gatans mynning i den bruna väggen. Löpbandet står på gräset framför din bas. Spring ut genom SAFE ZONE: Grandpa (gröna hus) → Jeweler (grå gata) → Archeologist (sand) … Varje zon börjar med en grön linje. Kistorna ligger till höger hos ägaren. Bär kistan över huvudet hem, där den ställs längst fram på scenen.
 000. **Nivåer:** en ny spelare ska ha ett brunt trä-skjul och ett trä-löpband. Uppgradera plotten till nivå 3 och 5 och löpbandet till nivå 4 och 8: allt byggs om i nya färger. Affärerna står på rad i västra änden, vända mot dig. Håll in STEAL på en kista: det tar 1,5 s.
 00. **Nytt i klon-omgången:**
@@ -267,6 +303,8 @@ Research: spelens Roblox-sidor och bilder, fan-wikis och Philips videor bildruta
     - 👑/💎-taggar syns i chatten.
 
 ## Saknas / att göra
+- Zon-omgången (13 okt) är bara testad headless. Kolla på telefon: att grindarna släpper igenom dig när Speed räcker, att 🪤-knappen inte krockar med hopp-knappen, och fps i zonerna längre ut.
+- Fällorna har inget eget ljud än (ljud-ID saknas), och zonfärgerna kan behöva finjusteras när du har sett dem.
 - Klon-omgången är bara testad headless (smoke). Kolla på telefon: ljusnivån, att hotbar, Drop-knapp och uppdragsrad inte krockar, och fps med alla studs.
 - Föremålen i hotbaren är emoji (riktiga 3D-ikoner kräver ViewportFrames, kan läggas till).
 - Ingen människa har spelat det här än. Testet täcker logiken, men inte känslan, prestandan på äldre telefoner eller hur UI:t ser ut på just din skärm.
@@ -282,4 +320,4 @@ Research: spelens Roblox-sidor och bilder, fan-wikis och Philips videor bildruta
 `universe-places: write`, `universe.place.luau-execution-session: write`, `game-pass: read + write`, `developer-product: read + write`, `universe.place: write`.
 
 ## Balans (tools/simulate, aktiv spelare)
-Museum Owner ~7 min, Gold Tycoon ~13 min, Yacht Owner ~29 min, Tech Billionaire ~65 min, THE BILLIONAIRE ~3 h (simulate räknar inte värderingstiden: den första kistan tar 10 s och de dyraste upp till 6 min, men flera tickar samtidigt).
+Tid till Speed-kravet för varje zon: Suburbs direkt, Pool Villas ~0.5 min, Mansion ~3 min, Bank Vault ~5 min, Yacht Harbor ~11 min, Casino ~27 min, Private Island ~63 min, Space Vault ~2.9 h. Efter 6 h: löpband L26, plot L13, ~$506M/s. (Värderingstiden räknas inte: 10 s till 6 min per kista, men flera tickar samtidigt.)

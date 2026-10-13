@@ -69,9 +69,22 @@ local Economy = {
 		QueueBase = 3, -- crates the appraiser holds at once...
 		QueuePerPlotLevels = 3, -- ...+1 every this many plot levels
 		QueueMax = 8,
+		OpenBonusSeconds = 100, -- opening a crate also pays this many seconds of the item's income at once
 	},
 	InventoryMax = 30, -- items you own but haven't placed on a pedestal (the hotbar / My Items)
-	VaultRespawnSeconds = { 6, 12 }, -- random range before an emptied vault pedestal refills
+	VaultRespawnSeconds = { 20, 35 }, -- random range before an emptied crate spot refills
+	RestockSeconds = 300, -- every crate in every zone is rerolled at once (the clock in the world)
+	NightLuck = 2, -- at night Rare+ crates are this many times as likely
+
+	-- 🪤 Bear traps: drop them behind you while you carry loot; whoever steps in is stuck
+	Traps = {
+		PerCarry = 3, -- traps per stolen crate / item
+		StuckSeconds = 7,
+		LifeSeconds = 40, -- an unsprung trap disappears after this
+		Radius = 3.2, -- how close a foot must come to spring it
+		RichestMax = 3, -- the Richest's defense: traps inside their own base (they can't lock)
+		RichestLifeSeconds = 180,
+	},
 
 	-- Your own base
 	LockSeconds = 60,
@@ -95,6 +108,7 @@ local Economy = {
 		-- the longer the reign, the bigger the crown and the bounty: +GrowthPerMinute per minute
 		GrowthPerMinute = 0.15,
 		MaxGrowth = 3, -- bounty multiplier cap (reached after ~13 min)
+		PillarHeight = 400, -- the gold light pillar over the richest player (seen from the whole map)
 	},
 
 	-- Friend Boost: more cash for every friend on the same server
@@ -105,7 +119,7 @@ local Economy = {
 
 	-- Server events: one every EverySeconds (random pick), lasting Duration seconds
 	Events = {
-		EverySeconds = { 600, 900 },
+		EverySeconds = { 1800, 1800 }, -- one every 30 minutes, like the genre
 		FirstAfter = 240, -- first event a few minutes into a fresh server
 		Duration = 90,
 		List = {

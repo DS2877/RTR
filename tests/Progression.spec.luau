@@ -25,6 +25,7 @@ return function()
 	for i = 2, #Vaults do
 		check(Vaults[i].baseIncome > Vaults[i - 1].baseIncome, "vault income grows")
 		check(Vaults[i].guardSpeed > Vaults[i - 1].guardSpeed, "guards get faster")
+		check(Vaults[i].guardScale >= Vaults[i - 1].guardScale, "guards get bigger")
 	end
 	-- crates: the appraiser holds more crates as the plot grows (capped), rarer crates take longer
 	check(Progression.crateSlots(1) == 3, "3 crate slots at start")
@@ -48,6 +49,13 @@ return function()
 	-- rolls
 	check(Progression.rollRarity(0) == "Common", "r=0 common")
 	check(Progression.rollRarity(0.99999) == "Mythic", "r~1 mythic")
+	check(Progression.rollRarity(0.79) == "Uncommon", "r=0.79 uncommon")
+	check(Progression.rollRarity(0.79, 2) == "Rare", "night luck makes rare crates likelier")
+	-- zone Speed requirements grow x6-10 per zone (like the genre)
+	for i = 3, #Vaults do
+		local ratio = Vaults[i].speedRequired / Vaults[i - 1].speedRequired
+		check(ratio >= 4 and ratio <= 10, Vaults[i].id .. " speed requirement x" .. ratio)
+	end
 	check(Progression.rollMutation(0) == "Rainbow", "r=0 rainbow")
 	check(Progression.rollMutation(0.5) == "None", "r=.5 none")
 	-- costs

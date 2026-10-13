@@ -1,6 +1,8 @@
 --!strict
--- The rich people's loot: every spot in a zone holds one crate of a rolled rarity (the item and
--- a hidden mutation are rolled with it); steal it, and the spot refills after a while.
+-- The zones' loot: every spot holds one crate of a rolled rarity (the item and a hidden mutation
+-- are rolled with it). Steal it (only with the zone's Speed), the zone's guard wakes up, and the
+-- spot refills after a while. Every RestockSeconds ALL crates are rerolled at once (a clock in
+-- the world, like the genre's nest reset); at night rare crates show up more often.
 -- Loot is shared by the whole server, so rare crates are a race.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,9 +14,12 @@ local Vaults = require(Shared.Config.Vaults)
 local Rarity = require(Shared.Config.Rarity)
 
 local Net = require(script.Parent.Parent.Net)
+local State = require(script.Parent.Parent.State)
+local Format = require(Shared.Format)
 local CrateModel = require(script.Parent.Parent.Util.CrateModel)
 local Carry = require(script.Parent.Carry)
 local Events = require(script.Parent.Events)
+local Guards = require(script.Parent.Guards)
 
 local VaultLoot = {}
 
@@ -46,6 +51,12 @@ local function take(slot: Slot, player: Player): boolean
 		return false
 	end
 	local takenId, takenMut = slot.id :: string, slot.mut :: string
+	local s = State.get(player)
+	local need = Vaults[slot.vault].speedRequired
+	if s and s.data.Speed < need then
+		Net.notice(player, "🔒 You need ⚡" .. Format.number(need) .. " Speed for this zone!", "bad")
+		return false
+	end
 	local ok = Carry.start(player, takenId, takenMut, "vault", function()
 		-- dropped / caught: the loot goes straight back on its pedestal (if still empty)
 		if not slot.id then
@@ -59,7 +70,7 @@ local function take(slot: Slot, player: Player): boolean
 		slot.mut = nil
 		local r = Economy.VaultRespawnSeconds
 		slot.respawnAt = os.clock() + rng:NextNumber(r[1], r[2])
-		Net.notice(player, "RUN!! Get it home!", "info")
+		Guards.alert(slot.vault, player) -- the zone's guard wakes up
 	else
 		Net.notice(player, "You're already carrying something!", "bad")
 	end
@@ -105,7 +116,9 @@ function spawnLoot(slot: Slot, id: string, mut: string)
 end
 
 local function roll(slot: Slot)
-	local rarity = Progression.rollRarity(rng:NextNumber())
+	-- night: rare crates show up more often
+	local luck = if workspace:GetAttribute("DayPhase") == "Night" then Economy.NightLuck else 1
+	local rarity = Progression.rollRarity(rng:NextNumber(), luck)
 	-- GOLD RUSH: dividing the roll multiplies every mutation chance
 	local mutRoll = rng:NextNumber() / (if Events.active("GoldRush") then Economy.Events.GoldRushMult else 1)
 	local mut = Progression.rollMutation(mutRoll)
@@ -125,6 +138,19 @@ function VaultLoot.start(worldInfo: any)
 	workspace:GetAttributeChangedSignal("EventId"):Connect(function()
 		if workspace:GetAttribute("EventId") == "GoldRush" then
 			VaultLoot.rerollAll()
+		end
+	end)
+	-- the restock clock: every crate in every zone is rerolled at once
+	local function nextRestock()
+		workspace:SetAttribute("RestockAt", workspace:GetServerTimeNow() + Economy.RestockSeconds)
+	end
+	nextRestock()
+	task.spawn(function()
+		while true do
+			task.wait(Economy.RestockSeconds)
+			VaultLoot.rerollAll()
+			nextRestock()
+			Net.announce("📦 RESTOCK! New crates in every zone!", { 255, 220, 90 })
 		end
 	end)
 	task.spawn(function()

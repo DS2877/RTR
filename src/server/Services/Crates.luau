@@ -19,6 +19,7 @@ local Net = require(script.Parent.Parent.Net)
 local CrateModel = require(script.Parent.Parent.Util.CrateModel)
 local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Bases = require(script.Parent.Bases)
+local Wallet = require(script.Parent.Wallet)
 
 local Crates = {}
 
@@ -173,6 +174,9 @@ function Crates.appraise(player: Player, index: number): boolean
 	Bases.sync(player)
 	local info = Progression.item(c.Id)
 	local income = Progression.income(c.Id, c.Mut)
+	-- a one-time bonus on top of the passive income (like the genre's hatch bonus)
+	local bonus = math.floor(income * Economy.Crates.OpenBonusSeconds)
+	Wallet.add(player, bonus)
 	Net.fire(
 		player,
 		Remotes.Names.Revealed,
@@ -180,7 +184,8 @@ function Crates.appraise(player: Player, index: number): boolean
 		if info then info.rarity else "Common",
 		c.Mut,
 		income,
-		where
+		where,
+		bonus
 	)
 	if info and (info.rarity == "Legendary" or info.rarity == "Mythic" or c.Mut == "Rainbow") then
 		Net.announce(

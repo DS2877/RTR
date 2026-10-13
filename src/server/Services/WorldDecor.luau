@@ -230,20 +230,6 @@ local function car(parent: Instance, cf: CFrame, color: Color3)
 	end
 end
 
-local function ringLight(parent: Instance, cf: CFrame)
-	cyl(parent, "Stand", 6, 0.3, cf * CFrame.new(0, 3, 0), rgb(40, 40, 45), M.Metal)
-	local ring = part(
-		parent,
-		"Ring",
-		Vector3.new(0.4, 3.2, 3.2),
-		cf * CFrame.new(0, 7, 0) * CFrame.Angles(0, math.rad(90), 0),
-		rgb(255, 250, 235),
-		M.Neon,
-		Enum.PartType.Cylinder
-	)
-	light(ring, rgb(255, 240, 230), 14, 1.5)
-end
-
 local function column(parent: Instance, cf: CFrame, height: number, color: Color3)
 	part(parent, "ColumnBase", Vector3.new(3.4, 0.8, 3.4), cf * CFrame.new(0, 0.4, 0), color, M.Marble)
 	cyl(parent, "Column", height - 1.6, 2.6, cf * CFrame.new(0, height / 2, 0), color, M.Marble)
@@ -336,221 +322,235 @@ local FACE_RIGHT = CFrame.Angles(0, math.rad(-90), 0) -- a part's Front faces +l
 local FACE_LEFT = CFrame.Angles(0, math.rad(90), 0) -- a part's Front faces -lx (right wall)
 
 local THEMES: { [string]: (f: Instance, at: At, trim: Color3) -> () } = {
-	Jeweler = function(f, at, trim)
-		-- glass display cases with gems along the left wall, lamp posts and benches
-		for i = 0, 4 do
-			local d = 14 + i * 24
-			part(f, "CaseStand", Vector3.new(5, 3, 7), at(-40, F + 1.5, d), rgb(40, 40, 48))
-			local glass = part(
-				f,
-				"CaseGlass",
-				Vector3.new(4.4, 3, 6.4),
-				at(-40, F + 4.5, d),
-				rgb(200, 235, 255),
-				M.Glass
-			)
-			glass.Transparency = 0.6
-			local gem = deco(
-				f,
-				"Gem",
-				Vector3.new(1.4, 1.4, 1.4),
-				at(-40, F + 4.4, d) * CFrame.Angles(math.rad(45), 0, math.rad(45)),
-				Color3.fromHSV(i / 5, 0.6, 1),
-				M.Neon
-			)
-			CollectionService:AddTag(gem, "Spin")
+	Suburbs = function(f, at, _trim)
+		-- villas: picket fences, mailboxes, a parked car, lawn trees, a doghouse by the crates
+		for _, d in { 12, 34, 92, 114 } do
+			for i = 0, 4 do
+				part(
+					f,
+					"Picket",
+					Vector3.new(0.4, 2.6, 0.8),
+					at(-40, F + 1.3, d + i * 1.6),
+					rgb(250, 250, 250)
+				)
+			end
+			part(f, "PicketRail", Vector3.new(0.3, 0.4, 7.4), at(-40, F + 1.8, d + 3.2), rgb(250, 250, 250))
 		end
-		for _, d in { 30, 100 } do
-			part(f, "LampPost", Vector3.new(0.8, 12, 0.8), at(40, F + 6, d), rgb(30, 30, 35))
-			local bulb = part(f, "Lamp", Vector3.new(1.6, 1.6, 1.6), at(40, F + 12.6, d), trim, M.Neon)
-			light(bulb, rgb(200, 240, 255), 16, 1)
-			part(f, "Bench", Vector3.new(2.4, 1.2, 7), at(42, F + 0.6, d + 8), rgb(110, 80, 50))
+		for _, d in { 24, 104 } do
+			part(f, "MailPost", Vector3.new(0.4, 3, 0.4), at(-36, F + 1.5, d), rgb(110, 80, 50))
+			part(f, "Mailbox", Vector3.new(1.2, 1, 1.8), at(-36, F + 3.3, d), rgb(40, 90, 200))
 		end
+		car(f, at(-38, F, 66), rgb(220, 60, 50))
+		for _, spot in { { 42, 18 }, { 42, 104 }, { -44, 46 } } do
+			part(f, "TreeTrunk", Vector3.new(1.4, 6, 1.4), at(spot[1], F + 3, spot[2]), rgb(120, 80, 45))
+			part(f, "TreeTop", Vector3.new(6, 5, 6), at(spot[1], F + 8, spot[2]), rgb(60, 180, 70))
+		end
+		part(f, "Doghouse", Vector3.new(5, 4, 5), at(42, F + 2, 80), rgb(200, 60, 50))
+		part(f, "DoghouseRoof", Vector3.new(5.6, 1, 5.6), at(42, F + 4.5, 80), rgb(120, 50, 40))
 	end,
-	Archeologist = function(f, at, _trim)
-		-- a T-rex skeleton roped off on the left, tombstones, cactus, clay pots, dig crates
-		local bone = rgb(240, 232, 210)
-		part(f, "Spine", Vector3.new(1.2, 1.2, 22), at(-38, 9, 65), bone)
-		part(f, "Skull", Vector3.new(3, 3.4, 5), at(-38, 11.4, 52) * CFrame.Angles(math.rad(15), 0, 0), bone)
-		for i = 0, 6 do
-			part(f, "Rib", Vector3.new(0.5, 4, 0.5), at(-38, 7, 58 + i * 2.4), bone)
-		end
-		for _, d in { 58, 72 } do
-			part(f, "Leg", Vector3.new(1, 8.6, 1), at(-38, 4.7, d), bone)
-		end
-		for _, spot in { { -42, 18 }, { -30, 24 }, { 42, 22 }, { 30, 108 }, { -42, 112 } } do
-			part(f, "Tombstone", Vector3.new(2.6, 3.6, 1), at(spot[1], F + 1.8, spot[2]), rgb(120, 130, 150))
-		end
-		for _, spot in { { 42, 92 }, { -44, 96 }, { 44, 118 } } do
-			part(f, "Cactus", Vector3.new(1.6, 7, 1.6), at(spot[1], F + 3.5, spot[2]), rgb(60, 170, 70))
-			part(f, "CactusArm", Vector3.new(3.4, 1.2, 1.2), at(spot[1], F + 4.5, spot[2]), rgb(60, 170, 70))
-		end
+	PoolVillas = function(f, at, trim)
+		-- a long pool on the left, loungers + parasols, palms, a diving board
+		part(f, "PoolRim", Vector3.new(12, 0.8, 70), at(-38, F + 0.4, 62), rgb(245, 245, 250))
+		local water = part(
+			f,
+			"PoolWater",
+			Vector3.new(10.4, 0.9, 68),
+			at(-38, F + 0.45, 62),
+			rgb(60, 210, 230),
+			M.Glass
+		)
+		water.Transparency = 0.2
+		water.CanCollide = false
+		light(water, rgb(80, 220, 255), 18, 0.8)
+		part(f, "DivingBoard", Vector3.new(2, 0.4, 6), at(-38, F + 2, 24), rgb(250, 250, 250))
 		for i = 0, 3 do
-			cyl(f, "ClayPot", 2.6, 2, at(-44, F + 1.3, 30 + i * 3), rgb(200, 120, 70))
+			local d = 14 + i * 9
+			part(f, "Lounger", Vector3.new(3, 0.8, 6), at(40, F + 0.4, d), rgb(255, 255, 255))
+			part(
+				f,
+				"LoungerBack",
+				Vector3.new(3, 2.4, 0.8),
+				at(40, F + 1.6, d - 2.8) * CFrame.Angles(math.rad(25), 0, 0),
+				trim
+			)
 		end
-		for _, d in { 96, 104 } do
-			chest(f, at(40, F, d))
+		for _, d in { 96, 112 } do
+			part(f, "ParasolPole", Vector3.new(0.3, 7, 0.3), at(40, F + 3.5, d), rgb(250, 250, 250))
+			part(f, "Parasol", Vector3.new(7, 0.6, 7), at(40, F + 7, d), trim)
+		end
+		for _, d in { 104, 120 } do
+			part(
+				f,
+				"PalmTrunk",
+				Vector3.new(1.2, 10, 1.2),
+				at(-44, F + 5, d) * CFrame.Angles(0, 0, 0.12),
+				rgb(160, 120, 70)
+			)
+			part(f, "PalmLeaves", Vector3.new(8, 1.4, 8), at(-43, F + 10.5, d), rgb(60, 190, 80))
 		end
 	end,
-	Grandpa = function(f, at, _trim)
-		car(f, at(-38, F, 50), rgb(90, 140, 200))
-		car(f, at(38, F, 108), rgb(200, 60, 50))
-		part(f, "Pegboard", Vector3.new(0.4, 8, 18), at(-46.6, 7, 100), rgb(170, 130, 90), M.WoodPlanks)
-		for i = 0, 4 do
-			part(f, "Tool", Vector3.new(0.3, 3, 0.4), at(-46.2, 7, 93 + i * 3.4), rgb(150, 150, 160), M.Metal)
+	Mansion = function(f, at, _trim)
+		-- grand hall: columns, gold chandeliers, statues, a red carpet runner, a piano
+		for _, spot in { { -42, 15 }, { 42, 15 }, { -42, 115 }, { 42, 115 }, { -42, 65 }, { 42, 100 } } do
+			column(f, at(spot[1], F, spot[2]), 16, rgb(235, 220, 190))
 		end
-		for i = 0, 2 do
-			barrel(f, at(-40, F, 14 + i * 3), rgb(200, 60, 40))
+		for _, d in { 35, 95 } do
+			local chand = deco(
+				f,
+				"Chandelier",
+				Vector3.new(5, 2, 5),
+				at(0, 20, d),
+				rgb(255, 210, 90),
+				M.Neon,
+				Enum.PartType.Ball
+			)
+			light(chand, rgb(255, 220, 150), 28, 1.6)
 		end
-		part(f, "Workbench", Vector3.new(6, 3, 14), at(40, F + 1.5, 30), rgb(120, 80, 50), M.Wood)
+		statue(f, at(-38, F, 40), 0.9)
+		statue(f, at(-38, F, 90), 0.9)
+		part(f, "Piano", Vector3.new(6, 3, 8), at(38, F + 1.5, 26), rgb(20, 20, 24))
 		part(
 			f,
-			"Tire",
-			Vector3.new(1.2, 3, 3),
-			at(-40, F + 1.5, 122),
-			rgb(25, 25, 28),
-			M.Rubber,
+			"PianoLid",
+			Vector3.new(6, 0.3, 8),
+			at(38, F + 4, 25) * CFrame.Angles(math.rad(-20), 0, 0),
+			rgb(20, 20, 24)
+		)
+		frame(f, at(-46.6, 10, 25) * FACE_RIGHT, 8, 6, "🦁", rgb(60, 40, 30))
+		frame(f, at(46.6, 10, 110) * FACE_LEFT, 8, 6, "👑", rgb(80, 20, 30))
+	end,
+	BankVault = function(f, at, trim)
+		-- money carts, cash stacks, gold bar pallets, deposit-box walls, laser posts
+		for i = 0, 5 do
+			part(f, "DepositBoxes", Vector3.new(1.4, 10, 6), at(-45, F + 5, 14 + i * 7), rgb(170, 176, 186))
+		end
+		goldBars(f, at(-40, F, 70))
+		goldBars(f, at(-40, F, 84))
+		goldBars(f, at(40, F, 104))
+		coinPile(f, at(-40, F, 110), 1.2)
+		for _, d in { 18, 30 } do
+			part(f, "MoneyCart", Vector3.new(4, 3, 6), at(40, F + 1.8, d), rgb(80, 86, 96))
+			part(f, "CartCash", Vector3.new(3.4, 1, 5.4), at(40, F + 3.6, d), rgb(90, 200, 90))
+		end
+		for _, lx in { -30, 30 } do
+			part(f, "LaserPost", Vector3.new(0.8, 6, 0.8), at(lx, F + 3, 120), rgb(40, 44, 52))
+			local beam = deco(f, "LaserBeam", Vector3.new(0.15, 0.15, 10), at(lx, F + 4, 115), trim, M.Neon)
+			beam.CastShadow = false
+		end
+	end,
+	YachtHarbor = function(f, at, _trim)
+		-- docks with a yacht and a speedboat on the water, life rings, rope posts, crates
+		part(f, "YachtHull", Vector3.new(8, 4, 22), at(-38, F + 2, 30), rgb(250, 250, 255))
+		part(f, "YachtStripe", Vector3.new(8.1, 0.7, 22.1), at(-38, F + 2.6, 30), rgb(30, 60, 140))
+		part(f, "YachtCabin", Vector3.new(6, 3, 10), at(-38, F + 5.5, 32), rgb(150, 200, 230), M.Glass)
+		part(f, "Boat", Vector3.new(5, 2, 10), at(-39, F + 1, 100), rgb(220, 60, 50))
+		for _, d in { 16, 46, 96, 116 } do
+			cyl(f, "DockPost", 4, 1, at(44, F + 2, d), rgb(120, 80, 50), M.Wood)
+			part(
+				f,
+				"LifeRing",
+				Vector3.new(0.6, 3, 3),
+				at(46.4, 8, d),
+				rgb(255, 80, 60),
+				M.SmoothPlastic,
+				Enum.PartType.Cylinder
+			)
+		end
+		for i = 0, 2 do
+			barrel(f, at(40, F, 104 + i * 3), rgb(130, 85, 50))
+		end
+	end,
+	Casino = function(f, at, trim)
+		-- slot machines along the left, card tables, a roulette table, velvet ropes
+		for i = 0, 6 do
+			local d = 12 + i * 6
+			part(f, "SlotMachine", Vector3.new(3, 6, 3), at(-43, F + 3, d), rgb(200, 30, 40))
+			local screen = part(
+				f,
+				"SlotScreen",
+				Vector3.new(0.2, 2, 2.4),
+				at(-41.4, F + 4, d),
+				rgb(255, 230, 120),
+				M.Neon
+			)
+			CollectionService:AddTag(screen, "Blink")
+		end
+		for i = 0, 2 do
+			part(f, "SlotMachine", Vector3.new(3, 6, 3), at(-43, F + 3, 96 + i * 6), rgb(200, 30, 40))
+		end
+		part(f, "CardTable", Vector3.new(6, 2.6, 10), at(40, F + 1.3, 22), rgb(30, 120, 60))
+		local roulette = part(
+			f,
+			"Roulette",
+			Vector3.new(1, 6, 6),
+			at(40, F + 3, 104) * CFrame.Angles(0, 0, math.rad(90)),
+			rgb(30, 120, 60),
+			M.SmoothPlastic,
 			Enum.PartType.Cylinder
 		)
+		CollectionService:AddTag(roulette, "Spin")
+		for _, d in { 40, 88 } do
+			local sign = part(f, "NeonSign", Vector3.new(0.4, 4, 12), at(-46.6, 18, d), trim, M.Neon)
+			label(sign, Enum.NormalId.Right, "JACKPOT", rgb(255, 255, 255))
+		end
 	end,
-	Celebrity = function(f, at, trim)
-		part(f, "Couch", Vector3.new(6, 2, 16), at(-40, F + 1, 45), rgb(255, 120, 190), M.Fabric)
-		part(f, "CouchBack", Vector3.new(1.5, 3, 16), at(-43.5, F + 2.6, 45), rgb(255, 100, 180), M.Fabric)
-		ringLight(f, at(-38, F, 20))
-		ringLight(f, at(40, F, 30))
-		ringLight(f, at(-38, F, 112))
-		local sign = part(f, "NeonSign", Vector3.new(0.4, 5, 24), at(-46.6, 9, 80), trim, M.Neon)
-		label(sign, Enum.NormalId.Right, "❤ LIKE & SUBSCRIBE ❤", rgb(255, 255, 255))
-		for i = 0, 5 do
-			local b = deco(
+	PrivateIsland = function(f, at, _trim)
+		-- palms, a tiki bar, hammocks, gold statues, a helipad
+		for _, spot in { { -42, 14 }, { -44, 40 }, { 42, 20 }, { -42, 92 }, { 44, 110 }, { -44, 118 } } do
+			part(
 				f,
-				"Balloon",
-				Vector3.new(2, 2.4, 2),
-				at(38 + (i % 3) * 2.2, 10 + (i // 3) * 2, 100 + (i % 2)),
-				if i % 2 == 0 then rgb(255, 120, 200) else rgb(140, 220, 255),
+				"PalmTrunk",
+				Vector3.new(1.4, 12, 1.4),
+				at(spot[1], F + 6, spot[2]) * CFrame.Angles(0, 0, 0.12),
+				rgb(160, 120, 70)
+			)
+			part(
+				f,
+				"PalmLeaves",
+				Vector3.new(9, 1.6, 9),
+				at(spot[1] + 1, F + 12.5, spot[2]),
+				rgb(60, 190, 80)
+			)
+		end
+		part(f, "TikiBar", Vector3.new(5, 3.4, 10), at(-38, F + 1.7, 66), rgb(150, 100, 50))
+		part(f, "TikiRoof", Vector3.new(7, 1, 12), at(-38, F + 7, 66), rgb(200, 180, 100))
+		statue(f, at(40, F, 100), 1)
+		chest(f, at(-40, F, 50))
+		chest(f, at(-40, F, 56))
+		local pad = part(f, "Helipad", Vector3.new(14, 0.2, 14), at(-34, F + 0.1, 104), rgb(60, 60, 66))
+		label(pad, Enum.NormalId.Top, "H", rgb(255, 255, 255))
+	end,
+	SpaceVault = function(f, at, trim)
+		-- a rocket on a launch pad, floating gold bars, moon rocks, glowing pillars
+		part(f, "LaunchPad", Vector3.new(12, 1, 12), at(-38, F + 0.5, 30), rgb(70, 70, 80))
+		cyl(f, "RocketBody", 18, 5, at(-38, F + 10, 30), rgb(235, 235, 245), M.SmoothPlastic)
+		part(f, "RocketNose", Vector3.new(4, 4, 4), at(-38, F + 20.5, 30), rgb(220, 40, 50))
+		for i = 0, 4 do
+			local bar = deco(
+				f,
+				"FloatingGold",
+				Vector3.new(3, 1, 1.4),
+				at(-36 + (i % 2) * 4, 8 + i * 2.2, 96 + i * 3),
+				rgb(255, 205, 50),
+				M.SmoothPlastic
+			)
+			CollectionService:AddTag(bar, "Bob")
+		end
+		for _, spot in { { 42, 20 }, { 40, 110 }, { -42, 64 } } do
+			part(
+				f,
+				"MoonRock",
+				Vector3.new(4, 3, 4),
+				at(spot[1], F + 1.5, spot[2]),
+				rgb(150, 150, 160),
 				M.SmoothPlastic,
 				Enum.PartType.Ball
 			)
-			CollectionService:AddTag(b, "Bob")
 		end
-		part(f, "Tripod", Vector3.new(0.4, 5, 0.4), at(38, F + 2.5, 116), rgb(40, 40, 45), M.Metal)
-		part(f, "Camera", Vector3.new(1.6, 1.2, 2.2), at(38, F + 5.4, 116), rgb(30, 30, 35), M.Metal)
-	end,
-	Pirate = function(f, at, _trim)
-		cyl(f, "Mast", 26, 1.4, at(-38, 13.4, 100), rgb(110, 75, 45), M.Wood)
-		part(f, "Yard", Vector3.new(1, 1, 16), at(-38, 22, 100), rgb(110, 75, 45), M.Wood)
-		local sail =
-			deco(f, "Sail", Vector3.new(0.3, 10, 14), at(-37.4, 16.5, 100), rgb(240, 235, 220), M.Fabric)
-		label(sail, Enum.NormalId.Right, "☠", rgb(30, 30, 35))
-		label(sail, Enum.NormalId.Left, "☠", rgb(30, 30, 35))
-		deco(f, "Flag", Vector3.new(0.2, 2, 3.4), at(-38, 27.5, 101.7), rgb(20, 20, 25), M.Fabric)
-		chest(f, at(40, F, 20))
-		chest(f, at(40, F, 40))
-		chest(f, at(-40, F, 50))
-		for _, spot in { { -40, 22 }, { 40, 112 } } do
-			local dir = if spot[1] < 0 then 1 else -1
-			part(
-				f,
-				"Cannon",
-				Vector3.new(5, 1.8, 1.8),
-				at(spot[1], F + 1.9, spot[2]) * CFrame.Angles(0, 0, math.rad(dir * 12)),
-				rgb(35, 35, 40),
-				M.Metal,
-				Enum.PartType.Cylinder
-			)
-			part(
-				f,
-				"CannonCart",
-				Vector3.new(3, 1.2, 2.4),
-				at(spot[1], F + 0.6, spot[2]),
-				rgb(110, 70, 40),
-				M.Wood
-			)
+		for _, d in { 46, 82 } do
+			local glow = part(f, "GlowPillar", Vector3.new(2, 20, 2), at(-45, 10, d), trim, M.Neon)
+			light(glow, trim, 20, 1)
 		end
-		for i = 0, 2 do
-			barrel(f, at(-40, F, 116 + i * 3), rgb(130, 85, 50))
-		end
-	end,
-	Museum = function(f, at, _trim)
-		for _, spot in { { -42, 15 }, { 42, 15 }, { -42, 115 }, { 42, 115 }, { 42, 45 }, { 42, 85 } } do
-			column(f, at(spot[1], F, spot[2]), 16, rgb(235, 230, 215))
-		end
-		-- dino skeleton on the left, roped off
-		local bone = rgb(240, 232, 210)
-		part(f, "Spine", Vector3.new(1.2, 1.2, 20), at(-38, 9, 65), bone, M.Marble)
-		part(
-			f,
-			"Skull",
-			Vector3.new(2.4, 3, 4),
-			at(-38, 11, 53) * CFrame.Angles(math.rad(15), 0, 0),
-			bone,
-			M.Marble
-		)
-		part(
-			f,
-			"Tail",
-			Vector3.new(0.8, 0.8, 8),
-			at(-38, 7.5, 78) * CFrame.Angles(math.rad(20), 0, 0),
-			bone,
-			M.Marble
-		)
-		for i = 0, 5 do
-			part(f, "Rib", Vector3.new(0.5, 4, 0.5), at(-38, 7, 59 + i * 2.4), bone, M.Marble)
-		end
-		for _, d in { 59, 70 } do
-			part(f, "Leg", Vector3.new(1, 8.6, 1), at(-38, 4.7, d), bone, M.Marble)
-		end
-		for i = 0, 3 do
-			cyl(f, "Stanchion", 3, 0.5, at(-31, F + 1.5, 56 + i * 6), rgb(255, 200, 40), M.SmoothPlastic)
-		end
-		deco(f, "Rope", Vector3.new(0.3, 0.3, 18), at(-31, 3, 65), rgb(180, 20, 40), M.Fabric)
-		frame(f, at(-46.6, 9, 30) * FACE_RIGHT, 8, 6, "🦙", rgb(60, 110, 70))
-		frame(f, at(-46.6, 9, 100) * FACE_RIGHT, 8, 6, "🌻", rgb(60, 70, 130))
-		frame(f, at(46.6, 9, 105) * FACE_LEFT, 8, 6, "🏛️", rgb(120, 60, 60))
-	end,
-	GoldTycoon = function(f, at, _trim)
-		coinPile(f, at(-40, F, 15), 1.4)
-		coinPile(f, at(40, F, 20), 1.3)
-		coinPile(f, at(-40, F, 115), 1.6)
-		coinPile(f, at(40, F, 118), 1.2)
-		goldBars(f, at(-40, F, 45))
-		goldBars(f, at(40, F, 40))
-		goldBars(f, at(-40, F, 85))
-		statue(f, at(40, F, 95), 1)
-		for _, d in { 62, 70 } do
-			local bag = part(
-				f,
-				"MoneyBag",
-				Vector3.new(3, 3, 3),
-				at(-42, F + 1.5, d),
-				rgb(90, 200, 90),
-				M.Fabric,
-				Enum.PartType.Ball
-			)
-			label(bag, Enum.NormalId.Right, "$", rgb(255, 255, 255))
-		end
-	end,
-	Mafia = function(f, at, trim)
-		statue(f, at(-38, F, 65), 1.25)
-		coinPile(f, at(-40, F, 15), 1.5)
-		coinPile(f, at(40, F, 15), 1.5)
-		goldBars(f, at(-40, F, 40))
-		goldBars(f, at(40, F, 40))
-		car(f, at(-38, F, 105), rgb(25, 25, 30))
-		local chand =
-			deco(f, "Chandelier", Vector3.new(6, 2, 6), at(0, 18, 65), trim, M.Neon, Enum.PartType.Ball)
-		light(chand, rgb(255, 220, 140), 30, 2)
-		local diamond = deco(
-			f,
-			"Diamond",
-			Vector3.new(3, 3, 3),
-			at(40, 6, 108) * CFrame.Angles(math.rad(45), 0, math.rad(45)),
-			rgb(170, 240, 255),
-			M.Glass
-		)
-		diamond.Reflectance = 0.4
-		CollectionService:AddTag(diamond, "Spin")
-		part(f, "DiamondStand", Vector3.new(3, 3, 3), at(40, F + 1.5, 108), rgb(30, 25, 35), M.Marble)
 	end,
 }
 
@@ -582,69 +582,62 @@ function WorldDecor.station(model: Model, id: string, cf: CFrame)
 	): Part
 		return deco(f, name, size, cf * offset, color, material)
 	end
-	if id == "Celebrity" then
-		-- a vanity: table, a mirror framed with light bulbs, a stool
-		d("Vanity", Vector3.new(8, 3, 3), CFrame.new(0, 1.5, 1.5), rgb(250, 245, 235))
-		d("Mirror", Vector3.new(5, 5, 0.4), CFrame.new(0, 5.5, 2.6), rgb(200, 230, 255), M.Glass)
-		for i = 0, 5 do
+	if id == "Suburbs" then
+		-- a dog bed, a food bowl and a bone (the guard dog sleeps right here)
+		d("DogBed", Vector3.new(6, 0.8, 5), CFrame.new(0, 0.4, 1.5), rgb(200, 60, 50))
+		d("Bowl", Vector3.new(1.6, 0.6, 1.6), CFrame.new(3.5, 0.3, -1), rgb(60, 120, 220))
+		d("Bone", Vector3.new(2, 0.5, 0.6), CFrame.new(-3, 0.3, -1), rgb(245, 240, 225))
+	elseif id == "PoolVillas" then
+		-- the butler's drinks trolley and a towel stack
+		d("Trolley", Vector3.new(5, 3, 2.4), CFrame.new(0, 1.5, 1.5), rgb(220, 220, 230))
+		for i = 0, 2 do
 			d(
-				"Bulb",
-				Vector3.new(0.6, 0.6, 0.6),
-				CFrame.new(-2.8 + i * 1.12, 8.2, 2.4),
-				rgb(255, 240, 180),
-				M.Neon
+				"Glass",
+				Vector3.new(0.5, 1, 0.5),
+				CFrame.new(-1.5 + i * 1.5, 3.5, 1.5),
+				rgb(200, 240, 255),
+				M.Glass
 			)
 		end
-		d("Stool", Vector3.new(2, 2, 2), CFrame.new(0, 1, -1.5), rgb(255, 140, 190))
-	elseif id == "Mafia" then
-		-- the boss's desk with stacks of cash and a lamp
-		d("Desk", Vector3.new(8, 3, 4), CFrame.new(0, 1.5, 1.5), rgb(70, 45, 30))
-		d("DeskTop", Vector3.new(8.4, 0.3, 4.4), CFrame.new(0, 3.15, 1.5), rgb(40, 26, 18))
-		for i = 0, 2 do
-			d("Cash", Vector3.new(1.4, 0.6, 0.8), CFrame.new(-2 + i * 1.6, 3.6, 1.2), rgb(90, 200, 90))
+		d("Towels", Vector3.new(2, 1.6, 2), CFrame.new(3.6, 0.8, 2), rgb(40, 200, 210))
+	elseif id == "Mansion" then
+		-- the security desk with monitors
+		d("Desk", Vector3.new(8, 3, 3), CFrame.new(0, 1.5, 1.5), rgb(110, 75, 45))
+		for _, x in { -2, 2 } do
+			d("Monitor", Vector3.new(2.6, 1.8, 0.3), CFrame.new(x, 4, 2.6), rgb(120, 220, 255), M.Neon)
 		end
-		d("Lamp", Vector3.new(0.8, 1.6, 0.8), CFrame.new(3, 4.1, 2.2), rgb(80, 200, 120), M.Neon)
-		d("Chair", Vector3.new(3, 5, 3), CFrame.new(0, 2.5, 4.4), rgb(120, 20, 30))
-	elseif id == "Jeweler" then
-		-- a glass counter with a cash register
-		d("Counter", Vector3.new(9, 3, 3), CFrame.new(0, 1.5, 1.5), rgb(40, 40, 48))
-		local glass = d(
-			"CounterGlass",
-			Vector3.new(8.6, 1.6, 2.6),
-			CFrame.new(0, 3.8, 1.5),
-			rgb(200, 235, 255),
-			M.Glass
-		)
-		glass.Transparency = 0.5
-		d("Register", Vector3.new(2, 1.4, 1.6), CFrame.new(3, 5.3, 1.5), rgb(200, 200, 210))
-	elseif id == "Archeologist" then
-		-- a camp table with a map and a lantern, a canvas tent behind
-		d("Table", Vector3.new(6, 3, 3), CFrame.new(0, 1.5, 1.5), rgb(150, 110, 70))
-		d("Map", Vector3.new(4, 0.1, 2.4), CFrame.new(0, 3.05, 1.5), rgb(235, 215, 160))
-		d("Lantern", Vector3.new(0.8, 1.2, 0.8), CFrame.new(2.2, 3.6, 1.2), rgb(255, 210, 90), M.Neon)
-		d("Tent", Vector3.new(8, 6, 5), CFrame.new(0, 3, 5.5), rgb(214, 196, 140))
-	elseif id == "Pirate" then
-		-- a treasure throne made of barrels and a chest
-		barrel(f, cf * CFrame.new(-3, 0, 2), rgb(130, 85, 50))
-		barrel(f, cf * CFrame.new(3, 0, 2), rgb(130, 85, 50))
-		d("Throne", Vector3.new(4, 6, 2), CFrame.new(0, 3, 3), rgb(150, 30, 35))
-		chest(f, cf * CFrame.new(0, 0, -1))
-	elseif id == "Museum" then
-		-- the curator's desk with a lamp and a bust on a plinth
-		d("Desk", Vector3.new(7, 3, 3), CFrame.new(0, 1.5, 1.5), rgb(110, 75, 45))
-		d("Lamp", Vector3.new(0.8, 1.4, 0.8), CFrame.new(-2.4, 3.7, 1.5), rgb(255, 230, 150), M.Neon)
-		d("Plinth", Vector3.new(2, 4, 2), CFrame.new(5, 2, 3), rgb(235, 232, 222))
-		d("Bust", Vector3.new(1.6, 2, 1.6), CFrame.new(5, 5, 3), rgb(235, 232, 222))
-	elseif id == "GoldTycoon" then
-		-- a golden throne on a stack of gold bars
+		d("Chair", Vector3.new(2.6, 4, 2.6), CFrame.new(0, 2, 4.8), rgb(30, 30, 36))
+	elseif id == "BankVault" then
+		-- the robot's charging dock
+		d("Dock", Vector3.new(6, 1, 6), CFrame.new(0, 0.5, 1.5), rgb(80, 86, 96))
+		d("Charger", Vector3.new(1.4, 6, 1.4), CFrame.new(0, 3.5, 4), rgb(70, 255, 120), M.Neon)
+	elseif id == "YachtHarbor" then
+		-- the captain's ship wheel on a stand and a lantern
+		local wheel = d("Wheel", Vector3.new(0.6, 4, 4), CFrame.new(0, 4, 2), rgb(150, 100, 50))
+		wheel.Shape = Enum.PartType.Cylinder
+		d("WheelStand", Vector3.new(1, 3, 1), CFrame.new(0, 1.5, 2), rgb(110, 75, 45))
+		d("Lantern", Vector3.new(0.9, 1.2, 0.9), CFrame.new(3, 1, 1), rgb(255, 210, 90), M.Neon)
+	elseif id == "Casino" then
+		-- the croupier's card table
+		d("Table", Vector3.new(8, 3, 4), CFrame.new(0, 1.5, 1.5), rgb(30, 120, 60))
+		d("TableRim", Vector3.new(8.4, 0.3, 4.4), CFrame.new(0, 3.1, 1.5), rgb(110, 60, 30))
+		for i = 0, 3 do
+			d(
+				"Chips",
+				Vector3.new(0.7, 0.4 + i * 0.3, 0.7),
+				CFrame.new(-2.4 + i * 1.6, 3.4 + i * 0.15, 1.2),
+				rgb(220, 40, 50)
+			)
+		end
+	elseif id == "PrivateIsland" then
+		-- the billionaire's golden throne on a stack of gold bars
 		goldBars(f, cf * CFrame.new(0, 0, 2))
 		d("Throne", Vector3.new(4, 7, 2), CFrame.new(0, 3.5, 4), rgb(255, 200, 40))
 		d("Seat", Vector3.new(4, 1, 3), CFrame.new(0, 2, 2.5), rgb(200, 30, 40))
 	else
-		-- Grandpa: a rocking chair, a little table with a radio
-		d("Chair", Vector3.new(3, 4, 3), CFrame.new(0, 2, 2), rgb(130, 90, 55))
-		d("Table", Vector3.new(2.4, 2.4, 2.4), CFrame.new(3.2, 1.2, 1.5), rgb(150, 110, 70))
-		d("Radio", Vector3.new(1.6, 1, 0.8), CFrame.new(3.2, 2.9, 1.5), rgb(120, 80, 50))
+		-- the A.I.'s server core
+		d("Core", Vector3.new(4, 8, 4), CFrame.new(0, 4, 3), rgb(40, 30, 70))
+		d("CoreGlow", Vector3.new(3, 0.6, 0.2), CFrame.new(0, 6, 0.9), rgb(255, 80, 230), M.Neon)
 	end
 	for _, p in f:GetDescendants() do
 		if p:IsA("BasePart") then
@@ -656,43 +649,41 @@ end
 
 -- ===== little things lying around the street (bones, cash, coins, gifts...) =====
 local SCATTER: { [string]: { { size: Vector3, color: Color3, material: Enum.Material? } } } = {
-	Grandpa = {
+	Suburbs = {
 		{ size = Vector3.new(1, 1.4, 1), color = rgb(255, 120, 180) },
 		{ size = Vector3.new(1, 1.4, 1), color = rgb(255, 230, 80) },
-		{ size = Vector3.new(1.4, 1, 1.4), color = rgb(150, 110, 70) },
+		{ size = Vector3.new(2, 0.5, 0.6), color = rgb(245, 240, 225) },
 	},
-	Jeweler = {
-		{ size = Vector3.new(0.8, 0.8, 0.8), color = rgb(120, 220, 255), material = M.Neon },
-		{ size = Vector3.new(2, 1.2, 1), color = rgb(40, 40, 48) },
+	PoolVillas = {
+		{ size = Vector3.new(1.6, 1.6, 1.6), color = rgb(255, 120, 120) },
+		{ size = Vector3.new(2.4, 0.3, 1.4), color = rgb(40, 200, 210) },
 	},
-	Archeologist = {
-		{ size = Vector3.new(2.4, 0.5, 0.5), color = rgb(240, 232, 210) },
-		{ size = Vector3.new(1.6, 1, 1.4), color = rgb(150, 150, 160) },
-		{ size = Vector3.new(1, 1.6, 1), color = rgb(200, 120, 70) },
+	Mansion = {
+		{ size = Vector3.new(1.2, 1.8, 1.2), color = rgb(60, 160, 70) },
+		{ size = Vector3.new(0.6, 1.6, 0.6), color = rgb(255, 210, 90) },
 	},
-	Mafia = {
+	BankVault = {
 		{ size = Vector3.new(1.4, 0.5, 0.8), color = rgb(90, 200, 90) },
 		{ size = Vector3.new(1.6, 0.6, 0.8), color = rgb(255, 200, 40) },
-		{ size = Vector3.new(1.6, 2.4, 1.6), color = rgb(60, 70, 85) },
+		{ size = Vector3.new(1.2, 1.2, 1.2), color = rgb(200, 160, 80) },
 	},
-	Celebrity = {
-		{ size = Vector3.new(1.4, 1.4, 1.4), color = rgb(255, 120, 190) },
-		{ size = Vector3.new(1.4, 1.4, 1.4), color = rgb(120, 200, 255) },
-		{ size = Vector3.new(1.6, 0.4, 1.2), color = rgb(160, 90, 255) },
+	YachtHarbor = {
+		{ size = Vector3.new(1.4, 0.4, 1.4), color = rgb(255, 140, 60) },
+		{ size = Vector3.new(2, 1.4, 2), color = rgb(150, 100, 60) },
 	},
-	Pirate = {
-		{ size = Vector3.new(1.2, 0.3, 1.2), color = rgb(255, 200, 40) },
+	Casino = {
+		{ size = Vector3.new(0.8, 0.3, 0.8), color = rgb(220, 40, 50) },
+		{ size = Vector3.new(0.8, 0.3, 0.8), color = rgb(30, 30, 36) },
+		{ size = Vector3.new(1, 1, 1), color = rgb(255, 255, 255) },
+	},
+	PrivateIsland = {
+		{ size = Vector3.new(1.2, 1.2, 1.2), color = rgb(160, 110, 60) },
 		{ size = Vector3.new(1.4, 0.3, 1.4), color = rgb(255, 140, 60) },
-		{ size = Vector3.new(2, 1.2, 1.6), color = rgb(140, 140, 150) },
+		{ size = Vector3.new(1.2, 0.3, 1.2), color = rgb(255, 200, 40) },
 	},
-	Museum = {
-		{ size = Vector3.new(1.2, 1.8, 1.2), color = rgb(60, 160, 70) },
-		{ size = Vector3.new(1, 1.6, 1), color = rgb(200, 120, 70) },
-	},
-	GoldTycoon = {
-		{ size = Vector3.new(1.6, 0.6, 0.8), color = rgb(255, 205, 50) },
-		{ size = Vector3.new(1.2, 1, 1.2), color = rgb(255, 190, 30) },
-		{ size = Vector3.new(2, 2, 2), color = rgb(150, 110, 60) },
+	SpaceVault = {
+		{ size = Vector3.new(1.6, 1.2, 1.6), color = rgb(150, 150, 160) },
+		{ size = Vector3.new(0.8, 0.8, 0.8), color = rgb(190, 110, 255), material = M.Neon },
 	},
 }
 

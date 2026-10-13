@@ -110,17 +110,21 @@ function Progression.appraiseSeconds(rarity: string): number
 	return Economy.Crates.AppraiseSeconds[rarity] or 10
 end
 
--- Weighted rarity pick. `r` in [0, 1).
-function Progression.rollRarity(r: number): string
+-- Weighted rarity pick. `r` in [0, 1). `luck` (default 1) multiplies the weight of Rare and up.
+function Progression.rollRarity(r: number, luck: number?): string
+	local boost = luck or 1
+	local function weight(i: number): number
+		return Rarity.Tiers[Rarity.Order[i]].weight * (if i >= 3 then boost else 1)
+	end
 	local total = 0
-	for _, id in Rarity.Order do
-		total += Rarity.Tiers[id].weight
+	for i = 1, #Rarity.Order do
+		total += weight(i)
 	end
 	local x = r * total
-	for _, id in Rarity.Order do
-		x -= Rarity.Tiers[id].weight
+	for i = 1, #Rarity.Order do
+		x -= weight(i)
 		if x < 0 then
-			return id
+			return Rarity.Order[i]
 		end
 	end
 	return Rarity.Order[1]

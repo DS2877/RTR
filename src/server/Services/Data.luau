@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ProfileStore = require(script.Parent.Parent.Packages.ProfileStore)
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local Progression = require(ReplicatedStorage.Shared.Progression)
+local Vaults = require(ReplicatedStorage.Shared.Config.Vaults)
 
 export type SlotItem = { Id: string, Mut: string }
 -- A stolen crate at the appraiser: the item inside is already decided (shown when it opens).
@@ -78,7 +79,7 @@ local MIGRATIONS: { [number]: (data: PlayerData) -> () } = {}
 
 local Data = {}
 
--- Items from before the zones were rearranged to match the genre (12 Oct) -> today's items.
+-- Items from the zones before 12 Oct -> the zone items of 12 Oct (then mapped on by PREVIOUS).
 local RENAMED: { [string]: string } = {
 	Sneakers = "PearlEarrings",
 	SelfieStick = "EmeraldNecklace",
@@ -102,11 +103,39 @@ local RENAMED: { [string]: string } = {
 	GoldDuck = "GoldenGoose",
 }
 
+-- The zones' items before the rich-zones rework (13 Oct), by zone and rarity: an old item becomes
+-- today's item of the same zone number and rarity.
+local PREVIOUS: { { string } } = {
+	{ "Wrench", "Radio", "Clock", "Dentures", "CarKeys", "GoldWatch" },
+	{ "SilverRing", "PearlEarrings", "RubyBrooch", "EmeraldNecklace", "SapphireCrown", "HopeDiamond" },
+	{ "ClayPot", "Trowel", "Fossil", "ScarabAmulet", "PharaohMask", "TrexEgg" },
+	{ "CashStack", "Fedora", "Briefcase", "GoldenGun", "BossRing", "VaultSafe" },
+	{ "Sunglasses", "RingLight", "ViralPhone", "GoldMic", "PlayButton", "StarTrophy" },
+	{ "RumBarrel", "Compass", "TreasureMap", "Pearls", "Cutlass", "KrakenEgg" },
+	{ "Vase", "Painting", "Statue", "Sword", "CrystalSkull", "Meteorite" },
+	{ "CoinStack", "GoldBar", "GoldToilet", "GoldenGoose", "MidasHand", "BillionEgg" },
+}
+
+local function today(id: string): string
+	if Progression.item(id) then
+		return id
+	end
+	local older = RENAMED[id] or id
+	if Progression.item(older) then
+		return older
+	end
+	for zone, ids in PREVIOUS do
+		local rarity = table.find(ids, older)
+		if rarity then
+			return Vaults[zone].items[rarity].id
+		end
+	end
+	return Economy.StarterItem
+end
+
 -- Every saved item id must exist (an unknown id would break plot rendering).
 local function fixItem(item: { Id: string })
-	if not Progression.item(item.Id) then
-		item.Id = RENAMED[item.Id] or Economy.StarterItem
-	end
+	item.Id = today(item.Id)
 end
 
 function Data.sanitize(data: PlayerData)
@@ -122,10 +151,7 @@ function Data.sanitize(data: PlayerData)
 	for id in table.clone(data.Found) do
 		if not Progression.item(id) then
 			data.Found[id] = nil
-			local now = RENAMED[id]
-			if now then
-				data.Found[now] = true
-			end
+			data.Found[today(id)] = true
 		end
 	end
 end
