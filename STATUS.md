@@ -2,7 +2,7 @@
 
 ## Klart
 
-### Omtänkt efter genre-analysen (13 okt)
+### Omtänkt efter genre-analysen (13 okt), 715 kontroller i Roblox
 Philips analys av de tre spelen ligger till grund. Det här är vår egen variant: samma loop, egna zoner och namn.
 - **8 rika zoner längs en rak gata**, var och en med egen färg och eget ljus (skärmen tonas när du går in):
   1. 🏡 Suburbs – vakthund, gratis
