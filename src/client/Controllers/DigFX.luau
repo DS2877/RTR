@@ -498,10 +498,11 @@ local function updateVacuum(dt: number)
 		elseif d.life and now - d.born > d.life then
 			recycle(d)
 			table.remove(debris, i)
-		elseif not part.Anchored and now - d.born > 0.9 and part.AssemblyLinearVelocity.Magnitude < 0.7 then
-			-- settled on the pile: freeze it (no physics cost while it waits for the vacuum)
-			part.Anchored = true
-		elseif not part.Anchored and now - d.born > 6 then
+		elseif
+			not part.Anchored
+			and (now - d.born > 6 or (now - d.born > 0.9 and part.AssemblyLinearVelocity.Magnitude < 0.7))
+		then
+			-- settled on the pile (or tumbling too long): freeze it, no physics cost while it waits
 			part.Anchored = true
 		end
 	end
