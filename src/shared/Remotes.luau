@@ -9,37 +9,28 @@ local Remotes = {}
 
 Remotes.Names = {
 	-- client -> server
-	Drop = "Drop", -- () drop what you carry (it goes back where it came from)
-	Slap = "Slap", -- (userId: number) make a nearby carrier drop their loot
-	SetSlowMode = "SetSlowMode", -- (on: boolean)
-	Lock = "Lock", -- () lock your base
-	Fuse = "Fuse", -- (itemId: string, mutation: string)
-	RequestSync = "RequestSync", -- ()
-	GiftTarget = "GiftTarget", -- (userId: number) who the next gift purchase is for
-	BuyTrail = "BuyTrail", -- (trailId: string)
-	EquipTrail = "EquipTrail", -- (trailId: string) "" = take it off
-	Appraise = "Appraise", -- (index: number) open a ready crate; 0 = all ready crates
-	Equip = "Equip", -- (bagIndex: number) put an item from your bag on a free pedestal
-	Unequip = "Unequip", -- (slot: string) take an item off its pedestal into your bag
-	EquipBest = "EquipBest", -- () best earners on the pedestals
-	SellItem = "SellItem", -- (kind: "bag" | "slot", key: number | string)
-	PlaceTrap = "PlaceTrap", -- () drop a bear trap at your feet (while carrying, or the Richest at home)
+	Ready = "Ready", -- () the client can receive tunnel snapshots
+	Punch = "Punch", -- (x, y, z, face) punch the aimed block of your own tunnel
+	Vacuum = "Vacuum", -- (on: boolean) holding the VACUUM button
+	Lift = "Lift", -- () one rep at the gym station you stand next to
+	Buy = "Buy", -- (track: string) buy the next level of an upgrade track
+	Sell = "Sell", -- (slot: number) sell one find, 0 = sell all
+	AdminCmd = "AdminCmd", -- (cmd: string, arg: number?) admins only
 	-- server -> client
-	Notice = "Notice", -- (text: string, kind: string) small toast for one player
-	Announce = "Announce", -- (text: string, color: {number}, sound: string?) server-wide message
-	SpeedTick = "SpeedTick", -- (gained: number) treadmill popup
-	Caught = "Caught", -- (by: string, tooSlow: boolean)
-	Deposited = "Deposited", -- (itemName, rarity, mutation, income: number, title: string?) loot landed
-	Sync = "Sync", -- ({ Found, Items, Passes }) index + plot contents for panels
-	OpenFuse = "OpenFuse", -- ()
-	Crown = "Crown", -- (gained: boolean) you became / stopped being the richest
-	Alarm = "Alarm", -- (vaultName: string) a guard spotted you
-	CashFX = "CashFX", -- (amount: number, from: Vector3?) coins fly into the cash counter
-	Offer = "Offer", -- (kind: string) contextual shop offer ("speed" | "cash")
-	OpenTrails = "OpenTrails", -- () the trails shop prompt was used
-	Offline = "Offline", -- (earned: number, seconds: number, perDay: number)
-	OpenItems = "OpenItems", -- (mode: "items" | "sell") the SELL stall was used
-	Revealed = "Revealed", -- (itemName, rarity, mutation, income, where: "base" | "bag", bonus: number) a crate opened
+	Notice = "Notice", -- (text, kind) small toast
+	Announce = "Announce", -- (text, color: {number}, sound: string?) server-wide message
+	Snapshot = "Snapshot", -- (owner: number, cell: number, seed: number, data: string, damage: {number})
+	Delta = "Delta", -- (owner: number, broken: {number}, damage: {number}, puncher: number)
+	Drop = "Drop", -- (owner: number) stop rendering that tunnel
+	Chamber = "Chamber", -- (owner: number, zone: number) a chamber was broken into
+	Zone = "Zone", -- (zone: number) you reached a new zone (banner + confetti)
+	Found = "Found", -- (findId: string) you dug up a find
+	Finds = "Finds", -- ({ string }) your find slots
+	Piles = "Piles", -- ({ {id, x, y, z, n} }) your loose rubble
+	Full = "Full", -- (kind: "bag" | "loose" | "slots") why your punch did nothing
+	OpenShop = "OpenShop", -- (shop: string) a counter prompt was used
+	Dumped = "Dumped", -- (noodles: number) rubble dumped in the Yard
+	Lifted = "Lifted", -- (gain: number) a gym rep counted
 }
 
 local FOLDER_NAME = "Remotes"

@@ -1,50 +1,52 @@
 --!strict
 -- Runtime (not saved) state per player, shared by every service.
+-- The smoke test uses plain tables as "players" ({ UserId, Name, Position }); root() handles both.
 
 local Data = require(script.Parent.Services.Data)
 
-export type Carry = {
-	id: string,
-	mut: string,
-	model: Model?,
-	source: string, -- "vault" (a crate) | "player" (an item from someone's plot)
-	victim: Player?, -- when stolen from another player
-	victimSlot: string?,
-	restore: () -> (), -- puts the item back where it came from
-	startedAt: number,
-}
+export type Pile = { id: number, pos: Vector3, rubble: number, value: number }
 
 export type PlayerState = {
 	player: Player,
 	data: Data.PlayerData,
-	base: any?, -- WorldBuilder.BaseRecord
-	carry: Carry?,
-	slowMode: boolean,
-	stunUntil: number,
-	lastSlap: number,
+	cell: number?,
+	frame: CFrame?, -- tunnel frame of your cell
+	grid: any, -- Voxel.Grid of your tunnel
+	damage: { [number]: number }, -- block index -> hp left (not saved)
+	tunnelDirty: boolean,
+	lastPunch: number,
+	vacuuming: boolean,
+	piles: { Pile },
+	pileSeq: number,
+	loose: number, -- rubble lying around in piles
+	watching: { [number]: boolean }, -- owners (UserId) whose tunnels this client renders
+	ready: boolean,
 	passes: { [string]: boolean },
-	isRichest: boolean,
-	reignStart: number,
-	friendBoost: number, -- 0.2 = +20% cash (Friend Boost)
+	lastLift: number,
 }
 
 local State = {}
 
-local states: { [Player]: PlayerState } = {}
+local states: { [any]: PlayerState } = {}
 
 function State.add(player: Player, data: Data.PlayerData): PlayerState
 	local s: PlayerState = {
 		player = player,
 		data = data,
-		base = nil,
-		carry = nil,
-		slowMode = false,
-		stunUntil = 0,
-		lastSlap = 0,
+		cell = nil,
+		frame = nil,
+		grid = nil,
+		damage = {},
+		tunnelDirty = false,
+		lastPunch = 0,
+		vacuuming = false,
+		piles = {},
+		pileSeq = 0,
+		loose = 0,
+		watching = {},
+		ready = false,
 		passes = {},
-		isRichest = false,
-		reignStart = 0,
-		friendBoost = 0,
+		lastLift = 0,
 	}
 	states[player] = s
 	return s
@@ -58,20 +60,21 @@ function State.remove(player: Player)
 	states[player] = nil
 end
 
-function State.all(): { [Player]: PlayerState }
+function State.all(): { [any]: PlayerState }
 	return states
 end
 
-function State.root(player: Player): BasePart?
-	local c = player.Character
-	local r = c and c:FindFirstChild("HumanoidRootPart")
-	return if r and r:IsA("BasePart") then r else nil
-end
-
-function State.humanoid(player: Player): Humanoid?
-	local c = player.Character
-	local h = c and c:FindFirstChildOfClass("Humanoid")
-	return if h and h.Health > 0 then h else nil
+-- World position of the player's HumanoidRootPart (or a test player's Position).
+function State.root(player: any): Vector3?
+	if typeof(player) ~= "Instance" then
+		return player.Position
+	end
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if root and root:IsA("BasePart") then
+		return root.Position
+	end
+	return nil
 end
 
 return State

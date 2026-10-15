@@ -1,53 +1,50 @@
 --!strict
--- World layout, like the genre: a big grass plaza inside giant checker walls, all bases side by
--- side in ONE row on the west side facing east, their treadmills out on the grass in front, and
--- Rich Street leaving from the middle of the east wall, pointing straight at the bases.
--- X runs from the bases (x = BaseFrontX) across the plaza (x = StreetStartX) out along the street.
--- Look: bright, saturated, studded LEGO-style bricks everywhere.
+-- World layout and digging grid. Every size is in studs unless the name says "blocks".
+--
+-- Coordinates of a tunnel: x (0..Width-1, across), y (0..Height-1, up), z (0..Depth-1, deeper).
+-- z = 0 is the back wall of the cell. The tunnel's CFrame ("frame") sits at the bottom-center of the
+-- back wall's cell-side face; local -Z of the frame points deeper into the tunnel.
 
 local World = {
-	BaseCount = 8, -- also the server size
-	BaseFrontX = -150, -- the bases' entrances (they face +X, across the plaza at the street)
-	BaseWidth = 92,
-	BaseGap = 4, -- between neighbouring bases' fences
-	BaseDepth = 72,
-	WallHeight = 4.5, -- low walls: open plaza, loot visible (an invisible barrier stops jumping in)
-	EntranceWidth = 18,
-	PedestalColumns = 10,
-	PedestalRows = 3,
-	PedestalSpacingX = 8.4,
-	PedestalRowDepth = { 47, 56, 65 }, -- pedestal rows on the raised stage at the back of the base
-	StageDepth = 40, -- the stage starts this far into the base and runs to the back wall
-	StageHeight = 1.6,
+	-- voxel grid
+	BlockSize = 2,
+	TunnelWidth = 18, -- blocks
+	TunnelHeight = 12, -- blocks
+	TunnelDepth = 600, -- blocks
+	ChunkSize = 8, -- blocks per chunk edge (8x8x8 = 512 bits = 64 bytes)
 
-	BaseColors = {
-		{ 255, 90, 90 },
-		{ 70, 160, 255 },
-		{ 90, 210, 110 },
-		{ 255, 190, 50 },
-		{ 180, 100, 255 },
-		{ 255, 130, 200 },
-		{ 60, 220, 220 },
-		{ 255, 140, 50 },
-	},
+	-- cell block: two rows of 6 cells facing each other across a corridor along X
+	CellCount = 12,
+	CellsPerRow = 6,
+	CellPitch = 40, -- cell width (36 = tunnel width) + 4 stud wall
+	CellDepth = 20, -- from the corridor (door) to the back wall
+	CorridorWidth = 24,
+	FloorY = 0, -- top of the floor everywhere inside
+	WallThickness = 4,
 
-	PlazaWallHeight = 60, -- the giant checker walls around the plaza
-	-- Rich Street: one long corridor; the rich people's zones follow each other and you run
-	-- straight through them (farther = richer). Zone i starts at StreetStartX + ZoneGap + (i-1)*VaultSpacing.
-	StreetStartX = 0, -- the street's mouth in the plaza's east wall
-	ZoneGap = 20, -- entry hall between the gate and the first zone
-	VaultSpacing = 130, -- zone length along the corridor
-	ZoneHalfWidth = 48, -- corridor half width (walls at +-this)
-	PathHalfWidth = 7, -- the running path down the middle of every zone
-	ZoneWallHeight = 28, -- tall brick walls: each street feels like its own place
-	-- Looks by level: plot level where each palace tier starts (shack, cottage, manor, mansion,
-	-- palace, royal palace) and treadmill level where each treadmill tier starts
-	PalaceTierLevels = { 1, 3, 5, 7, 9, 12 },
-	TreadTierLevels = { 1, 4, 8, 13, 19, 25 },
-	-- Day / night cycle (looks only): seconds of each phase, the HUD counts down to the next one
-	DaySeconds = 240,
-	NightSeconds = 120,
-	VaultPedestals = 6,
+	-- where the other areas sit: center X, Z and size X, Z (studs), all on the floor level
+	-- (both at the -X end of the corridor so a trip from any cell is short)
+	CommonRoom = { x = -182, z = 0, sx = 120, sz = 96, height = 26 },
+	Yard = { x = -330, z = 0, sx = 176, sz = 150 },
+
+	-- digging rules
+	Reach = 11, -- studs from HumanoidRootPart to the target block's center (client aims inside this)
+	ReachSlack = 6, -- extra studs the server allows for latency
+	AttackInterval = 0.32, -- seconds between punches (hold = auto-punch at this rate)
+	BrushDepth = 2, -- a brush cell that hits air digs up to this many layers deeper
+
+	-- client rendering budget (iPhone 11)
+	StreamRadius = 40, -- blocks around the camera
+	MaxVoxelParts = 3000,
+	MaxDebris = 150,
+	DebrisPerBlock = 4,
+	DebrisLifetime = 4,
+	-- other players' tunnels are only rendered this deep while your camera is outside them
+	OutsideRenderDepth = 16,
+
+	-- loose rubble (vacuum)
+	PileMergeRadius = 5,
+	MaxPiles = 60,
 }
 
 return World

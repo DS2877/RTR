@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Creator Hub setup via Open Cloud, run ONLY inside GitHub Actions (.github/workflows/ops.yml).
 
-- Creates every game pass (Products.Passes), its gift developer product ("Gift: <name>") and every
-  developer product (Products.Items) listed in src/shared/Config/Products.luau that doesn't exist
-  yet (matched by name, so re-running is safe).
-- Updates the price of existing ones when Products.luau says something else.
+- Sets every game pass / developer product on Roblox that is NOT in
+  src/shared/Config/Products.luau off sale (the old Rob the Rich! products).
+- Creates every game pass (Products.Passes) and developer product (Products.Items) listed in
+  Products.luau that doesn't exist yet (matched by name, so re-running is safe), and updates the
+  price of existing ones when Products.luau says something else.
 - Writes the resulting Roblox IDs back into Products.luau (the `id = ...` field of each entry).
-- Sets the start place's Max Players (serverSize) to one per base.
+- Sets the start place's name, description and Max Players (serverSize = one per cell), and tries
+  the same name/description on the universe (experience).
 - Writes a sanitized log to tools/ops/ops-log.md (status codes + response bodies, never the key).
 
 The API key comes from the environment variable ROBLOX_KEY (the Actions secret). It is never
@@ -24,7 +26,13 @@ import uuid
 
 UNIVERSE = "10770392871"
 PLACE = "95313582510402"
-SERVER_SIZE = 8  # one per base (Config/World.BaseCount)
+SERVER_SIZE = 12  # one per cell (Config/World.CellCount)
+GAME_NAME = "Dig Out! Prison Escape"
+GAME_DESCRIPTION = (
+    "You're a prisoner with a plan. Punch through the wall of your cell, dig a giant tunnel through "
+    "plaster, brick and concrete, find hidden treasures, smuggle the rubble out and upgrade your "
+    "tools in the Common Room. How deep can you dig? Mobile friendly!"
+)
 PRODUCTS_FILE = "src/shared/Config/Products.luau"
 LOG_FILE = "tools/ops/ops-log.md"
 API = "https://apis.roblox.com"
@@ -175,8 +183,20 @@ def update_price(kind, item_id, name, price):
     return status in (200, 204)
 
 
+def set_off_sale(kind, item_id, name):
+    path = (
+        f"/game-passes/v1/universes/{UNIVERSE}/game-passes/{item_id}"
+        if kind == "pass"
+        else f"/developer-products/v2/universes/{UNIVERSE}/developer-products/{item_id}"
+    )
+    body, ctype = multipart({"isForSale": "false"})
+    status, text = request("PATCH", API + path, body, ctype)
+    log(f"- OFF SALE {kind} '{name}' ({item_id}): HTTP {status} {short(text, 200)}")
+    return status in (200, 204)
+
+
 ENTRY = re.compile(
-    r'key = "(\w+)",\s*id = (\d+),\s*(?:giftId = \d+,\s*)?name = "([^"]*)",\s*emoji = "[^"]*",'
+    r'key = "(\w+)",\s*id = (\d+),\s*name = "([^"]*)",\s*emoji = "[^"]*",'
     r'\s*price = (\d+),\s*desc = "([^"]*)"'
 )
 
@@ -230,34 +250,42 @@ def main():
         else:
             ok = False
         log(f"  -> {key}: {kind} {rid}")
-        if is_pass:
-            # a developer product that gifts this pass to someone else on the server
-            gift_name = f"Gift: {name}"
-            existing_gift = (products or {}).get(gift_name)
-            gid = existing_gift or create(
-                "product", gift_name, f"Gift the {name} pass to a friend. {desc}", price
-            )
-            if gid:
-                src = set_id(src, key, gid, "giftId")
-                if existing_gift:
-                    ok = update_price("product", gid, gift_name, price) and ok
-            else:
-                ok = False
-            log(f"     gift product {gid}")
     with open(PRODUCTS_FILE, "w", encoding="utf-8") as f:
         f.write(src)
 
     log("")
-    log("## Max Players")
-    body = json.dumps({"serverSize": SERVER_SIZE}).encode()
+    log("## Off sale (everything on Roblox that is not in Products.luau)")
+    wanted = {name for _, name, _, _, _ in catalog}
+    for kind, existing in (("pass", passes), ("product", products)):
+        if existing is None:
+            log(f"- could not list {kind}s, skipped")
+            ok = False
+            continue
+        for name, item_id in sorted(existing.items()):
+            if name not in wanted:
+                ok = set_off_sale(kind, item_id, name) and ok
+
+    log("")
+    log("## Experience name + description")
+    body = json.dumps(
+        {"displayName": GAME_NAME, "description": GAME_DESCRIPTION, "serverSize": SERVER_SIZE}
+    ).encode()
     status, text = request(
         "PATCH",
-        f"{API}/cloud/v2/universes/{UNIVERSE}/places/{PLACE}?updateMask=serverSize",
+        f"{API}/cloud/v2/universes/{UNIVERSE}/places/{PLACE}?updateMask=displayName,description,serverSize",
         body,
         "application/json",
     )
-    log(f"- PATCH serverSize={SERVER_SIZE}: HTTP {status} {short(text, 300)}")
+    log(f"- PATCH place name/description/serverSize={SERVER_SIZE}: HTTP {status} {short(text, 300)}")
     ok = ok and status == 200
+    body = json.dumps({"displayName": GAME_NAME, "description": GAME_DESCRIPTION}).encode()
+    status, text = request(
+        "PATCH",
+        f"{API}/cloud/v2/universes/{UNIVERSE}?updateMask=displayName,description",
+        body,
+        "application/json",
+    )
+    log(f"- PATCH universe name/description: HTTP {status} {short(text, 300)}")
 
     log("")
     log("Result: " + ("ALL OK" if ok else "SOME STEPS FAILED (see HTTP codes above)"))

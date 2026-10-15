@@ -1,7 +1,7 @@
 --!strict
--- Chat commands for testing (admins only, re-checked here):
---   !cash 1e9   !speed 1e6   !item GoldBar Diamond   !reroll   !event GoldRush 90   !candy 500   !reset
--- ("!" instead of "/" so the Roblox chat never swallows them as unknown chat commands)
+-- Admin commands for phone testing. The ADMIN button in the HUD (admins only) sends AdminCmd;
+-- the same commands work in chat with "!": !noodles 1e6  !strength 500  !zone 3  !resettunnel
+-- !stress  !reset  (!day !night !inspect !event arrive with M2-M4).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,18 +9,18 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage.Shared
 local AdminConfig = require(Shared.Config.Admin)
+local World = require(Shared.Config.World)
 local Progression = require(Shared.Progression)
-local Mutations = require(Shared.Config.Mutations)
+local Tunnel = require(Shared.Tunnel)
+local Remotes = require(Shared.Remotes)
 
 local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
+local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Data = require(script.Parent.Data)
-local Wallet = require(script.Parent.Wallet)
-local Bases = require(script.Parent.Bases)
-local Movement = require(script.Parent.Movement)
-local VaultLoot = require(script.Parent.Vaults)
-local Events = require(script.Parent.Events)
-local Cosmetic = require(script.Parent.Cosmetic)
+local Stats = require(script.Parent.Stats)
+local Dig = require(script.Parent.Dig)
+local Loot = require(script.Parent.Loot)
 
 local Admin = {}
 
@@ -40,57 +40,102 @@ function Admin.isAdmin(player: Player): boolean
 	return ok and rank >= AdminConfig.GroupMinRank
 end
 
-local function run(player: Player, message: string)
-	local args = string.split(message, " ")
-	local cmd = string.lower(args[1] or "")
+-- The stress layout (same as tests/Shell.spec.luau): a 6x6 tunnel 120 deep with big side rooms.
+function Admin.stress(player: Player)
+	Dig.digBox(player, 6, 0, 0, 11, 5, 119)
+	for z = 10, 110, 20 do
+		Dig.digBox(player, 1, 0, z, 16, 8, z + 5)
+	end
+end
+
+local function teleportInto(player: Player, z: number)
+	local s = State.get(player)
+	local character = player.Character
+	if not s or not s.frame or not character then
+		return
+	end
+	local pos = Tunnel.blockCenter(s.frame, World.TunnelWidth // 2, 1, z)
+	character:PivotTo(CFrame.lookAt(pos, pos + s.frame.LookVector))
+end
+
+function Admin.run(player: Player, cmd: string, arg: number?): boolean
 	local s = State.get(player)
 	if not s then
-		return
+		return false
 	end
-	if cmd == "!cash" then
-		Wallet.add(player, tonumber(args[2]) or 1e6)
-	elseif cmd == "!speed" then
-		s.data.Speed += tonumber(args[2]) or 1e4
-		Movement.refresh(player)
-	elseif cmd == "!item" then
-		local id = args[2] or ""
-		local mut = args[3] or "None"
-		if Progression.item(id) and Mutations.List[mut] then
-			Bases.addItem(player, id, mut)
-		else
-			Net.notice(player, "Unknown item/mutation", "bad")
-			return
+	cmd = string.lower(cmd)
+	if cmd == "noodles" then
+		Loot.addNoodles(player, arg or 1e6)
+	elseif cmd == "strength" then
+		s.data.Strength = math.max(1, math.floor(arg or 1000))
+		Stats.sync(player)
+	elseif cmd == "zone" then
+		local zone = math.clamp(math.floor(arg or 2), 1, 10)
+		local start = Progression.zoneStart(zone)
+		local mid = World.TunnelWidth // 2
+		if start > 0 then
+			-- a 3x3 path to just before the zone (break the last layer yourself for the WOW)
+			Dig.digBox(player, mid - 1, 0, 0, mid + 1, 2, start - 2)
 		end
-	elseif cmd == "!reroll" then
-		VaultLoot.rerollAll()
-	elseif cmd == "!candy" then
-		Cosmetic.addCandy(player, tonumber(args[2]) or 500)
-	elseif cmd == "!event" then
-		if not Events.start(args[2] or "GoldRush", tonumber(args[3])) then
-			Net.notice(player, "Events: GoldRush, GuardStrike, CashFrenzy", "bad")
-			return
+		teleportInto(player, math.max(0, start - 3))
+	elseif cmd == "resettunnel" then
+		Dig.resetTunnel(player)
+		Net.notice(player, "Tunnel reset", "info")
+	elseif cmd == "stress" then
+		Admin.stress(player)
+		teleportInto(player, 2)
+	elseif cmd == "fill" then
+		s.data.Bag = Stats.capacity(s)
+		s.data.BagValue = s.data.Bag
+		Stats.sync(player)
+	elseif cmd == "reset" then
+		Dig.forget(player)
+		local fresh = Data.reset(player)
+		if fresh then
+			player:Kick("Data reset. Rejoin!")
 		end
-	elseif cmd == "!reset" then
-		Data.reset(player)
-		player:Kick("Data reset. Rejoin!")
-		return
+		return true
+	elseif cmd == "day" or cmd == "night" or cmd == "inspect" or cmd == "event" then
+		Net.notice(player, "Comes with a later milestone (M2-M4)", "info")
+		return true
 	else
-		return
+		Net.notice(player, "Unknown admin command: " .. cmd, "bad")
+		return false
 	end
-	Net.notice(player, "Admin: " .. message, "info")
+	Net.notice(player, "Admin: " .. cmd .. (if arg then " " .. tostring(arg) else ""), "info")
+	return true
 end
 
 function Admin.start()
+	local limit = RateLimit.new(2, 5)
+	Net.on(Remotes.Names.AdminCmd, function(player, cmd, arg)
+		if not limit(player) or typeof(cmd) ~= "string" or #cmd > 20 then
+			return
+		end
+		if arg ~= nil and (typeof(arg) ~= "number" or arg ~= arg) then
+			return
+		end
+		if Admin.isAdmin(player) then
+			Admin.run(player, cmd, arg)
+		end
+	end)
 	local function hook(player: Player)
+		local admin = Admin.isAdmin(player)
+		player:SetAttribute("Admin", admin)
+		if not admin then
+			return
+		end
 		player.Chatted:Connect(function(message)
-			if string.sub(message, 1, 1) == "!" and Admin.isAdmin(player) then
-				run(player, message)
+			local parts = string.split(message, " ")
+			local first = parts[1] or ""
+			if string.sub(first, 1, 1) == "!" then
+				Admin.run(player, string.sub(first, 2), tonumber(parts[2]))
 			end
 		end)
 	end
 	Players.PlayerAdded:Connect(hook)
 	for _, p in Players:GetPlayers() do
-		hook(p)
+		task.spawn(hook, p)
 	end
 end
 

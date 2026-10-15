@@ -4,8 +4,9 @@ local process = require("@lune/process")
 
 local suites = {
 	{ name = "Format", run = require("./Format.spec") },
+	{ name = "Voxel", run = require("./Voxel.spec") },
 	{ name = "Progression", run = require("./Progression.spec") },
-	{ name = "Cosmetics", run = require("./Cosmetics.spec") },
+	{ name = "Shell", run = require("./Shell.spec") },
 }
 
 local failures = 0

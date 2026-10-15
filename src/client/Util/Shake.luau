@@ -24,7 +24,7 @@ end
 function Shake.start()
 	local baseFov = 70
 	local t = 0
-	RunService:BindToRenderStep("RTR_Shake", Enum.RenderPriority.Camera.Value + 1, function(dt)
+	RunService:BindToRenderStep("DigOut_Shake", Enum.RenderPriority.Camera.Value + 1, function(dt)
 		local camera = workspace.CurrentCamera
 		if not camera then
 			return

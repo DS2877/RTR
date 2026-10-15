@@ -1,11 +1,7 @@
 --!strict
--- Builds the whole map at runtime, laid out like the genre: everything is LEGO bricks (studded
--- plastic). A big lime grass plaza inside giant checker walls; all 8 bases side by side in one row
--- on the west side (shack -> palace as they level up) with their treadmills out on the grass in
--- front; Rich Street leaves from the middle of the east wall, pointing straight at the bases, and
--- runs through the rich people's zones one after another (wide streets between tall checker
--- walls, a green line where each starts, crates piled up around the owner). The shops (SELL,
--- fuse machine, trails), the WANTED board and the reign board stand by the street's mouth.
+-- Builds the whole prison at runtime: Cell Block (12 cells + bedrock boxes around every tunnel
+-- volume), corridor, Common Room with the shop counters and the Yard with the dump and the gym.
+-- The voxel walls themselves are drawn by each client (client/Controllers/VoxelRender).
 
 local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
@@ -13,1520 +9,879 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
-local Vaults = require(Shared.Config.Vaults)
-local Cosmetics = require(Shared.Config.Cosmetics)
-local Format = require(Shared.Format)
-local WorldDecor = require(script.Parent.WorldDecor)
-local Rig = require(script.Parent.Parent.Util.Rig)
-local Palace = require(script.Parent.Parent.Util.Palace)
+local Economy = require(Shared.Config.Economy)
+local Tunnel = require(Shared.Tunnel)
+local Build = require(script.Parent.Parent.Util.Build)
 
 local WorldBuilder = {}
 
-local FLOOR = 0.4 -- top of base/zone floors
-local BARRIER_HEIGHT = 50 -- invisible wall above the low base fences (no jumping in)
-local FACADE = 24 -- the invisible back wall behind the stage (the visible one grows per level)
--- the treadmill stands in the front-left of your yard: you train at home, where you can guard it
-local BELT_X = -32
-local BELT_DEPTH = 22
-
--- palette (the genre's palace look)
-local NAVY = Color3.fromRGB(38, 40, 92)
-local NAVY_DARK = Color3.fromRGB(26, 28, 66)
-local GOLD = Color3.fromRGB(255, 190, 30)
-local PINK = Color3.fromRGB(255, 70, 220)
-local LIME = Color3.fromRGB(88, 214, 38)
-local WOOD = Color3.fromRGB(196, 140, 80)
-
--- each rich person's street (like the genre): floor + its checker patches, the two tones of the
--- tall checker walls, and what hangs on the walls
-type ZoneStyle = {
-	floor: { number },
-	patch: { number },
-	wall: { number },
-	wall2: { number },
-	walls: string, -- houses | awnings | paintings | steel | planks | neon | bamboo | stars
-	rug: { number }, -- the carpet the owner's crates stand on
-	border: { number }?, -- a colored strip along both walls (nil = none)
-}
-local ZONE_STYLE: { [string]: ZoneStyle } = {
-	Suburbs = {
-		floor = { 104, 196, 66 },
-		patch = { 86, 176, 54 },
-		wall = { 236, 226, 200 },
-		wall2 = { 214, 200, 170 },
-		walls = "houses",
-		rug = { 176, 60, 56 },
-		border = { 150, 110, 70 },
-	},
-	PoolVillas = {
-		floor = { 245, 245, 240 },
-		patch = { 120, 220, 230 },
-		wall = { 250, 250, 252 },
-		wall2 = { 225, 240, 242 },
-		walls = "awnings",
-		rug = { 40, 200, 210 },
-		border = { 60, 200, 220 },
-	},
-	Mansion = {
-		floor = { 150, 100, 60 },
-		patch = { 130, 84, 48 },
-		wall = { 120, 74, 44 },
-		wall2 = { 100, 60, 36 },
-		walls = "paintings",
-		rug = { 150, 28, 40 },
-		border = { 255, 196, 60 },
-	},
-	BankVault = {
-		floor = { 130, 136, 146 },
-		patch = { 110, 116, 126 },
-		wall = { 150, 156, 166 },
-		wall2 = { 120, 126, 136 },
-		walls = "steel",
-		rug = { 40, 120, 60 },
-		border = { 70, 255, 120 },
-	},
-	YachtHarbor = {
-		floor = { 200, 170, 120 },
-		patch = { 180, 150, 100 },
-		wall = { 30, 50, 110 },
-		wall2 = { 24, 40, 90 },
-		walls = "planks",
-		rug = { 30, 50, 110 },
-	},
-	Casino = {
-		floor = { 40, 14, 20 },
-		patch = { 120, 20, 30 },
-		wall = { 30, 20, 26 },
-		wall2 = { 20, 14, 18 },
-		walls = "neon",
-		rug = { 150, 20, 35 },
-		border = { 255, 200, 40 },
-	},
-	PrivateIsland = {
-		floor = { 240, 214, 150 },
-		patch = { 214, 190, 126 },
-		wall = { 120, 190, 90 },
-		wall2 = { 100, 160, 70 },
-		walls = "bamboo",
-		rug = { 255, 200, 40 },
-	},
-	SpaceVault = {
-		floor = { 36, 24, 60 },
-		patch = { 70, 40, 120 },
-		wall = { 40, 22, 70 },
-		wall2 = { 28, 14, 50 },
-		walls = "stars",
-		rug = { 190, 110, 255 },
-		border = { 190, 110, 255 },
-	},
-}
-
-export type BaseRecord = {
-	id: number,
-	origin: CFrame, -- front center at ground level; LookVector points into the base
-	model: Model,
-	color: Color3,
-	pedestals: { BasePart },
-	laser: BasePart,
-	belt: BasePart,
-	collectPad: BasePart,
-	pendingLabel: TextLabel,
-	signLabel: TextLabel,
-	plotSign: BasePart,
-	treadSign: BasePart,
-	beam: BasePart,
-	rings: { BasePart }, -- glowing ring under each pedestal (lit when unlocked)
-	crateSpots: { CFrame }, -- the appraiser's table: where your crates wait (floor level)
-	spawnCFrame: CFrame,
-}
-
-export type VaultRecord = {
+export type CellRecord = {
 	index: number,
-	origin: CFrame, -- zone start on the corridor center line; LookVector points down the corridor
-	center: Vector3,
+	frame: CFrame,
+	spawn: CFrame,
+	sign: TextLabel,
 	model: Model,
-	pedestals: { BasePart }, -- crate spots (floor plates)
-	guardSpawns: { CFrame }, -- [1] = where the zone's guard sleeps, beside the crates
 }
 
-export type WorldInfo = {
-	bases: { BaseRecord },
-	vaults: { VaultRecord },
-	wanted: { [string]: any }, -- Image (ImageLabel list), Title/Name/Bounty (TextLabel lists)
-	reignLines: { TextLabel },
-	fusePrompt: ProximityPrompt,
-	trailsPrompt: ProximityPrompt,
-	sellPrompt: ProximityPrompt,
-	streetEnd: number,
-	halloween: boolean,
+export type WorldRecord = {
+	cells: { CellRecord },
+	shops: { [string]: BasePart },
+	dump: BasePart,
+	stations: { BasePart },
 }
 
-local function rgb(c: { number }): Color3
-	return Color3.fromRGB(c[1], c[2], c[3])
-end
+local C = {
+	floor = Color3.fromRGB(150, 150, 146),
+	corridorFloor = Color3.fromRGB(120, 124, 128),
+	wall = Color3.fromRGB(196, 192, 180),
+	wallLow = Color3.fromRGB(70, 110, 120), -- painted lower half of prison walls
+	ceiling = Color3.fromRGB(170, 170, 165),
+	bedrock = Color3.fromRGB(38, 36, 42),
+	bars = Color3.fromRGB(70, 74, 82),
+	line = Color3.fromRGB(240, 200, 40),
+	grass = Color3.fromRGB(96, 160, 72),
+	orange = Color3.fromRGB(255, 140, 40),
+}
 
--- A LEGO brick: studded plastic on top (and on the sides when `allSides`, for walls).
-local function brick(
-	parent: Instance,
-	name: string,
-	size: Vector3,
-	cf: CFrame,
-	color: Color3,
-	allSides: boolean?
-): Part
-	local p = Instance.new("Part")
-	p.Name = name
-	p.Anchored = true
-	p.Size = size
-	p.CFrame = cf
-	p.Color = color
-	p.Material = Enum.Material.Plastic
-	p.TopSurface = Enum.SurfaceType.Studs
-	p.BottomSurface = Enum.SurfaceType.Inlet
-	if allSides then
-		p.FrontSurface = Enum.SurfaceType.Studs
-		p.BackSurface = Enum.SurfaceType.Studs
-		p.LeftSurface = Enum.SurfaceType.Studs
-		p.RightSurface = Enum.SurfaceType.Studs
+local H = World.TunnelHeight * World.BlockSize -- 24: cell and corridor height
+local WALL = World.WallThickness
+local HALF_CORR = World.CorridorWidth / 2
+local BACK_Z = HALF_CORR + World.CellDepth -- 32
+local END_Z = BACK_Z + World.TunnelDepth * World.BlockSize -- 1232
+local ROW_HALF = World.CellsPerRow * World.CellPitch / 2 -- 120
+
+-- ===== cell block =====
+
+local function buildRowShell(parent: Instance, row: number)
+	local s = if row == 0 then -1 else 1
+	local function zz(a: number, b: number): (number, number)
+		return a * s, b * s
 	end
-	p.Parent = parent
-	return p
+	local z0, z1 = zz(HALF_CORR, BACK_Z)
+	Build.box(
+		parent,
+		"CellFloor",
+		Vector3.new(-ROW_HALF - 2, -4, z0),
+		Vector3.new(ROW_HALF + 2, 0, z1),
+		C.floor,
+		{
+			Material = Enum.Material.Concrete,
+		}
+	)
+	local t0, t1 = zz(BACK_Z, END_Z + WALL)
+	-- bedrock under, over and at the end of every tunnel volume: the unbreakable boundary
+	Build.box(
+		parent,
+		"BedrockFloor",
+		Vector3.new(-ROW_HALF - 2, -4, t0),
+		Vector3.new(ROW_HALF + 2, 0, t1),
+		C.bedrock,
+		{
+			Material = Enum.Material.Basalt,
+		}
+	)
+	local c0, c1 = zz(HALF_CORR, END_Z + WALL)
+	Build.box(
+		parent,
+		"Ceiling",
+		Vector3.new(-ROW_HALF - 2, H, c0),
+		Vector3.new(ROW_HALF + 2, H + 4, c1),
+		C.bedrock,
+		{
+			Material = Enum.Material.Basalt,
+		}
+	)
+	Build.box(
+		parent,
+		"Grass",
+		Vector3.new(-ROW_HALF - 2, H + 4, c0),
+		Vector3.new(ROW_HALF + 2, H + 5, c1),
+		C.grass,
+		{
+			Material = Enum.Material.Grass,
+		}
+	)
+	local e0, e1 = zz(END_Z, END_Z + WALL)
+	Build.box(
+		parent,
+		"BedrockEnd",
+		Vector3.new(-ROW_HALF - 2, 0, e0),
+		Vector3.new(ROW_HALF + 2, H, e1),
+		C.bedrock,
+		{
+			Material = Enum.Material.Basalt,
+		}
+	)
+	-- walls between cells: painted in the cell, bedrock along the tunnel
+	for k = 0, World.CellsPerRow do
+		local x = -ROW_HALF + k * World.CellPitch
+		local a0, a1 = zz(HALF_CORR, BACK_Z)
+		Build.box(parent, "CellWall", Vector3.new(x - 2, 0, a0), Vector3.new(x + 2, H, a1), C.wall, {
+			Material = Enum.Material.Concrete,
+		})
+		Build.box(
+			parent,
+			"CellWallLow",
+			Vector3.new(x - 2.1, 0, a0),
+			Vector3.new(x + 2.1, 6, a1),
+			C.wallLow,
+			{
+				Material = Enum.Material.Concrete,
+				CanCollide = false,
+			}
+		)
+		local b0, b1 = zz(BACK_Z, END_Z)
+		Build.box(parent, "BedrockWall", Vector3.new(x - 2, 0, b0), Vector3.new(x + 2, H, b1), C.bedrock, {
+			Material = Enum.Material.Basalt,
+		})
+	end
 end
 
-local function smooth(
-	parent: Instance,
-	name: string,
-	size: Vector3,
-	cf: CFrame,
-	color: Color3,
-	material: Enum.Material?
-): Part
-	local p = brick(parent, name, size, cf, color)
-	p.Material = material or Enum.Material.SmoothPlastic
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
-	return p
+local function buildCell(parent: Instance, index: number): CellRecord
+	local frame = Tunnel.frame(index)
+	local model = Instance.new("Model")
+	model.Name = "Cell" .. index
+	model.Parent = parent
+	local cx = Tunnel.cellCenterX(index)
+	local s = if Tunnel.row(index) == 0 then -1 else 1
+	local halfW = World.TunnelWidth * World.BlockSize / 2 -- 18
+	local frontZ = HALF_CORR * s
+	local wallIn = (HALF_CORR + 2) * s
+	-- front wall with a door opening (10 wide, 12 high)
+	local doorHalf = 5
+	local doorH = 12
+	Build.box(
+		model,
+		"Front",
+		Vector3.new(cx - halfW, 0, frontZ),
+		Vector3.new(cx - doorHalf, H, wallIn),
+		C.wall,
+		{
+			Material = Enum.Material.Concrete,
+		}
+	)
+	Build.box(
+		model,
+		"Front",
+		Vector3.new(cx + doorHalf, 0, frontZ),
+		Vector3.new(cx + halfW, H, wallIn),
+		C.wall,
+		{
+			Material = Enum.Material.Concrete,
+		}
+	)
+	Build.box(
+		model,
+		"Front",
+		Vector3.new(cx - doorHalf, doorH, frontZ),
+		Vector3.new(cx + doorHalf, H, wallIn),
+		C.wall,
+		{
+			Material = Enum.Material.Concrete,
+		}
+	)
+	-- painted stripe on the corridor side
+	Build.box(
+		model,
+		"Stripe",
+		Vector3.new(cx - halfW, 0, frontZ - 0.1 * s),
+		Vector3.new(cx - doorHalf, 6, frontZ),
+		C.wallLow,
+		{ CanCollide = false }
+	)
+	Build.box(
+		model,
+		"Stripe",
+		Vector3.new(cx + doorHalf, 0, frontZ - 0.1 * s),
+		Vector3.new(cx + halfW, 6, frontZ),
+		C.wallLow,
+		{ CanCollide = false }
+	)
+	-- the barred door, slid open (it locks at night from M2)
+	local door = Instance.new("Model")
+	door.Name = "Door"
+	door.Parent = model
+	local doorZ = frontZ - 0.6 * s
+	for i = 0, 6 do
+		local x = cx - doorHalf - 8 + i * 1.5
+		Build.part(door, "Bar", Vector3.new(0.4, doorH, 0.4), CFrame.new(x, doorH / 2, doorZ), C.bars, {
+			Material = Enum.Material.Metal,
+			CanCollide = false,
+		})
+	end
+	for _, y in { 0.5, doorH - 0.5 } do
+		Build.part(
+			door,
+			"Rail",
+			Vector3.new(10, 0.5, 0.5),
+			CFrame.new(cx - doorHalf - 3.5, y, doorZ),
+			C.bars,
+			{
+				Material = Enum.Material.Metal,
+				CanCollide = false,
+			}
+		)
+	end
+	-- name + depth sign above the door
+	local signPart = Build.part(
+		model,
+		"Sign",
+		Vector3.new(14, 4, 0.4),
+		CFrame.new(cx, doorH + 3, frontZ - 0.3 * s),
+		Color3.fromRGB(40, 44, 52)
+	)
+	local sign = Build.sign(
+		signPart,
+		if s < 0 then Enum.NormalId.Back else Enum.NormalId.Front,
+		"CELL " .. index .. "\nFREE",
+		Color3.fromRGB(255, 235, 120)
+	)
+	Build.part(
+		model,
+		"Number",
+		Vector3.new(3, 3, 0.3),
+		CFrame.new(cx - doorHalf - 2, doorH + 3, frontZ - 0.3 * s),
+		C.orange
+	)
+	-- inside the cell (along the side walls, the back wall is the voxel face)
+	local innerZ = (HALF_CORR + 2) * s
+	local function inCell(x: number, y: number, depthFromFront: number): CFrame
+		return CFrame.new(cx + x, y, innerZ + depthFromFront * s)
+	end
+	-- bed
+	Build.part(model, "BedFrame", Vector3.new(4, 1.6, 9), inCell(-halfW + 2.2, 0.8, 9), C.bars, {
+		Material = Enum.Material.Metal,
+	})
+	Build.part(
+		model,
+		"Mattress",
+		Vector3.new(3.8, 0.8, 8.8),
+		inCell(-halfW + 2.2, 2, 9),
+		Color3.fromRGB(230, 230, 220),
+		{
+			Material = Enum.Material.Fabric,
+		}
+	)
+	Build.part(model, "Blanket", Vector3.new(3.9, 0.3, 5.5), inCell(-halfW + 2.2, 2.5, 10.5), C.orange, {
+		Material = Enum.Material.Fabric,
+	})
+	Build.part(
+		model,
+		"Pillow",
+		Vector3.new(3, 0.6, 1.6),
+		inCell(-halfW + 2.2, 2.6, 5.4),
+		Color3.fromRGB(250, 250, 245)
+	)
+	-- toilet + sink
+	Build.part(
+		model,
+		"Toilet",
+		Vector3.new(2.4, 2.2, 2.6),
+		inCell(halfW - 1.6, 1.1, 14),
+		Color3.fromRGB(235, 238, 240),
+		{
+			Material = Enum.Material.Marble,
+		}
+	)
+	Build.part(
+		model,
+		"Tank",
+		Vector3.new(2.6, 2.4, 1),
+		inCell(halfW - 1.6, 3, 15.4),
+		Color3.fromRGB(235, 238, 240)
+	)
+	Build.part(
+		model,
+		"Sink",
+		Vector3.new(2.2, 0.8, 1.8),
+		inCell(halfW - 1.4, 4, 9),
+		Color3.fromRGB(220, 224, 228),
+		{
+			Material = Enum.Material.Metal,
+		}
+	)
+	-- poster on the side wall
+	local poster = Build.part(
+		model,
+		"Poster",
+		Vector3.new(0.2, 5, 3.6),
+		inCell(halfW - 0.1, 8, 5),
+		Color3.fromRGB(70, 140, 220)
+	)
+	Build.sign(poster, Enum.NormalId.Left, "🏝️\nDREAM BIG", Color3.new(1, 1, 1))
+	Build.sign(poster, Enum.NormalId.Right, "🏝️\nDREAM BIG", Color3.new(1, 1, 1))
+	-- ceiling lamp
+	local lamp = Build.part(
+		model,
+		"Lamp",
+		Vector3.new(4, 0.5, 2),
+		inCell(0, H - 0.25, 8),
+		Color3.fromRGB(255, 250, 225),
+		{
+			Material = Enum.Material.Neon,
+		}
+	)
+	Build.light(lamp, Color3.fromRGB(255, 240, 210), 30, 1.2)
+	-- where you spawn: inside, facing the back wall
+	local spawnPos = Vector3.new(cx, 3, (HALF_CORR + 8) * s)
+	local spawn = CFrame.lookAt(spawnPos, spawnPos + Vector3.new(0, 0, s))
+	model:SetAttribute("Cell", index)
+	return { index = index, frame = frame, spawn = spawn, sign = sign, model = model }
 end
 
-local function deco(p: BasePart): BasePart
-	p.CanCollide = false
-	p.CanQuery = false
-	p.CanTouch = false
-	return p
+local function buildCorridor(parent: Instance)
+	local x0, x1 = -ROW_HALF - 2, ROW_HALF + 2
+	Build.box(
+		parent,
+		"CorridorFloor",
+		Vector3.new(x0, -4, -HALF_CORR),
+		Vector3.new(x1, 0, HALF_CORR),
+		C.corridorFloor,
+		{
+			Material = Enum.Material.Concrete,
+		}
+	)
+	for _, z in { -HALF_CORR + 3, HALF_CORR - 3 } do
+		Build.box(parent, "FloorLine", Vector3.new(x0, 0, z - 0.4), Vector3.new(x1, 0.05, z + 0.4), C.line, {
+			CanCollide = false,
+		})
+	end
+	Build.box(
+		parent,
+		"CorridorCeiling",
+		Vector3.new(x0, H, -HALF_CORR),
+		Vector3.new(x1, H + 2, HALF_CORR),
+		C.ceiling
+	)
+	-- the far end of the corridor (+X) is a wall with a big clock; -X opens into the Common Room
+	local endWall = Build.box(
+		parent,
+		"CorridorEnd",
+		Vector3.new(x1, 0, -HALF_CORR),
+		Vector3.new(x1 + 4, H, HALF_CORR),
+		C.wall,
+		{
+			Material = Enum.Material.Concrete,
+		}
+	)
+	Build.sign(endWall, Enum.NormalId.Left, "CELL BLOCK D", Color3.fromRGB(255, 235, 120))
+	for i = 0, 5 do
+		local lamp = Build.part(
+			parent,
+			"Lamp",
+			Vector3.new(6, 0.5, 2),
+			CFrame.new(-100 + i * 40, H - 0.25, 0),
+			Color3.fromRGB(255, 250, 225),
+			{ Material = Enum.Material.Neon }
+		)
+		Build.light(lamp, Color3.fromRGB(255, 240, 210), 40, 1)
+	end
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name = "Spawn"
+	spawn.Anchored = true
+	spawn.Neutral = true
+	spawn.Duration = 0
+	spawn.Size = Vector3.new(8, 1, 8)
+	spawn.CFrame = CFrame.new(0, 0.5, 0)
+	spawn.Transparency = 1
+	spawn.CanCollide = false
+	spawn.Parent = parent
 end
 
-local function invisible(p: BasePart): BasePart
-	p.Transparency = 1
-	p.CanQuery = false
-	p.CastShadow = false
-	return p
+-- ===== Common Room =====
+
+local function counter(parent: Instance, name: string, title: string, cf: CFrame, color: Color3): BasePart
+	local m = Instance.new("Model")
+	m.Name = name
+	m.Parent = parent
+	local top = Build.part(m, "Counter", Vector3.new(14, 3.4, 3), cf * CFrame.new(0, 1.7, 0), color, {
+		Material = Enum.Material.WoodPlanks,
+	})
+	Build.part(
+		m,
+		"CounterTop",
+		Vector3.new(14.4, 0.4, 3.4),
+		cf * CFrame.new(0, 3.6, 0),
+		Color3.fromRGB(90, 70, 50)
+	)
+	Build.npc(m, "Keeper", cf * CFrame.new(0, 0, 3.5), color, C.bars)
+	local board = Build.part(
+		m,
+		"Board",
+		Vector3.new(14, 4.5, 0.5),
+		cf * CFrame.new(0, 10, 5.5),
+		Color3.fromRGB(35, 38, 46)
+	)
+	Build.sign(board, Enum.NormalId.Front, title, Color3.fromRGB(255, 235, 120))
+	local prompt = Build.prompt(top, "Open", title, Economy.ShopRange)
+	prompt.Name = "ShopPrompt"
+	top:SetAttribute("Shop", name)
+	CollectionService:AddTag(top, "Shop")
+	return top
 end
 
-local function surfaceText(
-	p: BasePart,
-	face: Enum.NormalId,
-	text: string,
-	textColor: Color3,
-	bg: Color3?,
-	font: Enum.Font?
-): TextLabel
-	local sg = Instance.new("SurfaceGui")
-	sg.Face = face
-	sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	sg.PixelsPerStud = 30
-	sg.LightInfluence = 0
-	sg.Parent = p
-	local l = Instance.new("TextLabel")
-	l.Size = UDim2.fromScale(1, 1)
-	l.BackgroundTransparency = if bg then 0 else 1
-	l.BackgroundColor3 = bg or Color3.new()
-	l.Font = font or Enum.Font.FredokaOne
-	l.TextScaled = true
-	l.Text = text
-	l.TextColor3 = textColor
-	local s = Instance.new("UIStroke")
-	s.Thickness = 4
-	s.Color = Color3.fromRGB(20, 20, 25)
-	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
-	s.Parent = l
-	local pad = Instance.new("UIPadding")
-	pad.PaddingLeft = UDim.new(0.04, 0)
-	pad.PaddingRight = UDim.new(0.04, 0)
-	pad.PaddingTop = UDim.new(0.06, 0)
-	pad.PaddingBottom = UDim.new(0.06, 0)
-	pad.Parent = l
-	l.Parent = sg
-	return l
-end
-
-local function prompt(parent: BasePart, action: string, object: string, hold: number?): ProximityPrompt
-	local pp = Instance.new("ProximityPrompt")
-	pp.ActionText = action
-	pp.ObjectText = object
-	pp.HoldDuration = hold or 0
-	pp.MaxActivationDistance = 12
-	pp.RequiresLineOfSight = false
-	pp.Parent = parent
-	return pp
-end
-
--- A wooden notice board on a post (the genre's "Upgrade Plot" sign): title, a green level line and
--- a green price button. Bases fills in the texts (labels Title / Level / Price on both faces).
-local function woodSign(parent: Instance, name: string, cf: CFrame, title: string): Part
-	local board = brick(parent, name, Vector3.new(9, 5.6, 0.8), cf, WOOD)
-	board.FrontSurface = Enum.SurfaceType.Smooth
-	board.BackSurface = Enum.SurfaceType.Smooth
-	local below = cf * CFrame.new(0, -2.8 - 1.4, 0)
-	brick(parent, name .. "Post", Vector3.new(0.8, 2.8, 0.8), below, Color3.fromRGB(130, 90, 50))
-	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
-		local sg = Instance.new("SurfaceGui")
-		sg.Face = face
-		sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		sg.PixelsPerStud = 40
-		sg.LightInfluence = 0
-		sg.Parent = board
-		local function line(lname: string, y: number, h: number, color: Color3, text: string): TextLabel
-			local l = Instance.new("TextLabel")
-			l.Name = lname
-			l.BackgroundTransparency = 1
-			l.Position = UDim2.fromScale(0.05, y)
-			l.Size = UDim2.fromScale(0.9, h)
-			l.Font = Enum.Font.FredokaOne
-			l.TextScaled = true
-			l.Text = text
-			l.TextColor3 = color
-			local st = Instance.new("UIStroke")
-			st.Thickness = 3
-			st.Color = Color3.fromRGB(40, 30, 20)
-			st.Parent = l
-			l.Parent = sg
-			return l
+local function buildCommonRoom(parent: Instance): { [string]: BasePart }
+	local cr = World.CommonRoom
+	local x0, x1 = cr.x - cr.sx / 2, cr.x + cr.sx / 2
+	local z0, z1 = cr.z - cr.sz / 2, cr.z + cr.sz / 2
+	local h = cr.height
+	Build.box(
+		parent,
+		"CommonFloor",
+		Vector3.new(x0, -4, z0),
+		Vector3.new(x1, 0, z1),
+		Color3.fromRGB(176, 150, 120),
+		{
+			Material = Enum.Material.Wood,
+		}
+	)
+	Build.box(parent, "CommonCeiling", Vector3.new(x0, h, z0), Vector3.new(x1, h + 2, z1), C.ceiling)
+	-- walls (+X wall has the corridor opening, -X wall the door to the Yard)
+	Build.box(parent, "Wall", Vector3.new(x0, 0, z0 - 4), Vector3.new(x1, h, z0), C.wall)
+	Build.box(parent, "Wall", Vector3.new(x0, 0, z1), Vector3.new(x1, h, z1 + 4), C.wall)
+	Build.box(parent, "Wall", Vector3.new(x1 - 2, 0, z0), Vector3.new(x1 + 2, h, -HALF_CORR), C.wall)
+	Build.box(parent, "Wall", Vector3.new(x1 - 2, 0, HALF_CORR), Vector3.new(x1 + 2, h, z1), C.wall)
+	Build.box(parent, "Wall", Vector3.new(x1 - 2, H, -HALF_CORR), Vector3.new(x1 + 2, h, HALF_CORR), C.wall)
+	local yardDoor = 12
+	Build.box(parent, "Wall", Vector3.new(x0 - 4, 0, z0), Vector3.new(x0, h, -yardDoor), C.wall)
+	Build.box(parent, "Wall", Vector3.new(x0 - 4, 0, yardDoor), Vector3.new(x0, h, z1), C.wall)
+	Build.box(parent, "Wall", Vector3.new(x0 - 4, 14, -yardDoor), Vector3.new(x0, h, yardDoor), C.wall)
+	local yardSign =
+		Build.part(parent, "YardSign", Vector3.new(0.4, 4, 16), CFrame.new(x0 + 0.3, 17, 0), C.orange)
+	Build.sign(yardSign, Enum.NormalId.Right, "YARD ➜", Color3.new(1, 1, 1))
+	Build.sign(yardSign, Enum.NormalId.Left, "COMMON ROOM", Color3.new(1, 1, 1))
+	local crSign =
+		Build.part(parent, "CommonSign", Vector3.new(0.4, 4, 20), CFrame.new(x1 - 2.3, 17, 0), C.orange)
+	Build.sign(crSign, Enum.NormalId.Right, "COMMON ROOM ★ SHOPS", Color3.new(1, 1, 1))
+	-- painted lower walls
+	Build.box(
+		parent,
+		"Paint",
+		Vector3.new(x0, 0, z0),
+		Vector3.new(x1, 6, z0 + 0.1),
+		C.wallLow,
+		{ CanCollide = false }
+	)
+	Build.box(
+		parent,
+		"Paint",
+		Vector3.new(x0, 0, z1 - 0.1),
+		Vector3.new(x1, 6, z1),
+		C.wallLow,
+		{ CanCollide = false }
+	)
+	for i = 0, 2 do
+		for j = 0, 1 do
+			local lamp = Build.part(
+				parent,
+				"Lamp",
+				Vector3.new(6, 0.5, 6),
+				CFrame.new(x0 + 22 + i * 38, h - 0.25, -22 + j * 44),
+				Color3.fromRGB(255, 248, 225),
+				{ Material = Enum.Material.Neon }
+			)
+			Build.light(lamp, Color3.fromRGB(255, 238, 205), 50, 1.1)
 		end
-		line("Title", 0.06, 0.32, Color3.new(1, 1, 1), title)
-		line("Level", 0.38, 0.2, Color3.fromRGB(110, 255, 90), "")
-		local button = Instance.new("Frame")
-		button.Name = "Button"
-		button.Position = UDim2.fromScale(0.12, 0.62)
-		button.Size = UDim2.fromScale(0.76, 0.3)
-		button.BackgroundColor3 = Color3.fromRGB(60, 210, 70)
-		local corner = Instance.new("UICorner")
-		corner.CornerRadius = UDim.new(0.2, 0)
-		corner.Parent = button
-		local bst = Instance.new("UIStroke")
-		bst.Thickness = 3
-		bst.Color = Color3.fromRGB(20, 90, 30)
-		bst.Parent = button
-		button.Parent = sg
-		local price = Instance.new("TextLabel")
-		price.Name = "Price"
-		price.BackgroundTransparency = 1
-		price.Size = UDim2.fromScale(1, 1)
-		price.Font = Enum.Font.FredokaOne
-		price.TextScaled = true
-		price.Text = ""
-		price.TextColor3 = Color3.new(1, 1, 1)
-		local pst = Instance.new("UIStroke")
-		pst.Thickness = 2
-		pst.Color = Color3.fromRGB(20, 70, 25)
-		pst.Parent = price
-		price.Parent = button
 	end
-	return board
+	-- tables with benches in the middle
+	for i = 0, 1 do
+		local tx = cr.x - 14 + i * 28
+		Build.part(
+			parent,
+			"Table",
+			Vector3.new(12, 0.6, 5),
+			CFrame.new(tx, 3, 0),
+			Color3.fromRGB(120, 124, 130),
+			{
+				Material = Enum.Material.Metal,
+			}
+		)
+		Build.part(parent, "Leg", Vector3.new(1, 3, 1), CFrame.new(tx, 1.4, 0), C.bars)
+		for _, dz in { -4, 4 } do
+			Build.part(
+				parent,
+				"Bench",
+				Vector3.new(12, 0.5, 1.8),
+				CFrame.new(tx, 1.8, dz),
+				Color3.fromRGB(120, 124, 130)
+			)
+		end
+	end
+	-- wall clock + PA speaker
+	local clock = Build.part(
+		parent,
+		"Clock",
+		Vector3.new(4, 4, 0.4),
+		CFrame.new(cr.x, 16, z0 + 0.3),
+		Color3.new(1, 1, 1)
+	)
+	Build.sign(clock, Enum.NormalId.Back, "🕒", Color3.new(0, 0, 0), Color3.new(1, 1, 1))
+	Build.part(
+		parent,
+		"Speaker",
+		Vector3.new(2.4, 1.6, 1.4),
+		CFrame.new(cr.x + 10, 20, z0 + 0.8),
+		Color3.fromRGB(60, 60, 64)
+	)
+
+	local shops: { [string]: BasePart } = {}
+	-- counters face into the room (their keeper stands between counter and wall)
+	shops.Workshop = counter(
+		parent,
+		"Workshop",
+		"🔨 WORKSHOP",
+		CFrame.new(cr.x + 20, 0, z0 + 10) * CFrame.Angles(0, math.pi, 0),
+		Color3.fromRGB(230, 130, 40)
+	)
+	shops.Commissary = counter(
+		parent,
+		"Commissary",
+		"🎒 COMMISSARY",
+		CFrame.new(cr.x + 20, 0, z1 - 10),
+		Color3.fromRGB(60, 150, 230)
+	)
+	shops.Fence = counter(
+		parent,
+		"Fence",
+		"💰 THE FENCE",
+		CFrame.new(cr.x - 30, 0, z1 - 10),
+		Color3.fromRGB(150, 80, 200)
+	)
+	return shops
+end
+
+-- ===== Yard =====
+
+local function buildYard(parent: Instance): (BasePart, { BasePart })
+	local y = World.Yard
+	local x0, x1 = y.x - y.sx / 2, y.x + y.sx / 2
+	local z0, z1 = y.z - y.sz / 2, y.z + y.sz / 2
+	Build.box(parent, "YardGround", Vector3.new(x0, -4, z0), Vector3.new(x1, 0, z1), C.grass, {
+		Material = Enum.Material.Grass,
+	})
+	Build.box(
+		parent,
+		"Court",
+		Vector3.new(x0 + 20, 0, -18),
+		Vector3.new(x1 - 30, 0.1, 18),
+		Color3.fromRGB(150, 140, 130),
+		{
+			Material = Enum.Material.Asphalt,
+		}
+	)
+	-- outside ground so the prison doesn't float
+	for _, zr in { { -1300, 0 }, { 0, 1300 } } do
+		Build.box(
+			parent,
+			"Outside",
+			Vector3.new(x0 - 300, -5, zr[1]),
+			Vector3.new(x1 + 1000, -4, zr[2]),
+			Color3.fromRGB(80, 130, 60),
+			{
+				Material = Enum.Material.Grass,
+			}
+		)
+	end
+	-- fences: posts + see-through mesh panels
+	local fence = Color3.fromRGB(150, 155, 160)
+	local function fenceLine(a: Vector3, b: Vector3)
+		local len = (b - a).Magnitude
+		local mid = (a + b) / 2
+		local cf = CFrame.lookAt(mid, b) * CFrame.new(0, 7, 0)
+		Build.part(parent, "FenceMesh", Vector3.new(0.3, 14, len), cf, fence, {
+			Material = Enum.Material.DiamondPlate,
+			Transparency = 0.55,
+		})
+		Build.part(
+			parent,
+			"Wire",
+			Vector3.new(0.6, 0.6, len),
+			cf * CFrame.new(0, 7.6, 0),
+			Color3.fromRGB(110, 110, 115),
+			{
+				Material = Enum.Material.Metal,
+			}
+		)
+		local n = math.floor(len / 12)
+		for i = 0, n do
+			local p = a:Lerp(b, i / math.max(1, n))
+			Build.part(
+				parent,
+				"Post",
+				Vector3.new(0.7, 15, 0.7),
+				CFrame.new(p + Vector3.new(0, 7.5, 0)),
+				fence,
+				{
+					Material = Enum.Material.Metal,
+				}
+			)
+		end
+	end
+	fenceLine(Vector3.new(x0, 0, z0), Vector3.new(x1, 0, z0))
+	fenceLine(Vector3.new(x0, 0, z1), Vector3.new(x1, 0, z1))
+	fenceLine(Vector3.new(x0, 0, z0), Vector3.new(x0, 0, z1))
+	local crHalf = World.CommonRoom.sz / 2 + 4
+	fenceLine(Vector3.new(x1, 0, z0), Vector3.new(x1, 0, -crHalf))
+	fenceLine(Vector3.new(x1, 0, crHalf), Vector3.new(x1, 0, z1))
+	-- guard tower in the far corner
+	local tx, tz = x0 + 10, z0 + 10
+	for _, d in { { -3, -3 }, { 3, -3 }, { -3, 3 }, { 3, 3 } } do
+		Build.part(
+			parent,
+			"TowerLeg",
+			Vector3.new(1, 22, 1),
+			CFrame.new(tx + d[1], 11, tz + d[2]),
+			Color3.fromRGB(90, 80, 70),
+			{
+				Material = Enum.Material.Wood,
+			}
+		)
+	end
+	Build.part(
+		parent,
+		"TowerCabin",
+		Vector3.new(10, 6, 10),
+		CFrame.new(tx, 25, tz),
+		Color3.fromRGB(200, 190, 170),
+		{
+			Material = Enum.Material.WoodPlanks,
+		}
+	)
+	Build.part(
+		parent,
+		"TowerRoof",
+		Vector3.new(12, 1, 12),
+		CFrame.new(tx, 28.5, tz),
+		Color3.fromRGB(150, 50, 40)
+	)
+	local search = Build.part(
+		parent,
+		"Searchlight",
+		Vector3.new(2, 2, 2),
+		CFrame.new(tx + 5, 26, tz + 5),
+		Color3.fromRGB(255, 255, 220),
+		{
+			Material = Enum.Material.Neon,
+		}
+	)
+	local spot = Instance.new("SpotLight")
+	spot.Range = 60
+	spot.Angle = 40
+	spot.Brightness = 3
+	spot.Face = Enum.NormalId.Bottom
+	spot.Parent = search
+	-- floodlights on poles
+	for _, p in
+		{ Vector3.new(x0 + 40, 0, z1 - 6), Vector3.new(x1 - 40, 0, z1 - 6), Vector3.new(x1 - 40, 0, z0 + 6) }
+	do
+		Build.part(
+			parent,
+			"Pole",
+			Vector3.new(0.8, 24, 0.8),
+			CFrame.new(p + Vector3.new(0, 12, 0)),
+			Color3.fromRGB(90, 90, 95)
+		)
+		local head = Build.part(
+			parent,
+			"Flood",
+			Vector3.new(4, 1.5, 2),
+			CFrame.new(p + Vector3.new(0, 24, 0)),
+			Color3.fromRGB(255, 255, 230),
+			{
+				Material = Enum.Material.Neon,
+			}
+		)
+		Build.light(head, Color3.fromRGB(255, 250, 230), 60, 1.5)
+	end
+
+	-- RUBBLE DUMP: a big skip next to the door from the Common Room
+	local dumpCf = CFrame.new(x1 - 22, 0, -32)
+	local dumpModel = Instance.new("Model")
+	dumpModel.Name = "Dump"
+	dumpModel.Parent = parent
+	local dumpColor = Color3.fromRGB(230, 170, 30)
+	Build.part(dumpModel, "SkipBottom", Vector3.new(16, 1, 10), dumpCf * CFrame.new(0, 0.5, 0), dumpColor, {
+		Material = Enum.Material.Metal,
+	})
+	for _, side in { { 0, -5, 16, 0.6 }, { 0, 5, 16, 0.6 }, { -8, 0, 0.6, 10 }, { 8, 0, 0.6, 10 } } do
+		Build.part(
+			dumpModel,
+			"SkipSide",
+			Vector3.new(side[3], 6, side[4]),
+			dumpCf * CFrame.new(side[1], 3, side[2]),
+			dumpColor,
+			{
+				Material = Enum.Material.Metal,
+			}
+		)
+	end
+	local rubble = Build.part(
+		dumpModel,
+		"Rubble",
+		Vector3.new(15, 3, 9),
+		dumpCf * CFrame.new(0, 3, 0),
+		Color3.fromRGB(140, 130, 120),
+		{
+			Material = Enum.Material.Slate,
+		}
+	)
+	local dumpSign = Build.part(
+		dumpModel,
+		"Board",
+		Vector3.new(16, 4, 0.5),
+		dumpCf * CFrame.new(0, 10, -5.5),
+		Color3.fromRGB(35, 38, 46)
+	)
+	Build.sign(dumpSign, Enum.NormalId.Back, "🪨 RUBBLE DUMP", Color3.fromRGB(255, 220, 90))
+	Build.sign(dumpSign, Enum.NormalId.Front, "🪨 RUBBLE DUMP", Color3.fromRGB(255, 220, 90))
+	local dumpPrompt = Build.prompt(rubble, "Dump rubble", "Rubble Dump", Economy.DumpRange)
+	dumpPrompt.Name = "DumpPrompt"
+	CollectionService:AddTag(rubble, "Dump")
+
+	-- GYM: one station per Economy.Gym entry
+	local stations: { BasePart } = {}
+	for i, st in Economy.Gym do
+		local cf = CFrame.new(x1 - 30 - (i - 1) * 16, 0, 34)
+		local m = Instance.new("Model")
+		m.Name = "Gym" .. i
+		m.Parent = parent
+		local mat = Build.part(
+			m,
+			"Mat",
+			Vector3.new(10, 0.3, 10),
+			cf * CFrame.new(0, 0.15, 0),
+			Color3.fromRGB(50, 50, 60),
+			{
+				Material = Enum.Material.Rubber,
+			}
+		)
+		local metal = Color3.fromRGB(80, 84, 92)
+		if i == 1 then
+			Build.part(
+				m,
+				"Bench",
+				Vector3.new(2, 1.6, 6),
+				cf * CFrame.new(0, 1.1, 0),
+				Color3.fromRGB(200, 40, 40)
+			)
+			Build.part(m, "Bar", Vector3.new(7, 0.3, 0.3), cf * CFrame.new(0, 3.4, -1.5), metal)
+			for _, dx in { -3.2, 3.2 } do
+				Build.part(
+					m,
+					"Plate",
+					Vector3.new(0.5, 2, 2),
+					cf * CFrame.new(dx, 3.4, -1.5),
+					Color3.fromRGB(30, 30, 30)
+				)
+				Build.part(
+					m,
+					"Upright",
+					Vector3.new(0.3, 3.4, 0.3),
+					cf * CFrame.new(dx * 0.8, 1.7, -1.5),
+					metal
+				)
+			end
+		elseif i == 2 then
+			Build.part(m, "Rack", Vector3.new(6, 2.4, 1.6), cf * CFrame.new(0, 1.2, 0), metal)
+			for k = -2, 2 do
+				Build.part(
+					m,
+					"Dumbbell",
+					Vector3.new(0.9, 0.9, 1.6),
+					cf * CFrame.new(k * 1.1, 2.9, 0),
+					Color3.fromRGB(40, 120, 220)
+				)
+			end
+		else
+			Build.part(m, "Barbell", Vector3.new(9, 0.4, 0.4), cf * CFrame.new(0, 1.3, 0), metal)
+			for _, dx in { -4, 4 } do
+				Build.part(
+					m,
+					"Plate",
+					Vector3.new(0.7, 2.6, 2.6),
+					cf * CFrame.new(dx, 1.3, 0),
+					Color3.fromRGB(230, 170, 30)
+				)
+			end
+		end
+		local board = Build.part(
+			m,
+			"Board",
+			Vector3.new(9, 3.4, 0.4),
+			cf * CFrame.new(0, 7, 5),
+			Color3.fromRGB(35, 38, 46)
+		)
+		local need = if st.minStrength > 0
+			then string.format("\nneeds %d 💪", st.minStrength)
+			else "\nfree for all"
+		Build.sign(
+			board,
+			Enum.NormalId.Front,
+			string.format("%s %s +%d%s", st.emoji, string.upper(st.name), st.gain, need),
+			Color3.fromRGB(255, 235, 120)
+		)
+		mat:SetAttribute("Station", i)
+		CollectionService:AddTag(mat, "GymStation")
+		table.insert(stations, mat)
+	end
+	local gymSign =
+		Build.part(parent, "GymSign", Vector3.new(0.5, 5, 20), CFrame.new(x1 - 10, 8, 34), C.orange)
+	Build.sign(gymSign, Enum.NormalId.Left, "💪 GYM", Color3.new(1, 1, 1))
+	Build.sign(gymSign, Enum.NormalId.Right, "💪 GYM", Color3.new(1, 1, 1))
+	return rubble, stations
 end
 
 local function setupLighting()
-	-- Bright, saturated, crisp daylight like the genre (no blown-out whites: normal exposure,
-	-- bloom only on neon). DayNight swaps between this and a purple moonlit night.
 	Lighting.ClockTime = 14
-	Lighting.GeographicLatitude = 25
-	Lighting.Brightness = 2.4
-	Lighting.ExposureCompensation = 0
-	Lighting.Ambient = Color3.fromRGB(95, 95, 110)
-	Lighting.OutdoorAmbient = Color3.fromRGB(150, 150, 160)
-	Lighting.EnvironmentDiffuseScale = 1
-	Lighting.EnvironmentSpecularScale = 0.5
+	Lighting.Brightness = 2
+	Lighting.Ambient = Color3.fromRGB(110, 110, 118)
+	Lighting.OutdoorAmbient = Color3.fromRGB(130, 130, 140)
+	Lighting.EnvironmentDiffuseScale = 0.4
+	Lighting.EnvironmentSpecularScale = 0.2
 	Lighting.GlobalShadows = true
-	Lighting.ShadowSoftness = 0.3
-	local sky = Instance.new("Sky")
-	sky.SunAngularSize = 14
-	sky.MoonAngularSize = 16
-	sky.StarCount = 3000
-	sky.Parent = Lighting
-	local atm = Instance.new("Atmosphere")
-	atm.Density = 0.26 -- soft distance haze: the mountain ring fades into the sky
-	atm.Offset = 0.25
-	atm.Haze = 0.6
-	atm.Glare = 0
-	atm.Color = Color3.fromRGB(200, 222, 248)
-	atm.Decay = Color3.fromRGB(110, 128, 160)
-	atm.Parent = Lighting
-	local bloom = Instance.new("BloomEffect")
-	bloom.Intensity = 0.5
-	bloom.Size = 24
-	bloom.Threshold = 1.5 -- neon tiles and auras glow; grass and walls stay crisp
-	bloom.Parent = Lighting
 	local cc = Instance.new("ColorCorrectionEffect")
-	cc.Saturation = 0.25
-	cc.Contrast = 0.1
-	cc.Brightness = 0.02
+	cc.Name = "ZoneTint"
+	cc.Saturation = 0.08
+	cc.Contrast = 0.05
 	cc.Parent = Lighting
+	local atm = Instance.new("Atmosphere")
+	atm.Density = 0.25
+	atm.Haze = 1
+	atm.Color = Color3.fromRGB(200, 210, 225)
+	atm.Parent = Lighting
 end
 
--- The appraiser: an old expert in a white coat beside the crate table (anchored, idle animation).
-local function appraiser(parent: Instance, cf: CFrame)
-	local rig = Rig.build("appraiser", {
-		head = Color3.fromRGB(255, 205, 160),
-		torso = Color3.fromRGB(245, 245, 245),
-		arms = Color3.fromRGB(245, 245, 245),
-		legs = Color3.fromRGB(60, 60, 70),
-	})
-	if not rig then
-		return
+function WorldBuilder.build(): WorldRecord
+	local old = workspace:FindFirstChild("Prison")
+	if old then
+		old:Destroy()
 	end
-	local root = rig:FindFirstChild("HumanoidRootPart") :: BasePart?
-	local head = rig:FindFirstChild("Head") :: BasePart?
-	local humanoid = rig:FindFirstChildOfClass("Humanoid")
-	if not root or not head or not humanoid then
-		rig:Destroy()
-		return
-	end
-	rig.Name = "Appraiser"
-	local hair = smooth(rig, "Hair", Vector3.new(1.3, 0.5, 1.3), CFrame.new(), Color3.fromRGB(240, 240, 240))
-	Rig.attach(head, hair, CFrame.new(0, head.Size.Y / 2, 0.05))
-	local glasses =
-		smooth(rig, "Glasses", Vector3.new(1.1, 0.25, 0.1), CFrame.new(), Color3.fromRGB(30, 30, 35))
-	Rig.attach(head, glasses, CFrame.new(0, 0.1, -head.Size.Z / 2 - 0.05))
-	rig:PivotTo(cf * CFrame.new(0, 3, 0))
-	root.Anchored = true
-	for _, d in rig:GetDescendants() do
-		if d:IsA("BasePart") then
-			d.CanCollide = false
-		end
-	end
-	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.new(6, 0, 1.1, 0)
-	bb.StudsOffset = Vector3.new(0, 2.2, 0)
-	bb.MaxDistance = 60
-	bb.LightInfluence = 0
-	bb.Parent = head
-	local l = Instance.new("TextLabel")
-	l.Size = UDim2.fromScale(1, 1)
-	l.BackgroundTransparency = 1
-	l.Font = Enum.Font.FredokaOne
-	l.TextScaled = true
-	l.Text = "APPRAISER"
-	l.TextColor3 = Color3.fromRGB(255, 220, 120)
-	local st = Instance.new("UIStroke")
-	st.Thickness = 2
-	st.Parent = l
-	l.Parent = bb
-	rig.Parent = parent
-	Rig.setPose(humanoid, "Idle")
-end
-
--- ===== Player base: a voxel palace =====
--- Lime yard inside a gold fence, a navy path with glowing pink tiles up to a raised stage in front
--- of the palace (your loot stands on podiums there), the winged treadmill front-left, the
--- appraiser's crate table on the right, and the collect pad by the entrance.
-local function buildBase(parent: Instance, id: number, origin: CFrame): BaseRecord
-	local model = Instance.new("Model")
-	model.Name = "Base_" .. id
-	model:SetAttribute("BaseId", id)
-	model.Parent = parent
-	local color = rgb(World.BaseColors[id])
-	local W, D, H = World.BaseWidth, World.BaseDepth, World.WallHeight
-	local SD, SH = World.StageDepth, World.StageHeight
-	local stageTop = FLOOR + SH
-
-	local function at(lx: number, ly: number, depth: number): CFrame
-		return origin * CFrame.new(lx, ly, -depth)
-	end
-
-	brick(model, "Floor", Vector3.new(W, FLOOR, D), at(0, FLOOR / 2, D / 2), LIME)
-
-	-- the path from the entrance to the stage: navy with gold-framed glowing pink tiles
-	brick(model, "Path", Vector3.new(10, 0.2, SD), at(0, FLOOR + 0.1, SD / 2), NAVY)
-	for depth = 5, SD - 4, 6 do
-		deco(brick(model, "TileFrame", Vector3.new(7.2, 0.24, 4.4), at(0, FLOOR + 0.12, depth), GOLD))
-		local tile = deco(brick(model, "Tile", Vector3.new(6, 0.26, 3.3), at(0, FLOOR + 0.13, depth), PINK))
-		tile.Material = Enum.Material.Neon
-	end
-
-	-- collision: invisible walls (+ invisible barriers above them)
-	local seg = (W - World.EntranceWidth) / 2
-	local walls = {
-		{ "WallL", Vector3.new(2, H, D), at(-W / 2, H / 2, D / 2) },
-		{ "WallR", Vector3.new(2, H, D), at(W / 2, H / 2, D / 2) },
-		{ "WallBack", Vector3.new(W, FACADE, 2), at(0, FACADE / 2, D) },
-		{ "WallFL", Vector3.new(seg, H, 2), at(-W / 2 + seg / 2, H / 2, 0) },
-		{ "WallFR", Vector3.new(seg, H, 2), at(W / 2 - seg / 2, H / 2, 0) },
-	}
-	for _, w in walls do
-		-- what you see (fence, palace wall) is decoration rebuilt per level by Util/Palace
-		local wall = brick(model, w[1], w[2], w[3], NAVY, true)
-		wall.Transparency = 1
-		wall.CastShadow = false
-		local barrier = invisible(
-			brick(
-				model,
-				"Barrier",
-				Vector3.new(wall.Size.X, BARRIER_HEIGHT, wall.Size.Z),
-				wall.CFrame * CFrame.new(0, BARRIER_HEIGHT / 2 - wall.Size.Y / 2, 0),
-				Color3.new()
-			)
-		)
-		barrier.CanCollide = true
-	end
-	-- the raised stage with a gold lip and steps at the path
-	brick(
-		model,
-		"Stage",
-		Vector3.new(W - 4, SH, D - SD - 1),
-		at(0, FLOOR + SH / 2, SD + (D - SD - 1) / 2),
-		NAVY_DARK
-	)
-	brick(model, "StageLip", Vector3.new(W - 4, 0.5, 0.8), at(0, stageTop + 0.05, SD + 0.4), GOLD)
-	brick(model, "Step1", Vector3.new(14, SH / 2, 2.4), at(0, FLOOR + SH / 4, SD - 2.4), NAVY)
-	brick(model, "Step2", Vector3.new(14, SH, 1.2), at(0, FLOOR + SH / 2, SD - 0.6), NAVY)
-
-	-- laser door (server toggles it when locked): a visible laser + a tall invisible blocker
-	local laser = smooth(
-		model,
-		"Laser",
-		Vector3.new(World.EntranceWidth, 8, 0.6),
-		at(0, 4, 0),
-		Color3.fromRGB(255, 40, 60),
-		Enum.Material.Neon
-	)
-	laser.Transparency = 1
-	laser.CanCollide = false
-	laser.CanQuery = false
-	local laserBarrier = invisible(
-		brick(
-			model,
-			"LaserBarrier",
-			Vector3.new(World.EntranceWidth, BARRIER_HEIGHT, 0.6),
-			at(0, BARRIER_HEIGHT / 2, 0),
-			Color3.new()
-		)
-	)
-	laserBarrier.CanCollide = false
-
-	-- entrance sign with the owner's name (faces the plaza; the arch posts are palace decor)
-	local sign = smooth(model, "Sign", Vector3.new(World.EntranceWidth + 8, 4.6, 1.2), at(0, 12, -0.4), NAVY)
-	-- thinner than the sign, so it shows as a gold border without covering either face
-	brick(model, "SignTrim", Vector3.new(World.EntranceWidth + 9, 5.4, 0.8), at(0, 12, -0.4), GOLD)
-	local signLabel = surfaceText(sign, Enum.NormalId.Back, "FREE BASE", Color3.fromRGB(200, 200, 210))
-	surfaceText(sign, Enum.NormalId.Front, "🏠", Color3.new(1, 1, 1))
-
-	-- pedestals: navy podiums with a gold rim on the stage
-	local pedestals: { BasePart } = {}
-	local cols = World.PedestalColumns
-	for r = 1, World.PedestalRows do
-		for c = 1, cols do
-			local lx = (c - (cols + 1) / 2) * World.PedestalSpacingX
-			-- cylinders run along X: stood up with a 90° turn about Z
-			local ped = smooth(
-				model,
-				"Pedestal",
-				Vector3.new(1.2, 5.4, 5.4),
-				at(lx, stageTop + 0.6, World.PedestalRowDepth[r]) * CFrame.Angles(0, 0, math.rad(90)),
-				NAVY
-			)
-			ped.Shape = Enum.PartType.Cylinder
-			ped:SetAttribute("Slot", #pedestals + 1)
-			table.insert(pedestals, ped)
-		end
-	end
-
-	-- the treadmill in the yard (standing on it = training; its frame is Palace decor that grows
-	-- with the treadmill level)
-	local belt = smooth(
-		model,
-		"Treadmill",
-		Vector3.new(9, 0.6, 20),
-		at(BELT_X, FLOOR + 0.3, BELT_DEPTH),
-		Color3.fromRGB(60, 30, 120),
-		Enum.Material.SmoothPlastic
-	)
-	belt:SetAttribute("BeltColor", Color3.fromRGB(170, 90, 255)) -- stripes scroll on the client (Ambient)
-	local screen = smooth(
-		model,
-		"TreadScreen",
-		Vector3.new(9, 3.2, 1),
-		at(BELT_X, FLOOR + 8.6, BELT_DEPTH + 9.5),
-		Color3.fromRGB(30, 20, 60)
-	)
-	surfaceText(screen, Enum.NormalId.Back, "⚡ SPEED ⚡", Color3.fromRGB(120, 230, 255))
-
-	-- upgrade signs (wooden boards): far enough from the belt that the prompt never pops up there
-	local treadSign =
-		woodSign(model, "TreadSign", at(BELT_X + 15, FLOOR + 4.2, BELT_DEPTH - 6), "Upgrade Treadmill")
-	local plotSign = woodSign(model, "PlotSign", at(-20, FLOOR + 4.6, 6), "Upgrade Plot")
-
-	-- collect pad by the entrance (front right): gold rim, green glow
-	brick(model, "PadRim", Vector3.new(9.4, 0.3, 9.4), at(W / 2 - 12, FLOOR + 0.1, 8), GOLD)
-	local collectPad = smooth(
-		model,
-		"CollectPad",
-		Vector3.new(8, 0.4, 8),
-		at(W / 2 - 12, FLOOR + 0.2, 8),
-		Color3.fromRGB(70, 230, 90),
-		Enum.Material.Neon
-	)
-	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.new(10, 0, 2.2, 0) -- studs: shrinks with distance instead of filling the screen
-	bb.StudsOffset = Vector3.new(0, 3, 0)
-	bb.MaxDistance = 90
-	bb.Parent = collectPad
-	local pendingLabel = Instance.new("TextLabel")
-	pendingLabel.Size = UDim2.fromScale(1, 1)
-	pendingLabel.BackgroundTransparency = 1
-	pendingLabel.Font = Enum.Font.FredokaOne
-	pendingLabel.TextScaled = true
-	pendingLabel.TextColor3 = Color3.fromRGB(120, 255, 130)
-	pendingLabel.Text = "COLLECT $0"
-	local ps = Instance.new("UIStroke")
-	ps.Thickness = 3
-	ps.Parent = pendingLabel
-	pendingLabel.Parent = bb
-
-	-- crates wait on the front edge of the stage (in front of the podiums, both sides of the
-	-- steps) with the appraiser standing beside them, like the genre
-	local crateSpots: { CFrame } = {}
-	for _, lx in { -10.5, 10.5, -17.5, 17.5, -24.5, 24.5, -31.5, 31.5 } do
-		-- the lock faces the entrance
-		table.insert(crateSpots, at(lx, stageTop, SD + 2.6) * CFrame.Angles(0, math.rad(180), 0))
-	end
-	appraiser(model, at(38.5, stageTop, SD + 2.6) * CFrame.Angles(0, math.rad(180), 0))
-
-	-- crown beam (visible when this base belongs to THE RICHEST)
-	local beam = smooth(
-		model,
-		"CrownBeam",
-		Vector3.new(220, 10, 10),
-		at(0, 110, D / 2) * CFrame.Angles(0, 0, math.rad(90)),
-		Color3.fromRGB(255, 210, 50),
-		Enum.Material.Neon
-	)
-	beam.Shape = Enum.PartType.Cylinder
-	beam.CanCollide = false
-	beam.CanQuery = false
-	beam.CanTouch = false
-	beam.Transparency = 1
-
-	local rings = WorldDecor.base(model, origin, color, pedestals, stageTop)
-	WorldDecor.safeZone(model, origin, FLOOR)
-
-	local record: BaseRecord = {
-		id = id,
-		origin = origin,
-		model = model,
-		color = color,
-		pedestals = pedestals,
-		rings = rings,
-		laser = laser,
-		belt = belt,
-		collectPad = collectPad,
-		pendingLabel = pendingLabel,
-		signLabel = signLabel,
-		plotSign = plotSign,
-		treadSign = treadSign,
-		beam = beam,
-		crateSpots = crateSpots,
-		spawnCFrame = at(0, 4, 11) * CFrame.Angles(0, math.rad(180), 0),
-	}
-	-- a free base starts as the plain wooden shack with the wooden treadmill
-	Palace.dressBase(record, 1)
-	Palace.dressTreadmill(record, 1)
-	return record
-end
-
--- A giant studded wall in two-tone checker squares with bunting along the top.
--- `cf`: bottom center; the wall runs along local X, its inner face looks along local -Z.
-local function checkerWall(
-	parent: Instance,
-	name: string,
-	cf: CFrame,
-	length: number,
-	height: number,
-	a: Color3,
-	b: Color3,
-	square: number
-)
-	brick(parent, name, Vector3.new(length, height, 4), cf * CFrame.new(0, height / 2, 0), a, true)
-	local cols = math.floor(length / square)
-	local rows = math.floor(height / square)
-	local x0 = -cols * square / 2 + square / 2
-	for c = 0, cols - 1 do
-		for r = 0, rows - 1 do
-			if (c + r) % 2 == 0 then
-				deco(
-					brick(
-						parent,
-						"Checker",
-						Vector3.new(square, square, 0.4),
-						cf * CFrame.new(x0 + c * square, r * square + square / 2, -2.2),
-						b,
-						true
-					)
-				)
-			end
-		end
-	end
-	brick(
-		parent,
-		name .. "Top",
-		Vector3.new(length + 2, 2, 6),
-		cf * CFrame.new(0, height + 1, 0),
-		b:Lerp(Color3.new(0, 0, 0), 0.2)
-	)
-	-- bunting: little colored flags along the top of the inner face
-	local flags = {
-		Color3.fromRGB(255, 140, 30),
-		Color3.fromRGB(150, 60, 220),
-		Color3.fromRGB(255, 220, 60),
-		Color3.fromRGB(80, 200, 255),
-	}
-	local i = 0
-	for x = -length / 2 + 4, length / 2 - 4, 8 do
-		i += 1
-		local flag = deco(
-			brick(
-				parent,
-				"Bunting",
-				Vector3.new(2.4, 2.4, 0.3),
-				cf * CFrame.new(x, height - 2.2, -2.6) * CFrame.Angles(0, 0, math.rad(45)),
-				flags[i % #flags + 1]
-			)
-		)
-		flag.CastShadow = false
-	end
-end
-
--- What hangs on a zone's walls (inner faces), by style. `at` is the zone's local frame.
-local function wallDressing(
-	model: Instance,
-	at: (number, number, number) -> CFrame,
-	style: ZoneStyle,
-	trim: Color3
-)
-	local L, HW = World.VaultSpacing, World.ZoneHalfWidth
-	local kind = style.walls
-	for _, side in { -1, 1 } do
-		local x = side * (HW - 1.3) -- just in front of the wall's inner face
-		local faceIn = CFrame.Angles(0, math.rad(side * 90), 0) -- a part's Front looks toward the street
-		if kind == "houses" or kind == "awnings" then
-			-- building fronts: framed windows, flower boxes; awnings + diamond banners on the shop street
-			for depth = 10, L - 8, 16 do
-				for _, y in { 8, 19 } do
-					brick(
-						model,
-						"WindowFrame",
-						Vector3.new(5, 6, 0.5),
-						at(x, y, depth) * faceIn,
-						Color3.fromRGB(245, 245, 240)
-					)
-					deco(
-						smooth(
-							model,
-							"Window",
-							Vector3.new(4, 5, 0.4),
-							at(x - side * 0.2, y, depth) * faceIn,
-							Color3.fromRGB(110, 180, 230),
-							Enum.Material.Glass
-						)
-					)
-				end
-				if kind == "awnings" then
-					deco(
-						brick(
-							model,
-							"Awning",
-							Vector3.new(8, 0.6, 3),
-							at(x - side * 1.5, 12.5, depth) * faceIn * CFrame.Angles(math.rad(-15), 0, 0),
-							trim
-						)
-					)
-					deco(
-						brick(
-							model,
-							"DiamondBanner",
-							Vector3.new(3, 5, 0.3),
-							at(x - side * 0.3, 24, depth + 8) * faceIn,
-							trim
-						)
-					)
-					deco(
-						brick(
-							model,
-							"BannerGem",
-							Vector3.new(1.4, 1.4, 0.3),
-							at(x - side * 0.5, 24, depth + 8) * faceIn * CFrame.Angles(0, 0, math.rad(45)),
-							Color3.new(1, 1, 1)
-						)
-					)
-				else
-					deco(
-						brick(
-							model,
-							"FlowerBox",
-							Vector3.new(5, 1, 1.2),
-							at(x - side * 0.6, 4.6, depth) * faceIn,
-							Color3.fromRGB(150, 100, 60)
-						)
-					)
-				end
-			end
-		elseif kind == "planks" then
-			for y = 5, 26, 6 do
-				deco(
-					brick(
-						model,
-						"Plank",
-						Vector3.new(0.3, 1, L - 2),
-						at(x, y, L / 2),
-						Color3.fromRGB(100, 72, 44)
-					)
-				)
-			end
-			-- the sea laps at the sides of the beach street
-			for depth = 6, L - 6, 14 do
-				deco(
-					smooth(
-						model,
-						"Water",
-						Vector3.new(10, 0.15, 12),
-						at(side * (HW - 6), FLOOR + 0.08, depth),
-						Color3.fromRGB(70, 170, 245)
-					)
-				)
-			end
-		elseif kind == "paintings" then
-			for depth = 12, L - 8, 20 do
-				brick(
-					model,
-					"PaintingFrame",
-					Vector3.new(9, 7, 0.5),
-					at(x, 12, depth) * faceIn,
-					Color3.fromRGB(190, 140, 50)
-				)
-				deco(
-					brick(
-						model,
-						"Canvas",
-						Vector3.new(7.4, 5.4, 0.3),
-						at(x - side * 0.3, 12, depth) * faceIn,
-						Color3.fromHSV((depth % 37) / 37, 0.55, 0.75)
-					)
-				)
-				local lamp = deco(
-					brick(
-						model,
-						"GalleryLamp",
-						Vector3.new(2, 0.6, 1.2),
-						at(x - side * 0.8, 16.5, depth) * faceIn,
-						Color3.fromRGB(255, 230, 150)
-					)
-				)
-				lamp.Material = Enum.Material.Neon
-			end
-		elseif kind == "steel" then
-			-- vault steel: rivet bands, green laser lines and a round vault door
-			for y = 4, 26, 7 do
-				deco(
-					brick(
-						model,
-						"RivetBand",
-						Vector3.new(0.4, 0.8, L - 2),
-						at(x, y, L / 2),
-						Color3.fromRGB(100, 106, 116)
-					)
-				)
-			end
-			for _, y in { 6, 13 } do
-				local laser = deco(
-					smooth(
-						model,
-						"Laser",
-						Vector3.new(0.2, 0.2, L - 4),
-						at(x - side * 0.4, y, L / 2),
-						Color3.fromRGB(70, 255, 120),
-						Enum.Material.Neon
-					)
-				)
-				laser.CastShadow = false
-			end
-			local door = deco(
-				smooth(
-					model,
-					"VaultDoor",
-					Vector3.new(1, 14, 14),
-					at(x - side * 0.4, 9, 100),
-					Color3.fromRGB(190, 196, 206)
-				)
-			)
-			door.Shape = Enum.PartType.Cylinder
-			local wheel =
-				deco(smooth(model, "VaultWheel", Vector3.new(1.4, 5, 5), at(x - side * 0.9, 9, 100), trim))
-			wheel.Shape = Enum.PartType.Cylinder
-		elseif kind == "neon" then
-			-- casino lights: neon strips and marquee bulbs along the walls
-			for _, y in { 8, 20 } do
-				local strip = deco(
-					smooth(
-						model,
-						"NeonStrip",
-						Vector3.new(0.3, 0.6, L - 2),
-						at(x - side * 0.2, y, L / 2),
-						trim,
-						Enum.Material.Neon
-					)
-				)
-				strip.CastShadow = false
-			end
-			for depth = 6, L - 4, 6 do
-				deco(
-					smooth(
-						model,
-						"Bulb",
-						Vector3.new(0.8, 0.8, 0.8),
-						at(x - side * 0.4, 14, depth),
-						Color3.fromRGB(255, 230, 140),
-						Enum.Material.Neon
-					)
-				)
-			end
-		elseif kind == "bamboo" then
-			-- island huts: bamboo poles, the sea at the sides
-			for depth = 6, L - 4, 8 do
-				deco(
-					brick(
-						model,
-						"Bamboo",
-						Vector3.new(1, 24, 1),
-						at(x - side * 0.4, 12, depth),
-						Color3.fromRGB(190, 170, 90)
-					)
-				)
-			end
-			for depth = 6, L - 6, 14 do
-				deco(
-					smooth(
-						model,
-						"Water",
-						Vector3.new(10, 0.15, 12),
-						at(side * (HW - 6), FLOOR + 0.08, depth),
-						Color3.fromRGB(60, 200, 230)
-					)
-				)
-			end
-		elseif kind == "stars" then
-			-- deep space: glowing stars scattered over the walls and a ringed planet
-			local rng = Random.new(808)
-			for _ = 1, 26 do
-				local star = deco(
-					smooth(
-						model,
-						"Star",
-						Vector3.new(0.6, 0.6, 0.6),
-						at(x - side * 0.4, rng:NextNumber(4, 26), rng:NextNumber(3, L - 3)),
-						Color3.fromRGB(255, 255, 230),
-						Enum.Material.Neon
-					)
-				)
-				star.CastShadow = false
-			end
-			local planet = deco(
-				smooth(
-					model,
-					"Planet",
-					Vector3.new(9, 9, 9),
-					at(x - side * 3, 18, 40 + (side + 1) * 25),
-					Color3.fromRGB(255, 140, 90)
-				)
-			)
-			planet.Shape = Enum.PartType.Ball
-			deco(
-				smooth(
-					model,
-					"PlanetRing",
-					Vector3.new(14, 0.4, 14),
-					at(x - side * 3, 18, 40 + (side + 1) * 25) * CFrame.Angles(math.rad(20), 0, 0),
-					trim,
-					Enum.Material.Neon
-				)
-			)
-		end
-	end
-end
-
--- ===== A rich person's street on the corridor =====
--- A wide studded street between tall two-tone checker walls dressed in the zone's style, a
--- glowing green line where it starts (black iron fences at the sides), themed props along the
--- walls, and the owner's crates piled up on the right (they stand among them and chase thieves).
-local function buildZone(parent: Instance, index: number, origin: CFrame): VaultRecord
-	local def = Vaults[index]
-	local model = Instance.new("Model")
-	model.Name = "Vault_" .. def.id
-	model:SetAttribute("VaultIndex", index)
-	model.Parent = parent
-	local trim = rgb(def.trim)
-	local style: ZoneStyle = ZONE_STYLE[def.id]
-		or {
-			floor = { 230, 225, 210 },
-			patch = { 205, 200, 185 },
-			wall = def.color,
-			wall2 = def.trim,
-			walls = "houses",
-			rug = def.trim,
-		}
-	local L, HW, WH = World.VaultSpacing, World.ZoneHalfWidth, World.ZoneWallHeight
-
-	local function at(lx: number, ly: number, depth: number): CFrame
-		return origin * CFrame.new(lx, ly, -depth)
-	end
-
-	brick(model, "Floor", Vector3.new(HW * 2, FLOOR, L), at(0, FLOOR / 2, L / 2), rgb(style.floor))
-	-- checker patches (2x2 tiles of 6 studs) scattered over the floor
-	local rng = Random.new(index * 97)
-	for _ = 1, 18 do
-		local px = rng:NextInteger(-6, 5) * 6 + 3
-		local pd = rng:NextInteger(1, math.floor(L / 6) - 2) * 6
-		for _, o in { Vector2.new(0, 0), Vector2.new(6, 6) } do
-			deco(
-				brick(
-					model,
-					"Patch",
-					Vector3.new(6, 0.1, 6),
-					at(px + o.X, FLOOR + 0.05, pd + o.Y),
-					rgb(style.patch)
-				)
-			)
-		end
-	end
-
-	-- the tall two-tone checker walls (inner faces toward the street)
-	for _, side in { -1, 1 } do
-		local cf = at(side * (HW + 1), 0, L / 2) * CFrame.Angles(0, math.rad(side * 90), 0)
-		checkerWall(model, "Wall", cf, L, WH, rgb(style.wall), rgb(style.wall2), 12)
-	end
-	wallDressing(model, at, style, trim)
-	-- a colored strip along both walls (the genre's floor edging)
-	if style.border then
-		for _, side in { -1, 1 } do
-			deco(
-				brick(
-					model,
-					"Border",
-					Vector3.new(4, 0.14, L),
-					at(side * (HW - 2), FLOOR + 0.07, L / 2),
-					rgb(style.border :: { number })
-				)
-			)
-		end
-	end
-
-	-- the zone's gate: pillars + a sign with the Speed you need, and a see-through barrier. You can
-	-- look into the next zone but only pass once your Speed is high enough (your client opens it
-	-- for you; stealing checks it on the server). Guards never get through: chases end here.
-	for _, side in { -1, 1 } do
-		brick(
-			model,
-			"GatePillar",
-			Vector3.new(5, WH + 8, 5),
-			at(side * (HW - 2.5), (WH + 8) / 2, 0),
-			trim,
-			true
-		)
-	end
-	local gateSign =
-		smooth(model, "GateSign", Vector3.new(HW * 2, 6, 1.4), at(0, WH + 5, 0), Color3.fromRGB(25, 25, 32))
-	local req = def.speedRequired
-	surfaceText(
-		gateSign,
-		Enum.NormalId.Back, -- read walking out from home
-		def.emoji
-			.. " "
-			.. string.upper(def.name)
-			.. "  •  "
-			.. (if req > 0 then "⚡ " .. Format.number(req) .. " SPEED" else "FREE"),
-		Color3.new(1, 1, 1)
-	)
-	surfaceText(gateSign, Enum.NormalId.Front, "🏠 HOME", Color3.fromRGB(120, 255, 130))
-	local gate = smooth(
-		model,
-		"Gate",
-		Vector3.new(HW * 2 - 10, WH, 0.6),
-		at(0, WH / 2, 0.3),
-		trim,
-		Enum.Material.ForceField
-	)
-	gate.Transparency = 0.35
-	gate.CanQuery = false
-	gate.CastShadow = false
-	gate:SetAttribute("SpeedRequired", req)
-	CollectionService:AddTag(gate, "SpeedGate")
-
-	-- where the zone starts: a glowing green line across the street + black iron fences at the sides
-	local line = deco(
-		brick(
-			model,
-			"ZoneLine",
-			Vector3.new(HW * 2, 0.12, 1.2),
-			at(0, FLOOR + 0.06, 0.6),
-			Color3.fromRGB(80, 255, 90)
-		)
-	)
-	line.Material = Enum.Material.Neon
-	for _, side in { -1, 1 } do
-		for k = 0, 4 do
-			brick(
-				model,
-				"FencePost",
-				Vector3.new(0.6, 7, 0.6),
-				at(side * (HW - 1 - k * 4), FLOOR + 3.5, 0),
-				Color3.fromRGB(25, 25, 30)
-			)
-		end
-		for _, y in { 2.5, 6 } do
-			deco(
-				brick(
-					model,
-					"FenceBar",
-					Vector3.new(16, 0.4, 0.4),
-					at(side * (HW - 9), FLOOR + y, 0),
-					Color3.fromRGB(25, 25, 30)
-				)
-			)
-		end
-	end
-
-	-- the owner's crate pile: 6 spots (3 x 2) on the right side of the street
-	local cs = 1
-	local pedestals: { BasePart } = {}
-	for _, depth in { 56, 63, 70 } do
-		for _, lx in { 20, 27 } do
-			local spot = brick(
-				model,
-				"Pedestal",
-				Vector3.new(6, 0.3, 6),
-				at(cs * lx, FLOOR + 0.15, depth),
-				rgb(style.patch):Lerp(Color3.new(0, 0, 0), 0.15)
-			)
-			table.insert(pedestals, spot)
-		end
-	end
-	-- the crates stand on the owner's carpet, with a wooden "recommended speed" sign in front
-	deco(brick(model, "CrateRug", Vector3.new(18, 0.12, 25), at(cs * 23.5, FLOOR + 0.06, 63), rgb(style.rug)))
-	local need = def.speedRequired
-	local speedSign = brick(
-		model,
-		"SpeedSign",
-		Vector3.new(0.6, 3, 6.5),
-		at(cs * 13.5, FLOOR + 3.2, 63),
-		Color3.fromRGB(196, 140, 80)
-	)
-	brick(
-		model,
-		"SpeedSignPost",
-		Vector3.new(0.5, 1.8, 0.5),
-		at(cs * 13.5, FLOOR + 0.9, 63),
-		Color3.fromRGB(130, 90, 50)
-	)
-	surfaceText(
-		speedSign,
-		if cs > 0 then Enum.NormalId.Left else Enum.NormalId.Right,
-		if need < 1 then "⚡ FREE" else "⚡ " .. Format.number(need) .. "\nSPEED",
-		Color3.fromRGB(120, 255, 120)
-	)
-	WorldDecor.station(model, def.id, at(cs * 40, FLOOR, 63) * CFrame.Angles(0, math.rad(cs * 90), 0))
-	WorldDecor.zone(model, def.id, origin, trim)
-	WorldDecor.scatter(model, def.id, origin, index)
-
-	-- the zone's guard sleeps right beside the crates
-	local guardSpawns: { CFrame } = { at(cs * 33, 4, 63) * CFrame.Angles(0, math.rad(cs * 90), 0) }
-
-	return {
-		index = index,
-		origin = origin,
-		center = at(0, 0, L / 2).Position,
-		model = model,
-		pedestals = pedestals,
-		guardSpawns = guardSpawns,
-	}
-end
-
--- A market stall with a striped awning (SELL), front facing `cf`'s -Z.
-local function stall(parent: Instance, cf: CFrame, title: string, awning: Color3): BasePart
-	local counter = brick(
-		parent,
-		"Counter",
-		Vector3.new(12, 3.5, 4),
-		cf * CFrame.new(0, 1.75, 0),
-		Color3.fromRGB(150, 100, 60)
-	)
-	for _, x in { -5.6, 5.6 } do
-		brick(
-			parent,
-			"StallPost",
-			Vector3.new(0.8, 9, 0.8),
-			cf * CFrame.new(x, 4.5, 1.6),
-			Color3.fromRGB(110, 70, 40)
-		)
-	end
-	for i = 0, 5 do
-		brick(
-			parent,
-			"Awning",
-			Vector3.new(2.2, 0.5, 6),
-			cf * CFrame.new(-5.5 + i * 2.2, 9, -0.4) * CFrame.Angles(math.rad(-12), 0, 0),
-			if i % 2 == 0 then awning else Color3.new(1, 1, 1)
-		)
-	end
-	local sign = smooth(
-		parent,
-		"StallSign",
-		Vector3.new(12, 3.6, 0.6),
-		cf * CFrame.new(0, 12, 1.6),
-		Color3.new(1, 1, 1)
-	)
-	sign.Transparency = 1
-	surfaceText(sign, Enum.NormalId.Front, title, awning, nil, Enum.Font.LuckiestGuy)
-	surfaceText(sign, Enum.NormalId.Back, title, awning, nil, Enum.Font.LuckiestGuy)
-	return counter
-end
-
-function WorldBuilder.build(): WorldInfo
-	setupLighting()
 	local root = Instance.new("Folder")
-	root.Name = "World"
+	root.Name = "Prison"
 	root.Parent = workspace
-
-	local HW = World.ZoneHalfWidth
-	local n = World.BaseCount
-	local pitch = World.BaseWidth + World.BaseGap
-	local halfZ = n * pitch / 2 + 12 -- the plaza runs along z, as long as the row of bases
-	local westX = World.BaseFrontX - World.BaseDepth - 10 -- the wall behind the bases
-	local eastX = World.StreetStartX -- the wall with the street's mouth
-	local zonesStart = eastX + World.ZoneGap
-	local streetEnd = zonesStart + #Vaults * World.VaultSpacing
-	local groundDepth = halfZ * 2 + 40
-	local minX = westX - 20
-	local groundW = streetEnd + 60 - minX
-	local groundCenterX = (streetEnd + 60 + minX) / 2
-	brick(root, "Ground", Vector3.new(groundW, 4, groundDepth), CFrame.new(groundCenterX, -2, 0), LIME)
-
-	-- the island: beach, ocean and a ring of mountains (seen over the walls: the world never ends)
-	local BEACH = 18
-	WorldDecor.surroundings(root, groundCenterX, groundW, groundDepth, BEACH)
-	local bw, bd = groundW + BEACH * 2 - 6, groundDepth + BEACH * 2 - 6
-	for _, b in
-		{
-			{ Vector3.new(bw, 80, 2), Vector3.new(groundCenterX, 40, bd / 2) },
-			{ Vector3.new(bw, 80, 2), Vector3.new(groundCenterX, 40, -bd / 2) },
-			{ Vector3.new(2, 80, bd), Vector3.new(groundCenterX - bw / 2, 40, 0) },
-			{ Vector3.new(2, 80, bd), Vector3.new(groundCenterX + bw / 2, 40, 0) },
-		}
-	do
-		local w = brick(root, "Bound", b[1], CFrame.new(b[2]), Color3.new())
-		w.Transparency = 1
+	local block = Instance.new("Folder")
+	block.Name = "CellBlock"
+	block.Parent = root
+	buildRowShell(block, 0)
+	buildRowShell(block, 1)
+	buildCorridor(block)
+	local cellsFolder = Instance.new("Folder")
+	cellsFolder.Name = "Cells"
+	cellsFolder.Parent = root
+	local cells = {}
+	for i = 1, World.CellCount do
+		cells[i] = buildCell(cellsFolder, i)
 	end
-
-	local spawn = Instance.new("SpawnLocation")
-	spawn.Anchored = true
-	spawn.Size = Vector3.new(10, 0.4, 10)
-	spawn.CFrame = CFrame.new(World.BaseFrontX + 50, 0.3, 0)
-	spawn.Transparency = 1
-	spawn.CanCollide = false
-	spawn.Neutral = true
-	spawn.Duration = 0
-	spawn.Parent = root
-
-	-- the bases: one row along the west side, all facing east across the plaza at the street
-	local bases: { BaseRecord } = {}
-	local basesFolder = Instance.new("Folder")
-	basesFolder.Name = "Bases"
-	basesFolder.Parent = workspace
-	for i = 1, n do
-		local front = Vector3.new(World.BaseFrontX, 0, (i - (n + 1) / 2) * pitch)
-		local origin = CFrame.lookAt(front, front - Vector3.xAxis) -- LookVector points into the base
-		table.insert(bases, buildBase(basesFolder, i, origin))
-	end
-
-	-- the giant checker walls around the plaza (the east one has the street's mouth in the middle)
-	local H = World.PlazaWallHeight
-	local walls = Instance.new("Folder")
-	walls.Name = "PlazaWalls"
-	walls.Parent = root
-	local greenA, greenB = Color3.fromRGB(110, 196, 70), Color3.fromRGB(88, 170, 52)
-	local brownA, brownB = Color3.fromRGB(196, 116, 64), Color3.fromRGB(224, 146, 76)
-	local function face(pos: Vector3, inward: Vector3): CFrame
-		return CFrame.lookAt(pos, pos + inward)
-	end
-	checkerWall(
-		walls,
-		"WestWall",
-		face(Vector3.new(westX - 2, 0, 0), Vector3.xAxis),
-		halfZ * 2,
-		H,
-		greenA,
-		greenB,
-		16
-	)
-	for _, side in { -1, 1 } do
-		checkerWall(
-			walls,
-			if side > 0 then "NorthWall" else "SouthWall",
-			face(Vector3.new((westX + eastX) / 2, 0, side * (halfZ + 2)), Vector3.zAxis * -side),
-			eastX - westX + 8,
-			H,
-			greenA,
-			greenB,
-			16
-		)
-		local len = halfZ - HW
-		checkerWall(
-			walls,
-			"EastWall",
-			face(Vector3.new(eastX + 2, 0, side * (HW + len / 2)), -Vector3.xAxis),
-			len,
-			H,
-			brownA,
-			brownB,
-			16
-		)
-	end
-
-	-- Rich Street's mouth: gate posts, the sign, a short hall into the first zone
-	local gx = eastX
-	brick(
-		root,
-		"EntryHall",
-		Vector3.new(World.ZoneGap, 0.4, HW * 2),
-		CFrame.new(gx + World.ZoneGap / 2, 0.2, 0),
-		Color3.fromRGB(205, 205, 210)
-	)
-	for _, side in { -1, 1 } do
-		brick(
-			root,
-			"GatePost",
-			Vector3.new(6, H + 4, 6),
-			CFrame.new(gx, (H + 4) / 2, side * (HW + 3)),
-			NAVY,
-			true
-		)
-		for y = 6, H, 8 do
-			brick(root, "GateBand", Vector3.new(6.8, 1, 6.8), CFrame.new(gx, y, side * (HW + 3)), GOLD)
-		end
-		brick(
-			root,
-			"HallWall",
-			Vector3.new(World.ZoneGap, World.ZoneWallHeight, 2),
-			CFrame.new(gx + World.ZoneGap / 2, World.ZoneWallHeight / 2, side * (HW + 1)),
-			Color3.fromRGB(150, 150, 160),
-			true
-		)
-	end
-	local gateSign =
-		smooth(root, "GateSign", Vector3.new(3, 10, HW * 2 + 12), CFrame.new(gx, 40, 0), NAVY_DARK)
-	surfaceText(gateSign, Enum.NormalId.Left, "💰 RICH STREET 💰", GOLD)
-	surfaceText(gateSign, Enum.NormalId.Right, "🏠 HOME 🏠", Color3.fromRGB(120, 255, 130))
-	-- SAFE ZONE painted on the grass with a red line, in front of the street's mouth
-	local line = deco(
-		brick(
-			root,
-			"SafeLine",
-			Vector3.new(1, 0.1, HW * 2),
-			CFrame.new(gx - 6, 0.05, 0),
-			Color3.fromRGB(230, 30, 40)
-		)
-	)
-	line.Material = Enum.Material.SmoothPlastic
-	local paint = deco(smooth(
-		root,
-		"SafeZonePaint",
-		Vector3.new(40, 0.05, 10),
-		CFrame.new(gx - 14, 0.08, 0) * CFrame.Angles(0, math.rad(-90), 0), -- reads walking out to the street
-		Color3.new(1, 1, 1)
-	))
-	paint.Transparency = 1
-	surfaceText(paint, Enum.NormalId.Top, "SAFE ZONE", Color3.new(1, 1, 1), nil, Enum.Font.LuckiestGuy)
-
-	local vaults: { VaultRecord } = {}
-	local vaultFolder = Instance.new("Folder")
-	vaultFolder.Name = "Vaults"
-	vaultFolder.Parent = workspace
-	for i = 1, #Vaults do
-		local x0 = zonesStart + (i - 1) * World.VaultSpacing
-		local origin = CFrame.lookAt(Vector3.new(x0, 0, 0), Vector3.new(x0 + 1, 0, 0))
-		table.insert(vaults, buildZone(vaultFolder, i, origin))
-	end
-	local endWall =
-		brick(root, "EndWall", Vector3.new(2, 32, HW * 2), CFrame.new(streetEnd + 1, 16, 0), NAVY_DARK, true)
-	surfaceText(endWall, Enum.NormalId.Left, "🚧 MORE RICH PEOPLE COMING SOON 🚧", GOLD)
-
-	-- the shops stand along the east wall beside the street's mouth, facing the bases (-X)
-	local function facingBases(z: number): CFrame
-		local pos = Vector3.new(eastX - 14, 0.3, z)
-		return CFrame.lookAt(pos, pos - Vector3.xAxis)
-	end
-
-	-- WANTED board (the richest player) on the east wall, south of the street
-	local wantedZ = -(HW + 70)
-	local board = smooth(
-		root,
-		"WantedBoard",
-		Vector3.new(30, 18, 1),
-		CFrame.lookAt(Vector3.new(eastX - 0.6, 22, wantedZ), Vector3.new(eastX - 1.6, 22, wantedZ)),
-		Color3.fromRGB(240, 220, 170)
-	)
-	local wanted: { [string]: any } = { Image = {}, Title = {}, Name = {}, Bounty = {} }
-	local sg = Instance.new("SurfaceGui")
-	sg.Face = Enum.NormalId.Front -- faces the plaza
-	sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	sg.PixelsPerStud = 25
-	sg.LightInfluence = 0
-	sg.Parent = board
-	local function txt(y: number, h: number, color: Color3): TextLabel
-		local l = Instance.new("TextLabel")
-		l.BackgroundTransparency = 1
-		l.Position = UDim2.fromScale(0.36, y)
-		l.Size = UDim2.fromScale(0.6, h)
-		l.Font = Enum.Font.LuckiestGuy
-		l.TextScaled = true
-		l.TextColor3 = color
-		l.Text = ""
-		local st = Instance.new("UIStroke")
-		st.Thickness = 3
-		st.Color = Color3.fromRGB(60, 30, 10)
-		st.Parent = l
-		l.Parent = sg
-		return l
-	end
-	local img = Instance.new("ImageLabel")
-	img.BackgroundColor3 = Color3.fromRGB(255, 245, 220)
-	img.Position = UDim2.fromScale(0.04, 0.15)
-	img.Size = UDim2.fromScale(0.3, 0.7)
-	img.Image = ""
-	local ic = Instance.new("UIStroke")
-	ic.Thickness = 6
-	ic.Color = Color3.fromRGB(90, 50, 20)
-	ic.Parent = img
-	img.Parent = sg
-	table.insert(wanted.Image, img)
-	table.insert(wanted.Title, txt(0.06, 0.26, Color3.fromRGB(220, 40, 40)))
-	table.insert(wanted.Name, txt(0.36, 0.22, Color3.fromRGB(255, 255, 255)))
-	table.insert(wanted.Bounty, txt(0.62, 0.3, Color3.fromRGB(255, 215, 60)))
-
-	-- Longest Reign board on the east wall, north of the street
-	local reign = smooth(
-		root,
-		"ReignBoard",
-		Vector3.new(1, 22, 26),
-		CFrame.new(eastX - 0.6, 24, HW + 110),
-		Color3.fromRGB(30, 25, 35)
-	)
-	local rsg = Instance.new("SurfaceGui")
-	rsg.Face = Enum.NormalId.Left -- faces the plaza (-X)
-	rsg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	rsg.PixelsPerStud = 25
-	rsg.LightInfluence = 0
-	rsg.Parent = reign
-	local layout = Instance.new("UIListLayout")
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = rsg
-	local reignLines: { TextLabel } = {}
-	for i = 0, 10 do
-		local l = Instance.new("TextLabel")
-		l.BackgroundTransparency = 1
-		l.Size = UDim2.fromScale(1, if i == 0 then 0.14 else 0.078)
-		l.Font = if i == 0 then Enum.Font.LuckiestGuy else Enum.Font.FredokaOne
-		l.TextScaled = true
-		l.TextColor3 = if i == 0 then Color3.fromRGB(255, 215, 60) else Color3.new(1, 1, 1)
-		l.Text = if i == 0 then "👑 LONGEST REIGN 👑" else ""
-		l.LayoutOrder = i
-		l.Parent = rsg
-		if i > 0 then
-			table.insert(reignLines, l)
-		end
-	end
-
-	-- Fuse machine (grey workshop with a mystery block) and the SELL stall, north of the street
-	local fcf = facingBases(HW + 62)
-	local machine = brick(
-		root,
-		"FuseMachine",
-		Vector3.new(14, 9, 10),
-		fcf * CFrame.new(0, 4.5, 0),
-		Color3.fromRGB(165, 170, 180),
-		true
-	)
-	brick(
-		root,
-		"FuseRoof",
-		Vector3.new(15, 1.2, 11),
-		fcf * CFrame.new(0, 9.6, 0),
-		Color3.fromRGB(110, 115, 125)
-	)
-	local mystery = brick(
-		root,
-		"FuseBox",
-		Vector3.new(5, 5, 5),
-		fcf * CFrame.new(0, 12.7, 0),
-		Color3.fromRGB(90, 140, 255)
-	)
-	surfaceText(mystery, Enum.NormalId.Front, "?", Color3.new(1, 1, 1), nil, Enum.Font.LuckiestGuy)
-	surfaceText(mystery, Enum.NormalId.Back, "?", Color3.new(1, 1, 1), nil, Enum.Font.LuckiestGuy)
-	local hatch = smooth(
-		root,
-		"FuseHatch",
-		Vector3.new(6, 4, 0.4),
-		fcf * CFrame.new(0, 3, -5.1),
-		Color3.fromRGB(150, 70, 255),
-		Enum.Material.Neon
-	)
-	hatch.CanCollide = false
-	local fsign = smooth(
-		root,
-		"FuseSign",
-		Vector3.new(14, 3, 1),
-		fcf * CFrame.new(0, 17.5, 0),
-		Color3.fromRGB(60, 40, 90)
-	)
-	surfaceText(fsign, Enum.NormalId.Front, "🧪 FUSE MACHINE", Color3.fromRGB(230, 200, 255))
-	surfaceText(fsign, Enum.NormalId.Back, "🧪 FUSE MACHINE", Color3.fromRGB(230, 200, 255))
-	local fusePrompt = prompt(machine, "Fuse", "3 identical → 1 better", 0)
-	fusePrompt.MaxActivationDistance = 16
-
-	local sellCounter = stall(root, facingBases(HW + 30), "SELL", Color3.fromRGB(230, 40, 50))
-	local sellPrompt = prompt(sellCounter, "Sell", "Sell your items", 0)
-	sellPrompt.MaxActivationDistance = 14
-
-	-- the trails shop, south of the street
-	local trailsPrompt = WorldDecor.trailsShop(root, facingBases(-(HW + 30)))
-
-	-- seasonal dressing (Config/Cosmetics.Season decides the dates)
-	local d = os.date("!*t") :: any
-	local halloween = Cosmetics.seasonActive({ month = d.month, day = d.day })
-	if halloween then
-		WorldDecor.halloween(root, bases, vaults, streetEnd)
-	end
-
-	return {
-		bases = bases,
-		vaults = vaults,
-		wanted = wanted,
-		reignLines = reignLines,
-		fusePrompt = fusePrompt,
-		trailsPrompt = trailsPrompt,
-		sellPrompt = sellPrompt,
-		streetEnd = streetEnd,
-		halloween = halloween,
-	}
+	local common = Instance.new("Folder")
+	common.Name = "CommonRoom"
+	common.Parent = root
+	local shops = buildCommonRoom(common)
+	local yard = Instance.new("Folder")
+	yard.Name = "Yard"
+	yard.Parent = root
+	local dump, stations = buildYard(yard)
+	setupLighting()
+	return { cells = cells, shops = shops, dump = dump, stations = stations }
 end
-
-WorldBuilder.FLOOR = FLOOR
-WorldBuilder.prompt = prompt
 
 return WorldBuilder

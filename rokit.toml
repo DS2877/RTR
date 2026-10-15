@@ -1,4 +1,4 @@
-# Toolchain for Rob the Rich!. Install locally with `rokit install`.
+# Toolchain for Dig Out!. Install locally with `rokit install`.
 # CI installs the same pinned versions via tools/install-tools.sh — keep both in sync.
 [tools]
 rojo = "rojo-rbx/rojo@7.4.4"

@@ -1,23 +1,25 @@
 --!strict
--- Rarity tiers: spawn weight in vault pedestals, income multiplier inside a vault, colors.
+-- The 9 rarity tiers of finds. `glow` = light + glint on the ore block and the find card.
 
 export type Tier = {
 	id: string,
-	weight: number, -- relative spawn weight on a vault pedestal
-	mult: number, -- income multiplier on top of the vault's base income
+	rank: number,
 	color: { number },
-	glow: boolean, -- light + sparkles on the item model
+	glow: boolean,
 }
 
 local Rarity = {
-	Order = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic" },
+	Order = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", "Cosmic", "Divine" },
 	Tiers = {
-		Common = { id = "Common", weight = 55, mult = 1, color = { 200, 200, 205 }, glow = false },
-		Uncommon = { id = "Uncommon", weight = 25, mult = 2.5, color = { 90, 220, 110 }, glow = false },
-		Rare = { id = "Rare", weight = 12, mult = 6, color = { 70, 160, 255 }, glow = false },
-		Epic = { id = "Epic", weight = 5.5, mult = 15, color = { 180, 90, 255 }, glow = true },
-		Legendary = { id = "Legendary", weight = 2, mult = 40, color = { 255, 190, 40 }, glow = true },
-		Mythic = { id = "Mythic", weight = 0.5, mult = 120, color = { 255, 70, 140 }, glow = true },
+		Common = { id = "Common", rank = 1, color = { 205, 205, 210 }, glow = false },
+		Uncommon = { id = "Uncommon", rank = 2, color = { 90, 225, 110 }, glow = false },
+		Rare = { id = "Rare", rank = 3, color = { 70, 160, 255 }, glow = true },
+		Epic = { id = "Epic", rank = 4, color = { 185, 90, 255 }, glow = true },
+		Legendary = { id = "Legendary", rank = 5, color = { 255, 190, 40 }, glow = true },
+		Mythic = { id = "Mythic", rank = 6, color = { 255, 70, 140 }, glow = true },
+		Secret = { id = "Secret", rank = 7, color = { 40, 40, 45 }, glow = true },
+		Cosmic = { id = "Cosmic", rank = 8, color = { 80, 230, 255 }, glow = true },
+		Divine = { id = "Divine", rank = 9, color = { 255, 250, 200 }, glow = true },
 	} :: { [string]: Tier },
 }
 

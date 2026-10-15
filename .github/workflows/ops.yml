@@ -1,6 +1,7 @@
 name: ops
 
-# Creator Hub setup through Open Cloud (game passes, developer products, Max Players).
+# Creator Hub setup through Open Cloud (game passes, developer products, old products off sale,
+# experience name/description, Max Players) + the archive tag of the old game.
 # Runs when a branch named ops/* is pushed (or by hand). The key is only read from the secret.
 on:
   push:
@@ -19,6 +20,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The Rob the Rich! archive: tag the last commit of the old game (the session that wiped it
+      # could only push a branch of the same name; the branch is removed once the tag exists).
+      - name: Archive tag archive/rob-the-rich
+        run: |
+          git fetch origin "+refs/heads/archive/rob-the-rich:refs/remotes/origin/archive/rob-the-rich" || true
+          if ! git ls-remote --exit-code --tags origin refs/tags/archive/rob-the-rich >/dev/null; then
+            git tag archive/rob-the-rich 374cd1d45edb8d6094c270e8fe70e8127f81cd0a
+            git push origin refs/tags/archive/rob-the-rich
+          fi
+          if git ls-remote --exit-code --heads origin archive/rob-the-rich >/dev/null; then
+            git push origin --delete refs/heads/archive/rob-the-rich || true
+          fi
 
       - name: Create passes and products, set Max Players
         env:

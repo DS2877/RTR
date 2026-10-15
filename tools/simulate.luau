@@ -1,102 +1,176 @@
 --!strict
--- Rough economy simulation: one active player, 3 hours. Prints when each vault becomes
--- outrunnable and income over time.  `lune run tools/simulate`
+-- Economy simulation: time to reach each zone for a free player and for a player with every pass.
+--   lune run tools/simulate          (zones open right now)
+--   lune run tools/simulate all      (pretend every zone and upgrade is open: long-term pacing)
+-- Model: dig a 3x3 tunnel at the attack rate, vacuum (unless Auto-Vacuum), walk to the Yard when the
+-- backpack is full, dump, lift at the gym for a bit, sell finds, buy the cheapest useful upgrade.
+local process = require("@lune/process")
 local Progression = require("../src/shared/Progression")
 local Economy = require("../src/shared/Config/Economy")
-local Vaults = require("../src/shared/Config/Vaults")
+local Upgrades = require("../src/shared/Config/Upgrades")
 local World = require("../src/shared/Config/World")
-local Rarity = require("../src/shared/Config/Rarity")
+local Zones = require("../src/shared/Config/Zones")
+local Finds = require("../src/shared/Config/Finds")
 local Format = require("../src/shared/Format")
 
-local expectedMult = 0
-local totalW = 0
-for _, id in Rarity.Order do
-	totalW += Rarity.Tiers[id].weight
-end
-for _, id in Rarity.Order do
-	expectedMult += Rarity.Tiers[id].weight / totalW * Rarity.Tiers[id].mult
-end
+local ALL = process.args[1] == "all"
+local CROSS = 9 -- blocks per tunnel layer (3 wide x 3 high: room to walk)
+local WALK = Economy.WalkSpeed -- studs per second
+local BASE_TRIP = 170 -- studs from an average cell to the Yard dump via the Common Room
+local GYM_PER_TRIP = 10 -- seconds a player lifts on each trip
+local SHOP_TIME = 8 -- seconds per trip at the counters
+local LIMIT = if ALL then 60 * 60 * 24 * 30 else 60 * 60 * 6
 
-local t, cash, points, tread, plot = 0, 0, 0, 1, 1
-local items: { number } = { Progression.income(Economy.StarterItem) }
-local reached: { [number]: number } = {}
-local function income(): number
-	local s = 0
-	for _, v in items do
-		s += v
+local function expectedFind(zone: number): number
+	local list = Finds.ByZone[zone]
+	if not list then
+		return 0
 	end
-	return s
-end
-local function advance(dt: number)
-	t += dt
-	cash += income() * dt
-end
-local function vaultX(i: number): number
-	-- walking distance from your base's entrance to the middle of zone i
-	return World.StreetStartX - World.BaseFrontX + World.ZoneGap + (i - 0.5) * World.VaultSpacing
+	local w, v = 0, 0
+	for _, f in list do
+		w += f.weight
+		v += f.weight * f.value
+	end
+	return v / w
 end
 
-while t < 6 * 3600 do
-	local speed = Progression.walkSpeed(points)
-	-- best vault we can outrun
-	local best = 0
-	for i = 1, #Vaults do
-		if speed * Economy.CarrySlowdown.Common > Vaults[i].guardSpeed then
-			best = i
+local function open(track: string): number
+	return if ALL then #(Upgrades :: any)[track] else Upgrades.Open[track]
+end
+
+local function run(passes: boolean)
+	local noodleMult = if passes then Economy.PassEffects.DoubleNoodles else 1
+	local strengthMult = if passes then Economy.PassEffects.DoubleStrength else 1
+	local bagMult = if passes then Economy.PassEffects.HugeBackpack else 1
+	local maxDepth = if ALL then World.TunnelDepth else Progression.diggableDepth()
+
+	local t, noodles, strength = 0, Economy.StartingNoodles, Economy.StartingStrength
+	local lv = { Tools = 1, Brushes = 1, Backpack = 1, FindSlots = 1, Vacuum = 1 }
+	local depth, layerLeft = 0, CROSS
+	local bag, bagValue, findValue, findCount = 0, 0, 0, 0
+	local reached: { [number]: number } = { [1] = 0 }
+	local buys: { string } = {}
+	local firstBuy: number? = nil
+
+	while t < LIMIT and depth < maxDepth do
+		local zone = Progression.zoneAt(depth)
+		local hp = Zones[zone].hp
+		local power = Progression.punchPower(strength, lv.Tools, 0)
+		local hits = Progression.hitsToBreak(hp, power)
+		local brush = #Upgrades.Brushes[lv.Brushes].cells
+		local perPunch = math.min(brush, CROSS) * (if brush > 1 then 0.8 else 1)
+		local perBlock = hits * World.AttackInterval / perPunch
+		-- vacuuming by hand costs time; a bigger vacuum range wastes less of it
+		local vacuumCost = if passes then 0 else 0.35 / Progression.vacuumRange(lv.Vacuum) * 10
+		perBlock *= 1 + vacuumCost
+		local cap = Progression.capacity(lv.Backpack) * bagMult
+
+		-- dig one block
+		t += perBlock
+		bag += 1
+		bagValue += Zones[zone].rubble
+		if findCount < Progression.findSlots(lv.FindSlots) then
+			local chance = Zones[zone].oreChance
+			findValue += chance * expectedFind(zone)
+			findCount += chance
 		end
-	end
-	if best > 0 and not reached[best] then
-		reached[best] = t
-	end
-	-- upgrades: buy cheapest affordable
-	local tc = Progression.treadmillCost(tread)
-	local pc = Progression.plotCost(plot)
-	if tc and cash >= tc and (not pc or tc <= pc or #items < Progression.pedestals(plot)) then
-		cash -= tc
-		tread += 1
-	elseif pc and cash >= pc and #items >= Progression.pedestals(plot) then
-		cash -= pc
-		plot += 1
-	end
-	-- next vault needs more speed? train 30s
-	local nextV = best + 1
-	if best == 0 or (Vaults[nextV] and speed * 0.9 < Vaults[nextV].guardSpeed and t % 120 < 60) then
-		points += Progression.treadmillRate(tread) * 30
-		advance(30)
-	else
-		local dist = vaultX(best) + 60
-		advance(dist * 2 / (speed * 0.88) + 6)
-		local value = Vaults[best].baseIncome * expectedMult
-		if #items < Progression.pedestals(plot) then
-			table.insert(items, value)
-		else
-			table.sort(items)
-			if items[1] < value then
-				cash += items[1] * Economy.SellSeconds
-				items[1] = value
+		layerLeft -= 1
+		if layerLeft <= 0 then
+			depth += 1
+			layerLeft = CROSS
+			local z = Progression.zoneAt(depth)
+			if not reached[z] and depth < maxDepth then
+				reached[z] = t
+			end
+		end
+
+		if bag >= cap then
+			-- trip: out of the tunnel, Yard (dump + gym), Common Room (sell + shop), back
+			-- (the very first trip goes straight to the shop: nobody lifts before their first upgrade)
+			local gym = if firstBuy then GYM_PER_TRIP else 0
+			t += (depth * World.BlockSize * 2 + BASE_TRIP * 2) / WALK + gym + SHOP_TIME
+			noodles += bagValue * noodleMult + findValue * noodleMult
+			bag, bagValue, findValue, findCount = 0, 0, 0, 0
+			local station = Progression.bestStation(strength)
+			strength += Progression.liftGain(station, 0, strengthMult) * math.floor(
+				gym / Economy.LiftInterval
+			)
+			-- buy the cheapest open upgrade, as long as we can afford one
+			while true do
+				local bestTrack, bestCost = nil :: string?, math.huge
+				for track, level in lv do
+					local cost = (Upgrades :: any)[track][level + 1]
+					if cost and level + 1 <= open(track) and cost.cost < bestCost then
+						bestTrack, bestCost = track, cost.cost
+					end
+				end
+				if not bestTrack or bestCost > noodles then
+					break
+				end
+				noodles -= bestCost
+				lv[bestTrack] += 1
+				firstBuy = firstBuy or t
+				table.insert(
+					buys,
+					string.format(
+						"%7s %-10s %s",
+						Format.duration(t),
+						bestTrack,
+						(Upgrades :: any)[bestTrack][lv[bestTrack]].name
+					)
+				)
 			end
 		end
 	end
+
+	print(
+		if passes
+			then "\n== WITH PASSES (2x Noodles, 2x Strength, Huge Backpack, Auto-Vacuum) =="
+			else "\n== FREE PLAYER =="
+	)
+	print(string.format("first upgrade after %s", if firstBuy then Format.duration(firstBuy) else "never"))
+	for z = 1, #Zones do
+		if reached[z] then
+			print(
+				string.format("  zone %2d %-20s reached at %s", z, Zones[z].name, Format.duration(reached[z]))
+			)
+		end
+	end
+	print(
+		string.format(
+			"  depth %d after %s, strength %s, noodles left %s",
+			depth,
+			Format.duration(t),
+			Format.number(strength),
+			Format.number(noodles)
+		)
+	)
+	print("  purchases:")
+	for i, line in buys do
+		if i <= 40 then
+			print("   " .. line)
+		end
+	end
+	return reached, firstBuy
 end
 
-local out = {}
-for i = 1, #Vaults do
-	table.insert(
-		out,
+local free, firstFree = run(false)
+run(true)
+
+-- balance targets (warn only)
+local function target(name: string, actual: number?, maxSeconds: number)
+	local ok = actual ~= nil and actual <= maxSeconds
+	print(
 		string.format(
-			"%-22s %s",
-			Vaults[i].name,
-			if reached[i] then string.format("%.1f min", reached[i] / 60) else "not reached"
+			"%s %-28s %s (target <= %s)",
+			if ok then "OK  " else "MISS",
+			name,
+			if actual then Format.duration(actual) else "never",
+			Format.duration(maxSeconds)
 		)
 	)
 end
-print(table.concat(out, "\n"))
-print(
-	string.format(
-		"after 6h: treadmill L%d, plot L%d, %s/s, speed %.0f",
-		tread,
-		plot,
-		Format.cash(income()),
-		Progression.walkSpeed(points)
-	)
-)
+print("\n== TARGETS (free player) ==")
+target("first upgrade", firstFree, 60)
+target("zone 2", free[2], 6 * 60)
+target("zone 3", free[3], 17 * 60)

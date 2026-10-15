@@ -1,5 +1,5 @@
 {
-	"name": "RobTheRich",
+	"name": "DigOut",
 	"tree": {
 		"$className": "DataModel",
 		"ReplicatedStorage": {
@@ -14,7 +14,7 @@
 		},
 		"StarterPlayer": {
 			"$properties": {
-				"CameraMaxZoomDistance": 90
+				"CameraMaxZoomDistance": 40
 			},
 			"StarterPlayerScripts": {
 				"Client": {

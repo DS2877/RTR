@@ -19,13 +19,16 @@ jobs:
         run: ./tools/install-tools.sh "$HOME/.tools/bin" >> "$GITHUB_PATH"
 
       - name: Format (StyLua)
-        run: stylua --check src tools/smoke.luau tests
+        run: stylua --check src tools/smoke.luau tools/simulate.luau tests
 
       - name: Lint (Selene)
         run: selene src
 
       - name: Tests (Lune)
         run: lune run tests
+
+      - name: Balance simulation (Lune)
+        run: lune run tools/simulate
 
       - name: Build place (Rojo)
         run: rojo build default.project.json -o rtr.rbxl

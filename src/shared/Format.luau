@@ -56,11 +56,9 @@ function Format.number(n: number): string
 	return if negative then "-" .. result else result
 end
 
-function Format.cash(n: number): string
-	if n < 0 then
-		return "-$" .. Format.number(-n)
-	end
-	return "$" .. Format.number(n)
+-- Noodles (the prison currency): 1234 -> "🍜 1,234"
+function Format.noodles(n: number): string
+	return "🍜 " .. Format.number(n)
 end
 
 -- 0.0045 -> "0.45%", 0.00001 -> "0.001%"

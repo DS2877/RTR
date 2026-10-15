@@ -1,33 +1,65 @@
-# Rob the Rich! – rules for every session
+# Dig Out! – rules for every session
 
-Roblox game built entirely from this repo (Rojo + Luau). Steal-and-run genre: train speed on your
-treadmill, steal loot from rich NPC vaults along Rich Street, run it home past the guards, and earn income from
-it on your plot. **Twist: 👑 THE RICHEST.** The richest player on the server wears a crown, gets a gold sky beam
-and the WANTED board, and earns +50%, but can never lock their base, and robbing them pays a bounty.
+Roblox prison-escape digging game built entirely from this repo (Rojo + Luau). You're a prisoner:
+punch through the back wall of your cell, dig a tunnel through material zones that get harder and
+harder, find valuables, smuggle out rubble and loot, upgrade in the Common Room, and finally escape
+(rebirth). Core loop: punch -> vacuum rubble + finds -> backpack full -> Yard dump / The Fence ->
+upgrade -> punch harder -> new zone. The punch and the crumble must feel amazing: juice is a feature.
 
 ## Project facts
 - Repo: `ds2877/rtr` only. Never touch other repos (SAT, DS2877, DAT, CM belong to other projects).
-- Universe `10770392871`, start place `95313582510402`.
-- Push to `main` = publish (GitHub Actions, secret `RTR_PUBLISHING_KEY`). Other branches run checks only.
+- Universe `10770392871`, start place `95313582510402`. One server = 12 players (one per cell).
+- Push to `main` = publish (`.github/workflows/deploy.yml`, secret `RTR_PUBLISHING_KEY`). Other
+  branches run checks only. Never write the key anywhere; read it only from the Actions secret.
+- Creator Hub changes (passes, products, name, Max Players) go through `.github/workflows/ops.yml`
+  (push a branch named `ops/*`), script `tools/ops/roblox_setup.py`.
 - In-game text is English. STATUS.md is written in Swedish for Philip.
-- Philip tests mostly on iPhone: mobile first, big buttons, nothing needs hover or keyboard.
+- The old game (Rob the Rich!) is archived at tag `archive/rob-the-rich`. Player data lives in the
+  ProfileStore `DigOut_v1` (schema `Version` + migrations in `Services/Data.luau`).
 
 ## Build rules
-1. Never write the publishing key anywhere; read it only from the Actions secret.
-2. Everything is code: world, bases, vaults, guards, items and UI are built at runtime. Nothing manual in Studio.
-3. Server decides everything that touches the economy. Clients send intents only. Validate + rate-limit every remote.
-4. Every balance number lives in `src/shared/Config/*`. Re-run `lune run tools/simulate` after balance changes.
-5. Monetization follows Roblox rules: known contents for everything bought with Robux, no random paid rewards.
-6. `--!strict` in every file. StyLua + Selene + Lune tests must pass (CI runs them before publishing).
-7. After every change: update STATUS.md (done / how to test / missing).
+1. Everything is code: world, cells, tunnels, NPCs, items and UI are built at runtime. Nothing manual in Studio.
+2. The server decides everything touching economy or progress. Clients send intents only. Validate and
+   rate-limit every remote.
+3. Every balance number lives in `src/shared/Config/*`. Pure balance math lives in shared modules with Lune
+   tests. `lune run tools/simulate` prints time-to-each-zone for a free player and for a player with
+   passes (`lune run tools/simulate all` = long-term pacing with every zone open). Re-run it after
+   balance changes.
+4. Monetization follows Roblox rules: known contents for everything bought with Robux, no paid randomness.
+5. `--!strict` everywhere. StyLua + Selene + Lune tests must pass (CI runs them before publishing).
+6. After every change: update STATUS.md in Swedish (klart / hur du testar på iPhone / saknas).
+7. Mobile first: big thumb buttons in the lower half, nothing needs hover or keyboard. Must run smoothly on
+   an iPhone 11: at most ~3000 voxel parts and 150 debris cubes per client, 50+ fps.
+8. Admin commands (admins only) for phone testing: ADMIN button in the HUD (and `!cmd` in chat): give
+   Noodles, set strength, jump to zone N, force day/night, reset my tunnel, stress dig, guard
+   inspection, events.
+
+## Digging tech (read before touching Dig / VoxelRender)
+- Grid per cell: 18 x 12 x 600 blocks of 2 studs (`Config/World`). z = 0 is the cell's back wall,
+  z grows deeper. `Shared/Tunnel` converts blocks <-> world (frame = bottom-center of the back wall,
+  local -Z = deeper). Rows face opposite directions, so tunnels never meet.
+- `Shared/Voxel`: dug bits as per-chunk (8x8x8) bitsets, saved as RLE + base64 in the profile.
+  Damage (hp left) is server memory only. Outside the grid = bedrock (server-built parts).
+- Server (`Services/Dig`) validates every punch: solid, exposed through the given face, within
+  `Reach + ReachSlack` of the HRP, attack rate, backpack space. Brushes (`Progression.brushTargets`),
+  finds (`Progression.findAt`: seed + coordinates, deterministic), chambers (`Progression.chamberAt`:
+  sealed rooms at each zone start, opened when you break next to them).
+- Clients render (`Controllers/VoxelRender`): snapshot when near a tunnel, deltas after each punch,
+  only the shell (`Shared/Shell`), chunks within `StreamRadius`, pooled parts, part budget. The
+  character collides with these local parts.
 
 ## Layout
-- `src/shared` → ReplicatedStorage.Shared: Config (Vaults, Rarity, Mutations, Economy, World, Products, Assets, Admin), Progression (pure balance math, Lune-tested), Format, Remotes.
-- `src/server` → ServerScriptService.Server: State (runtime per player), Net, Services (WorldBuilder, Data, Wallet, Movement, Bases, Carry, Vaults, Guards, Treadmill, Richest, Fuse, Product, Admin), Util (ItemModel, RateLimit).
-- `src/client` → StarterPlayerScripts.Client: Controllers (HUD, CarryFX, WorldFX, Panels), Util (UI, Panel, Sound).
+- `src/shared` -> ReplicatedStorage.Shared: Config (World, Zones, Finds, Rarity, Upgrades, Economy,
+  Products, Assets, Admin), Voxel, Shell, Progression (pure, Lune-tested), Tunnel, Format, Remotes.
+- `src/server` -> ServerScriptService.Server: State (runtime per player), Net, Services (WorldBuilder,
+  Data, Stats, Cells, Dig, Loot, Shop, Gym, Admin), Util (Build, RateLimit), Packages (ProfileStore).
+- `src/client` -> StarterPlayerScripts.Client: Controllers (VoxelRender, DigController, DigFX,
+  CameraController, HUD, Shops), Util (UI, Panel, Sound, Shake).
+- `tests/` Lune specs, `tools/simulate.luau` balance sim, `tools/smoke.luau` headless smoke test run by
+  CI inside the real place (`tools/ci/smoke.py`).
 
 ## Local checks
 ```
 ./tools/install-tools.sh        # or: rokit install
-stylua --check src && selene src && lune run tests && rojo build default.project.json -o rtr.rbxl
+stylua --check src tools/smoke.luau tools/simulate.luau tests && selene src && lune run tests && lune run tools/simulate && rojo build default.project.json -o rtr.rbxl
 ```
