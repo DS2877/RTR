@@ -173,6 +173,20 @@ data blandas aldrig in.
   luftstrimmor och suger in kuberna som krymper in i munstycket.
 - Emoji som Roblox inte kan visa (rutor) är utbytta mot säkra (🧱, 💰, 💡 m.fl.).
 
+### Finputs: inga flimrande väggar, riktigt slag, snygga fynd-notiser
+- **Flimmer borta:** väggar och delar som låg i samma plan och "slogs" om att synas (z-fighting) är
+  fixade överallt – bl.a. där Common Room-väggen gick in i cellblocket, målade väggband, sängar,
+  galler, glasrutor, soffor, gymskyltar, staket och NPC-kepsar. Röktestet i CI letar nu automatiskt
+  efter överlappande ytor och stoppar publiceringen om det finns några.
+- **Slaget syns:** hela kroppen slår – laddning bakåt, överkroppen vrids, lutar sig in, raka armen
+  ut, andra armen i gard; växlar höger/vänster. **Andra spelare ser också dina slag.** Varje träff
+  ger en vit chockring på blocket, ett dammpuff och blocket rycker till direkt (innan servern svarat).
+- **Fynd-notiser:** smala mörka kort uppe till höger med blank raritetsruta, liten raritetstext, namn
+  och värde. Glider/tonar in, staplas (max 3) och tonar ut; Rare+ får ett ljussvep. Samma stil för
+  skatt och belöningar.
+- **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
+  (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
+
 ### Balans (`lune run tools/simulate`)
 | | Gratis-spelare | Med alla pass |
 |---|---|---|
@@ -211,7 +225,8 @@ Antal slag per block när man når en ny zon: 7–20 (zon 5 ~70 med Pickaxe → 
 5. Gå tillbaka in i Common Room: **Workshop** – köp Spoon (15 🍜). Slå igen: färre slag per block.
 6. Gå till **YARD GYM** i Yard, tryck prompten vid toaletten – du lyfter den över huvudet. Tryck
    **LIFT** när nålen är i det gröna/guldiga (PERFECT ger combo). **DROP** lägger ner den.
-7. Leta efter mörka block med färgad ådra (fynd) och sälj dem hos **The Fence**.
+7. Leta efter mörka block med färgad ådra (fynd) – ett smalt kort glider in uppe till höger – och
+   sälj dem hos **The Fence**. Titta på din gubbe när du slår: hela kroppen ska slå.
 8. Vänta på natten (eller ADMIN → 🌙 Night): siren, nedräkning, dörren låses, du flyttas in
    i cellen om du var ute. ADMIN → ☀️ Day öppnar igen.
 9. Titta på hyllan ovanför sängen: hittade fynd syns, saknade är "?".
@@ -232,7 +247,6 @@ Antal slag per block när man når en ny zon: 7–20 (zon 5 ~70 med Pickaxe → 
 - Ljudpass: riktiga slag-/smul-ljud behöver väljas i Creator Store (nu återanvända ljud).
 - Ljuden är tillfälliga (återanvända Roblox-ljud som är kontrollerade). Riktiga slag/smul-ljud
   behöver väljas i Creator Store.
-- Andra spelare ser inte ditt armslag (bara smulorna och hålen).
 
 ## ☑️ Manuell checklista för Philip (Creator Hub)
 Ops-workflowen försöker göra detta automatiskt – se `tools/ops/ops-log.md` för resultatet:

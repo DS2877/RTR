@@ -58,7 +58,7 @@ upgrade -> punch harder -> new zone. The punch and the crumble must feel amazing
   Services talk through hooks wired in `init.server.luau` (e.g. `Dig.onFind`, `DayNight.onDay`).
 - `src/client` -> StarterPlayerScripts.Client: Controllers (VoxelRender, DigController, DigFX,
   CameraController, HUD, Shops, Clock, PvPController, ExtraShops, Moments, GymController), Util (UI, Panel,
-  Sound, Shake).
+  Sound, Shake, PunchAnim, LootToast).
 - `tests/` Lune specs, `tools/simulate.luau` balance sim, `tools/smoke.luau` headless smoke test run by
   CI inside the real place (`tools/ci/smoke.py`).
 
