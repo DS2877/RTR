@@ -178,6 +178,105 @@ do
 	check("bedrock floor under the tunnel end", hit ~= nil)
 end
 
+-- ===== z-fighting: visible faces of two parts lying in the same plane, facing the same way =====
+do
+	type Face = {
+		axis: number,
+		sign: number,
+		d: number,
+		u0: number,
+		u1: number,
+		v0: number,
+		v1: number,
+		name: string,
+	}
+	local faces: { [string]: { Face } } = {}
+	local function axisAligned(cf: CFrame): boolean
+		for _, v in { cf.RightVector, cf.UpVector, cf.LookVector } do
+			local a = math.max(math.abs(v.X), math.abs(v.Y), math.abs(v.Z))
+			if a < 0.999 then
+				return false
+			end
+		end
+		return true
+	end
+	local function addBox(name: string, lo: Vector3, hi: Vector3)
+		local l = { lo.X, lo.Y, lo.Z }
+		local h = { hi.X, hi.Y, hi.Z }
+		for axis = 1, 3 do
+			local u = if axis == 1 then 2 else 1
+			local v = if axis == 3 then 2 else 3
+			for _, sign in { -1, 1 } do
+				local d = if sign < 0 then l[axis] else h[axis]
+				local key = axis .. ":" .. sign .. ":" .. math.floor(d * 20 + 0.5)
+				local list = faces[key]
+				if not list then
+					list = {}
+					faces[key] = list
+				end
+				table.insert(list, {
+					axis = axis,
+					sign = sign,
+					d = d,
+					u0 = l[u],
+					u1 = h[u],
+					v0 = l[v],
+					v1 = h[v],
+					name = name,
+				})
+			end
+		end
+	end
+	for _, d in workspace:GetDescendants() do
+		if
+			d:IsA("Part")
+			and d.Shape == Enum.PartType.Block
+			and d.Transparency < 0.95
+			and axisAligned(d.CFrame)
+			and not d:FindFirstAncestorOfClass("Tool")
+		then
+			local half = d.CFrame:VectorToWorldSpace(d.Size / 2)
+			half = Vector3.new(math.abs(half.X), math.abs(half.Y), math.abs(half.Z))
+			addBox(d:GetFullName(), d.Position - half, d.Position + half)
+		end
+	end
+	-- the client's voxel back wall of every cell (one slab per cell)
+	for i, c in world.cells do
+		local f: CFrame = c.frame
+		local a = f:PointToWorldSpace(Vector3.new(-World.TunnelWidth, 0, 0))
+		local b = f:PointToWorldSpace(
+			Vector3.new(World.TunnelWidth, World.TunnelHeight * World.BlockSize, -World.BlockSize)
+		)
+		addBox("VoxelWall" .. i, a:Min(b), a:Max(b))
+	end
+	local hits: { string } = {}
+	local seen: { [string]: boolean } = {}
+	for _, list in faces do
+		for i = 1, #list do
+			for j = i + 1, #list do
+				local a, b = list[i], list[j]
+				local du = math.min(a.u1, b.u1) - math.max(a.u0, b.u0)
+				local dv = math.min(a.v1, b.v1) - math.max(a.v0, b.v0)
+				if du > 0.05 and dv > 0.05 and math.abs(a.d - b.d) < 0.03 then
+					local short = function(n: string): string
+						return (string.gsub(n, "^Workspace%.", ""))
+					end
+					local line = short(a.name) .. " <> " .. short(b.name)
+					if not seen[line] then
+						seen[line] = true
+						table.insert(hits, string.format("%s (%.1fx%.1f)", line, du, dv))
+					end
+				end
+			end
+		end
+	end
+	table.sort(hits)
+	print(string.format("zfight: %d overlapping face pairs", #hits))
+	for k = 1, math.min(#hits, 400) do
+		print("zfight " .. hits[k])
+	end
+end
+
 -- ===== simulated player =====
 local fake: any = { UserId = -4242, Name = "SmokeTester", Position = Vector3.zero }
 local s = State.add(fake, Data.fresh())
