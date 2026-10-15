@@ -64,10 +64,14 @@ function Patrol.situation(pos: Vector3, phase: string): (string, string?)
 			if attr("Carrying") == true then
 				consider("Stolen", Config.HearRange)
 			end
-			if nowClock - s.lastHitAt < 6 or nowClock - s.lastBrawl < 6 then
+			-- (0 = never: os.clock() starts near 0 on a fresh server)
+			if
+				(s.lastHitAt > 0 and nowClock - s.lastHitAt < 6)
+				or (s.lastBrawl > 0 and nowClock - s.lastBrawl < 6)
+			then
 				consider("Fight", Config.HearRange)
 			end
-			if nowClock - s.lastPunch < 3 then
+			if s.lastPunch > 0 and nowClock - s.lastPunch < 3 then
 				consider("Digging", Config.HearRange * 1.6)
 			end
 			if s.data.Bag >= 10 and s.data.Bag >= Stats.capacity(s) * 0.6 then
