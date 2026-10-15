@@ -86,8 +86,8 @@ Antal slag per block när man når en ny zon: 7–20 (zon 5 ~70 med Pickaxe → 
 
 ### Kontroller
 - CI: StyLua, Selene, Lune-tester, balanssimulering, Rojo-bygge och **smoke-test i den riktiga
-  platsen: 154 godkända, 0 fel** (hela M1-loopen spelas av en simulerad spelare: slag, sönderslaget
-  block, dammsugning, dump, köp, gym, fynd + försäljning, kammare + zon 2, sparning, stresstest).
+  platsen: 169 godkända, 0 fel** (hela M1-loopen spelas av en simulerad spelare: slag, sönderslaget
+  block, dammsugning, dump, köp, gym, fynd + försäljning, kammare + zon 2, samlingshylla, dag/natt med låsta dörrar, sparning, stresstest).
 
 ### Prestanda
 - Stresstestet (admin "Stress dig": 6×6-tunnel 120 block djup med 6 stora sidorum) ger **3 852
