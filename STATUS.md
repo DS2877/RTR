@@ -187,24 +187,45 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
-### Balans (`lune run tools/simulate`)
+### Ljud, balans och zoner (stora uppdateringen)
+- **Ljud (licensierade ProSoundEffects-ljud):** varje slag = luftsus + tung knytnäve + zonens
+  materialljud (betong, tegel, jord, armeringsjärn, sten, glas/kristall). Ljudet blir ljusare för
+  varje spricka – du *hör* när blocket är på väg att ge vika. Krossade block får eget krossljud +
+  grus, och snabba krossar i följd klättrar i tonhöjd (rytm-belöning). Kuber som landar smattrar i
+  3D, dammsugaren har motorljud och "plopp" som stiger i ton när kuberna sugs in. Andras grävande
+  hörs där de står. Varje zon har ett eget bakgrundsljud (ihålig tunnel, ventilationsbrus,
+  droppande vatten, lavamuller, kristallklang) och musiken sänks i tunnlarna. Celldörrarna smäller
+  vid nattlåsning, dynamiten smäller som en riktig sprängning, knappar klickar.
+- **Balans:** förut tog det ~13 timmar att nå botten och sista zonen krävde ~1 500 slag per block.
+  Nu: gratisspelare flyr på ~2 h (med pass ~1 h 25 min), varje zon tar lite längre än förra och
+  i snitt max ~15 slag per block i alla zoner. Verktygen kommer ungefär ett per zon (inga 50x-hopp
+  i pris längre), djupa zoner betalar för nästa verktyg. Nytt verktyg `lune run tools/tune write`
+  räknar fram blockens hp mot tidsmålen.
+- **Zonerna ser olika ut inuti:** streckräkning (fångars dagräkning) i putsen, kopparrör i teglet,
+  elrör i betongen, ett gallerverk av armeringsjärn, stora lerrör och järnrör, slem som lyser och
+  rostiga rör i kloaken, kvartsådror och fossiler i berget, lysande kristaller, glödande lavaådror
+  och obsidian, pelare med guldband och inristade tecken i ruinerna. Plus svävande partiklar per
+  zon: damm, droppar, stigande glöd, gnistrande kristalldamm, guldstoft.
+
+### Balans (`lune run tools/simulate all`)
 | | Gratis-spelare | Med alla pass |
 |---|---|---|
 | Första uppgraderingen | 38 s | 34 s |
 | Zon 2 (Brick) | 4:11 | 3:51 |
-| Zon 3 (Concrete) | 9:41 | 8:25 |
-| Zon 4 (Reinforced) | 14:47 | 12:08 |
-| Zon 5 (Clay & Pipes) | 23:35 | 19:20 |
-| Zon 6 (Sewer) | 42:52 | 48:46 |
-| Zon 7 (Bedrock) | 58:33 | 1:01:05 |
-| Zon 8 (Crystal Cave) | 2:12:03 | 1:26:28 |
-| Zon 9 (Magma) | 2:45:06 | 1:41:28 |
-| Zon 10 (Ancient Ruins) | 3:47:26 | 3:03:58 |
-| Första flykten (600 m) | ~15:30 h | ~8 h |
+| Zon 3 (Concrete) | 8:52 | 7:50 |
+| Zon 4 (Reinforced) | 14:52 | 11:55 |
+| Zon 5 (Clay & Pipes) | 22:53 | 16:47 |
+| Zon 6 (Sewer) | 33:57 | 27:36 |
+| Zon 7 (Bedrock) | 45:13 | 32:16 |
+| Zon 8 (Crystal Cave) | 1:01:59 | 47:38 |
+| Zon 9 (Magma) | 1:21:15 | 54:03 |
+| Zon 10 (Ancient Ruins) | 1:55:42 | 1:02:01 |
+| Första flykten (600 m) | ~2:04 h | ~1:23 h |
 
-Mål: första uppgradering < 60 s ✅, zon 2 ≈ 5 min ✅, zon 3 ≈ 15 min (nu ~10 min, lite snabbt).
-Siffrorna är en första omgång – simulatorn är förenklad (passen ger t.ex. för lite effekt i den).
-Antal slag per block när man når en ny zon: 7–20 (zon 5 ~70 med Pickaxe → köp Jackhammer).
+Mål: första uppgradering < 60 s ✅, zon 2 < 6 min ✅, zon 3 < 17 min ✅, flykt < 2:30 ✅,
+snitt ≤ 15 slag per block i varje zon ✅ (simulatorn varnar om något av detta spricker).
+När nästa lager kräver fler än ~15 slag "farmar" spelaren bredare i en grundare zon för Noodles och
+köper nästa verktyg – det är tänkt så (som i andra simulatorspel), inte en vägg.
 
 ### Kontroller
 - CI: StyLua, Selene, Lune-tester, balanssimulering, Rojo-bygge och **smoke-test i den riktiga
@@ -238,15 +259,15 @@ Antal slag per block när man når en ny zon: 7–20 (zon 5 ~70 med Pickaxe → 
 12. M4: ADMIN → Bottom→Escape → tryck ESCAPE! (filmsekvens + High Security). ADMIN → 🌙 Night →
     Inspect me → tryck HIDE. ADMIN → 💰 Treasure och följ markeringen. ADMIN → 🧨 x5 och tryck 🧨
     mot väggen. Köp en lampa i Workshop → 💡 DECOR och placera den i tunneln med 💡-knappen.
-13. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
-14. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
+13. Ljud/zoner: ha ljudet på. Slå på väggen (hör sprickorna stiga i ton), krossa flera i rad.
+    ADMIN → Zone 4 (armeringsjärn), Zone 5 (rör), Zone 8 (kristaller), Zone 9 (lava) – gräv en bit
+    och titta på väggarna och lyssna på bakgrundsljudet.
+14. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
+15. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
 
 ## ⏳ Saknas (kommande milstolpar)
-- Djupa zoner (8–10) kräver många slag per block i simulatorn – behöver finjusteras med riktiga
-  speldata.
-- Ljudpass: riktiga slag-/smul-ljud behöver väljas i Creator Store (nu återanvända ljud).
-- Ljuden är tillfälliga (återanvända Roblox-ljud som är kontrollerade). Riktiga slag/smul-ljud
-  behöver väljas i Creator Store.
+- Balansen bygger på simulatorn – finjustera med riktiga speldata när spelare kommer in.
+- Ljudnivåerna är satta "på papper" – lyssna på iPhone och säg till om något är för högt/lågt.
 
 ## ☑️ Manuell checklista för Philip (Creator Hub)
 Ops-workflowen försöker göra detta automatiskt – se `tools/ops/ops-log.md` för resultatet:

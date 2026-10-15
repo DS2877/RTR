@@ -52,14 +52,14 @@ upgrade -> punch harder -> new zone. The punch and the crumble must feel amazing
 
 ## Layout
 - `src/shared` -> ReplicatedStorage.Shared: Config (World, Zones, Finds, Rarity, Upgrades, Economy,
-  Cycle, PvP, Extras, Products, Assets, Admin), Voxel, Shell, Progression (pure, Lune-tested),
-  Tunnel, Format, Remotes.
+  Cycle, PvP, Extras, Products, Assets, Audio, Admin), Voxel, Shell, Progression + Strata (pure,
+  Lune-tested; Strata = cosmetic features inside each zone's rock), Tunnel, Format, Remotes.
 - `src/server` -> ServerScriptService.Server: State (runtime per player), Net, Services (WorldBuilder,
   Data, Stats, Cells, Dig, Loot, Shop, Gym, Collection, DayNight, Brawl, Raid, TopDog, Product,
   Escape, Rewards, Guards, Events, Market, Admin), Util (Build, RateLimit, GymProps), Packages (ProfileStore).
   Services talk through hooks wired in `init.server.luau` (e.g. `Dig.onFind`, `DayNight.onDay`).
 - `src/client` -> StarterPlayerScripts.Client: Controllers (VoxelRender, DigController, DigFX,
-  CameraController, HUD, Shops, Clock, PvPController, ExtraShops, Moments, GymController), Util (UI, Panel,
+  CameraController, HUD, Shops, Clock, PvPController, ExtraShops, Moments, GymController, DigAudio), Util (UI, Panel,
   Sound, Shake, PunchAnim, LootToast).
 - `tests/` Lune specs, `tools/simulate.luau` balance sim, `tools/smoke.luau` headless smoke test run by
   CI inside the real place (`tools/ci/smoke.py`).
