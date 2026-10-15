@@ -43,6 +43,8 @@ local Upgrades = {
 		{ name = "Jackhammer", emoji = "🔨", cost = 150000, value = 30 },
 		{ name = "Drill", emoji = "🪛", cost = 5000000, value = 100 },
 		{ name = "Laser", emoji = "🔦", cost = 30000000, value = 400 },
+		{ name = "Plasma Cutter", emoji = "⚡", cost = 600000000, value = 1600 },
+		{ name = "Quantum Fist", emoji = "🌀", cost = 12000000000, value = 7000 },
 	} :: { Level },
 
 	Brushes = {
@@ -61,6 +63,7 @@ local Upgrades = {
 		{ name = "Duffel Bag", emoji = "👜", cost = 12000, value = 600 },
 		{ name = "Mail Cart", emoji = "🛒", cost = 150000, value = 1300 },
 		{ name = "Dumpster", emoji = "🗑️", cost = 1500000, value = 3000 },
+		{ name = "Garbage Truck", emoji = "🚛", cost = 40000000, value = 8000 },
 	} :: { Level },
 
 	FindSlots = {
@@ -69,6 +72,7 @@ local Upgrades = {
 		{ name = "8 Slots", emoji = "🎒", cost = 1500, value = 8 },
 		{ name = "12 Slots", emoji = "🎒", cost = 12000, value = 12 },
 		{ name = "20 Slots", emoji = "🎒", cost = 300000, value = 20 },
+		{ name = "30 Slots", emoji = "🎒", cost = 8000000, value = 30 },
 	} :: { Level },
 
 	Vacuum = {
@@ -77,6 +81,7 @@ local Upgrades = {
 		{ name = "Shop Vac", emoji = "🌪️", cost = 900, value = 19 },
 		{ name = "Turbo Vac", emoji = "💨", cost = 6000, value = 26 },
 		{ name = "Black Hole", emoji = "🕳️", cost = 200000, value = 36 },
+		{ name = "Tornado", emoji = "🌪️", cost = 8000000, value = 50 },
 	} :: { Level },
 
 	-- cell defenses against raids (Commissary). Lock: value = seconds to pick the lock.
@@ -97,13 +102,13 @@ local Upgrades = {
 		{ name = "Alarm Bell", emoji = "🔔", cost = 3000, value = 1 },
 	} :: { Level },
 
-	-- highest buyable level per track (raised with the milestones; M2 = zones 1-6)
+	-- highest buyable level per track (raised with the milestones; M4 = everything)
 	Open = {
-		Tools = 6,
-		Brushes = 4,
-		Backpack = 6,
-		FindSlots = 5,
-		Vacuum = 5,
+		Tools = 9,
+		Brushes = 5,
+		Backpack = 8,
+		FindSlots = 7,
+		Vacuum = 7,
 		Lock = 4,
 		Trap = 2,
 		Alarm = 2,

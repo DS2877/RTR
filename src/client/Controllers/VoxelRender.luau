@@ -19,6 +19,7 @@ local Shell = require(Shared.Shell)
 local Progression = require(Shared.Progression)
 local Tunnel = require(Shared.Tunnel)
 local Remotes = require(Shared.Remotes)
+local Economy = require(Shared.Config.Economy)
 
 local VoxelRender = {}
 
@@ -142,6 +143,18 @@ local function crackGui(p: Part, face: Enum.NormalId, stage: number, seed: numbe
 	gui.Parent = p
 end
 
+-- escaped prisoners land in tougher prisons: their tunnel gets that prison's tint
+local function tierTint(owner: number): Color3?
+	local p = Players:GetPlayerByUserId(owner)
+	local r = p and p:GetAttribute("Rebirths")
+	if typeof(r) ~= "number" or r <= 0 then
+		return nil
+	end
+	local prisons = Economy.Prisons
+	local tier = prisons[math.min(r + 1, #prisons)]
+	return Color3.fromRGB(tier.tint[1], tier.tint[2], tier.tint[3])
+end
+
 local function styleBlock(t: T, idx: number, p: Part)
 	local x, y, z = Voxel.unindex(t.grid, idx)
 	local zone = Progression.zoneAt(z)
@@ -161,6 +174,10 @@ local function styleBlock(t: T, idx: number, p: Part)
 				crackGui(p, FACE_IDS[f], stage, idx * 7 + stage)
 			end
 		end
+	end
+	local tint = tierTint(t.owner)
+	if tint then
+		color = color:Lerp(tint, 0.3)
 	end
 	p.Color = color
 	-- ore: a glowing vein through the block, the color of the find's rarity

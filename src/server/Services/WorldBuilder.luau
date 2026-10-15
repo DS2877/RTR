@@ -684,6 +684,95 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 		CFrame.new(cr.x + 20, 0, z1 - 10),
 		Color3.fromRGB(60, 150, 230)
 	)
+	-- STORE (Robux): passes and products with known contents
+	shops.Store = counter(
+		parent,
+		"Store",
+		"⭐ STORE",
+		CFrame.new(x0 + 10, 0, 24) * CFrame.Angles(0, -math.pi / 2, 0),
+		Color3.fromRGB(255, 200, 40)
+	)
+	-- VIP corner: glass wall + gold door (only VIPs pass; the client opens it for them)
+	local vx0, vz0 = x1 - 28, z1 - 26
+	Build.box(
+		parent,
+		"VIPFloor",
+		Vector3.new(vx0, 0, vz0),
+		Vector3.new(x1 - 2, 0.15, z1),
+		Color3.fromRGB(150, 30, 40),
+		{
+			Material = Enum.Material.Fabric,
+			CanCollide = false,
+		}
+	)
+	Build.box(
+		parent,
+		"VIPGlass",
+		Vector3.new(vx0 - 0.5, 0, vz0),
+		Vector3.new(vx0, 10, z1),
+		Color3.fromRGB(255, 215, 120),
+		{
+			Transparency = 0.6,
+			Material = Enum.Material.Glass,
+		}
+	)
+	Build.box(
+		parent,
+		"VIPGlass",
+		Vector3.new(vx0, 0, vz0 - 0.5),
+		Vector3.new(x1 - 14, 10, vz0),
+		Color3.fromRGB(255, 215, 120),
+		{
+			Transparency = 0.6,
+			Material = Enum.Material.Glass,
+		}
+	)
+	local vipDoor = Build.box(
+		parent,
+		"VIPDoor",
+		Vector3.new(x1 - 14, 0, vz0 - 0.5),
+		Vector3.new(x1 - 2, 10, vz0),
+		Color3.fromRGB(255, 200, 40),
+		{
+			Transparency = 0.3,
+			Material = Enum.Material.Neon,
+		}
+	)
+	CollectionService:AddTag(vipDoor, "VIPDoor")
+	Build.sign(vipDoor, Enum.NormalId.Front, "⭐ VIP ONLY", Color3.fromRGB(80, 40, 0), Color3.new(1, 1, 1))
+	for i = 0, 1 do
+		local cx = vx0 + 7 + i * 12
+		Build.part(
+			parent,
+			"Couch",
+			Vector3.new(9, 2, 3.5),
+			CFrame.new(cx, 1, z1 - 3),
+			Color3.fromRGB(120, 20, 40),
+			{
+				Material = Enum.Material.Fabric,
+			}
+		)
+		Build.part(
+			parent,
+			"CouchBack",
+			Vector3.new(9, 3, 1),
+			CFrame.new(cx, 2.5, z1 - 1.2),
+			Color3.fromRGB(120, 20, 40),
+			{
+				Material = Enum.Material.Fabric,
+			}
+		)
+	end
+	Build.part(
+		parent,
+		"VIPTable",
+		Vector3.new(4, 2, 4),
+		CFrame.new(vx0 + 13, 1, z1 - 10),
+		Color3.fromRGB(255, 200, 40),
+		{
+			Material = Enum.Material.Neon,
+		}
+	)
 	shops.Fence = counter(
 		parent,
 		"Fence",
@@ -698,7 +787,7 @@ end
 
 -- ===== Mess Hall (south of the Common Room; buffs for the night arrive with M4) =====
 
-local function buildMessHall(parent: Instance)
+local function buildMessHall(parent: Instance, shops: { [string]: BasePart })
 	local cr = World.CommonRoom
 	-- (the +X side stays 4 studs clear of the cell row's bedrock wall: no z-fighting)
 	local x0, x1 = cr.x - cr.sx / 2, cr.x + cr.sx / 2 - 4
@@ -753,6 +842,32 @@ local function buildMessHall(parent: Instance)
 			}
 		)
 	end
+	local serving = parent:FindFirstChild("Serving") :: BasePart
+	local mealPrompt = Build.prompt(serving, "Eat", "Mess Hall", Economy.ShopRange)
+	mealPrompt.Name = "ShopPrompt"
+	serving:SetAttribute("Shop", "MessHall")
+	CollectionService:AddTag(serving, "Shop")
+	shops.MessHall = serving
+	-- LAUNDRY counter along the west wall
+	shops.Laundry = counter(
+		parent,
+		"Laundry",
+		"🧺 LAUNDRY",
+		CFrame.new(x0 + 8, 0, z0 + 30) * CFrame.Angles(0, -math.pi / 2, 0),
+		Color3.fromRGB(120, 210, 230)
+	)
+	for i = 0, 2 do
+		Build.part(
+			parent,
+			"Washer",
+			Vector3.new(3, 3.4, 3),
+			CFrame.new(x0 + 2, 1.7, z0 + 40 + i * 3.4),
+			Color3.fromRGB(235, 235, 240),
+			{
+				Material = Enum.Material.Metal,
+			}
+		)
+	end
 	Build.npc(
 		parent,
 		"Cook",
@@ -767,12 +882,7 @@ local function buildMessHall(parent: Instance)
 		counterCf * CFrame.new(0, 11, 5.5),
 		Color3.fromRGB(35, 38, 46)
 	)
-	Build.sign(
-		board,
-		Enum.NormalId.Front,
-		"TODAY: NOODLES 🍜\n(buffs soon!)",
-		Color3.fromRGB(255, 235, 120)
-	)
+	Build.sign(board, Enum.NormalId.Front, "MEALS FOR THE NIGHT 🍲", Color3.fromRGB(255, 235, 120))
 	-- long tables with benches
 	for row = 0, 2 do
 		for col = 0, 1 do
@@ -822,7 +932,7 @@ local function buildMessHall(parent: Instance)
 	end
 end
 
-local function buildYard(parent: Instance): (BasePart, { BasePart })
+local function buildYard(parent: Instance, shops: { [string]: BasePart }): (BasePart, { BasePart })
 	local y = World.Yard
 	local x0, x1 = y.x - y.sx / 2, y.x + y.sx / 2
 	local z0, z1 = y.z - y.sz / 2, y.z + y.sz / 2
@@ -963,6 +1073,47 @@ local function buildYard(parent: Instance): (BasePart, { BasePart })
 		)
 		Build.light(head, Color3.fromRGB(255, 250, 230), 60, 1.5)
 	end
+
+	-- BLACK MARKET: a shady tent in the far corner (stock rotates every day)
+	local bm = CFrame.new(x0 + 14, 0, z1 - 14) * CFrame.Angles(0, math.rad(-135), 0)
+	local tarp = Color3.fromRGB(60, 50, 70)
+	for _, d in { { -6, -4 }, { 6, -4 }, { -6, 4 }, { 6, 4 } } do
+		Build.part(
+			parent,
+			"TentPole",
+			Vector3.new(0.4, 8, 0.4),
+			bm * CFrame.new(d[1], 4, d[2]),
+			Color3.fromRGB(60, 60, 60)
+		)
+	end
+	Build.part(
+		parent,
+		"Tarp",
+		Vector3.new(14, 0.4, 10),
+		bm * CFrame.new(0, 8.2, 0) * CFrame.Angles(0.15, 0, 0),
+		tarp,
+		{
+			Material = Enum.Material.Fabric,
+		}
+	)
+	shops.BlackMarket = counter(
+		parent,
+		"BlackMarket",
+		"🕶️ BLACK MARKET",
+		bm * CFrame.new(0, 0, -2),
+		Color3.fromRGB(90, 70, 110)
+	)
+	local lantern = Build.part(
+		parent,
+		"Lantern",
+		Vector3.new(0.8, 1, 0.8),
+		bm * CFrame.new(4, 6.5, 0),
+		Color3.fromRGB(255, 160, 60),
+		{
+			Material = Enum.Material.Neon,
+		}
+	)
+	Build.light(lantern, Color3.fromRGB(255, 150, 60), 20, 1.5)
 
 	-- RUBBLE DUMP: a big skip next to the door from the Common Room
 	local dumpCf = CFrame.new(x1 - 22, 0, -32)
@@ -1164,11 +1315,11 @@ function WorldBuilder.build(): WorldRecord
 	common.Parent = root
 	local boards: { [string]: Frame } = {}
 	local shops = buildCommonRoom(common, boards)
-	buildMessHall(common)
+	buildMessHall(common, shops)
 	local yard = Instance.new("Folder")
 	yard.Name = "Yard"
 	yard.Parent = root
-	local dump, stations = buildYard(yard)
+	local dump, stations = buildYard(yard, shops)
 	setupLighting()
 	return { cells = cells, boards = boards, shops = shops, dump = dump, stations = stations }
 end

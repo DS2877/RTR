@@ -35,6 +35,15 @@ export type PlayerData = {
 	Stash: { string }, -- finds in the Stash chest in your cell: raiders can steal one by day
 	Found: { [string]: boolean }, -- every find ever dug up (collection)
 	Receipts: { string },
+	Dynamite: number, -- sticks owned
+	Daily: { Day: number, Streak: number }, -- daily reward streak (Day = days since 1970)
+	PlayMinutes: number, -- playtime gifts
+	Escapes: { number }, -- os.time() of every escape (rebirth)
+	Uniforms: { [string]: boolean }, -- Laundry
+	Uniform: string,
+	Fist: string, -- equipped fist trail ("" = none)
+	Decor: { [string]: number }, -- decor items owned (kind -> count)
+	Placed: { { number } }, -- placed decor { kindIndex, x, y, z }
 	LastOnline: number,
 	Stats: {
 		Punches: number,
@@ -77,6 +86,15 @@ local TEMPLATE: PlayerData = {
 	Stash = {},
 	Found = {},
 	Receipts = {},
+	Dynamite = 0,
+	Daily = { Day = 0, Streak = 0 },
+	PlayMinutes = 0,
+	Escapes = {},
+	Uniforms = {},
+	Uniform = "",
+	Fist = "",
+	Decor = {},
+	Placed = {},
 	LastOnline = 0,
 	Stats = {
 		Punches = 0,
@@ -108,7 +126,7 @@ end
 
 -- Fills missing nested keys, fixes impossible values. Also used on admin resets.
 function Data.sanitize(data: PlayerData)
-	for _, group in { "Levels", "Stats" } do
+	for _, group in { "Levels", "Stats", "Daily" } do
 		local have = (data :: any)[group]
 		if typeof(have) ~= "table" then
 			have = {};

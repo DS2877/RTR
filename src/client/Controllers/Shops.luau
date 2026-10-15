@@ -20,6 +20,9 @@ local Sound = require(Client.Util.Sound)
 
 local Shops = {}
 
+-- the Workshop's DECOR button (ExtraShops opens the panel)
+Shops.openDecor = nil :: (() -> ())?
+
 local player = Players.LocalPlayer
 local DARK = Color3.fromRGB(40, 30, 20)
 
@@ -146,6 +149,20 @@ local function upgradePanel(shop: string, title: string, color: Color3, dark: Co
 				if cost then
 					Sound.play(if afford then "Purchase" else "Click")
 					buy:FireServer(track)
+				end
+			end)
+		end
+		if shop == "Workshop" then
+			local r = row(panel.body, 100, 64)
+			local decor = Panel.button({
+				Position = UDim2.fromOffset(6, 6),
+				Size = UDim2.new(1, -12, 1, -12),
+			}, Color3.fromRGB(255, 190, 100), Color3.fromRGB(110, 60, 0), "🪔 DECOR FOR YOUR TUNNEL")
+			decor.Parent = r
+			decor.Activated:Connect(function()
+				Sound.play("Click")
+				if Shops.openDecor then
+					Shops.openDecor()
 				end
 			end)
 		end

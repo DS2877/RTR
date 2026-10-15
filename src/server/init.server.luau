@@ -25,6 +25,12 @@ local Collection = require(Services.Collection)
 local Brawl = require(Services.Brawl)
 local Raid = require(Services.Raid)
 local TopDog = require(Services.TopDog)
+local Product = require(Services.Product)
+local Escape = require(Services.Escape)
+local Rewards = require(Services.Rewards)
+local Guards = require(Services.Guards)
+local Events = require(Services.Events)
+local Market = require(Services.Market)
 
 Remotes.setup()
 
@@ -47,6 +53,12 @@ DayNight.start(world)
 Brawl.start(world)
 Raid.start(world)
 TopDog.start(world)
+Product.start()
+Escape.start()
+Rewards.start()
+Guards.start()
+Events.startService()
+Market.start(world)
 Dig.onPiles = Loot.sendPiles
 Dig.onFind = Collection.onFound
 local function isDay(): boolean
@@ -57,7 +69,24 @@ Raid.isDay = isDay
 Brawl.onCarrierHit = function(thief)
 	Raid.returnCarry(thief, "you got hit")
 end
-DayNight.onDay = Raid.newDay
+DayNight.onDay = function()
+	Raid.newDay()
+	Market.morning()
+end
+DayNight.riot = Events.riot
+Events.onRiot = DayNight.setRiot
+Events.phase = DayNight.phase
+Guards.isNight = function(): boolean
+	return DayNight.phase() == "Night"
+end
+Dig.powerBoost = Market.powerBoost
+Dig.findBoost = Market.findBoost
+Dig.speedBoost = Market.speedBoost
+Loot.magnet = Market.magnet
+Escape.onEscaped = Market.renderDecor
+Product.onPasses = function(player)
+	task.spawn(Market.onCharacter, player)
+end
 Shop.onBought = function(player, track)
 	if track == "Lock" then
 		Raid.refreshPrompt(player)
@@ -82,6 +111,7 @@ local function onCharacter(player: Player, character: Model)
 	end)
 	task.wait(0.1)
 	Cells.toCell(player)
+	task.spawn(Market.onCharacter, player)
 end
 
 local function onPlayerAdded(player: Player)
@@ -103,6 +133,12 @@ local function onPlayerAdded(player: Player)
 	Collection.render(player)
 	Raid.sendStash(player)
 	Raid.refreshPrompt(player)
+	Product.loadPasses(player)
+	Product.syncPackAttributes(player)
+	Escape.check(player)
+	Rewards.onJoin(player)
+	Market.renderDecor(player)
+	Market.sync(player)
 	player:SetAttribute("Stamina", 100)
 	player:SetAttribute("Loaded", true)
 	player.CharacterAdded:Connect(function(character)
@@ -126,6 +162,8 @@ local function leave(player: Player)
 	end
 	Raid.onLeaving(player)
 	TopDog.onLeaving(player)
+	Events.onLeaving(player)
+	Market.clearRender(player)
 	Dig.forget(player)
 	Cells.release(player)
 	State.remove(player)

@@ -29,6 +29,12 @@ export type PlayerState = {
 	lastBrawl: number, -- when you last punched a player
 	protectedUntil: number,
 	carrying: { id: string, owner: Player }?, -- a stolen find on its way home
+	-- M4
+	groupBonus: boolean,
+	escapeReady: boolean,
+	buffs: { [string]: number }, -- buff id -> os.time() it ends
+	hidden: boolean, -- hid from this inspection
+	snitched: boolean, -- guaranteed inspection next night
 }
 
 local State = {}
@@ -58,6 +64,11 @@ function State.add(player: Player, data: Data.PlayerData): PlayerState
 		lastBrawl = 0,
 		protectedUntil = 0,
 		carrying = nil,
+		groupBonus = false,
+		escapeReady = false,
+		buffs = {},
+		hidden = false,
+		snitched = false,
 	}
 	states[player] = s
 	return s

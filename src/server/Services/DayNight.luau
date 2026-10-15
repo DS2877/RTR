@@ -22,6 +22,9 @@ local endsAt = 0
 local forced: string? = nil
 
 DayNight.onDay = nil :: (() -> ())?
+DayNight.riot = function(): boolean
+	return false
+end
 
 local function now(): number
 	return workspace:GetServerTimeNow()
@@ -73,8 +76,10 @@ local function setPhase(p: string, seconds: number)
 			"Siren"
 		)
 	elseif p == "Night" then
-		sendEveryoneHome()
-		setDoors(true)
+		if not DayNight.riot() then
+			sendEveryoneHome()
+			setDoors(true)
+		end
 		Net.announce("Doors locked. Night digging gives +25% finds!", { 140, 170, 255 }, nil)
 	else
 		setDoors(false)
@@ -82,6 +87,16 @@ local function setPhase(p: string, seconds: number)
 		if DayNight.onDay then
 			DayNight.onDay()
 		end
+	end
+end
+
+-- RIOT event: doors open now (on) / lock again if it's still night (off).
+function DayNight.setRiot(on: boolean)
+	if on then
+		setDoors(false)
+	elseif phase == "Night" then
+		sendEveryoneHome()
+		setDoors(true)
 	end
 end
 
@@ -112,7 +127,7 @@ function DayNight.start(w: any)
 				else
 					setPhase("Day", Cycle.DaySeconds)
 				end
-			elseif phase == "Night" then
+			elseif phase == "Night" and not DayNight.riot() then
 				-- nobody wanders the halls at night
 				sendEveryoneHome()
 			end

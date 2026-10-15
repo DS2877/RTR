@@ -45,6 +45,7 @@ local Progression = req(Shared, "Progression")
 local World = req(Config, "World")
 local Economy = req(Config, "Economy")
 local Assets = req(Config, "Assets")
+local Cycle = req(Config, "Cycle")
 
 local State = req(Server, "State")
 local Net = req(Server, "Net")
@@ -56,11 +57,18 @@ local Loot = req(Services, "Loot")
 local Shop = req(Services, "Shop")
 local Gym = req(Services, "Gym")
 local Admin = req(Services, "Admin")
+local Stats = req(Services, "Stats")
 local DayNight = req(Services, "DayNight")
 local Collection = req(Services, "Collection")
 local Brawl = req(Services, "Brawl")
 local Raid = req(Services, "Raid")
 local TopDog = req(Services, "TopDog")
+local Product = req(Services, "Product")
+local Escape = req(Services, "Escape")
+local Rewards = req(Services, "Rewards")
+local Guards = req(Services, "Guards")
+local Events = req(Services, "Events")
+local Market = req(Services, "Market")
 
 local sent: { { name: string, args: { any } } } = {}
 Net.sink = function(_player: any, name: string, args: { any })
@@ -110,6 +118,21 @@ end)
 step("TopDog.start", function()
 	TopDog.start(world)
 end)
+step("Product.start", Product.start)
+step("Escape.start", Escape.start)
+step("Rewards.start", Rewards.start)
+step("Guards.start", Guards.start)
+step("Events.startService", Events.startService)
+step("Market.start", function()
+	Market.start(world)
+end)
+DayNight.riot = Events.riot
+Events.onRiot = DayNight.setRiot
+Events.phase = DayNight.phase
+Dig.powerBoost = Market.powerBoost
+Dig.findBoost = Market.findBoost
+Dig.speedBoost = Market.speedBoost
+Loot.magnet = Market.magnet
 Dig.onPiles = Loot.sendPiles
 Dig.onFind = Collection.onFound
 local function isDay(): boolean
@@ -422,6 +445,123 @@ check("tunnel reset", s.grid.count == 0 and s.data.Zone == 1)
 -- stress layout fits the budget on the server copy too
 Admin.stress(fake)
 check("stress dig", s.grid.count > 4000, s.grid.count)
+
+-- ===== M4 =====
+check("all zones open", Progression.diggableDepth() == World.TunnelDepth)
+check(
+	"every shop counter has a prompt",
+	world.shops.Store and world.shops.Laundry and world.shops.MessHall and world.shops.BlackMarket and true
+		or false
+)
+for name, counter in world.shops do
+	check("prompt " .. name, counter:FindFirstChild("ShopPrompt") ~= nil)
+end
+check("VIP door", #game:GetService("CollectionService"):GetTagged("VIPDoor") == 1)
+-- developer products
+local before4 = s.data.Noodles
+check(
+	"grant noodle crate",
+	Product.grant(fake, "NoodlesSmall") and s.data.Noodles == before4 + Product.packAmount(s, "NoodlesSmall")
+)
+s.data.Bag, s.data.BagValue = 10, 50
+s.piles = { { id = 99, pos = Vector3.zero, rubble = 3, value = 9 } }
+s.loose = 3
+local n4 = s.data.Noodles
+check(
+	"instant empty",
+	Product.grant(fake, "InstantEmpty") and s.data.Bag == 0 and s.loose == 0 and s.data.Noodles > n4
+)
+check("grant dynamite", Product.grant(fake, "Dynamite") and s.data.Dynamite == 1)
+-- dynamite in the stress tunnel (stand at its front)
+s.data.Bag, s.loose, s.piles = 0, 0, {}
+standAt(9, 1, 2)
+local beforeCount = s.grid.count
+local boomAt: { number }? = nil
+for z = 0, 30 do
+	if not boomAt and Voxel.isExposed(s.grid, 5, 1, z) then
+		boomAt = { 5, 1, z }
+	end
+end
+if boomAt then
+	standAt(6, 1, boomAt[3])
+	check(
+		"dynamite",
+		Dig.dynamite(fake, boomAt[1], boomAt[2], boomAt[3]) == nil and s.grid.count > beforeCount + 20,
+		s.grid.count - beforeCount
+	)
+	check(
+		"dynamite used up",
+		s.data.Dynamite == 0 and Dig.dynamite(fake, boomAt[1], boomAt[2], boomAt[3]) == "no dynamite"
+	)
+end
+-- daily reward + cellmate
+local today = Rewards.today()
+check("daily reward", Rewards.daily(fake, today) > 0 and s.data.Daily.Streak == 1)
+check("daily only once", Rewards.daily(fake, today) == 0)
+check("daily streak", Rewards.daily(fake, today + 1) > 0 and s.data.Daily.Streak == 2)
+s.data.Bag = 0
+local dug = Rewards.cellmate(fake, 3600)
+check("cellmate digs while away", dug > 0 and s.data.Bag == dug and s.data.Bag <= Stats.capacity(s), dug)
+check("cellmate capped by the backpack", Rewards.cellmate(fake, 999999) <= Stats.capacity(s))
+-- guard inspection: hide = safe, caught = unsold finds gone
+s.data.Finds = { "OldCoin" }
+check("inspection starts", Guards.inspect(fake))
+check("hide", Guards.hide(fake))
+task.wait(Cycle.InspectWarning + 0.4)
+check("hidden = finds kept", #s.data.Finds == 1)
+Guards.inspect(fake)
+task.wait(Cycle.InspectWarning + 0.4)
+check("caught = unsold finds lost", #s.data.Finds == 0)
+local snitchVictim: any = { UserId = -6262, Name = "SmokeSnitched", Position = Vector3.zero }
+local sv = State.add(snitchVictim, Data.fresh())
+s.data.Noodles = 1e9
+check("snitch", Guards.snitch(fake, snitchVictim.UserId) == nil and sv.snitched)
+check("snitch once", Guards.snitch(fake, snitchVictim.UserId) == "already")
+State.remove(snitchVictim)
+-- events
+Events.stop()
+check("blackout", Events.trigger("BLACKOUT") and Dig.globalBoost == 2)
+Events.stop()
+check("blackout ends", Dig.globalBoost == 1)
+check("riot", Events.trigger("RIOT") and Events.riot())
+Events.stop()
+check("treasure race", Events.trigger("TREASURE") and Events.treasureOf(fake) ~= nil)
+local tidx = Events.treasureOf(fake)
+if tidx then
+	local tx, ty, tz = Voxel.unindex(s.grid, tidx)
+	local n5 = s.data.Noodles
+	Dig.applyHits(fake, s, { { tx, ty, tz } }, math.huge)
+	check("treasure won", s.data.Noodles > n5 and Events.current() == nil and #s.data.Stash >= 1)
+end
+-- Mess Hall, Laundry, Decor, Black Market
+fake.Position = world.shops.MessHall.Position
+check("eat stew", Market.buy(fake, "MessHall", "Stew") == nil and Market.powerBoost(fake) > 1.2)
+fake.Position = world.shops.Laundry.Position
+check("buy uniform", Market.buy(fake, "Laundry", "Stripes") == nil and s.data.Uniform == "Stripes")
+fake.Position = world.shops.Workshop.Position
+check("buy decor", Market.buy(fake, "Decor", "Lamp") == nil and s.data.Decor.Lamp == 1)
+standAt(9, 1, 3)
+check("place decor", Market.place(fake, "Lamp") == nil and #s.data.Placed == 1 and s.data.Decor.Lamp == 0)
+check("decor rendered", workspace.Prison.Decor:FindFirstChild("Cell1") ~= nil)
+fake.Position = world.shops.BlackMarket.Position
+local stock = Progression.marketStock(os.time() // 86400)
+check("black market", Market.buy(fake, "BlackMarket", stock[1]) == nil)
+check("black market sells only today's stock", Market.buy(fake, "BlackMarket", "Nope") == "not sold")
+Market.morning()
+check(
+	"meals end in the morning",
+	Market.powerBoost(fake) < 1.2 or s.buffs.Shake ~= nil or s.buffs.Gloves ~= nil
+)
+-- ESCAPE (rebirth)
+check("no escape before the bottom", Escape.escape(fake) == "not at the bottom")
+Admin.run(fake, "bottom")
+check("escape ready", s.escapeReady)
+check("escape", Escape.escape(fake) == nil and s.data.Rebirths == 1 and s.grid.count == 0)
+check("escape keeps the record", s.data.MaxDepth >= World.TunnelDepth - 1)
+check("escape keeps the collection", next(s.data.Found) ~= nil)
+check("escape resets tools", s.data.Levels.Tools == 1 and s.data.Noodles == 0)
+check("decor back in the box", #s.data.Placed == 0 and s.data.Decor.Lamp == 1)
+check("rebirth multiplier", Progression.punchPower(10, 1, 1) > Progression.punchPower(10, 1, 0))
 
 Cells.release(fake)
 State.remove(fake)

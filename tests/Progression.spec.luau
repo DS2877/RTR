@@ -138,5 +138,34 @@ return function()
 	for zone = 1, Economy.OpenZones do
 		check(Finds.ByZone[zone] ~= nil, "open zone " .. zone .. " has finds")
 	end
+	-- extras
+	local stock = Progression.marketStock(20000)
+	check(#stock == 3 and stock[1] ~= stock[2] and stock[2] ~= stock[3], "3 different market items")
+	check(table.concat(stock) == table.concat(Progression.marketStock(20000)), "same stock all day")
+	local differs = false
+	for day = 20001, 20010 do
+		if table.concat(Progression.marketStock(day)) ~= table.concat(stock) then
+			differs = true
+		end
+	end
+	check(differs, "stock rotates")
+	check(Progression.itemPrice({ cost = 5 }, 9) == 5, "fixed price")
+	check(Progression.itemPrice({ blocks = 10 }, 2) == 10 * Zones[2].rubble, "zone price")
+	-- unique find ids
+	local seen = {}
+	for _, f in Finds.List do
+		check(not seen[f.id], "duplicate find id " .. f.id)
+		seen[f.id] = true
+	end
+	-- every rarity appears somewhere
+	for _, r in Rarity.Order do
+		local any = false
+		for _, f in Finds.List do
+			if f.rarity == r then
+				any = true
+			end
+		end
+		check(any, "rarity in loot tables: " .. r)
+	end
 	check(Progression.bestStation(0) == 1 and Progression.bestStation(1e9) == #Economy.Gym, "gym stations")
 end

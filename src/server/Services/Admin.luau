@@ -1,7 +1,7 @@
 --!strict
 -- Admin commands for phone testing. The ADMIN button in the HUD (admins only) sends AdminCmd;
 -- the same commands work in chat with "!": !noodles 1e6  !strength 500  !zone 3  !resettunnel
--- !stress  !reset  !day  !night  (!inspect !event arrive with M4).
+-- !stress  !reset  !day  !night  !inspect  !blackout !riot !inspection !treasure  !dynamite 5  !bottom
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,6 +22,10 @@ local Stats = require(script.Parent.Stats)
 local Dig = require(script.Parent.Dig)
 local Loot = require(script.Parent.Loot)
 local DayNight = require(script.Parent.DayNight)
+local Events = require(script.Parent.Events)
+local Guards = require(script.Parent.Guards)
+local Escape = require(script.Parent.Escape)
+local Market = require(script.Parent.Market)
 
 local Admin = {}
 
@@ -80,6 +84,7 @@ function Admin.run(player: Player, cmd: string, arg: number?): boolean
 		end
 		teleportInto(player, math.max(0, start - 3))
 	elseif cmd == "resettunnel" then
+		Market.clearDecor(player)
 		Dig.resetTunnel(player)
 		Net.notice(player, "Tunnel reset", "info")
 	elseif cmd == "stress" then
@@ -98,9 +103,20 @@ function Admin.run(player: Player, cmd: string, arg: number?): boolean
 		return true
 	elseif cmd == "day" or cmd == "night" then
 		DayNight.force(cmd)
-	elseif cmd == "inspect" or cmd == "event" then
-		Net.notice(player, "Comes with M4 (guards and events)", "info")
-		return true
+	elseif cmd == "inspect" then
+		Guards.inspect(player)
+	elseif cmd == "blackout" or cmd == "riot" or cmd == "inspection" or cmd == "treasure" then
+		Events.stop()
+		Events.trigger(string.upper(cmd))
+	elseif cmd == "dynamite" then
+		s.data.Dynamite += math.floor(arg or 5)
+		player:SetAttribute("Dynamite", s.data.Dynamite)
+	elseif cmd == "bottom" then
+		-- a 3x3 path to the very last layer, then the ESCAPE button
+		local mid = World.TunnelWidth // 2
+		Dig.digBox(player, mid - 1, 0, 0, mid + 1, 2, World.TunnelDepth - 1)
+		teleportInto(player, World.TunnelDepth - 3)
+		Escape.ready(player)
 	else
 		Net.notice(player, "Unknown admin command: " .. cmd, "bad")
 		return false

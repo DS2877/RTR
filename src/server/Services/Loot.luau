@@ -19,10 +19,18 @@ local Loot = {}
 
 local world: any = nil
 
-local function noodleMult(s: State.PlayerState): number
+Loot.magnet = nil :: ((player: Player) -> boolean)?
+
+-- every Noodles multiplier: 2x pass, collection sets, rebirths, group bonus, buffs
+function Loot.multiplier(s: State.PlayerState): number
 	local pass = if s.passes.DoubleNoodles then Economy.PassEffects.DoubleNoodles else 1
-	return pass * Progression.collectionMultiplier(s.data.Found)
+	local group = if s.groupBonus then 1 + Economy.GroupBonus else 1
+	return pass
+		* Progression.collectionMultiplier(s.data.Found)
+		* Progression.rebirthMultiplier(s.data.Rebirths)
+		* group
 end
+local noodleMult = Loot.multiplier
 
 function Loot.addNoodles(player: Player, amount: number)
 	local s = State.get(player)
@@ -115,6 +123,27 @@ function Loot.dump(player: Player): number
 	return pay
 end
 
+-- Instant Backpack Empty (developer product): pays the backpack and every loose pile, anywhere.
+function Loot.dumpAnywhere(player: Player): number
+	local s = State.get(player)
+	if not s then
+		return 0
+	end
+	local value = s.data.BagValue
+	for _, p in s.piles do
+		value += p.value
+	end
+	s.piles = {}
+	s.loose = 0
+	s.data.Bag = 0
+	s.data.BagValue = 0
+	local pay = math.floor(value * noodleMult(s) + 0.5)
+	Loot.addNoodles(player, pay)
+	Loot.sendPiles(player)
+	Net.fire(player, Remotes.Names.Dumped, pay)
+	return pay
+end
+
 -- slot 0 = sell everything
 function Loot.sell(player: Player, slot: number): number
 	local s = State.get(player)
@@ -166,7 +195,8 @@ function Loot.start(w: any)
 		while true do
 			task.wait(0.2)
 			for player, s in State.all() do
-				if (s.vacuuming or s.passes.AutoVacuum) and #s.piles > 0 then
+				local magnet = Loot.magnet ~= nil and Loot.magnet(player)
+				if (s.vacuuming or s.passes.AutoVacuum or magnet) and #s.piles > 0 then
 					Loot.vacuum(player)
 				end
 			end

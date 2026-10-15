@@ -215,7 +215,9 @@ end
 
 local function punch()
 	local now = os.clock()
-	if now - lastPunch < World.AttackInterval then
+	local fast = player:GetAttribute("FastPunch")
+	local interval = World.AttackInterval * (1 - (if typeof(fast) == "number" then fast else 0))
+	if now - lastPunch < interval then
 		return
 	end
 	local a = aim
@@ -248,6 +250,10 @@ end
 
 function DigController.hasAim(): boolean
 	return aim ~= nil
+end
+
+function DigController.getAim(): Aim?
+	return aim
 end
 
 function DigController.start()

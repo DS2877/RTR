@@ -1,6 +1,6 @@
 # STATUS – Dig Out! (fängelseflykt-grävspel)
 
-Senast uppdaterad: 2026-10-15 · Milstolpe: **M3 PVP** (M1 + M2 publicerade)
+Senast uppdaterad: 2026-10-15 · Milstolpe: **M4 DJUP** (M1–M3 publicerade)
 
 Det gamla spelet (Rob the Rich!) är raderat från koden och arkiverat i git-taggen
 `archive/rob-the-rich` (sista commit `374cd1d`). Ny spelardata sparas i `DigOut_v1`, så gammal
@@ -87,6 +87,42 @@ data blandas aldrig in.
   och får "YOU ARE TOP DOG" i HUD:en.
 - **LONGEST TUNNEL-tavla:** djupaste tunnlarna på servern + all-time topp 5 (sparas globalt).
 
+### M4 – djupet
+- **Zon 7–10 öppna:** Bedrock, Crystal Cave, Magma, Ancient Ruins (alla med kammare, egna färger
+  och ljus). **Alla 9 rariteter** finns nu: 58 fynd, upp till Secret, Cosmic och Divine
+  ("The First Golden Spoon" 🥄 i Ancient Ruins). Nya verktyg: Laser, Plasma Cutter, Quantum Fist;
+  fler ryggsäckar, fyndplatser, dammsugare och två nya gymstationer.
+- **FLYKT (rebirth):** när du slagit igenom sista lagret (600 m) dyker en stor **ESCAPE!**-knapp
+  upp → filmsekvens (strålkastare, flygtur över muren) → "...but the guards caught you!" →
+  **High Security**, sedan Island Prison, Space Prison. Varje flykt ger permanent
+  +50 % slagkraft, gym och Noodles. Tunnel, Noodles, styrka och verktyg nollställs; djuprekordet,
+  samlingen, försvaren och dekorationerna sparas. Tunneln får fängelsets färgton.
+- **Vaktinspektioner** på natten: fotsteg + ljus under dörren + stor **HIDE!**-knapp i 5 s
+  (affisch över hålet, du hoppar i sängen). Åkt fast = du förlorar osålda fynd i fyndplatserna
+  (aldrig Noodles eller framsteg).
+- **Snitch** (hos Black Market): betala Noodles för att tipsa vakten om en spelare → garanterat
+  besök nästa natt. Den som blivit tjallad kan **BRIBE** vakten.
+- **Server-events** (slumpas var 15–25 min): BLACKOUT (alla väggar 2x svagare i 2 min), RIOT
+  (dörrarna står öppna på natten), INSPECTION DAY (var i cellen med tom ryggsäck → bonus),
+  **TREASURE RACE** (en skatt på samma djup i varje tunnel, markerad; först fram vinner).
+- **Laundry** (i Mess Hall): fängelseuniformer i 7 färger + Fire/Ice/Toxic/Royal-fists (spår).
+- **Mess Hall:** måltider som gäller till morgonen: Hearty Stew (+25 % slag), Lucky Noodle Bowl
+  (+30 % fynd), Prison Coffee (15 % snabbare slag).
+- **Black Market** (tält i Yard-hörnet): 3 varor per dag som byts 00:00 UTC (nedräkning syns):
+  Dynamite, Lucky Charm, Protein Shake, Rubble Magnet, Iron Gloves.
+- **Dekorationer:** köp i Workshop (🪔 DECOR-knappen) – lampor, räls, gruvvagn, skylt, tunna,
+  flagga, troféstativ (visar ditt finaste fynd). Placera med 🪔-knappen i din tunnel. Alla ser dem.
+- **Dagliga belöningar** (streak upp till 7 dagar, dag 7 ger dynamit), **speltidsgåvor** var
+  10:e minut, **grupp-bonus** +10 % Noodles för medlemmar, **Cellmate** gräver när du är offline
+  (max din lediga ryggsäcksplats, halva värdet).
+- **Monetisering** (STORE-disken i Common Room, kända innehåll, ingen slump):
+  pass: 2x Noodles (199 R$), Auto-Vacuum (149), Huge Backpack (149), 2x Strength (199),
+  VIP Prisoner (299: guldnävar, [VIP]-chattagg, VIP-hörnet i Common Room).
+  Produkter: Dynamite (49), Noodle Crate (39) / Noodle Truck (149) – exakt mängd visas i butiken,
+  Instant Backpack Empty (25). 🧨-knappen syns i din tunnel.
+- Admin-panelen har nu: Zone 10, Bottom→Escape, Inspect me, Blackout, Riot, Inspection,
+  Treasure, 🧨 x5.
+
 ### Balans (`lune run tools/simulate`)
 | | Gratis-spelare | Med alla pass |
 |---|---|---|
@@ -96,6 +132,11 @@ data blandas aldrig in.
 | Zon 4 (Reinforced) | 14:47 | 12:08 |
 | Zon 5 (Clay & Pipes) | 23:35 | 19:20 |
 | Zon 6 (Sewer) | 42:52 | 48:46 |
+| Zon 7 (Bedrock) | 58:33 | 1:01:05 |
+| Zon 8 (Crystal Cave) | 2:12:03 | 1:26:28 |
+| Zon 9 (Magma) | 2:45:06 | 1:41:28 |
+| Zon 10 (Ancient Ruins) | 3:47:26 | 3:03:58 |
+| Första flykten (600 m) | ~15:30 h | ~8 h |
 
 Mål: första uppgradering < 60 s ✅, zon 2 ≈ 5 min ✅, zon 3 ≈ 15 min (nu ~10 min, lite snabbt).
 Siffrorna är en första omgång – simulatorn är förenklad (passen ger t.ex. för lite effekt i den).
@@ -128,12 +169,17 @@ Antal slag per block när man når en ny zon: 7–20 (zon 5 ~70 med Pickaxe → 
 11. PvP (behöver två spelare/enheter, dagtid): gå ut i Yard, tryck PUNCH mot den andra spelaren.
     Lägg ett fynd i kistan (Open Stash → PUT ALL), låt den andra hålla STEAL vid din kista och
     springa hem; slå hen på vägen så kommer fyndet tillbaka.
-12. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
-13. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
+12. M4: ADMIN → Bottom→Escape → tryck ESCAPE! (filmsekvens + High Security). ADMIN → 🌙 Night →
+    Inspect me → tryck HIDE. ADMIN → 💰 Treasure och följ markeringen. ADMIN → 🧨 x5 och tryck 🧨
+    mot väggen. Köp en lampa i Workshop → 🪔 DECOR och placera den i tunneln med 🪔-knappen.
+13. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
+14. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
 
 ## ⏳ Saknas (kommande milstolpar)
-- **M4 Djup:** zon 7–10, alla 9 rariteter, vakt-inspektioner, snitch, skattjakt, events, flykt/rebirth,
-  dekorationer, Laundry, Black Market, dagliga belöningar, Cellmate offline, pass/produkter.
+- Passen/produkterna skapas i Creator Hub av ops-workflowen när M4 är publicerad (id:n skrivs in
+  i Config/Products.luau). Innan dess säger STORE "opens very soon".
+- Djupa zoner (8–10) kräver många slag per block i simulatorn – behöver finjusteras med riktiga
+  speldata.
 - **M5 Polish:** tutorial, musik, ljudpass, analytics.
 - Ljuden är tillfälliga (återanvända Roblox-ljud som är kontrollerade). Riktiga slag/smul-ljud
   behöver väljas i Creator Store.

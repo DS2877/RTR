@@ -21,6 +21,7 @@ local Zones = config("Zones")
 local Finds = config("Finds")
 local Upgrades = config("Upgrades")
 local Economy = config("Economy")
+local Extras = config("Extras")
 
 local Progression = {}
 
@@ -52,6 +53,33 @@ end
 
 -- Layers deeper than this can't be dug yet (zones open with the milestones).
 function Progression.diggableDepth(): number
+	-- ===== extras (Laundry / Mess Hall / Black Market / Decor) =====
+
+	-- Noodles price of an Extras item for someone whose deepest zone is `zone`.
+	function Progression.itemPrice(item: any, zone: number): number
+		if item.cost then
+			return item.cost
+		end
+		local z = Zones[math.clamp(zone, 1, #Zones)]
+		return (item.blocks or 0) * z.rubble
+	end
+
+	-- The Black Market's stock on a given day (days since 1970): MarketSlots different item ids.
+	function Progression.marketStock(day: number): { string }
+		local pool = {}
+		for i, item in Extras.Market do
+			table.insert(pool, { id = item.id, roll = Progression.hash01(day, i, 0, 0, 77) })
+		end
+		table.sort(pool, function(a, b)
+			return a.roll < b.roll
+		end)
+		local out = {}
+		for i = 1, math.min(Extras.MarketSlots, #pool) do
+			table.insert(out, pool[i].id)
+		end
+		return out
+	end
+
 	return Progression.zoneStart(Economy.OpenZones + 1)
 end
 
@@ -173,6 +201,33 @@ function Progression.findAt(seed: number, x: number, y: number, z: number): stri
 	if not Finds.ByZone[zoneIndex] or Progression.hash01(seed, x, y, z, 1) >= zone.oreChance then
 		return nil
 	end
+	-- ===== extras (Laundry / Mess Hall / Black Market / Decor) =====
+
+	-- Noodles price of an Extras item for someone whose deepest zone is `zone`.
+	function Progression.itemPrice(item: any, zone: number): number
+		if item.cost then
+			return item.cost
+		end
+		local z = Zones[math.clamp(zone, 1, #Zones)]
+		return (item.blocks or 0) * z.rubble
+	end
+
+	-- The Black Market's stock on a given day (days since 1970): MarketSlots different item ids.
+	function Progression.marketStock(day: number): { string }
+		local pool = {}
+		for i, item in Extras.Market do
+			table.insert(pool, { id = item.id, roll = Progression.hash01(day, i, 0, 0, 77) })
+		end
+		table.sort(pool, function(a, b)
+			return a.roll < b.roll
+		end)
+		local out = {}
+		for i = 1, math.min(Extras.MarketSlots, #pool) do
+			table.insert(out, pool[i].id)
+		end
+		return out
+	end
+
 	return Progression.pickFind(zoneIndex, Progression.hash01(seed, x, y, z, 2))
 end
 
@@ -290,6 +345,33 @@ end
 function Progression.liftGain(station: number, rebirths: number, multiplier: number?): number
 	local st = Economy.Gym[station] or Economy.Gym[1]
 	return math.floor(st.gain * Progression.rebirthMultiplier(rebirths) * (multiplier or 1))
+end
+
+-- ===== extras (Laundry / Mess Hall / Black Market / Decor) =====
+
+-- Noodles price of an Extras item for someone whose deepest zone is `zone`.
+function Progression.itemPrice(item: any, zone: number): number
+	if item.cost then
+		return item.cost
+	end
+	local z = Zones[math.clamp(zone, 1, #Zones)]
+	return (item.blocks or 0) * z.rubble
+end
+
+-- The Black Market's stock on a given day (days since 1970): MarketSlots different item ids.
+function Progression.marketStock(day: number): { string }
+	local pool = {}
+	for i, item in Extras.Market do
+		table.insert(pool, { id = item.id, roll = Progression.hash01(day, i, 0, 0, 77) })
+	end
+	table.sort(pool, function(a, b)
+		return a.roll < b.roll
+	end)
+	local out = {}
+	for i = 1, math.min(Extras.MarketSlots, #pool) do
+		table.insert(out, pool[i].id)
+	end
+	return out
 end
 
 return Progression

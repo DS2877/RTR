@@ -18,6 +18,16 @@ Remotes.Names = {
 	AdminCmd = "AdminCmd", -- (cmd: string, arg: number?) admins only
 	Brawl = "Brawl", -- (userId: number) punch a player (day, outside safe zones)
 	StashCmd = "StashCmd", -- (cmd: "put" | "take") at your own Stash chest
+	RobuxBuy = "RobuxBuy", -- (key: string) prompt a pass / developer product purchase
+	Dynamite = "Dynamite", -- (x, y, z) light a stick at an exposed block of your tunnel
+	Escape = "Escape", -- () escape (rebirth) once you reached the bottom
+	Hide = "Hide", -- () hide from the guard's inspection
+	Bribe = "Bribe", -- () bribe the guard (snitched players)
+	Snitch = "Snitch", -- (userId: number) pay to tip off the guard
+	BuyItem = "BuyItem", -- (shop: string, id: string) Laundry / Black Market / Mess Hall / Decor
+	Equip = "Equip", -- (kind: "uniform", id: string)
+	PlaceDecor = "PlaceDecor", -- (kind: string) place a decor item where you stand
+	ClearDecor = "ClearDecor", -- () pick up every placed decor item
 	-- server -> client
 	Notice = "Notice", -- (text, kind) small toast
 	Announce = "Announce", -- (text, color: {number}, sound: string?) server-wide message
@@ -40,6 +50,13 @@ Remotes.Names = {
 	Stash = "Stash", -- ({ string }) your Stash chest contents
 	OpenStash = "OpenStash", -- () your Stash prompt was used
 	Raid = "Raid", -- (kind: "alarm" | "stolen" | "carry" | "home" | "dropped", text, userId?)
+	Boom = "Boom", -- (owner: number, x, y, z) dynamite went off
+	EscapeReady = "EscapeReady", -- () you reached the bottom: the ESCAPE button appears
+	Escaped = "Escaped", -- (rebirths: number, tierName: string) play the escape cinematic
+	Inspect = "Inspect", -- (phase: "warn" | "caught" | "safe", seconds: number, snitched: boolean)
+	Event = "Event", -- (id: string, seconds: number) a server event started ("" = ended)
+	Treasure = "Treasure", -- (x, y, z | nil) where the treasure is in your tunnel
+	Reward = "Reward", -- (kind: string, text: string) daily / playtime / cellmate rewards
 }
 
 local FOLDER_NAME = "Remotes"

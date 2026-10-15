@@ -12,6 +12,7 @@ local Voxel = require(Shared.Voxel)
 local Progression = require(Shared.Progression)
 local Tunnel = require(Shared.Tunnel)
 local Remotes = require(Shared.Remotes)
+local Products = require(Shared.Config.Products)
 
 local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
@@ -29,6 +30,12 @@ Dig.onFind = nil :: ((player: Player, id: string, firstTime: boolean) -> ())?
 
 -- night digging: share of extra finds hidden in plain blocks (DayNight sets it)
 Dig.nightBonus = 0
+-- per-player boosts (buffs) and event hooks, set in init
+Dig.powerBoost = nil :: ((player: Player) -> number)?
+Dig.findBoost = nil :: ((player: Player) -> number)?
+Dig.onBroken = nil :: ((player: Player, broken: { number }) -> ())?
+Dig.onBottom = nil :: ((player: Player) -> ())?
+Dig.speedBoost = nil :: ((player: Player) -> number)?
 
 -- multiplies punch power for everyone (events like BLACKOUT set it, M4)
 Dig.globalBoost = 1
@@ -221,7 +228,8 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 		return "bad args"
 	end
 	local now = os.clock()
-	if now - s.lastPunch < World.AttackInterval * 0.8 or not punchLimit(player) then
+	local speed = if Dig.speedBoost then Dig.speedBoost(player) else 0
+	if now - s.lastPunch < World.AttackInterval * (1 - speed) * 0.8 or not punchLimit(player) then
 		return "too fast"
 	end
 	local grid = s.grid
@@ -255,13 +263,23 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 		return "vacuum first"
 	end
 	s.lastPunch = now
-
 	local data = s.data
-	local slots = Progression.findSlots(data.Levels.FindSlots)
-	local power = Stats.power(s) * Dig.globalBoost
+	local power = Stats.power(s) * Dig.globalBoost * (if Dig.powerBoost then Dig.powerBoost(player) else 1)
 	local targets = Progression.brushTargets(grid, x, y, z, face, data.Levels.Brushes, function(_, _, tz)
 		return tz < maxZ
 	end)
+	data.Stats.Punches += 1
+	Dig.applyHits(player, s, targets, power)
+	return nil
+end
+
+-- Damages / breaks a list of blocks ({x, y, z}) of the player's own tunnel: rubble piles, finds,
+-- chambers, zones, deltas. power = math.huge breaks everything (dynamite). Returns blocks broken.
+function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number } }, power: number): number
+	local grid = s.grid
+	local data = s.data
+	local slots = Progression.findSlots(data.Levels.FindSlots)
+	local bonus = Dig.nightBonus + (if Dig.findBoost then Dig.findBoost(player) else 0)
 	local broken: { number } = {}
 	local damaged: { number } = {}
 	local sum = Vector3.zero
@@ -271,6 +289,9 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 	for _, t in targets do
 		local tx, ty, tz = t[1], t[2], t[3]
 		local find = Progression.findAt(data.Seed, tx, ty, tz)
+		if not Voxel.isSolid(grid, tx, ty, tz) then
+			continue
+		end
 		if find and #data.Finds >= slots then
 			slotsFull = true
 		else
@@ -285,9 +306,9 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 				rubble += 1
 				value += Zones[Progression.zoneAt(tz)].rubble
 				deepest = math.max(deepest, tz)
-				if not find and Dig.nightBonus > 0 and #data.Finds < slots then
+				if not find and bonus > 0 and #data.Finds < slots then
 					local zone = Progression.zoneAt(tz)
-					if math.random() < Zones[zone].oreChance * Dig.nightBonus then
+					if math.random() < Zones[zone].oreChance * bonus then
 						find = Progression.pickFind(zone, math.random())
 					end
 				end
@@ -308,7 +329,6 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 			end
 		end
 	end
-	data.Stats.Punches += 1
 	if slotsFull then
 		Net.fire(player, Remotes.Names.Full, "slots")
 	end
@@ -342,12 +362,70 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 		if Dig.onPiles then
 			Dig.onPiles(player)
 		end
+		if Dig.onBroken then
+			Dig.onBroken(player, broken)
+		end
+		if deepest >= D - 1 and Dig.onBottom then
+			Dig.onBottom(player)
+		end
 	elseif #damaged > 0 then
 		for _, viewer in watchersOf(player) do
 			Net.fire(viewer, Remotes.Names.Delta, player.UserId, broken, damaged, player.UserId)
 		end
 	end
 	Stats.sync(player)
+	return #broken
+end
+
+-- DYNAMITE: blows up a sphere of blocks around the aimed block (needs a stick).
+function Dig.dynamite(player: Player, x: any, y: any, z: any): string?
+	local s = State.get(player)
+	if not s or not s.grid or not s.frame then
+		return "no tunnel"
+	end
+	if not (isInt(x, 0, W - 1) and isInt(y, 0, H - 1) and isInt(z, 0, D - 1)) then
+		return "bad args"
+	end
+	if s.data.Dynamite <= 0 then
+		return "no dynamite"
+	end
+	local root = State.root(player)
+	if
+		not root
+		or (Tunnel.blockCenter(s.frame, x, y, z) - root).Magnitude > World.Reach + World.ReachSlack + 4
+	then
+		return "out of reach"
+	end
+	if not Voxel.isExposed(s.grid, x, y, z) then
+		return "not exposed"
+	end
+	s.data.Dynamite -= 1
+	local r = Products.DynamiteRadius
+	local maxZ = Progression.diggableDepth()
+	local targets = {}
+	for dz = -r, r do
+		for dy = -r, r do
+			for dx = -r, r do
+				if dx * dx + dy * dy + dz * dz <= r * r + 1 then
+					local tx, ty, tz = x + dx, y + dy, z + dz
+					if
+						Voxel.inBounds(s.grid, tx, ty, tz)
+						and tz < maxZ
+						and not Progression.chamberAt(tx, ty, tz)
+					then
+						table.insert(targets, { tx, ty, tz })
+					end
+				end
+			end
+		end
+	end
+	for _, viewer in watchersOf(player) do
+		Net.fire(viewer, Remotes.Names.Boom, player.UserId, x, y, z)
+	end
+	Dig.applyHits(player, s, targets, math.huge)
+	if typeof(player) == "Instance" then
+		player:SetAttribute("Dynamite", s.data.Dynamite)
+	end
 	return nil
 end
 
@@ -395,6 +473,12 @@ end
 function Dig.start()
 	Net.on(Remotes.Names.Punch, function(player, x, y, z, face)
 		Dig.punch(player, x, y, z, face)
+	end)
+	local boomLimit = RateLimit.new(0.5, 2)
+	Net.on(Remotes.Names.Dynamite, function(player, x, y, z)
+		if boomLimit(player) then
+			Dig.dynamite(player, x, y, z)
+		end
 	end)
 	local readyLimit = RateLimit.new(0.2, 2)
 	Net.on(Remotes.Names.Ready, function(player)
