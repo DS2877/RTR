@@ -14,7 +14,16 @@ export type PlayerData = {
 	Version: number,
 	Noodles: number,
 	Strength: number,
-	Levels: { Tools: number, Brushes: number, Backpack: number, FindSlots: number, Vacuum: number },
+	Levels: {
+		Tools: number,
+		Brushes: number,
+		Backpack: number,
+		FindSlots: number,
+		Vacuum: number,
+		Lock: number,
+		Trap: number,
+		Alarm: number,
+	},
 	Rebirths: number,
 	Seed: number, -- decides where the finds are in your tunnel
 	Tunnel: string, -- Voxel.serialize of your tunnel
@@ -22,7 +31,8 @@ export type PlayerData = {
 	Zone: number, -- deepest zone reached in this tunnel
 	Bag: number, -- rubble in the backpack
 	BagValue: number, -- Noodles that rubble pays at the dump
-	Finds: { string }, -- find slots (find ids)
+	Finds: { string }, -- find slots (find ids), carried: a knockout drops one
+	Stash: { string }, -- finds in the Stash chest in your cell: raiders can steal one by day
 	Found: { [string]: boolean }, -- every find ever dug up (collection)
 	Receipts: { string },
 	LastOnline: number,
@@ -32,6 +42,9 @@ export type PlayerData = {
 		FindsDug: number,
 		Earned: number,
 		Lifts: number,
+		Steals: number,
+		Robbed: number,
+		Knockouts: number,
 	},
 }
 
@@ -43,7 +56,16 @@ local TEMPLATE: PlayerData = {
 	Version = Economy.ProfileVersion,
 	Noodles = Economy.StartingNoodles,
 	Strength = Economy.StartingStrength,
-	Levels = { Tools = 1, Brushes = 1, Backpack = 1, FindSlots = 1, Vacuum = 1 },
+	Levels = {
+		Tools = 1,
+		Brushes = 1,
+		Backpack = 1,
+		FindSlots = 1,
+		Vacuum = 1,
+		Lock = 1,
+		Trap = 1,
+		Alarm = 1,
+	},
 	Rebirths = 0,
 	Seed = 0, -- set on first load
 	Tunnel = "",
@@ -52,10 +74,20 @@ local TEMPLATE: PlayerData = {
 	Bag = 0,
 	BagValue = 0,
 	Finds = {},
+	Stash = {},
 	Found = {},
 	Receipts = {},
 	LastOnline = 0,
-	Stats = { Punches = 0, Blocks = 0, FindsDug = 0, Earned = 0, Lifts = 0 },
+	Stats = {
+		Punches = 0,
+		Blocks = 0,
+		FindsDug = 0,
+		Earned = 0,
+		Lifts = 0,
+		Steals = 0,
+		Robbed = 0,
+		Knockouts = 0,
+	},
 }
 
 -- MIGRATIONS[n] upgrades version-n data to version n + 1.
@@ -91,13 +123,15 @@ function Data.sanitize(data: PlayerData)
 	if data.Seed == 0 then
 		data.Seed = newSeed()
 	end
-	local kept = {}
-	for _, id in data.Finds do
-		if Finds.ById[id] then
-			table.insert(kept, id)
+	for _, key in { "Finds", "Stash" } do
+		local kept = {}
+		for _, id in (data :: any)[key] or {} do
+			if Finds.ById[id] then
+				table.insert(kept, id)
+			end
 		end
+		(data :: any)[key] = kept
 	end
-	data.Finds = kept
 	data.Noodles = math.max(0, data.Noodles)
 end
 

@@ -22,6 +22,9 @@ local Gym = require(Services.Gym)
 local Admin = require(Services.Admin)
 local DayNight = require(Services.DayNight)
 local Collection = require(Services.Collection)
+local Brawl = require(Services.Brawl)
+local Raid = require(Services.Raid)
+local TopDog = require(Services.TopDog)
 
 Remotes.setup()
 
@@ -41,8 +44,25 @@ Shop.start(world)
 Gym.start(world)
 Admin.start()
 DayNight.start(world)
+Brawl.start(world)
+Raid.start(world)
+TopDog.start(world)
 Dig.onPiles = Loot.sendPiles
 Dig.onFind = Collection.onFound
+local function isDay(): boolean
+	return DayNight.phase() == "Day"
+end
+Brawl.isDay = isDay
+Raid.isDay = isDay
+Brawl.onCarrierHit = function(thief)
+	Raid.returnCarry(thief, "you got hit")
+end
+DayNight.onDay = Raid.newDay
+Shop.onBought = function(player, track)
+	if track == "Lock" then
+		Raid.refreshPrompt(player)
+	end
+end
 
 local function onCharacter(player: Player, character: Model)
 	local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
@@ -81,6 +101,9 @@ local function onPlayerAdded(player: Player)
 	Loot.sendFinds(player)
 	Loot.sendPiles(player)
 	Collection.render(player)
+	Raid.sendStash(player)
+	Raid.refreshPrompt(player)
+	player:SetAttribute("Stamina", 100)
 	player:SetAttribute("Loaded", true)
 	player.CharacterAdded:Connect(function(character)
 		onCharacter(player, character)
@@ -101,6 +124,8 @@ local function leave(player: Player)
 		Dig.saveTunnel(s)
 		s.data.LastOnline = os.time()
 	end
+	Raid.onLeaving(player)
+	TopDog.onLeaving(player)
 	Dig.forget(player)
 	Cells.release(player)
 	State.remove(player)

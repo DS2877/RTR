@@ -19,6 +19,8 @@ local Shop = {}
 
 local world: any = nil
 
+Shop.onBought = nil :: ((player: Player, track: string) -> ())?
+
 local function shopFor(track: string): string?
 	for shop, tracks in Upgrades.Shops do
 		if table.find(tracks, track) then
@@ -59,6 +61,9 @@ function Shop.buy(player: Player, track: string): (number?, string?)
 	local item = (Upgrades :: any)[track][level + 1]
 	Net.notice(player, string.format("%s %s unlocked!", item.emoji, item.name), "upgrade")
 	Stats.sync(player)
+	if Shop.onBought then
+		Shop.onBought(player, track)
+	end
 	return level + 1, nil
 end
 

@@ -54,6 +54,24 @@ local TRACK_INFO: { [string]: { title: string, unit: (v: any) -> string } } = {
 			return v.value .. " studs range"
 		end,
 	},
+	Lock = {
+		title = "STASH LOCK",
+		unit = function(v)
+			return v.value .. " s to pick"
+		end,
+	},
+	Trap = {
+		title = "TRAP",
+		unit = function(v)
+			return if v.value > 0 then "thieves slip once a day" else "none"
+		end,
+	},
+	Alarm = {
+		title = "ALARM",
+		unit = function(v)
+			return if v.value > 0 then "warns you + points at the thief" else "none"
+		end,
+	},
 }
 
 local finds: { string } = {}

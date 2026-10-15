@@ -16,6 +16,8 @@ Remotes.Names = {
 	Buy = "Buy", -- (track: string) buy the next level of an upgrade track
 	Sell = "Sell", -- (slot: number) sell one find, 0 = sell all
 	AdminCmd = "AdminCmd", -- (cmd: string, arg: number?) admins only
+	Brawl = "Brawl", -- (userId: number) punch a player (day, outside safe zones)
+	StashCmd = "StashCmd", -- (cmd: "put" | "take") at your own Stash chest
 	-- server -> client
 	Notice = "Notice", -- (text, kind) small toast
 	Announce = "Announce", -- (text, color: {number}, sound: string?) server-wide message
@@ -31,6 +33,13 @@ Remotes.Names = {
 	OpenShop = "OpenShop", -- (shop: string) a counter prompt was used
 	Dumped = "Dumped", -- (noodles: number) rubble dumped in the Yard
 	Lifted = "Lifted", -- (gain: number) a gym rep counted
+	Knocked = "Knocked", -- (impulse: Vector3, stamina: number, out: boolean) you got punched
+	Hit = "Hit", -- (victim: number, out: boolean) your punch landed on a player
+	Drops = "Drops", -- ({ {id, x, y, z, rubble, finds} }) loot on the floor (everyone)
+	Slip = "Slip", -- (seconds: number) you stepped on soap
+	Stash = "Stash", -- ({ string }) your Stash chest contents
+	OpenStash = "OpenStash", -- () your Stash prompt was used
+	Raid = "Raid", -- (kind: "alarm" | "stolen" | "carry" | "home" | "dropped", text, userId?)
 }
 
 local FOLDER_NAME = "Remotes"

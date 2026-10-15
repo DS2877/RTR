@@ -26,10 +26,12 @@ export type CellRecord = {
 	doorClosed: CFrame,
 	doorBlock: BasePart,
 	shelf: Frame, -- collection slots (Services/Collection fills it)
+	stash: BasePart,
 }
 
 export type WorldRecord = {
 	cells: { CellRecord },
+	boards: { [string]: Frame },
 	shops: { [string]: BasePart },
 	dump: BasePart,
 	stations: { BasePart },
@@ -342,6 +344,42 @@ local function buildCell(parent: Instance, index: number): CellRecord
 	local spawnPos = Vector3.new(cx, 3, (HALF_CORR + 13) * s)
 	local spawn = CFrame.lookAt(spawnPos, spawnPos + Vector3.new(0, 0, s))
 	model:SetAttribute("Cell", index)
+	-- Stash chest (raiders can steal ONE find from it by day)
+	local stashCf = inCell(halfW - 2, 0, 3) * CFrame.Angles(0, -math.pi / 2, 0)
+	local stash = Build.part(
+		model,
+		"Stash",
+		Vector3.new(3.4, 2.2, 2.2),
+		stashCf * CFrame.new(0, 1.1, 0),
+		Color3.fromRGB(150, 100, 50),
+		{
+			Material = Enum.Material.WoodPlanks,
+		}
+	)
+	Build.part(
+		model,
+		"StashLid",
+		Vector3.new(3.6, 0.5, 2.4),
+		stashCf * CFrame.new(0, 2.45, 0),
+		Color3.fromRGB(120, 80, 40),
+		{
+			Material = Enum.Material.WoodPlanks,
+		}
+	)
+	Build.part(
+		model,
+		"StashBand",
+		Vector3.new(3.7, 0.3, 0.3),
+		stashCf * CFrame.new(0, 1.6, -1.15),
+		Color3.fromRGB(230, 190, 60),
+		{
+			Material = Enum.Material.Metal,
+		}
+	)
+	local stashPrompt = Build.prompt(stash, "Stash", "Stash chest", 9)
+	stashPrompt.Name = "StashPrompt"
+	stash:SetAttribute("Cell", index)
+	CollectionService:AddTag(stash, "Stash")
 	-- collection shelf above the bed: one slot per find, silhouettes for the missing ones
 	local shelfPart = Build.part(
 		model,
@@ -374,6 +412,7 @@ local function buildCell(parent: Instance, index: number): CellRecord
 		doorClosed = doorClosed,
 		doorBlock = doorBlock,
 		shelf = shelf,
+		stash = stash,
 	}
 end
 
@@ -468,7 +507,7 @@ local function counter(parent: Instance, name: string, title: string, cf: CFrame
 	return top
 end
 
-local function buildCommonRoom(parent: Instance): { [string]: BasePart }
+local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): { [string]: BasePart }
 	local cr = World.CommonRoom
 	local x0, x1 = cr.x - cr.sx / 2, cr.x + cr.sx / 2
 	local z0, z1 = cr.z - cr.sz / 2, cr.z + cr.sz / 2
@@ -577,6 +616,56 @@ local function buildCommonRoom(parent: Instance): { [string]: BasePart }
 		Vector3.new(2.4, 1.6, 1.4),
 		CFrame.new(cr.x + 10, 20, z0 + 0.8),
 		Color3.fromRGB(60, 60, 64)
+	)
+
+	-- TOP DOG (richest prisoner on the server) and LONGEST TUNNEL boards
+	local function board(name: string, title: string, cf: CFrame, color: Color3): Frame
+		local b = Build.part(parent, name, Vector3.new(20, 12, 0.5), cf, Color3.fromRGB(30, 32, 40))
+		Build.part(parent, name .. "Frame", Vector3.new(21, 13, 0.3), cf * CFrame.new(0, 0, 0.2), color)
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = Enum.NormalId.Front
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 20
+		gui.LightInfluence = 0
+		gui.Parent = b
+		local frame = Instance.new("Frame")
+		frame.Name = "List"
+		frame.BackgroundTransparency = 1
+		frame.Size = UDim2.fromScale(1, 1)
+		frame.Parent = gui
+		local t = Instance.new("TextLabel")
+		t.Name = "Title"
+		t.BackgroundTransparency = 1
+		t.Size = UDim2.fromScale(1, 0.2)
+		t.Font = Enum.Font.FredokaOne
+		t.TextScaled = true
+		t.TextColor3 = color
+		t.Text = title
+		t.Parent = frame
+		local body = Instance.new("TextLabel")
+		body.Name = "Body"
+		body.BackgroundTransparency = 1
+		body.Position = UDim2.fromScale(0.04, 0.22)
+		body.Size = UDim2.fromScale(0.92, 0.74)
+		body.Font = Enum.Font.FredokaOne
+		body.TextScaled = true
+		body.TextColor3 = Color3.new(1, 1, 1)
+		body.TextYAlignment = Enum.TextYAlignment.Top
+		body.Text = "..."
+		body.Parent = frame
+		return frame
+	end
+	boards.TopDog = board(
+		"TopDogBoard",
+		"🐶 TOP DOG",
+		CFrame.new(cr.x - 23, 13, z0 + 0.3) * CFrame.Angles(0, math.pi, 0),
+		Color3.fromRGB(255, 205, 60)
+	)
+	boards.Depth = board(
+		"DepthBoard",
+		"⛏️ LONGEST TUNNEL",
+		CFrame.new(x0 + 0.3, 13, -30) * CFrame.Angles(0, -math.pi / 2, 0),
+		Color3.fromRGB(120, 200, 255)
 	)
 
 	local shops: { [string]: BasePart } = {}
@@ -1073,14 +1162,15 @@ function WorldBuilder.build(): WorldRecord
 	local common = Instance.new("Folder")
 	common.Name = "CommonRoom"
 	common.Parent = root
-	local shops = buildCommonRoom(common)
+	local boards: { [string]: Frame } = {}
+	local shops = buildCommonRoom(common, boards)
 	buildMessHall(common)
 	local yard = Instance.new("Folder")
 	yard.Name = "Yard"
 	yard.Parent = root
 	local dump, stations = buildYard(yard)
 	setupLighting()
-	return { cells = cells, shops = shops, dump = dump, stations = stations }
+	return { cells = cells, boards = boards, shops = shops, dump = dump, stations = stations }
 end
 
 return WorldBuilder

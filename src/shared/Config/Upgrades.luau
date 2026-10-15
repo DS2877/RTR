@@ -79,6 +79,24 @@ local Upgrades = {
 		{ name = "Black Hole", emoji = "🕳️", cost = 200000, value = 36 },
 	} :: { Level },
 
+	-- cell defenses against raids (Commissary). Lock: value = seconds to pick the lock.
+	Lock = {
+		{ name = "No Lock", emoji = "🚪", cost = 0, value = 2 },
+		{ name = "Padlock", emoji = "🔒", cost = 2500, value = 5 },
+		{ name = "Deadbolt", emoji = "🔐", cost = 25000, value = 8 },
+		{ name = "Vault Lock", emoji = "🏦", cost = 250000, value = 12 },
+	} :: { Level },
+	-- Trap: value 1 = slippery soap in front of the Stash
+	Trap = {
+		{ name = "No Trap", emoji = "➖", cost = 0, value = 0 },
+		{ name = "Slippery Soap", emoji = "🧼", cost = 5000, value = 1 },
+	} :: { Level },
+	-- Alarm: value 1 = notice + beam to the thief
+	Alarm = {
+		{ name = "No Alarm", emoji = "➖", cost = 0, value = 0 },
+		{ name = "Alarm Bell", emoji = "🔔", cost = 3000, value = 1 },
+	} :: { Level },
+
 	-- highest buyable level per track (raised with the milestones; M2 = zones 1-6)
 	Open = {
 		Tools = 6,
@@ -86,12 +104,15 @@ local Upgrades = {
 		Backpack = 6,
 		FindSlots = 5,
 		Vacuum = 5,
+		Lock = 4,
+		Trap = 2,
+		Alarm = 2,
 	} :: { [string]: number },
 
 	-- which shop sells which track
 	Shops = {
 		Workshop = { "Tools", "Brushes" },
-		Commissary = { "Backpack", "FindSlots", "Vacuum" },
+		Commissary = { "Backpack", "FindSlots", "Vacuum", "Lock", "Trap", "Alarm" },
 	} :: { [string]: { string } },
 }
 

@@ -58,6 +58,9 @@ local Gym = req(Services, "Gym")
 local Admin = req(Services, "Admin")
 local DayNight = req(Services, "DayNight")
 local Collection = req(Services, "Collection")
+local Brawl = req(Services, "Brawl")
+local Raid = req(Services, "Raid")
+local TopDog = req(Services, "TopDog")
 
 local sent: { { name: string, args: { any } } } = {}
 Net.sink = function(_player: any, name: string, args: { any })
@@ -98,8 +101,25 @@ step("Admin.start", Admin.start)
 step("DayNight.start", function()
 	DayNight.start(world)
 end)
+step("Brawl.start", function()
+	Brawl.start(world)
+end)
+step("Raid.start", function()
+	Raid.start(world)
+end)
+step("TopDog.start", function()
+	TopDog.start(world)
+end)
 Dig.onPiles = Loot.sendPiles
 Dig.onFind = Collection.onFound
+local function isDay(): boolean
+	return DayNight.phase() == "Day"
+end
+Brawl.isDay = isDay
+Raid.isDay = isDay
+Brawl.onCarrierHit = function(thief)
+	Raid.returnCarry(thief, "hit")
+end
 
 -- ===== world checks =====
 check("12 cells", #world.cells == World.CellCount, #world.cells)
@@ -293,6 +313,88 @@ check(
 	ReplicatedStorage:GetAttribute("Phase") == "Day" and world.cells[1].doorBlock.CanCollide == false
 )
 check("mess hall built", workspace.Prison.CommonRoom:FindFirstChild("MessFloor") ~= nil)
+
+-- ===== M3: PvP with a second simulated player =====
+local raider: any = { UserId = -5151, Name = "SmokeRaider", Position = Vector3.zero }
+local r = State.add(raider, Data.fresh())
+check("second cell", Cells.assign(raider) == 2)
+Dig.loadTunnel(raider)
+local yard = Vector3.new(World.Yard.x, 3, World.Yard.z)
+local function brawl(a: any, b: any): string?
+	local as = State.get(a)
+	as.lastBrawl = 0
+	return Brawl.punch(a, b.UserId)
+end
+fake.Position = yard
+raider.Position = yard + Vector3.new(4, 0, 0)
+check("yard is not safe", not Brawl.isSafe(yard))
+check("cells are safe", Brawl.isSafe(world.cells[1].spawn.Position))
+check("shops are safe", Brawl.isSafe(world.shops.Workshop.Position))
+check("punch a player", brawl(fake, raider) == nil and r.stamina < 100, r.stamina)
+check("stronger hits harder", Brawl.damage(1000, 10) > Brawl.damage(10, 1000))
+check("can't punch yourself", brawl(fake, fake) == "no victim")
+raider.Position = yard + Vector3.new(30, 0, 0)
+check("out of reach", brawl(fake, raider) == "out of reach")
+raider.Position = world.shops.Workshop.Position
+check("safe zone", brawl(fake, raider) == "safe zone")
+-- knockout drops rubble + a find
+raider.Position = yard + Vector3.new(4, 0, 0)
+r.data.Bag, r.data.BagValue = 20, 40
+r.data.Finds = { "OldCoin" }
+r.stamina = 1
+check("knockout", brawl(fake, raider) == nil and r.data.Bag == 14 and #r.data.Finds == 0, r.data.Bag)
+check("drop on the floor", #Brawl.drops() == 1 and Brawl.drops()[1].rubble == 6)
+check("protected after knockout", brawl(fake, raider) == "protected")
+s.data.Bag, s.data.BagValue, s.data.Finds = 0, 0, {}
+fake.Position = raider.Position
+raider.Position = yard + Vector3.new(40, 0, 0)
+task.wait(0.6)
+check("pick up the drop", s.data.Bag == 6 and #s.data.Finds == 1 and #Brawl.drops() == 0, s.data.Bag)
+DayNight.force("night")
+task.wait(0.6)
+r.protectedUntil = 0
+check("no brawls at night", brawl(fake, raider) == "night")
+DayNight.force("day")
+task.wait(0.6)
+
+-- raids: the raider steals from cell 1's Stash
+fake.Position = world.cells[1].stash.Position
+s.data.Finds = { "OldCoin", "SecretNote" }
+check("stash put", Raid.stashCmd(fake, "put") == 2 and #s.data.Stash == 2)
+check("stash take", Raid.stashCmd(fake, "take") == 2 and #s.data.Finds == 2)
+Raid.stashCmd(fake, "put")
+raider.Position = world.cells[1].stash.Position
+check("lock needs the hold", Raid.steal(raider, 1) == "lock")
+check("can't rob yourself", Raid.steal(fake, 1, true) == "own stash")
+check("steal", Raid.steal(raider, 1, true) == nil and r.carrying ~= nil and #s.data.Stash == 1)
+check("took the most valuable", r.carrying and r.carrying.id == "SecretNote")
+check("one at a time", Raid.steal(raider, 1, true) == "already carrying")
+raider.Position = world.cells[2].spawn.Position
+task.wait(0.6)
+check(
+	"heist delivered",
+	r.carrying == nil and table.find(r.data.Finds, "SecretNote") ~= nil and r.data.Stats.Steals == 1
+)
+-- hit the thief = it goes back
+raider.Position = world.cells[1].stash.Position
+Raid.steal(raider, 1, true)
+fake.Position = yard
+raider.Position = yard + Vector3.new(3, 0, 0)
+r.protectedUntil = 0
+brawl(fake, raider)
+check("hit thief drops it", r.carrying == nil and #s.data.Stash == 1, #s.data.Stash)
+-- night takes it back too
+raider.Position = world.cells[1].stash.Position
+Raid.steal(raider, 1, true)
+DayNight.force("night")
+task.wait(0.6)
+check("guards return it at night", r.carrying == nil and #s.data.Stash == 1)
+check("no raids at night", Raid.steal(raider, 1, true) == "night")
+DayNight.force("day")
+task.wait(0.6)
+step("top dog update", TopDog.update)
+Cells.release(raider)
+State.remove(raider)
 
 -- locked zones can't be dug
 local locked = Progression.diggableDepth()

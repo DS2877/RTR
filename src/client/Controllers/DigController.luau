@@ -39,6 +39,8 @@ local punchRemote: RemoteEvent
 
 -- hooks for FX / HUD
 DigController.onPunch = nil :: ((aim: Aim, targets: { { number } }) -> ())?
+-- PUNCH with no block in reach: PvPController tries to punch a player (returns true if it did)
+DigController.onEmptyPunch = nil :: (() -> boolean)?
 
 local function root(): BasePart?
 	local c = player.Character
@@ -218,6 +220,11 @@ local function punch()
 	end
 	local a = aim
 	if not a then
+		if DigController.onEmptyPunch and DigController.onEmptyPunch() then
+			lastPunch = now
+			jab[arms[nextArm]] = 1
+			nextArm = 3 - nextArm
+		end
 		return
 	end
 	lastPunch = now
@@ -278,9 +285,7 @@ function DigController.start()
 			or input.KeyCode == Enum.KeyCode.ButtonX
 			or input.KeyCode == Enum.KeyCode.F
 		then
-			if aim then
-				DigController.setHolding(true)
-			end
+			DigController.setHolding(true)
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(input)

@@ -7,7 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Cycle = require(Shared.Config.Cycle)
-local World = require(Shared.Config.World)
+local Tunnel = require(Shared.Tunnel)
 
 local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
@@ -21,6 +21,8 @@ local phase = "Day"
 local endsAt = 0
 local forced: string? = nil
 
+DayNight.onDay = nil :: (() -> ())?
+
 local function now(): number
 	return workspace:GetServerTimeNow()
 end
@@ -29,18 +31,9 @@ function DayNight.phase(): string
 	return phase
 end
 
--- Is a position inside this cell's room or its tunnel?
+-- Is a position inside this player's cell room or tunnel?
 function DayNight.inOwnCell(s: State.PlayerState, pos: Vector3): boolean
-	local frame = s.frame
-	if not frame then
-		return false
-	end
-	local p = frame:PointToObjectSpace(pos)
-	local halfW = World.TunnelWidth * World.BlockSize / 2
-	if math.abs(p.X) <= halfW and p.Z >= -1 and p.Z <= World.CellDepth - 2 then
-		return true -- the cell room (local +Z is toward the corridor)
-	end
-	return p.Z < 0 and math.abs(p.X) <= halfW
+	return s.cell ~= nil and Tunnel.cellAt(pos) == s.cell
 end
 
 local function setDoors(locked: boolean)
@@ -85,7 +78,10 @@ local function setPhase(p: string, seconds: number)
 		Net.announce("Doors locked. Night digging gives +25% finds!", { 140, 170, 255 }, nil)
 	else
 		setDoors(false)
-		Net.announce("Good morning! Cell doors are open.", { 255, 220, 120 }, "Announce")
+		Net.announce("Good morning! Cell doors are open. Watch your Stash!", { 255, 220, 120 }, "Announce")
+		if DayNight.onDay then
+			DayNight.onDay()
+		end
 	end
 end
 

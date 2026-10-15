@@ -23,6 +23,12 @@ export type PlayerState = {
 	ready: boolean,
 	passes: { [string]: boolean },
 	lastLift: number,
+	-- PvP (M3)
+	stamina: number,
+	lastHitAt: number, -- when you were last punched
+	lastBrawl: number, -- when you last punched a player
+	protectedUntil: number,
+	carrying: { id: string, owner: Player }?, -- a stolen find on its way home
 }
 
 local State = {}
@@ -47,6 +53,11 @@ function State.add(player: Player, data: Data.PlayerData): PlayerState
 		ready = false,
 		passes = {},
 		lastLift = 0,
+		stamina = 100,
+		lastHitAt = 0,
+		lastBrawl = 0,
+		protectedUntil = 0,
+		carrying = nil,
 	}
 	states[player] = s
 	return s

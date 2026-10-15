@@ -55,6 +55,20 @@ function Tunnel.inside(frame: CFrame, pos: Vector3, margin: number?): boolean
 		and z < World.TunnelDepth + m
 end
 
+-- Which cell (room or tunnel) a world position is in, or nil (corridor, Common Room, Yard...).
+function Tunnel.cellAt(pos: Vector3): number?
+	for cell = 1, World.CellCount do
+		local p = Tunnel.frame(cell):PointToObjectSpace(pos)
+		if math.abs(p.X) <= HALF_W and p.Y > -4 and p.Y < World.TunnelHeight * B + 2 then
+			-- local +Z is toward the corridor: the room is 0..CellDepth-2, the tunnel is behind the wall
+			if p.Z <= World.CellDepth - 2 and p.Z >= -World.TunnelDepth * B then
+				return cell
+			end
+		end
+	end
+	return nil
+end
+
 -- World direction of a grid face normal (Voxel.Faces[i]).
 function Tunnel.faceDirection(frame: CFrame, n: { number }): Vector3
 	return frame:VectorToWorldSpace(Vector3.new(n[1], n[2], -n[3]))

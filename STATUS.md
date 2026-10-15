@@ -1,6 +1,6 @@
 # STATUS – Dig Out! (fängelseflykt-grävspel)
 
-Senast uppdaterad: 2026-10-15 · Milstolpe: **M2 FÄNGELSET** (M1 publicerad)
+Senast uppdaterad: 2026-10-15 · Milstolpe: **M3 PVP** (M1 + M2 publicerade)
 
 Det gamla spelet (Rob the Rich!) är raderat från koden och arkiverat i git-taggen
 `archive/rob-the-rich` (sista commit `374cd1d`). Ny spelardata sparas i `DigOut_v1`, så gammal
@@ -70,6 +70,23 @@ data blandas aldrig in.
 - **Gym:** två nya stationer – Tire Flip (+40, kräver 4 000 💪) och Pull-up Bar (+150, kräver 25 000 💪).
 - Admin: ☀️ Day / 🌙 Night tvingar fram fas, Zone 4 / Zone 6.
 
+### M3 – PvP (natten är säker, dagen är farlig)
+- **Yard Brawl:** på dagen slår PUNCH-knappen närmaste spelare framför dig (röd kontur) när ingen
+  vägg är inom räckhåll. Säkra zoner: celler/tunnlar, butiksdiskarna, gymmet och dumpen. Slapstick-
+  knuff, ingen skada/blod, en STAMINA-mätare. Starkare = hårdare slag. Stamina 0 = knockout:
+  yrsel-stjärnor, du tappar 30 % av gruset i ryggsäcken + ditt dyraste fynd som en hög på marken
+  som vem som helst kan plocka upp. 8 s skydd efter knockout.
+- **Stash-kista** i varje cell: "Open Stash" → lägg in alla fynd / ta ut alla (12 platser).
+- **Cellräder:** på dagen kan andra gå in i din cell och hålla **STEAL** vid din kista för att ta
+  ETT fynd (det dyraste). Tjuven blir långsammare och lyser guld, och får en gul stråle hem. När
+  tjuven når sin egen cell är fyndet hens (meddelas hela servern). Slå tjuven = fyndet går
+  tillbaka till kistan. Kommer natten tar vakterna tillbaka det. Sålda fynd är alltid säkra.
+- **Försvar** (Commissary): Lock (Padlock/Deadbolt/Vault Lock: 5/8/12 s att dyrka), Trap (såpa –
+  tjuven halkar en gång per dag), Alarm (du får larm + röd stråle mot tjuven).
+- **TOP DOG:** rikaste spelaren på servern bär en guldkedja, syns på TOP DOG-tavlan i Common Room
+  och får "YOU ARE TOP DOG" i HUD:en.
+- **LONGEST TUNNEL-tavla:** djupaste tunnlarna på servern + all-time topp 5 (sparas globalt).
+
 ### Balans (`lune run tools/simulate`)
 | | Gratis-spelare | Med alla pass |
 |---|---|---|
@@ -108,11 +125,13 @@ Antal slag per block när man når en ny zon: 7–20 (zon 5 ~70 med Pickaxe → 
 9. Titta på hyllan ovanför sängen: hittade fynd syns, saknade är "?".
 10. Gräv 25 block djupt → kammaren Old Boiler Room + "BRICK"-banner. (Snabbt: ADMIN → Zone 2 och slå
    sönder blocket framför dig.)
-11. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
-12. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
+11. PvP (behöver två spelare/enheter, dagtid): gå ut i Yard, tryck PUNCH mot den andra spelaren.
+    Lägg ett fynd i kistan (Open Stash → PUT ALL), låt den andra hålla STEAL vid din kista och
+    springa hem; slå hen på vägen så kommer fyndet tillbaka.
+12. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
+13. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
 
 ## ⏳ Saknas (kommande milstolpar)
-- **M3 PvP:** Yard Brawl, Stash + cellräder + lås/fälla/larm, Top Dog-kedja, topplistor.
 - **M4 Djup:** zon 7–10, alla 9 rariteter, vakt-inspektioner, snitch, skattjakt, events, flykt/rebirth,
   dekorationer, Laundry, Black Market, dagliga belöningar, Cellmate offline, pass/produkter.
 - **M5 Polish:** tutorial, musik, ljudpass, analytics.
