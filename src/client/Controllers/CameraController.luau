@@ -61,6 +61,38 @@ function CameraController.start()
 	local tunnelAmbient =
 		Color3.fromRGB(look.Tunnel.ambient[1], look.Tunnel.ambient[2], look.Tunnel.ambient[3])
 	local Clock = require(script.Parent.Clock)
+	local Strata = require(Shared.Strata)
+	-- floating particles around the camera, per zone (dust, drips, embers, sparkles)
+	local airPart = Instance.new("Part")
+	airPart.Name = "TunnelAir"
+	airPart.Anchored = true
+	airPart.CanCollide = false
+	airPart.CanQuery = false
+	airPart.CanTouch = false
+	airPart.Transparency = 1
+	airPart.Size = Vector3.new(26, 14, 26)
+	airPart.Parent = workspace
+	local air = Instance.new("ParticleEmitter")
+	air.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	air.Lifetime = NumberRange.new(3, 5)
+	air.Speed = NumberRange.new(0.1, 0.4)
+	air.SpreadAngle = Vector2.new(180, 180)
+	air.Shape = Enum.ParticleEmitterShape.Box
+	air.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+	air.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.3, 0.35),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	air.Rate = 0
+	air.Parent = airPart
+	local airZone = ""
+	RunService.RenderStepped:Connect(function()
+		local cam = workspace.CurrentCamera
+		if cam and inTunnel then
+			airPart.CFrame = CFrame.new(cam.CFrame.Position + cam.CFrame.LookVector * 8)
+		end
+	end)
 	local acc = 0
 	RunService.Heartbeat:Connect(function(dt)
 		acc += dt
@@ -91,6 +123,20 @@ function CameraController.start()
 			lamp.Parent = r
 		end
 		local zone = Zones[currentZone]
+		local spec = Strata.Air[zone.id]
+		local key = if inTunnel and spec then zone.id else ""
+		if key ~= airZone then
+			airZone = key
+			if spec and inTunnel then
+				air.Color = ColorSequence.new(Color3.fromRGB(spec.color[1], spec.color[2], spec.color[3]))
+				air.Size = NumberSequence.new(spec.size)
+				air.Acceleration = Vector3.new(0, spec.rise, 0)
+				air.LightEmission = spec.light
+				air.Rate = spec.rate
+			else
+				air.Rate = 0
+			end
+		end
 		if lamp then
 			lamp.Enabled = inTunnel
 			lamp.Brightness = 1.4 * zone.brightness

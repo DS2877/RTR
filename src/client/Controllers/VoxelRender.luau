@@ -21,6 +21,7 @@ local Progression = require(Shared.Progression)
 local Tunnel = require(Shared.Tunnel)
 local Remotes = require(Shared.Remotes)
 local Economy = require(Shared.Config.Economy)
+local Strata = require(Shared.Strata)
 
 local VoxelRender = {}
 
@@ -104,6 +105,16 @@ local FACE_IDS = {
 	Enum.NormalId.Back,
 }
 
+local MAX_LIGHTS = 20 -- glowing features (crystals, lava, slime) with a PointLight, per client
+local lit: { [Part]: boolean } = {}
+local litCount = 0
+local function unlight(p: Part)
+	if lit[p] then
+		lit[p] = nil
+		litCount -= 1
+	end
+end
+
 local function acquire(): Part
 	local p = table.remove(pool)
 	if not p then
@@ -129,6 +140,7 @@ local function release(p: Part)
 		tw:Cancel()
 	end
 	partCount -= 1
+	unlight(p)
 	p.Parent = nil
 	for _, c in p:GetChildren() do
 		c:Destroy()
@@ -168,6 +180,105 @@ local function crackGui(p: Part, face: Enum.NormalId, stage: number, seed: numbe
 	gui.Parent = p
 end
 
+-- ===== zone features (Shared/Strata): pipes, rebar, lava veins, crystals, carvings =====
+
+local featureMaterial: { [string]: Enum.Material } = {}
+local function materialOf(name: string): Enum.Material
+	local m = featureMaterial[name]
+	if not m then
+		local ok, value = pcall(function()
+			return (Enum.Material :: any)[name]
+		end)
+		m = if ok and value then value else Enum.Material.SmoothPlastic
+		featureMaterial[name] = m
+	end
+	return m :: Enum.Material
+end
+
+-- a pattern scratched into an open face: prison tally marks or an ancient glyph
+local function carveGui(p: Part, face: Enum.NormalId, kind: string, seed: number)
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "Carve"
+	gui.Face = face
+	gui.LightInfluence = 1
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
+	gui.CanvasSize = Vector2.new(64, 64)
+	local r = Random.new(seed)
+	local ink = if kind == "Tally" then Color3.fromRGB(40, 40, 44) else Color3.fromRGB(110, 82, 40)
+	local function bar(x: number, y: number, w: number, hgt: number, rot: number)
+		local f = Instance.new("Frame")
+		f.BorderSizePixel = 0
+		f.BackgroundColor3 = ink
+		f.BackgroundTransparency = 0.15
+		f.AnchorPoint = Vector2.new(0.5, 0.5)
+		f.Position = UDim2.fromOffset(x, y)
+		f.Size = UDim2.fromOffset(w, hgt)
+		f.Rotation = rot
+		f.Parent = gui
+	end
+	if kind == "Tally" then
+		local n = r:NextInteger(3, 5)
+		for i = 1, n - (if n == 5 then 1 else 0) do
+			bar(18 + i * 7, 32 + r:NextNumber(-1, 1), 2, 26, r:NextNumber(-4, 4))
+		end
+		if n == 5 then
+			bar(35, 32, 2, 38, 62)
+		end
+	else
+		-- a frame with a symbol: eye / sun / steps, chosen per block
+		bar(32, 10, 40, 3, 0)
+		bar(32, 54, 40, 3, 0)
+		local pick = r:NextInteger(1, 3)
+		if pick == 1 then
+			bar(32, 32, 26, 3, 0)
+			bar(32, 32, 10, 10, 45)
+		elseif pick == 2 then
+			bar(32, 32, 12, 12, 0)
+			for a = 0, 3 do
+				bar(32, 32, 30, 2, a * 45)
+			end
+		else
+			for k = 0, 3 do
+				bar(20 + k * 8, 46 - k * 8, 8, 3 + k * 8, 0)
+			end
+		end
+	end
+	gui.Parent = p
+end
+
+-- Gives a rendered block its feature look; returns the color to use (nil = plain rock).
+local function applyFeature(t: T, x: number, y: number, z: number, p: Part): Color3?
+	local id = Strata.featureAt(x, y, z)
+	if not id then
+		return nil
+	end
+	local look = Strata.Looks[id]
+	if not look then
+		return nil
+	end
+	p.Material = materialOf(look.material)
+	local c = look.color
+	local s = 1 + ((Progression.hash01(0, x, y, z, 13) - 0.5) * 2 * (look.shade or 0))
+	if look.carve then
+		for f, n in Voxel.Faces do
+			if Voxel.isOpen(t.grid, x + n[1], y + n[2], z + n[3]) then
+				carveGui(p, FACE_IDS[f], look.carve, x * 131 + y * 17 + z * 7 + f)
+			end
+		end
+	end
+	if look.glow and litCount < MAX_LIGHTS then
+		local l = Instance.new("PointLight")
+		l.Color = Color3.fromRGB(look.glow[1], look.glow[2], look.glow[3])
+		l.Range = 9
+		l.Brightness = 0.9
+		l.Shadows = false
+		l.Parent = p
+		lit[p] = true
+		litCount += 1
+	end
+	return Color3.fromRGB(math.min(255, c[1] * s), math.min(255, c[2] * s), math.min(255, c[3] * s))
+end
+
 -- escaped prisoners land in tougher prisons: their tunnel gets that prison's tint
 local function tierTint(owner: number): Color3?
 	local p = Players:GetPlayerByUserId(owner)
@@ -190,6 +301,10 @@ local function styleBlock(t: T, idx: number, p: Part)
 	local find = if z < MAX_Z then Progression.findAt(t.seed, x, y, z) else nil
 	if find then
 		color = color:Lerp(Color3.new(0, 0, 0), 0.45)
+	end
+	unlight(p)
+	if not find and z < MAX_Z then
+		color = applyFeature(t, x, y, z, p) or color
 	end
 	local stage = t.damage[idx]
 	if stage then

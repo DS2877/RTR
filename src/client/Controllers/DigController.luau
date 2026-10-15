@@ -19,7 +19,6 @@ local Remotes = require(Shared.Remotes)
 
 local Client = script.Parent.Parent
 local VoxelRender = require(script.Parent.VoxelRender)
-local Sound = require(Client.Util.Sound)
 local Shake = require(Client.Util.Shake)
 local PunchAnim = require(Client.Util.PunchAnim)
 local DigAudio = require(script.Parent.DigAudio)
