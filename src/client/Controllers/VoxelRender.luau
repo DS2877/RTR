@@ -51,7 +51,7 @@ local partCount = 0
 local imposters: { [number]: Part } = {}
 
 -- callbacks for FX (set by other controllers)
-VoxelRender.onHit = nil :: ((t: T, puncher: number) -> ())?
+VoxelRender.onHit = nil :: ((t: T, puncher: number, z: number) -> ())?
 VoxelRender.onBroken = nil :: ((t: T, broken: { number }, puncher: number) -> ())?
 VoxelRender.onDamaged = nil :: ((t: T, damaged: { number }, puncher: number) -> ())?
 VoxelRender.onChamber = nil :: ((t: T, zone: number) -> ())?
@@ -530,8 +530,10 @@ function VoxelRender.start()
 				t.dirty[Voxel.chunkOf(g, x, y, z)] = true
 			end
 		end
-		if VoxelRender.onHit then
-			VoxelRender.onHit(t, puncher)
+		local first = broken[1] or damaged[1]
+		if VoxelRender.onHit and first then
+			local _, _, hz = Voxel.unindex(g, first)
+			VoxelRender.onHit(t, puncher, hz)
 		end
 		if VoxelRender.onBroken and #broken > 0 then
 			VoxelRender.onBroken(t, broken, puncher)

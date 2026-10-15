@@ -100,6 +100,9 @@ function Clock.start()
 		if phase ~= lastPhase then
 			if phase == "Night" then
 				Shake.kick(0.3)
+				Sound.play("CellDoor", 0.7, 0.95) -- lockdown: every door slams
+			elseif phase == "Day" and lastPhase ~= nil then
+				Sound.play("CellDoor", 0.5, 1.1)
 			end
 			lastPhase = phase
 		end

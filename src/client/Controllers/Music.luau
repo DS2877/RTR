@@ -14,6 +14,7 @@ local Music = {}
 local M = Assets.Music
 local player = Players.LocalPlayer
 local enabled = true
+local duck = 1
 local chasing = false
 local index = 0
 local main: Sound
@@ -24,7 +25,7 @@ local function fade(s: Sound, volume: number)
 end
 
 local function refresh()
-	fade(main, if enabled and not chasing then M.Volume else 0)
+	fade(main, if enabled and not chasing then M.Volume * duck else 0)
 	fade(chase, if enabled and chasing then M.ChaseVolume else 0)
 end
 
@@ -55,6 +56,14 @@ function Music.start()
 		chasing = player:GetAttribute("Carrying") == true
 		refresh()
 	end)
+end
+
+-- Quieter while you're in a tunnel (the zone ambience takes over): 1 = full volume.
+function Music.setDuck(f: number)
+	duck = f
+	if main then
+		refresh()
+	end
 end
 
 function Music.setEnabled(on: boolean)

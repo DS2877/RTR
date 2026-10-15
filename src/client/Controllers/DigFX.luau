@@ -18,7 +18,7 @@ local Remotes = require(Shared.Remotes)
 
 local Client = script.Parent.Parent
 local VoxelRender = require(script.Parent.VoxelRender)
-local Sound = require(Client.Util.Sound)
+local DigAudio = require(script.Parent.DigAudio)
 local Shake = require(Client.Util.Shake)
 
 local DigFX = {}
@@ -35,6 +35,7 @@ type Debris = {
 	sucked: boolean,
 	t: number,
 	from: Vector3,
+	vy: number, -- last vertical speed (a sudden stop = it hit the floor: tap)
 }
 local debris: { Debris } = {}
 local free: { Part } = {}
@@ -136,6 +137,7 @@ local function spawnCube(
 		sucked = false,
 		t = 0,
 		from = Vector3.zero,
+		vy = 0,
 	})
 end
 
@@ -246,8 +248,11 @@ local function onBroken(t: VoxelRender.T, broken: { number }, puncher: number)
 			puff(pos, color, if many then 3 else 6, 1)
 		end
 	end
+	do
+		local x, y, z = Voxel.unindex(t.grid, broken[1])
+		DigAudio.broken(z, #broken, mine, Tunnel.blockCenter(t.frame, x, y, z))
+	end
 	if mine then
-		Sound.play("Crumble", 0.6, 0.5 + math.random() * 0.1)
 		Shake.kick(math.min(0.5, 0.22 + #broken * 0.02))
 	end
 end
@@ -391,9 +396,6 @@ function DigFX.setVacuum(on: boolean)
 		return
 	end
 	vacuumOn = on
-	if on then
-		Sound.play("Vacuum", 0.5, 0.8)
-	end
 end
 
 local function buildNozzle(): Model
@@ -500,6 +502,13 @@ local function updateVacuum(dt: number)
 	if not r then
 		return
 	end
+	local inFlight = 0
+	for _, d in debris do
+		if d.sucked then
+			inFlight += 1
+		end
+	end
+	DigAudio.vacuum(vacuumOn, math.min(1, inFlight / 4))
 	local range = vacuumRange()
 	local target = if vacuumOn then (mouthCFrame(r) * CFrame.new(0, 0, -2.4)).Position else r.Position
 	for i = #debris, 1, -1 do
@@ -523,6 +532,17 @@ local function updateVacuum(dt: number)
 			if k >= 1 then
 				recycle(d)
 				table.remove(debris, i)
+				DigAudio.suck()
+			end
+		elseif not part.Anchored and d.kind == "chunk" then
+			local vy = part.AssemblyLinearVelocity.Y
+			if d.vy < -7 and vy > d.vy + 6 then
+				DigAudio.land(part.Position, part.Size.X)
+			end
+			d.vy = vy
+			if now - d.born > 6 or (now - d.born > 0.9 and part.AssemblyLinearVelocity.Magnitude < 0.7) then
+				-- settled on the pile (or tumbling too long): freeze it, no physics cost while it waits
+				part.Anchored = true
 			end
 		elseif d.life and now - d.born > d.life then
 			recycle(d)

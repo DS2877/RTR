@@ -7,6 +7,7 @@ local suites = {
 	{ name = "Voxel", run = require("./Voxel.spec") },
 	{ name = "Progression", run = require("./Progression.spec") },
 	{ name = "Shell", run = require("./Shell.spec") },
+	{ name = "Audio", run = require("./Audio.spec") },
 }
 
 local failures = 0

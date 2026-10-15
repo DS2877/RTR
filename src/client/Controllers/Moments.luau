@@ -92,8 +92,8 @@ local function boom(owner: number, x: number, y: number, z: number)
 	end)
 	if owner == player.UserId then
 		Shake.kick(1)
-		Sound.play("Crumble", 1, 0.4)
-		Sound.play("Punch", 1, 0.35)
+		Sound.play("Boom", 0.9, 1)
+		Sound.play("BigBreak", 0.9, 0.85)
 	end
 end
 

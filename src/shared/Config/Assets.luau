@@ -5,7 +5,7 @@
 
 local Assets = {
 	Sounds = {
-		Click = "rbxassetid://9112872070", -- Small Bubbles Pop 4
+		Click = "rbxassetid://9119717529", -- Switch Click On Or Off Toggle Button 1
 		Open = "rbxassetid://9112872058", -- Small Bubbles Pop 3
 		Punch = "rbxassetid://9113510797", -- Body Hit Slap 3 (played low and fast = a thud)
 		Crumble = "rbxassetid://9125444889", -- Coins Drop Metal Hits (played low = rubble)

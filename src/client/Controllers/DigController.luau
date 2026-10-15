@@ -22,6 +22,7 @@ local VoxelRender = require(script.Parent.VoxelRender)
 local Sound = require(Client.Util.Sound)
 local Shake = require(Client.Util.Shake)
 local PunchAnim = require(Client.Util.PunchAnim)
+local DigAudio = require(script.Parent.DigAudio)
 
 local DigController = {}
 
@@ -203,7 +204,11 @@ local function punch()
 	lastPunch = now
 	PunchAnim.play(player.Character)
 	punchRemote:FireServer(a.x, a.y, a.z, a.face)
-	Sound.play("Punch", 0.7, 0.75)
+	local t = VoxelRender.own()
+	if t then
+		local stage = t.damage[Voxel.index(t.grid, a.x, a.y, a.z)] or 0
+		DigAudio.punch(a.z, stage, willBreak(t, a.x, a.y, a.z))
+	end
 	Shake.kick(0.16)
 	flashPreview()
 	if DigController.onPunch then

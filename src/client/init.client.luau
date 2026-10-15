@@ -38,9 +38,15 @@ do
 			VoxelRender.jolt(t, a.x, a.y, a.z)
 		end
 	end
-	VoxelRender.onHit = function(_t, puncher)
+	local DigAudio = require(Controllers.DigAudio)
+	VoxelRender.onHit = function(_t, puncher, z)
 		if puncher ~= player.UserId then
 			PunchAnim.playPlayer(puncher)
+			local p = game:GetService("Players"):GetPlayerByUserId(puncher)
+			local r = p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+			if r and r:IsA("BasePart") then
+				DigAudio.remoteHit(z, r.Position + r.CFrame.LookVector * 3)
+			end
 		end
 	end
 end
@@ -56,4 +62,11 @@ end
 require(Controllers.Moments).start()
 require(Controllers.Guide).start()
 require(Controllers.GymController).start()
-require(Controllers.Music).start()
+local Music = require(Controllers.Music)
+Music.start()
+do
+	local CameraController = require(Controllers.CameraController)
+	require(Controllers.DigAudio).start(function()
+		return CameraController.inTunnel(), CameraController.zone()
+	end, Music.setDuck)
+end

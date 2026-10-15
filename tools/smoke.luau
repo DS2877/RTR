@@ -691,6 +691,18 @@ for i, id in Assets.Music.Playlist do
 	allSounds["Music" .. i] = id
 end
 allSounds.Chase = Assets.Music.Chase
+local Audio = req(Config, "Audio")
+for bank, list in Audio.Banks do
+	for i, id in list do
+		allSounds[bank .. i] = id
+	end
+end
+for name, id in Audio.Loops do
+	allSounds["Loop" .. name] = id
+end
+for name, m in Audio.Materials do
+	check("audio material " .. name, Audio.Banks[m.hit] ~= nil and Audio.Banks[m.breakBank] ~= nil)
+end
 for name, id in allSounds do
 	local num = tonumber(string.match(id, "%d+"))
 	if num then
