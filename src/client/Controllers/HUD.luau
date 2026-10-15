@@ -20,6 +20,7 @@ local Format = require(Shared.Format)
 
 local Client = script.Parent.Parent
 local UI = require(Client.Util.UI)
+local LootToast = require(Client.Util.LootToast)
 local Panel = require(Client.Util.Panel)
 local Sound = require(Client.Util.Sound)
 local Shake = require(Client.Util.Shake)
@@ -129,36 +130,24 @@ end
 
 -- ===== find popup =====
 
-local findCard: Frame
 local function showFind(id: string)
 	local f = Finds.ById[id]
 	if not f then
 		return
 	end
 	local tier = Rarity.Tiers[f.rarity]
-	local color = rgb(tier.color)
-	local emoji = findCard:FindFirstChild("Emoji") :: TextLabel
-	local name = findCard:FindFirstChild("Name") :: TextLabel
-	local rarity = findCard:FindFirstChild("Rarity") :: TextLabel
-	emoji.Text = f.emoji
-	name.Text = f.name
-	rarity.Text = string.upper(f.rarity) .. " · " .. Format.noodles(f.value)
-	rarity.TextColor3 = color
-	local stroke = findCard:FindFirstChildOfClass("UIStroke") :: UIStroke
-	stroke.Color = color
-	findCard.Visible = true
-	local scale = findCard:FindFirstChildOfClass("UIScale") or UI.new("UIScale", { Parent = findCard })
-	scale.Scale = 0.2
-	UI.tween(scale, 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
+	LootToast.show({
+		icon = f.emoji,
+		title = f.name,
+		tag = f.rarity .. " find",
+		value = Format.noodles(f.value),
+		color = rgb(tier.color),
+		shine = tier.rank >= 3,
+	})
 	Sound.play(if tier.rank >= 3 then "Rare" else "Find", 0.7)
 	if tier.rank >= 3 then
-		Shake.kick(0.4)
+		Shake.kick(0.3)
 	end
-	task.delay(2.4, function()
-		if name.Text == f.name then
-			findCard.Visible = false
-		end
-	end)
 end
 
 -- ===== guide beam (BACKPACK FULL -> dump) =====
@@ -540,45 +529,6 @@ function HUD.start()
 		Visible = false,
 		Parent = gui,
 	}, UI.INK, 1.4)
-
-	-- find card: slim dark card outlined in the rarity color
-	findCard = UI.new("Frame", {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.42),
-		Size = UDim2.fromOffset(220, 120),
-		BackgroundColor3 = Color3.fromRGB(25, 25, 34),
-		BackgroundTransparency = 0.15,
-		Visible = false,
-		Parent = gui,
-	}, { UI.corner(14), UI.stroke(Color3.new(1, 1, 1), 2) })
-	UI.bigText({
-		Name = "Title",
-		Position = UDim2.fromOffset(10, 4),
-		Size = UDim2.new(1, -20, 0, 18),
-		Text = "YOU FOUND",
-		Parent = findCard,
-	})
-	UI.bigText({
-		Name = "Emoji",
-		Position = UDim2.fromOffset(10, 24),
-		Size = UDim2.new(1, -20, 0, 44),
-		Text = "",
-		Parent = findCard,
-	})
-	UI.bigText({
-		Name = "Name",
-		Position = UDim2.fromOffset(10, 70),
-		Size = UDim2.new(1, -20, 0, 24),
-		Text = "",
-		Parent = findCard,
-	})
-	UI.bigText({
-		Name = "Rarity",
-		Position = UDim2.fromOffset(10, 96),
-		Size = UDim2.new(1, -20, 0, 18),
-		Text = "",
-		Parent = findCard,
-	})
 
 	-- FULL prompt: slim red pill
 	local fullBox = UI.new("TextButton", {

@@ -279,7 +279,7 @@ local builders: { [string]: (m: Model) -> () } = {
 			{ Material = Enum.Material.Glass }
 		)
 		local plateTag =
-			p(m, "Plate", Vector3.new(5, 0.8, 0.1), CFrame.new(0, 3.2, -10.05), Color3.fromRGB(240, 240, 235))
+			p(m, "Plate", Vector3.new(5, 0.9, 0.1), CFrame.new(0, 3.2, -10.05), Color3.fromRGB(240, 240, 235))
 		Build.sign(
 			plateTag,
 			Enum.NormalId.Front,

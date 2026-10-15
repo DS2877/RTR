@@ -155,7 +155,7 @@ function Build.npc(
 	)
 	if hat then
 		Build.part(m, "Hat", Vector3.new(1.6, 0.5, 1.6), cf * CFrame.new(0, 6.2, 0), hat)
-		Build.part(m, "Brim", Vector3.new(1.7, 0.15, 0.6), cf * CFrame.new(0, 6.02, -1.0), hat)
+		Build.part(m, "Brim", Vector3.new(1.7, 0.15, 0.6), cf * CFrame.new(0, 5.88, -1.0), hat)
 	end
 	m.Parent = parent
 	return m

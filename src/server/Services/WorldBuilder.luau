@@ -1229,7 +1229,7 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 		parent,
 		"VIPFloor",
 		Vector3.new(vx0, 0, vz0),
-		Vector3.new(x1 - 2, 0.15, z1),
+		Vector3.new(x1 - 2, 0.15, z1 - 0.1),
 		Color3.fromRGB(150, 30, 40),
 		{
 			Material = Enum.Material.Fabric,
@@ -1240,7 +1240,7 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 		parent,
 		"VIPGlass",
 		Vector3.new(vx0 - 0.5, 0, vz0),
-		Vector3.new(vx0, 10, z1),
+		Vector3.new(vx0, 10, z1 - 0.1),
 		Color3.fromRGB(255, 215, 120),
 		{
 			Transparency = 0.6,
@@ -1528,8 +1528,8 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 			)
 		end
 	end
-	fenceLine(Vector3.new(x0, 0, z0), Vector3.new(x1, 0, z0))
-	fenceLine(Vector3.new(x0, 0, z1), Vector3.new(x1, 0, z1))
+	fenceLine(Vector3.new(x0, 0, z0), Vector3.new(x1 - 0.5, 0, z0))
+	fenceLine(Vector3.new(x0, 0, z1), Vector3.new(x1 - 0.5, 0, z1))
 	fenceLine(Vector3.new(x0, 0, z0), Vector3.new(x0, 0, z1))
 	local crHalf = World.CommonRoom.sz / 2 + 4
 	fenceLine(Vector3.new(x1, 0, z0), Vector3.new(x1, 0, -crHalf))
@@ -1623,7 +1623,7 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 	Build.part(dumpModel, "SkipBottom", Vector3.new(16, 1, 10), dumpCf * CFrame.new(0, 0.5, 0), dumpColor, {
 		Material = Enum.Material.Metal,
 	})
-	for _, side in { { 0, -5, 16, 0.6 }, { 0, 5, 16, 0.6 }, { -8, 0, 0.6, 10 }, { 8, 0, 0.6, 10 } } do
+	for _, side in { { 0, -5, 16, 0.6 }, { 0, 5, 16, 0.6 }, { -8, 0, 0.6, 9.4 }, { 8, 0, 0.6, 9.4 } } do
 		Build.part(
 			dumpModel,
 			"SkipSide",

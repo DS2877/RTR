@@ -20,6 +20,7 @@ local Format = require(Shared.Format)
 
 local Client = script.Parent.Parent
 local UI = require(Client.Util.UI)
+local LootToast = require(Client.Util.LootToast)
 local Panel = require(Client.Util.Panel)
 local Sound = require(Client.Util.Sound)
 local Shake = require(Client.Util.Shake)
@@ -441,12 +442,19 @@ function Moments.start()
 		})
 		p.Parent = folder
 		marker = p
-		HUD.toast("💰 The treasure is at " .. z .. "m in your tunnel!", "cash")
+		LootToast.show({
+			icon = "💰",
+			title = "Treasure at " .. z .. "m",
+			tag = "In your tunnel",
+			color = Color3.fromRGB(240, 190, 50),
+			shine = true,
+			seconds = 4,
+		})
 	end)
 
 	-- rewards
 	Remotes.get(Remotes.Names.Reward).OnClientEvent:Connect(function(_kind: string, text: string)
-		HUD.toast("🎁 " .. text, "cash")
+		LootToast.show({ icon = "🎁", title = text, tag = "Reward", color = Color3.fromRGB(240, 180, 50) })
 		Sound.play("Dump", 0.6)
 	end)
 
