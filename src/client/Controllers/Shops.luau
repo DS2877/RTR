@@ -157,7 +157,7 @@ local function upgradePanel(shop: string, title: string, color: Color3, dark: Co
 			local decor = Panel.button({
 				Position = UDim2.fromOffset(6, 6),
 				Size = UDim2.new(1, -12, 1, -12),
-			}, Color3.fromRGB(255, 190, 100), Color3.fromRGB(110, 60, 0), "🪔 DECOR FOR YOUR TUNNEL")
+			}, Color3.fromRGB(255, 190, 100), Color3.fromRGB(110, 60, 0), "💡 DECOR FOR YOUR TUNNEL")
 			decor.Parent = r
 			decor.Activated:Connect(function()
 				Sound.play("Click")

@@ -1,7 +1,7 @@
 --!strict
--- The juice: crumbling debris cubes, the vacuum swirl that sucks debris and rubble piles into you,
--- rubble heaps waiting to be vacuumed, impact sparks and the zone-unlock confetti.
--- Everything here is client-only and capped (World.MaxDebris).
+-- The juice: every broken block pops out of the wall as a big cube that tumbles and piles up on
+-- the floor (plus chips and dust), the vacuum nozzle with air streaks that sucks the cubes in,
+-- and the zone-unlock confetti. Everything here is client-only and capped (World.MaxDebris).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,15 +25,28 @@ local DigFX = {}
 local player = Players.LocalPlayer
 local folder: Folder
 
-type Debris = { part: Part, born: number, life: number, sucked: boolean, t: number, from: Vector3 }
+-- chunk = a big cube the size of a block (piles up until vacuumed), chip = small, short-lived
+type Debris = {
+	part: Part,
+	born: number,
+	life: number?,
+	kind: string,
+	sucked: boolean,
+	t: number,
+	from: Vector3,
+}
 local debris: { Debris } = {}
 local free: { Part } = {}
 
-type Heap = { model: Model, pos: Vector3, n: number }
-local heaps: { [number]: Heap } = {}
+-- the server's loose piles (truth for vacuuming): id -> { pos, n }
+type Pile = { pos: Vector3, n: number }
+local piles: { [number]: Pile } = {}
 
 local vacuumOn = false
-local swirl: { Part } = {}
+local streaks: { Part } = {}
+local nozzle: Model? = nil
+
+local SMOKE = "rbxasset://textures/particles/smoke_main.dds"
 
 local function root(): BasePart?
 	local c = player.Character
@@ -49,6 +62,11 @@ function DigFX.debrisCount(): number
 	return #debris
 end
 
+local function zoneMaterial(z: number): Enum.Material
+	local zone = Zones[Progression.zoneAt(z)]
+	return (Enum.Material :: any)[zone.material] or Enum.Material.Concrete
+end
+
 -- ===== debris =====
 
 local function newCube(): Part
@@ -60,7 +78,7 @@ local function newCube(): Part
 	c.Name = "Debris"
 	c.CanTouch = false
 	c.CanQuery = false
-	c.CastShadow = false
+	c.CastShadow = true
 	c.CollisionGroup = "Debris"
 	c.TopSurface = Enum.SurfaceType.Smooth
 	c.BottomSurface = Enum.SurfaceType.Smooth
@@ -73,38 +91,54 @@ local function recycle(d: Debris)
 	table.insert(free, d.part)
 end
 
-local function spawnDebris(pos: Vector3, color: Color3, material: Enum.Material, out: Vector3, count: number)
-	for _ = 1, count do
-		if #debris >= World.MaxDebris then
-			recycle(table.remove(debris, 1) :: Debris)
-		end
-		local c = newCube()
-		local s = 0.35 + math.random() * 0.45
-		c.Size = Vector3.new(s, s, s)
-		c.Color = color
-		c.Material = material
-		c.Anchored = false
-		c.CanCollide = true
-		c.CFrame = CFrame.new(
-			pos + Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 1.4
-		) * CFrame.Angles(math.random() * 6, math.random() * 6, math.random() * 6)
-		c.Parent = folder
-		c.AssemblyLinearVelocity = out * (8 + math.random() * 10)
-			+ Vector3.new((math.random() - 0.5) * 12, 6 + math.random() * 10, (math.random() - 0.5) * 12)
-		c.AssemblyAngularVelocity = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5)
-			* 20
-		table.insert(debris, {
-			part = c,
-			born = os.clock(),
-			life = World.DebrisLifetime * (0.7 + math.random() * 0.6),
-			sucked = false,
-			t = 0,
-			from = Vector3.zero,
-		})
+-- oldest chips go first, then the oldest resting chunks
+local function makeRoom()
+	if #debris < World.MaxDebris then
+		return
 	end
+	for i, d in debris do
+		if d.kind == "chip" then
+			recycle(d)
+			table.remove(debris, i)
+			return
+		end
+	end
+	recycle(table.remove(debris, 1) :: Debris)
 end
 
-local function sparks(pos: Vector3, color: Color3)
+local function spawnCube(
+	kind: string,
+	pos: Vector3,
+	size: number,
+	color: Color3,
+	material: Enum.Material,
+	vel: Vector3
+)
+	makeRoom()
+	local c = newCube()
+	c.Size = Vector3.new(size, size, size)
+	c.Color = color
+	c.Material = material
+	c.Anchored = false
+	c.CanCollide = true
+	c.Transparency = 0
+	c.CFrame = CFrame.new(pos) * CFrame.Angles(math.random() * 0.6, math.random() * 0.6, math.random() * 0.6)
+	c.Parent = folder
+	c.AssemblyLinearVelocity = vel
+	c.AssemblyAngularVelocity = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5)
+		* (if kind == "chunk" then 6 else 18)
+	table.insert(debris, {
+		part = c,
+		born = os.clock(),
+		life = if kind == "chip" then 1.4 + math.random() else nil,
+		kind = kind,
+		sucked = false,
+		t = 0,
+		from = Vector3.zero,
+	})
+end
+
+local function puff(pos: Vector3, color: Color3, amount: number, size: number)
 	local a = Instance.new("Part")
 	a.Anchored = true
 	a.CanCollide = false
@@ -115,38 +149,77 @@ local function sparks(pos: Vector3, color: Color3)
 	a.CFrame = CFrame.new(pos)
 	a.Parent = folder
 	local pe = Instance.new("ParticleEmitter")
-	pe.Color = ColorSequence.new(color)
-	pe.LightEmission = 0.6
-	pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0) })
-	pe.Lifetime = NumberRange.new(0.2, 0.4)
-	pe.Speed = NumberRange.new(10, 18)
+	pe.Texture = SMOKE
+	pe.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.25))
+	pe.Size =
+		NumberSequence.new({ NumberSequenceKeypoint.new(0, size), NumberSequenceKeypoint.new(1, size * 2.6) })
+	pe.Transparency =
+		NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
+	pe.Lifetime = NumberRange.new(0.6, 1.1)
+	pe.Speed = NumberRange.new(1.5, 4)
 	pe.SpreadAngle = Vector2.new(180, 180)
+	pe.Drag = 3
+	pe.RotSpeed = NumberRange.new(-60, 60)
 	pe.Rate = 0
 	pe.Parent = a
-	pe:Emit(10)
-	task.delay(0.6, function()
+	pe:Emit(amount)
+	task.delay(1.4, function()
 		a:Destroy()
 	end)
 end
 
+local function sparks(pos: Vector3, color: Color3)
+	puff(pos, color, 4, 0.6)
+end
+
 local function onBroken(t: VoxelRender.T, broken: { number }, puncher: number)
 	local mine = puncher == player.UserId
-	local perBlock = World.DebrisPerBlock
-	if #broken > 9 then
-		perBlock = math.max(1, math.floor(perBlock * 9 / #broken))
-	end
 	local r = root()
-	for _, idx in broken do
+	local many = #broken > 9
+	for i, idx in broken do
 		local x, y, z = Voxel.unindex(t.grid, idx)
 		local pos = Tunnel.blockCenter(t.frame, x, y, z)
-		local out = if r then (r.Position - pos).Unit else Vector3.yAxis
-		local zone = Zones[Progression.zoneAt(z)]
-		local mat = (Enum.Material :: any)[zone.material] or Enum.Material.SmoothPlastic
-		spawnDebris(pos, VoxelRender.blockColor(x, y, z), mat, out, perBlock)
+		local color = VoxelRender.blockColor(x, y, z)
+		local mat = zoneMaterial(z)
+		-- out of the wall toward the player, then it falls
+		local out = if r then Vector3.new(r.Position.X - pos.X, 0, r.Position.Z - pos.Z) else Vector3.zero
+		out = if out.Magnitude > 0.01 then out.Unit else -t.frame.LookVector
+		-- the big cube (one per block; every 2nd block on huge brushes / dynamite)
+		if not many or i % 2 == 0 then
+			local size = World.BlockSize * (0.78 + math.random() * 0.14)
+			spawnCube(
+				"chunk",
+				pos,
+				size,
+				color,
+				mat,
+				out * (3 + math.random() * 5)
+					+ Vector3.new((math.random() - 0.5) * 4, 2 + math.random() * 4, (math.random() - 0.5) * 4)
+			)
+		end
+		-- a couple of chips
+		for _ = 1, if many then 1 else 2 do
+			spawnCube(
+				"chip",
+				pos + Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5),
+				0.3 + math.random() * 0.35,
+				color,
+				mat,
+				out * (6 + math.random() * 8)
+					+ Vector3.new(
+						(math.random() - 0.5) * 10,
+						4 + math.random() * 8,
+						(math.random() - 0.5) * 10
+					)
+			)
+		end
+		if i <= 4 then
+			puff(pos, color, if many then 3 else 6, 1)
+		end
 	end
 	if mine then
-		Sound.play("Crumble", 0.55, 0.55 + math.random() * 0.1)
-		Shake.kick(math.min(0.45, 0.2 + #broken * 0.02))
+		Sound.play("Crumble", 0.6, 0.5 + math.random() * 0.1)
+		Shake.kick(math.min(0.5, 0.22 + #broken * 0.02))
 	end
 end
 
@@ -154,39 +227,28 @@ local function onDamaged(t: VoxelRender.T, damaged: { number }, puncher: number)
 	if puncher ~= player.UserId then
 		return
 	end
+	local r = root()
 	for i, idx in damaged do
-		if i > 4 then
+		if i > 3 then
 			break
 		end
 		local x, y, z = Voxel.unindex(t.grid, idx)
 		local pos = Tunnel.blockCenter(t.frame, x, y, z)
-		spawnDebris(pos, VoxelRender.blockColor(x, y, z), Enum.Material.SmoothPlastic, Vector3.yAxis, 1)
+		local color = VoxelRender.blockColor(x, y, z)
+		local out = if r then (r.Position - pos).Unit else Vector3.yAxis
+		spawnCube(
+			"chip",
+			pos + out * 1.1,
+			0.25 + math.random() * 0.25,
+			color,
+			zoneMaterial(z),
+			out * 6 + Vector3.new(0, 5, 0)
+		)
+		puff(pos + out * 1.1, color, 3, 0.7)
 	end
 end
 
--- ===== rubble heaps (the server's loose piles) =====
-
-local function heapModel(n: number, color: Color3): Model
-	local m = Instance.new("Model")
-	m.Name = "Heap"
-	local count = math.clamp(math.ceil(n / 2), 2, 6)
-	for i = 1, count do
-		local p = Instance.new("Part")
-		p.Anchored = true
-		p.CanCollide = false
-		p.CanQuery = false
-		p.CanTouch = false
-		p.CastShadow = false
-		local s = 0.6 + math.random() * 0.6
-		p.Size = Vector3.new(s, s * 0.7, s)
-		p.Color = color:Lerp(Color3.new(0, 0, 0), math.random() * 0.2)
-		p.Material = Enum.Material.Slate
-		local a = i / count * math.pi * 2
-		p.CFrame = CFrame.new(math.cos(a) * 0.8, s * 0.35, math.sin(a) * 0.8) * CFrame.Angles(0, a, 0)
-		p.Parent = m
-	end
-	return m
-end
+-- ===== the server's piles =====
 
 local function floorBelow(pos: Vector3): Vector3
 	local params = RaycastParams.new()
@@ -196,10 +258,25 @@ local function floorBelow(pos: Vector3): Vector3
 	return if hit then hit.Position else pos
 end
 
-local function heapScale(model: Model, s: number)
-	pcall(function()
-		model:ScaleTo(s)
-	end)
+local function chunksNear(pos: Vector3, radius: number): number
+	local n = 0
+	for _, d in debris do
+		if d.kind == "chunk" and not d.sucked and (d.part.Position - pos).Magnitude <= radius then
+			n += 1
+		end
+	end
+	return n
+end
+
+local function suck(d: Debris)
+	if d.sucked then
+		return
+	end
+	d.sucked = true
+	d.t = 0
+	d.from = d.part.Position
+	d.part.Anchored = true
+	d.part.CanCollide = false
 end
 
 local function setPiles(list: { { number } })
@@ -207,77 +284,78 @@ local function setPiles(list: { { number } })
 	for _, p in list do
 		local id, n = p[1], p[5]
 		seen[id] = true
-		local h = heaps[id]
-		if not h then
-			local pos = floorBelow(Vector3.new(p[2], p[3], p[4]))
-			local t = VoxelRender.own()
-			local color = Color3.fromRGB(150, 140, 130)
-			if t then
-				local x, y, z = Tunnel.toBlock(t.frame, Vector3.new(p[2], p[3], p[4]))
-				color = VoxelRender.blockColor(math.clamp(x, 0, 17), math.clamp(y, 0, 11), math.max(0, z))
-			end
-			local m = heapModel(n, color)
-			m:PivotTo(CFrame.new(pos))
-			m.Parent = folder
-			heaps[id] = { model = m, pos = pos, n = n }
-		elseif h.n ~= n then
-			h.n = n
-			local s = math.clamp(0.6 + n / 20, 0.6, 1.4)
-			heapScale(h.model, s)
+		local pos = Vector3.new(p[2], p[3], p[4])
+		if not piles[id] then
+			piles[id] = { pos = pos, n = n }
+			-- rubble we never saw fall (joined later, cap reached): put a few cubes on the floor
+			task.delay(1.5, function()
+				if piles[id] and chunksNear(pos, World.PileMergeRadius + 2) == 0 then
+					local floor = floorBelow(pos)
+					local t = VoxelRender.own()
+					local color = Color3.fromRGB(140, 142, 146)
+					local z = 0
+					if t then
+						local bx, by, bz = Tunnel.toBlock(t.frame, pos)
+						z = math.max(0, bz)
+						color = VoxelRender.blockColor(math.clamp(bx, 0, 17), math.clamp(by, 0, 11), z)
+					end
+					for k = 1, math.clamp(math.ceil(n / 3), 1, 4) do
+						spawnCube(
+							"chunk",
+							floor + Vector3.new(math.cos(k) * 1.2, 1 + k * 0.4, math.sin(k) * 1.2),
+							1.5,
+							color,
+							zoneMaterial(z),
+							Vector3.zero
+						)
+					end
+				end
+			end)
+		else
+			piles[id].n = n
 		end
 	end
-	for id, h in heaps do
+	for id, pile in piles do
 		if not seen[id] then
-			-- sucked up: fly into the player
-			local r = root()
-			local m = h.model
-			if r then
-				task.spawn(function()
-					local start = m:GetPivot().Position
-					for i = 1, 8 do
-						if not m.Parent then
-							break
-						end
-						local rr = root()
-						local target = if rr then rr.Position else start
-						m:PivotTo(CFrame.new(start:Lerp(target, i / 8)))
-						task.wait(0.02)
-					end
-					m:Destroy()
-				end)
-			else
-				m:Destroy()
+			-- vacuumed: every cube lying there flies into you
+			piles[id] = nil
+			for _, d in debris do
+				if
+					d.kind == "chunk"
+					and (d.part.Position - pile.pos).Magnitude <= World.PileMergeRadius + 3
+				then
+					suck(d)
+				end
 			end
-			heaps[id] = nil
 		end
 	end
 end
 
 function DigFX.heapCount(): number
 	local n = 0
-	for _ in heaps do
+	for _ in piles do
 		n += 1
 	end
 	return n
 end
 
--- Nearest heap (for the HUD hint), or nil.
+-- Nearest pile (for the tutorial arrow), or nil.
 function DigFX.nearestHeap(): Vector3?
 	local r = root()
 	if not r then
 		return nil
 	end
 	local best, bestD = nil, math.huge
-	for _, h in heaps do
-		local d = (h.pos - r.Position).Magnitude
+	for _, p in piles do
+		local d = (p.pos - r.Position).Magnitude
 		if d < bestD then
-			best, bestD = h.pos, d
+			best, bestD = p.pos, d
 		end
 	end
 	return best
 end
 
--- ===== vacuum =====
+-- ===== vacuum: a nozzle in your hand, air streaks, cubes fly into it =====
 
 function DigFX.setVacuum(on: boolean)
 	if on == vacuumOn then
@@ -289,76 +367,142 @@ function DigFX.setVacuum(on: boolean)
 	end
 end
 
-local function ensureSwirl()
-	if #swirl > 0 then
-		return
-	end
-	for i = 1, 10 do
+local function buildNozzle(): Model
+	local m = Instance.new("Model")
+	m.Name = "VacuumNozzle"
+	local function part(name: string, size: Vector3, cf: CFrame, color: Color3, mat: Enum.Material?): Part
 		local p = Instance.new("Part")
+		p.Name = name
+		p.Size = size
+		p.CFrame = cf
+		p.Color = color
+		p.Material = mat or Enum.Material.Metal
+		p.Shape = Enum.PartType.Cylinder
+		p.Anchored = true
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.Parent = m
+		return p
+	end
+	-- along local -Z (cylinders run along X, so turn them)
+	local turn = CFrame.Angles(0, math.pi / 2, 0)
+	part("Mouth", Vector3.new(0.5, 1.1, 1.1), CFrame.new(0, 0, -2.2) * turn, Color3.fromRGB(160, 130, 60))
+	part("Pipe", Vector3.new(1.6, 0.7, 0.7), CFrame.new(0, 0, -1.2) * turn, Color3.fromRGB(150, 120, 55))
+	part(
+		"Grip",
+		Vector3.new(0.9, 0.55, 0.55),
+		CFrame.new(0, 0, -0.2) * turn,
+		Color3.fromRGB(30, 30, 32),
+		Enum.Material.Rubber
+	)
+	for i = 0, 4 do
+		part(
+			"Hose",
+			Vector3.new(0.45, 0.6, 0.6),
+			CFrame.new(0.15 * i, -0.3 * i, 0.4 + i * 0.4) * turn,
+			Color3.fromRGB(25, 25, 28),
+			Enum.Material.Rubber
+		)
+	end
+	return m
+end
+
+local function streak(i: number): Part
+	local p = streaks[i]
+	if not p then
+		p = Instance.new("Part")
 		p.Anchored = true
 		p.CanCollide = false
 		p.CanQuery = false
 		p.CanTouch = false
 		p.CastShadow = false
 		p.Material = Enum.Material.Neon
-		p.Color = Color3.fromRGB(150, 230, 255)
-		p.Transparency = 0.3
-		p.Size = Vector3.new(0.25, 0.25, 0.25 + (i % 3) * 0.2)
-		swirl[i] = p
+		p.Color = Color3.fromRGB(235, 240, 245)
+		p.Size = Vector3.new(0.06, 0.06, 1.4)
+		streaks[i] = p
 	end
+	return p :: Part
+end
+
+local function mouthCFrame(r: BasePart): CFrame
+	local c = player.Character
+	local hand = c and (c:FindFirstChild("RightHand") or c:FindFirstChild("Right Arm"))
+	local base = if hand and hand:IsA("BasePart")
+		then CFrame.new(hand.Position) * r.CFrame.Rotation
+		else r.CFrame * CFrame.new(1, -0.5, -1)
+	return base * CFrame.new(0, 0, -0.6)
 end
 
 local function updateVacuum(dt: number)
 	local r = root()
-	local active = vacuumOn or player:GetAttribute("AutoVacuum") == true
-	ensureSwirl()
-	if not r or not vacuumOn then
-		for _, p in swirl do
-			p.Parent = nil
+	local active = vacuumOn
+		or player:GetAttribute("AutoVacuum") == true
+		or player:GetAttribute("Magnet") == true
+	local now = os.clock()
+	-- nozzle + streaks while you hold VACUUM
+	if r and vacuumOn then
+		if not nozzle or not nozzle.Parent then
+			nozzle = buildNozzle();
+			(nozzle :: Model).Parent = folder
+		end
+		local base = mouthCFrame(r);
+		(nozzle :: Model):PivotTo(base)
+		local mouth = base * CFrame.new(0, 0, -2.4)
+		for i = 1, 8 do
+			local p = streak(i)
+			local k = (now * 2.2 + i / 8) % 1 -- 0 = far, 1 = in the mouth
+			local a = i * 2.4 + now * 3
+			local spread = (1 - k) * 2.2
+			local pos = mouth * CFrame.new(math.cos(a) * spread, math.sin(a) * spread, -(1 - k) * 5)
+			p.CFrame = CFrame.lookAt(pos.Position, mouth.Position)
+			p.Transparency = 0.2 + k * 0.7
+			p.Parent = folder
 		end
 	else
-		local t = os.clock()
-		local hand = r.CFrame * CFrame.new(0.8, -0.2, -2.2)
-		for i, p in swirl do
-			local a = t * 9 + i * (math.pi * 2 / #swirl)
-			local radius = 0.5 + ((t * 2 + i / #swirl) % 1) * 1.4
-			local depth = -((t * 3 + i / #swirl) % 1) * 2.5
-			p.CFrame = hand
-				* CFrame.new(math.cos(a) * radius, math.sin(a) * radius, depth)
-				* CFrame.Angles(0, 0, a)
-			p.Parent = folder
+		if nozzle then
+			nozzle:Destroy()
+			nozzle = nil
+		end
+		for _, p in streaks do
+			p.Parent = nil
 		end
 	end
 	if not r then
 		return
 	end
 	local range = vacuumRange()
-	local target = r.Position
-	local now = os.clock()
+	local target = if vacuumOn then (mouthCFrame(r) * CFrame.new(0, 0, -2.4)).Position else r.Position
 	for i = #debris, 1, -1 do
 		local d = debris[i]
 		local part = d.part
-		if active and not d.sucked and (part.Position - target).Magnitude <= range then
-			d.sucked = true
-			d.t = 0
-			d.from = part.Position
-			part.Anchored = true
-			part.CanCollide = false
+		if
+			active
+			and not d.sucked
+			and d.kind == "chunk"
+			and (part.Position - r.Position).Magnitude <= range
+		then
+			suck(d)
 		end
 		if d.sucked then
-			d.t += dt * 3.2
+			d.t += dt * 2.6
 			local k = math.min(1, d.t)
-			local swirlAngle = k * 8
-			local side = r.CFrame.RightVector * math.sin(swirlAngle) * (1 - k) * 2
-			part.CFrame = CFrame.new(d.from:Lerp(target, k * k) + side) * CFrame.Angles(k * 9, k * 7, 0)
-			part.Size = part.Size * (1 - dt * 1.5)
+			local wobble = r.CFrame.RightVector * math.sin(k * 10) * (1 - k) * 1.2
+			part.CFrame = CFrame.new(d.from:Lerp(target, k * k) + wobble) * CFrame.Angles(k * 8, k * 6, 0)
+			local s = math.max(0.15, part.Size.X * (1 - dt * 2.2))
+			part.Size = Vector3.new(s, s, s)
 			if k >= 1 then
 				recycle(d)
 				table.remove(debris, i)
 			end
-		elseif now - d.born > d.life then
+		elseif d.life and now - d.born > d.life then
 			recycle(d)
 			table.remove(debris, i)
+		elseif not part.Anchored and now - d.born > 0.9 and part.AssemblyLinearVelocity.Magnitude < 0.7 then
+			-- settled on the pile: freeze it (no physics cost while it waits for the vacuum)
+			part.Anchored = true
+		elseif not part.Anchored and now - d.born > 6 then
+			part.Anchored = true
 		end
 	end
 end

@@ -495,7 +495,7 @@ function HUD.start()
 	UI.scaleObject(stats)
 	local boost = UI.slimText({ LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 15), Text = "", Parent = stats })
 	local strength = UI.statLine(stats, 2, "💪", Color3.fromRGB(255, 120, 110), 24)
-	local bagText = UI.statLine(stats, 3, "🪨", Color3.fromRGB(235, 205, 150), 24)
+	local bagText = UI.statLine(stats, 3, "🧱", Color3.fromRGB(235, 205, 150), 24)
 	local slots = UI.statLine(stats, 4, "💎", Color3.fromRGB(205, 160, 255), 24)
 	local noodles = UI.statLine(stats, 5, "🍜", Color3.fromRGB(255, 215, 70), 32)
 
@@ -603,7 +603,7 @@ function HUD.start()
 		Parent = fullBox,
 	}, UI.INK, 1.4)
 
-	-- ===== BOTTOM CENTER: hotbar (Moments puts 🧨 / 🪔 here) =====
+	-- ===== BOTTOM CENTER: hotbar (Moments puts 🧨 / 💡 here) =====
 	local hotbar: Frame = UI.new("Frame", {
 		Name = "Hotbar",
 		AnchorPoint = Vector2.new(0.5, 1),

@@ -41,8 +41,7 @@ data blandas aldrig in.
   i 3 rariteter (Common/Uncommon/Rare) för zon 1–3. Sälj hos **The Fence** (sälj allt / ett i taget).
 - **Butiker** (ProximityPrompt vid disken, inga butiksknappar i HUD): Workshop (verktyg: Spoon,
   Shovel, Pickaxe + penslar), Commissary (ryggsäck, fyndplatser, dammsugarräckvidd).
-- **Gym:** stå vid en station → stor LIFT-knapp. Bänk (+1), hantlar (+3, kräver 100 💪),
-  skivstång (+10, kräver 600 💪). Styrka gäller slagkraften.
+- **Gym:** se "Fängelse-uppdateringen" nedan (det gamla LIFT-gymmet är borttaget).
 - **HUD:** Noodles, styrka + slagkraft, ryggsäcksmätare, fyndplatser, zon + djup, notiser.
 - **Kamera:** tredje person; i tunneln axel-vy och kortare zoom så väggar inte skymmer, pannlampa
   och zonens färgton.
@@ -67,7 +66,6 @@ data blandas aldrig in.
 - **Samlingshylla** i cellen (ovanför sängen): varje zon har en rad, saknade fynd visas som "?".
   **Komplett zon-set = +10 % Noodles för alltid** + meddelande till hela servern.
 - **Mess Hall** söder om Common Room (långbord, serveringsdisk, kock, meny). Buffar kommer i M4.
-- **Gym:** två nya stationer – Tire Flip (+40, kräver 4 000 💪) och Pull-up Bar (+150, kräver 25 000 💪).
 - Admin: ☀️ Day / 🌙 Night tvingar fram fas, Zone 4 / Zone 6.
 
 ### M3 – PvP (natten är säker, dagen är farlig)
@@ -110,8 +108,8 @@ data blandas aldrig in.
   (+30 % fynd), Prison Coffee (15 % snabbare slag).
 - **Black Market** (tält i Yard-hörnet): 3 varor per dag som byts 00:00 UTC (nedräkning syns):
   Dynamite, Lucky Charm, Protein Shake, Rubble Magnet, Iron Gloves.
-- **Dekorationer:** köp i Workshop (🪔 DECOR-knappen) – lampor, räls, gruvvagn, skylt, tunna,
-  flagga, troféstativ (visar ditt finaste fynd). Placera med 🪔-knappen i din tunnel. Alla ser dem.
+- **Dekorationer:** köp i Workshop (💡 DECOR-knappen) – lampor, räls, gruvvagn, skylt, tunna,
+  flagga, troféstativ (visar ditt finaste fynd). Placera med 💡-knappen i din tunnel. Alla ser dem.
 - **Dagliga belöningar** (streak upp till 7 dagar, dag 7 ger dynamit), **speltidsgåvor** var
   10:e minut, **grupp-bonus** +10 % Noodles för medlemmar, **Cellmate** gräver när du är offline
   (max din lediga ryggsäcksplats, halva värdet).
@@ -140,18 +138,40 @@ data blandas aldrig in.
   📖 **Index** (samlingsalbumet – bubblan räknar nya fynd), 🎁 **Gift** (minuter till nästa
   speltidsgåva). Under dem en liten **Music**-switch (som "Slow Mode").
 - **Nere till vänster:** siffror utan rutor, bara ikon + färgad text med tunn kontur:
-  🍜 Noodles (störst), 💎 fynd, 🪨 ryggsäck (blir röd när den är full), 💪 styrka + ⚡ slagkraft,
+  🍜 Noodles (störst), 💎 fynd, 🧱 ryggsäck (blir röd när den är full), 💪 styrka + ⚡ slagkraft,
   och en liten boost-rad (TOP DOG, flykt-multiplikator, grupp-boost, aktiva buffar).
-- **Nere i mitten:** hotbar-rutor (mörka, genomskinliga) för 🧨 Dynamite (antal) och 🪔 Decor –
+- **Nere i mitten:** hotbar-rutor (mörka, genomskinliga) för 🧨 Dynamite (antal) och 💡 Decor –
   bara i din tunnel.
 - **Nere till höger:** genomskinliga runda knappar med tunn vit ring, som hoppknappen: stor
-  👊 PUNCH, 🌀 VACUUM ovanför, 🏋️ LIFT vid gymmet. Klockan som smal text: "🌙 in 2:31".
+  👊 PUNCH, 🌀 VACUUM ovanför. Klockan som smal text: "🌙 in 2:31".
 - **Höger:** 🛠️ Admin-ruta (bara admins).
 - **Allt annat smalare:** tunnare konturer och text överallt, alla menyer/butiker har ny stil
   (glansigt färgat huvud, liten röd X-knapp, ljus kropp, tunna rader), smala notiser, smal
   "BACKPACK FULL"-pill, mindre fyndkort, smal stamina-mätare och tutorial-rad.
 - Obs: Store-knappen i HUD:en är Robux-butiken (som i referensen). Fängelsebutikerna (Workshop,
   Commissary, The Fence m.fl.) öppnas fortfarande bara vid disken.
+
+### Fängelse-uppdateringen (ljus, försäljare, gym, väggkänsla)
+- **Ljus:** grått och mörkt. Avmättad färgkorrigering, grå dimma, molntäcke, kalla lysrör.
+  Golv, väggar, galler och skyltar i betong/stål (inga glada färger). Natten är riktigt mörk.
+  Zon 1 är nu grå betong.
+- **Försäljarna är riktiga fängelseplatser** (diskarna öppnas fortfarande med prompten):
+  🔨 **TOOL CRIB** (verktygsförråd bakom galler), **COMMISSARY** (kiosklucka med galler),
+  **THE FENCE** (fånge vid ett hörn), 📞 **VISITATION** (Robux-butiken: telefonbås med glasruta),
+  **LAUNDRY** (tvättmaskiner) och **BLACK MARKET** (ett hål i stängslet). Dumpen heter **RUBBLE**.
+- **Nytt gym (YARD GYM) – helt omgjort och roligare:** 7 stationer längs Yard där du lyfter
+  löjliga saker över huvudet: 🚽 Toilet Curl (+1), Mattress Stack (+3, 100 💪), Vending Machine
+  (+10, 600 💪), Sleeping Guard (+40, 4 000 💪), Washing Machine (+150, 25 000 💪), Warden's Desk
+  (+600, 150 000 💪), Prison Bus (+2 500, 1 M 💪). En timing-mätare sveper fram och tillbaka: tryck
+  **LIFT** när nålen är i det gröna = GOOD, i det guldiga = **PERFECT** (dubbelt + combo upp till
+  x2), utanför = OOF! Tyngre saker = snabbare nål och mindre zon. Servern räknar nålen själv (med
+  hänsyn till ping), så det går inte att fuska.
+- **Väggkänsla som i videon:** bakväggen är en hel slät betongyta; trådram-kuber visar vad du
+  träffar – **vita** = tar skada, **röda** = går sönder på nästa slag. Skadade block rycker till och
+  får tunna mörka sprickor. Trasiga block ramlar ut som nästan hela kuber som studsar och **lägger
+  sig i högar** på golvet, med dammpuffar. Dammsugaren har ett munstycke i handen med vita
+  luftstrimmor och suger in kuberna som krymper in i munstycket.
+- Emoji som Roblox inte kan visa (rutor) är utbytta mot säkra (🧱, 💰, 💡 m.fl.).
 
 ### Balans (`lune run tools/simulate`)
 | | Gratis-spelare | Med alla pass |
@@ -189,7 +209,8 @@ Antal slag per block när man når en ny zon: 7–20 (zon 5 ~70 med Pickaxe → 
 4. När den är full: följ den gula strålen ut genom korridoren → Common Room → Yard → **Rubble Dump**
    (tryck på prompten).
 5. Gå tillbaka in i Common Room: **Workshop** – köp Spoon (15 🍜). Slå igen: färre slag per block.
-6. Gå till **Gym** i Yard och tryck LIFT några gånger – styrkan går upp.
+6. Gå till **YARD GYM** i Yard, tryck prompten vid toaletten – du lyfter den över huvudet. Tryck
+   **LIFT** när nålen är i det gröna/guldiga (PERFECT ger combo). **DROP** lägger ner den.
 7. Leta efter mörka block med färgad ådra (fynd) och sälj dem hos **The Fence**.
 8. Vänta på natten (eller ADMIN → 🌙 Night): siren, nedräkning, dörren låses, du flyttas in
    i cellen om du var ute. ADMIN → ☀️ Day öppnar igen.
@@ -201,7 +222,7 @@ Antal slag per block när man når en ny zon: 7–20 (zon 5 ~70 med Pickaxe → 
     springa hem; slå hen på vägen så kommer fyndet tillbaka.
 12. M4: ADMIN → Bottom→Escape → tryck ESCAPE! (filmsekvens + High Security). ADMIN → 🌙 Night →
     Inspect me → tryck HIDE. ADMIN → 💰 Treasure och följ markeringen. ADMIN → 🧨 x5 och tryck 🧨
-    mot väggen. Köp en lampa i Workshop → 🪔 DECOR och placera den i tunneln med 🪔-knappen.
+    mot väggen. Köp en lampa i Workshop → 💡 DECOR och placera den i tunneln med 💡-knappen.
 13. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
 14. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
 

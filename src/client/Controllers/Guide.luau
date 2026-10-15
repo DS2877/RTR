@@ -23,7 +23,7 @@ local DARK = Color3.fromRGB(20, 20, 28)
 local TEXT = {
 	"STEP 1/5 · Walk to the wall and hold 👊 PUNCH",
 	"STEP 2/5 · Hold 🌀 VACUUM next to the rubble",
-	"STEP 3/5 · Fill your backpack, then DUMP it in the Yard 🪨",
+	"STEP 3/5 · Fill your backpack, then DUMP it in the Yard 🧱",
 	"STEP 4/5 · Sell your finds at THE FENCE 💰",
 	"STEP 5/5 · Buy an upgrade at the WORKSHOP 🔨",
 }

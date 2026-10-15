@@ -318,7 +318,7 @@ function ExtraShops.start()
 
 	-- ===== DECOR (from the Workshop) =====
 	panels.Decor =
-		listPanel("DecorPanel", "🪔 DECOR", Color3.fromRGB(255, 180, 90), Color3.fromRGB(110, 60, 0))
+		listPanel("DecorPanel", "💡 DECOR", Color3.fromRGB(255, 180, 90), Color3.fromRGB(110, 60, 0))
 	renders.Decor = function()
 		local body = panels.Decor.body
 		clear(body)
@@ -336,7 +336,7 @@ function ExtraShops.start()
 				body,
 				i,
 				it.emoji .. " " .. it.name .. (if have > 0 then "  x" .. have else ""),
-				it.desc .. " Place it with 🪔 in your tunnel.",
+				it.desc .. " Place it with 💡 in your tunnel.",
 				Format.noodles(Progression.itemPrice(it, zone())),
 				noodles() >= Progression.itemPrice(it, zone()),
 				function()

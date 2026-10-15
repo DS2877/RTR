@@ -54,10 +54,10 @@ upgrade -> punch harder -> new zone. The punch and the crumble must feel amazing
   Tunnel, Format, Remotes.
 - `src/server` -> ServerScriptService.Server: State (runtime per player), Net, Services (WorldBuilder,
   Data, Stats, Cells, Dig, Loot, Shop, Gym, Collection, DayNight, Brawl, Raid, TopDog, Product,
-  Escape, Rewards, Guards, Events, Market, Admin), Util (Build, RateLimit), Packages (ProfileStore).
+  Escape, Rewards, Guards, Events, Market, Admin), Util (Build, RateLimit, GymProps), Packages (ProfileStore).
   Services talk through hooks wired in `init.server.luau` (e.g. `Dig.onFind`, `DayNight.onDay`).
 - `src/client` -> StarterPlayerScripts.Client: Controllers (VoxelRender, DigController, DigFX,
-  CameraController, HUD, Shops, Clock, PvPController, ExtraShops, Moments), Util (UI, Panel,
+  CameraController, HUD, Shops, Clock, PvPController, ExtraShops, Moments, GymController), Util (UI, Panel,
   Sound, Shake).
 - `tests/` Lune specs, `tools/simulate.luau` balance sim, `tools/smoke.luau` headless smoke test run by
   CI inside the real place (`tools/ci/smoke.py`).

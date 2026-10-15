@@ -474,7 +474,7 @@ function Market.buy(player: Player, shop: string, id: string): string?
 		s.data.Decor[id] = (s.data.Decor[id] or 0) + 1
 		Net.notice(
 			player,
-			item.emoji .. " " .. item.name .. " bought! Place it with 🪔 in your tunnel.",
+			item.emoji .. " " .. item.name .. " bought! Place it with 💡 in your tunnel.",
 			"upgrade"
 		)
 	elseif id == "Dynamite" then

@@ -1,6 +1,6 @@
 --!strict
 -- The big moments of M4 on the client: 🧨 DYNAMITE button + explosion, the ESCAPE button and
--- cinematic, 🪔 decor placing, guard inspections (HIDE / BRIBE, footsteps, light under the door),
+-- cinematic, 💡 decor placing, guard inspections (HIDE / BRIBE, footsteps, light under the door),
 -- server events (banner + timer), the treasure marker, rewards, the VIP door and chat tag.
 
 local CollectionService = game:GetService("CollectionService")
@@ -260,7 +260,7 @@ function Moments.start()
 		UDim2.new(0.5, 110, 1, -84),
 		Vector2.new(220, 52)
 	)
-	local decorBtn = UI.slot(hotbar, "Decor", "🪔", "Decor", 58)
+	local decorBtn = UI.slot(hotbar, "Decor", "💡", "Decor", 58)
 	decorBtn.LayoutOrder = 2
 	decorBtn.Visible = false
 	local hideBtn = bigButton(
@@ -298,7 +298,7 @@ function Moments.start()
 	end)
 	decorPanel = Panel.new(
 		"DecorPlacePanel",
-		"🪔 PLACE DECOR",
+		"💡 PLACE DECOR",
 		Color3.fromRGB(255, 190, 100),
 		Color3.fromRGB(110, 60, 0),
 		Vector2.new(580, 300)

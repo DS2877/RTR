@@ -68,7 +68,7 @@ function Rewards.cellmate(player: Player, awaySeconds: number): number
 		player,
 		Remotes.Names.Reward,
 		"cellmate",
-		string.format("Your cellmate dug %d rubble while you were away! 🪨", rubble)
+		string.format("Your cellmate dug %d rubble while you were away! 🧱", rubble)
 	)
 	return rubble
 end

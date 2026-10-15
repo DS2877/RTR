@@ -8,6 +8,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
@@ -77,9 +78,15 @@ function VoxelRender.blockColor(x: number, y: number, z: number): Color3
 	end
 	local zone = Zones[Progression.zoneAt(z)]
 	local pal = zone.palette
+	if z == 0 then
+		-- the intact wall is one seamless surface: every face block has exactly the same color
+		local c = pal[1]
+		return Color3.fromRGB(c[1], c[2], c[3])
+	end
+	-- inside the hole every voxel is a touch lighter or darker, so its edges read like carved stone
 	local h = Progression.hash01(0, x, y, z, 9)
 	local c = pal[1 + math.floor(h * #pal) % #pal]
-	local shade = 0.95 + Progression.hash01(0, x, y, z, 11) * 0.1
+	local shade = 0.9 + Progression.hash01(0, x, y, z, 11) * 0.14
 	return Color3.fromRGB(
 		math.min(255, c[1] * shade),
 		math.min(255, c[2] * shade),
@@ -127,18 +134,27 @@ local function crackGui(p: Part, face: Enum.NormalId, stage: number, seed: numbe
 	gui.LightInfluence = 1
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
 	gui.CanvasSize = Vector2.new(64, 64)
+	-- jagged, branching cracks: chains of short segments that drift in direction
 	local r = Random.new(seed)
-	local lines = stage * 3
-	for i = 1, lines do
-		local f = Instance.new("Frame")
-		f.BorderSizePixel = 0
-		f.BackgroundColor3 = Color3.fromRGB(20, 18, 16)
-		f.BackgroundTransparency = 0.15
-		f.AnchorPoint = Vector2.new(0.5, 0.5)
-		f.Position = UDim2.fromScale(0.5 + (r:NextNumber() - 0.5) * 0.7, 0.5 + (r:NextNumber() - 0.5) * 0.7)
-		f.Size = UDim2.fromOffset(10 + r:NextInteger(0, 22) + stage * 4, if i % 3 == 0 then 3 else 2)
-		f.Rotation = r:NextInteger(0, 179)
-		f.Parent = gui
+	local chains = ({ 2, 4, 7 })[math.clamp(stage, 1, 3)]
+	for c = 1, chains do
+		local x, y = 32 + r:NextNumber(-12, 12), 32 + r:NextNumber(-12, 12)
+		local angle = r:NextNumber(0, math.pi * 2)
+		for _ = 1, 3 + r:NextInteger(0, stage) do
+			local len = r:NextNumber(5, 11)
+			local nx, ny = x + math.cos(angle) * len, y + math.sin(angle) * len
+			local f = Instance.new("Frame")
+			f.BorderSizePixel = 0
+			f.BackgroundColor3 = Color3.fromRGB(24, 22, 22)
+			f.BackgroundTransparency = if c % 2 == 0 then 0.25 else 0.05
+			f.AnchorPoint = Vector2.new(0.5, 0.5)
+			f.Position = UDim2.fromOffset((x + nx) / 2, (y + ny) / 2)
+			f.Size = UDim2.fromOffset(len + 1, if c == 1 then 2 else 1)
+			f.Rotation = math.deg(angle)
+			f.Parent = gui
+			x, y = nx, ny
+			angle += r:NextNumber(-0.9, 0.9)
+		end
 	end
 	gui.Parent = p
 end
@@ -469,6 +485,13 @@ function VoxelRender.start()
 					c:Destroy()
 				end
 				styleBlock(t, idx, p)
+				-- the block jolts from the hit
+				local base = p.CFrame
+				local j = 0.14
+				p.CFrame = base
+					* CFrame.new((math.random() - 0.5) * j, (math.random() - 0.5) * j, -j)
+					* CFrame.Angles((math.random() - 0.5) * 0.08, (math.random() - 0.5) * 0.08, 0)
+				TweenService:Create(p, TweenInfo.new(0.16, Enum.EasingStyle.Back), { CFrame = base }):Play()
 			else
 				local x, y, z = Voxel.unindex(g, idx)
 				t.dirty[Voxel.chunkOf(g, x, y, z)] = true

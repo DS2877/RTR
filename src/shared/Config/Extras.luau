@@ -21,7 +21,7 @@ local Extras = {
 		{
 			id = "Orange",
 			name = "Classic Orange",
-			emoji = "🟧",
+			emoji = "🔶",
 			desc = "The classic.",
 			cost = 0,
 			color = { 255, 120, 30 },
@@ -37,7 +37,7 @@ local Extras = {
 		{
 			id = "Blue",
 			name = "Denim Blue",
-			emoji = "🟦",
+			emoji = "🔷",
 			desc = "Work-detail blue.",
 			cost = 15000,
 			color = { 60, 110, 200 },
@@ -45,7 +45,7 @@ local Extras = {
 		{
 			id = "Pink",
 			name = "Bubblegum",
-			emoji = "🩷",
+			emoji = "💗",
 			desc = "Nobody messes with pink.",
 			cost = 60000,
 			color = { 255, 120, 190 },
@@ -53,7 +53,7 @@ local Extras = {
 		{
 			id = "Green",
 			name = "Sewer Green",
-			emoji = "🟩",
+			emoji = "💚",
 			desc = "Blends in down there.",
 			cost = 250000,
 			color = { 80, 170, 80 },
@@ -69,7 +69,7 @@ local Extras = {
 		{
 			id = "Gold",
 			name = "Golden Uniform",
-			emoji = "🟨",
+			emoji = "⭐",
 			desc = "Shine bright.",
 			cost = 25000000,
 			color = { 255, 200, 40 },
@@ -191,12 +191,12 @@ local Extras = {
 		Magnet = { vacuum = true },
 	} :: { [string]: { power: number?, finds: number?, speed: number?, vacuum: boolean? } },
 
-	-- DECOR: show off your tunnel (bought at the Workshop, placed with the 🪔 button in your tunnel)
+	-- DECOR: show off your tunnel (bought at the Workshop, placed with the 💡 button in your tunnel)
 	Decor = {
 		{ id = "Lamp", name = "Tunnel Lamp", emoji = "💡", desc = "A warm light.", cost = 500 },
 		{ id = "Rails", name = "Minecart Rails", emoji = "🛤️", desc = "A piece of track.", cost = 800 },
 		{ id = "Cart", name = "Minecart", emoji = "🛒", desc = "Full of rubble.", cost = 6000 },
-		{ id = "Sign", name = "Wooden Sign", emoji = "🪧", desc = "KEEP OUT!", cost = 1500 },
+		{ id = "Sign", name = "Wooden Sign", emoji = "📋", desc = "KEEP OUT!", cost = 1500 },
 		{ id = "Barrel", name = "Barrel", emoji = "🛢️", desc = "Just a barrel.", cost = 2500 },
 		{ id = "Flag", name = "Freedom Flag", emoji = "🚩", desc = "Plant it deep.", cost = 20000 },
 		{

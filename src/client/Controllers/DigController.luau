@@ -115,14 +115,15 @@ local function outline(i: number): Part
 		p.CanQuery = false
 		p.CanTouch = false
 		p.Transparency = 1
-		p.Size = Vector3.new(B + 0.08, B + 0.08, B + 0.08)
+		p.Size = Vector3.new(B + 0.04, B + 0.04, B + 0.04)
+		-- a thin 3D wireframe cube (white = gets hit, red = breaks with this punch)
 		local box = Instance.new("SelectionBox")
 		box.Name = "Box"
 		box.Adornee = p
-		box.LineThickness = 0.07
-		box.Color3 = Color3.fromRGB(255, 255, 255)
+		box.LineThickness = 0.035
+		box.Color3 = Color3.fromRGB(240, 240, 240)
 		box.SurfaceColor3 = Color3.fromRGB(255, 255, 255)
-		box.SurfaceTransparency = 0.88
+		box.SurfaceTransparency = 1
 		box.Parent = p
 		outlines[i] = p
 	end
@@ -140,15 +141,26 @@ local function targetsFor(a: Aim): { { number } }
 	end)
 end
 
+-- Will this punch break the block? (hp left is estimated from the crack stage the server sent)
+local function willBreak(t: any, x: number, y: number, z: number): boolean
+	local power = player:GetAttribute("Power")
+	local p = if typeof(power) == "number" then power else 10
+	local hp = Progression.blockHp(z)
+	local stage = t.damage[Voxel.index(t.grid, x, y, z)]
+	local left = if stage then hp * (1 - (stage - 0.5) / 3) else hp
+	return left <= p
+end
+
 local function showPreview(a: Aim?)
 	local t = VoxelRender.own()
 	local list = if a and t then targetsFor(a) else {}
 	for i, p in list do
 		local o = outline(i)
 		o.CFrame = (t :: any).frame * CFrame.new(Tunnel.localCenter(p[1], p[2], p[3]))
-		local main = p[1] == (a :: Aim).x and p[2] == (a :: Aim).y and p[3] == (a :: Aim).z
 		local box = o:FindFirstChild("Box") :: SelectionBox
-		box.Color3 = if main then Color3.fromRGB(255, 230, 80) else Color3.fromRGB(255, 255, 255)
+		box.Color3 = if willBreak(t :: any, p[1], p[2], p[3])
+			then Color3.fromRGB(255, 85, 70)
+			else Color3.fromRGB(240, 240, 240)
 		o.Parent = outlineFolder
 	end
 	for i = #list + 1, #outlines do
@@ -160,11 +172,11 @@ local function flashPreview()
 	for _, o in outlines do
 		if o.Parent then
 			local box = o:FindFirstChild("Box") :: SelectionBox
-			box.SurfaceTransparency = 0.35
-			box.LineThickness = 0.14
+			box.SurfaceTransparency = 0.6
+			box.LineThickness = 0.08
 			task.delay(0.07, function()
-				box.SurfaceTransparency = 0.88
-				box.LineThickness = 0.07
+				box.SurfaceTransparency = 1
+				box.LineThickness = 0.035
 			end)
 		end
 	end

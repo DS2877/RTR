@@ -35,12 +35,12 @@ local Tutorial = require(Services.Tutorial)
 
 Remotes.setup()
 
--- debris cubes (client-side) never bump into characters
+-- debris cubes (client-side) never bump into characters, but pile up on each other
 pcall(function()
 	PhysicsService:RegisterCollisionGroup("Characters")
 	PhysicsService:RegisterCollisionGroup("Debris")
 	PhysicsService:CollisionGroupSetCollidable("Characters", "Debris", false)
-	PhysicsService:CollisionGroupSetCollidable("Debris", "Debris", false)
+	PhysicsService:CollisionGroupSetCollidable("Debris", "Debris", true) -- cubes pile up
 end)
 
 local world = WorldBuilder.build()

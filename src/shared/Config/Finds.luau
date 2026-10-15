@@ -17,7 +17,7 @@ local List: { Find } = {
 	{
 		id = "OldCoin",
 		name = "Old Coin",
-		emoji = "🪙",
+		emoji = "💰",
 		zone = 1,
 		rarity = "Common",
 		weight = 40,
@@ -266,7 +266,7 @@ local List: { Find } = {
 	{
 		id = "GlitterRock",
 		name = "Glitter Rock",
-		emoji = "🪨",
+		emoji = "🧱",
 		zone = 7,
 		rarity = "Common",
 		weight = 38,
@@ -403,7 +403,7 @@ local List: { Find } = {
 	{
 		id = "LavaLamp",
 		name = "Lava Lamp",
-		emoji = "🪔",
+		emoji = "💡",
 		zone = 9,
 		rarity = "Uncommon",
 		weight = 18,
@@ -412,7 +412,7 @@ local List: { Find } = {
 	{
 		id = "PhoenixFeather",
 		name = "Phoenix Feather",
-		emoji = "🪶",
+		emoji = "🔥",
 		zone = 9,
 		rarity = "Rare",
 		weight = 8,
@@ -458,7 +458,7 @@ local List: { Find } = {
 	{
 		id = "AncientCoin",
 		name = "Ancient Coin",
-		emoji = "🪙",
+		emoji = "💰",
 		zone = 10,
 		rarity = "Common",
 		weight = 38,
@@ -494,7 +494,7 @@ local List: { Find } = {
 	{
 		id = "RoyalScepter",
 		name = "Royal Scepter",
-		emoji = "🪄",
+		emoji = "🔱",
 		zone = 10,
 		rarity = "Epic",
 		weight = 4,
