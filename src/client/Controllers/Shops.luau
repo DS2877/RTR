@@ -256,7 +256,7 @@ function Shops.start()
 	local panels = {
 		Workshop = upgradePanel(
 			"Workshop",
-			"🔨 WORKSHOP",
+			"🔨 TOOL CRIB",
 			Color3.fromRGB(255, 150, 60),
 			Color3.fromRGB(110, 50, 0)
 		),

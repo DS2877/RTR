@@ -127,7 +127,7 @@ function ExtraShops.start()
 
 	-- ===== STORE =====
 	panels.Store =
-		listPanel("StorePanel", "⭐ STORE", Color3.fromRGB(255, 200, 40), Color3.fromRGB(110, 70, 0))
+		listPanel("StorePanel", "📞 VISITATION", Color3.fromRGB(255, 200, 40), Color3.fromRGB(110, 70, 0))
 	renders.Store = function()
 		local body = panels.Store.body
 		clear(body)

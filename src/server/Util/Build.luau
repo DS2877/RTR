@@ -103,12 +103,31 @@ function Build.light(parent: Instance, color: Color3, range: number, brightness:
 	return l
 end
 
+-- An inmate in an orange jumpsuit (shirt + pants), optionally with a cap.
+function Build.inmate(parent: Instance, name: string, cf: CFrame, hat: Color3?): Model
+	local orange = Color3.fromRGB(214, 104, 34)
+	return Build.npc(parent, name, cf, orange, hat, orange)
+end
+
 -- A blocky shopkeeper / guard figure (no Humanoid: decor only). `cf` = feet position, facing LookVector.
-function Build.npc(parent: Instance, name: string, cf: CFrame, shirt: Color3, hat: Color3?): Model
+function Build.npc(
+	parent: Instance,
+	name: string,
+	cf: CFrame,
+	shirt: Color3,
+	hat: Color3?,
+	pants: Color3?
+): Model
 	local m = Instance.new("Model")
 	m.Name = name
 	local skin = Color3.fromRGB(234, 184, 146)
-	Build.part(m, "Legs", Vector3.new(2, 2.4, 1), cf * CFrame.new(0, 1.2, 0), Color3.fromRGB(50, 55, 70))
+	Build.part(
+		m,
+		"Legs",
+		Vector3.new(2, 2.4, 1),
+		cf * CFrame.new(0, 1.2, 0),
+		pants or Color3.fromRGB(50, 55, 70)
+	)
 	Build.part(m, "Torso", Vector3.new(2.2, 2.2, 1.1), cf * CFrame.new(0, 3.5, 0), shirt)
 	Build.part(m, "ArmL", Vector3.new(0.8, 2.1, 0.8), cf * CFrame.new(-1.5, 3.5, 0), shirt)
 	Build.part(m, "ArmR", Vector3.new(0.8, 2.1, 0.8), cf * CFrame.new(1.5, 3.5, 0), shirt)

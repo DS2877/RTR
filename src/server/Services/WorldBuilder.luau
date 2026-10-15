@@ -473,33 +473,570 @@ end
 
 -- ===== Common Room =====
 
-local function counter(parent: Instance, name: string, title: string, cf: CFrame, color: Color3): BasePart
-	local m = Instance.new("Model")
-	m.Name = name
-	m.Parent = parent
-	local top = Build.part(m, "Counter", Vector3.new(14, 3.4, 3), cf * CFrame.new(0, 1.7, 0), color, {
-		Material = Enum.Material.WoodPlanks,
-	})
-	Build.part(
+-- ===== prison-style vendor stations =====
+-- Every station is a Model named after the shop with a part "Counter" that holds the prompt
+-- (Shop attribute + "Shop" tag). `cf` = floor center of the counter; customers stand at local -Z,
+-- the vendor and the props sit behind it (local +Z, up to ~6 studs).
+
+local STEEL = Color3.fromRGB(70, 74, 80)
+local DARK_STEEL = Color3.fromRGB(44, 47, 52)
+
+local function plate(m: Instance, title: string, cf: CFrame, width: number?)
+	local p = Build.part(
 		m,
-		"CounterTop",
-		Vector3.new(14.4, 0.4, 3.4),
-		cf * CFrame.new(0, 3.6, 0),
-		Color3.fromRGB(90, 70, 50)
+		"Sign",
+		Vector3.new(width or 12, 2.4, 0.3),
+		cf,
+		DARK_STEEL,
+		{ Material = Enum.Material.Metal }
 	)
-	Build.npc(m, "Keeper", cf * CFrame.new(0, 0, 3.5), color, C.bars)
-	local board = Build.part(
-		m,
-		"Board",
-		Vector3.new(14, 4.5, 0.5),
-		cf * CFrame.new(0, 10, 5.5),
-		Color3.fromRGB(35, 38, 46)
-	)
-	Build.sign(board, Enum.NormalId.Front, title, Color3.fromRGB(255, 235, 120))
-	local prompt = Build.prompt(top, "Open", title, Economy.ShopRange)
+	Build.sign(p, Enum.NormalId.Front, title, Color3.fromRGB(235, 205, 90))
+	return p
+end
+
+local function finishCounter(top: BasePart, name: string, title: string, action: string)
+	local prompt = Build.prompt(top, action, title, Economy.ShopRange)
 	prompt.Name = "ShopPrompt"
 	top:SetAttribute("Shop", name)
 	CollectionService:AddTag(top, "Shop")
+end
+
+-- vertical bars across an opening (x from -w/2 to w/2 around cf, height h)
+local function bars(m: Instance, cf: CFrame, w: number, h: number, step: number?)
+	local st = step or 0.9
+	local n = math.floor(w / st)
+	for i = 0, n do
+		Build.part(
+			m,
+			"Bar",
+			Vector3.new(0.18, h, 0.18),
+			cf * CFrame.new(-w / 2 + i * w / n, h / 2, 0),
+			STEEL,
+			{
+				Material = Enum.Material.Metal,
+			}
+		)
+	end
+end
+
+local function station(parent: Instance, name: string, title: string, cf: CFrame, kind: string): BasePart
+	local m = Instance.new("Model")
+	m.Name = name
+	m.Parent = parent
+	local top: BasePart
+	if kind == "ToolCrib" then
+		-- chain-link cage with a service window, pegboard of tools, workbench with a vise
+		top = Build.part(m, "Counter", Vector3.new(6, 0.5, 2.4), cf * CFrame.new(0, 3.6, -0.2), STEEL, {
+			Material = Enum.Material.DiamondPlate,
+		})
+		for _, side in { -1, 1 } do
+			Build.part(
+				m,
+				"Mesh",
+				Vector3.new(4.5, 10, 0.2),
+				cf * CFrame.new(side * 5.25, 5, 0),
+				Color3.fromRGB(140, 145, 150),
+				{
+					Material = Enum.Material.DiamondPlate,
+					Transparency = 0.45,
+				}
+			)
+			Build.part(
+				m,
+				"Post",
+				Vector3.new(0.5, 10, 0.5),
+				cf * CFrame.new(side * 7.5, 5, 0),
+				STEEL,
+				{ Material = Enum.Material.Metal }
+			)
+		end
+		Build.part(
+			m,
+			"MeshLow",
+			Vector3.new(6, 3.4, 0.2),
+			cf * CFrame.new(0, 1.7, 0),
+			Color3.fromRGB(140, 145, 150),
+			{
+				Material = Enum.Material.DiamondPlate,
+				Transparency = 0.45,
+			}
+		)
+		Build.part(
+			m,
+			"MeshTop",
+			Vector3.new(6, 3, 0.2),
+			cf * CFrame.new(0, 8.5, 0),
+			Color3.fromRGB(140, 145, 150),
+			{
+				Material = Enum.Material.DiamondPlate,
+				Transparency = 0.45,
+			}
+		)
+		Build.part(
+			m,
+			"Pegboard",
+			Vector3.new(14, 6, 0.3),
+			cf * CFrame.new(0, 6, 5.8),
+			Color3.fromRGB(120, 95, 70),
+			{
+				Material = Enum.Material.Wood,
+			}
+		)
+		-- tool silhouettes on the pegboard
+		local tools = {
+			{ -5, 7, 0.4, 3, 0 }, -- shovel handle
+			{ -5, 5.3, 1.2, 1, 0 },
+			{ -2.5, 6.5, 0.3, 2.6, 0.5 }, -- wrench
+			{ 0, 6.5, 2.4, 0.4, 0 }, -- saw
+			{ 0, 6, 2.4, 0.8, 0 },
+			{ 2.5, 7, 0.35, 2.2, -0.4 }, -- hammer
+			{ 2.8, 7.9, 1.2, 0.5, -0.4 },
+			{ 5, 6.5, 0.6, 2.8, 0 }, -- pickaxe
+			{ 5, 7.8, 2.4, 0.4, 0.2 },
+		}
+		for _, t in tools do
+			Build.part(
+				m,
+				"Tool",
+				Vector3.new(t[3], t[4], 0.2),
+				cf * CFrame.new(t[1], t[2], 5.6) * CFrame.Angles(0, 0, t[5]),
+				DARK_STEEL,
+				{
+					Material = Enum.Material.Metal,
+				}
+			)
+		end
+		Build.part(
+			m,
+			"Workbench",
+			Vector3.new(10, 0.6, 3),
+			cf * CFrame.new(0, 3.2, 3.6),
+			Color3.fromRGB(110, 85, 60),
+			{
+				Material = Enum.Material.WoodPlanks,
+			}
+		)
+		Build.part(
+			m,
+			"Vise",
+			Vector3.new(1, 0.9, 0.9),
+			cf * CFrame.new(-3.5, 3.95, 3.2),
+			Color3.fromRGB(40, 70, 110),
+			{
+				Material = Enum.Material.Metal,
+			}
+		)
+		local keeper = Build.inmate(m, "Keeper", cf * CFrame.new(1.5, 0, 2.1))
+		-- welding goggles
+		local head = keeper:FindFirstChild("Head") :: BasePart
+		Build.part(
+			keeper,
+			"Goggles",
+			Vector3.new(1.5, 0.35, 0.2),
+			head.CFrame * CFrame.new(0, 0.2, -0.72),
+			Color3.fromRGB(30, 30, 30)
+		)
+		plate(m, title, cf * CFrame.new(0, 10.6, -0.2))
+	elseif kind == "Commissary" then
+		-- concrete wall with a barred window and a slot, shelves of ramen behind it
+		local wallColor = Color3.fromRGB(118, 120, 122)
+		Build.part(
+			m,
+			"Wall",
+			Vector3.new(14, 3.4, 1),
+			cf * CFrame.new(0, 1.7, 0.3),
+			wallColor,
+			{ Material = Enum.Material.Concrete }
+		)
+		Build.part(
+			m,
+			"Wall",
+			Vector3.new(14, 3.6, 1),
+			cf * CFrame.new(0, 9.2, 0.3),
+			wallColor,
+			{ Material = Enum.Material.Concrete }
+		)
+		Build.part(
+			m,
+			"Wall",
+			Vector3.new(4, 4, 1),
+			cf * CFrame.new(-5, 5.4, 0.3),
+			wallColor,
+			{ Material = Enum.Material.Concrete }
+		)
+		Build.part(
+			m,
+			"Wall",
+			Vector3.new(4, 4, 1),
+			cf * CFrame.new(5, 5.4, 0.3),
+			wallColor,
+			{ Material = Enum.Material.Concrete }
+		)
+		bars(m, cf * CFrame.new(0, 3.4, -0.1), 6, 4, 0.75)
+		top = Build.part(m, "Counter", Vector3.new(6, 0.35, 1.6), cf * CFrame.new(0, 3.55, -0.6), STEEL, {
+			Material = Enum.Material.Metal,
+		})
+		for row = 0, 2 do
+			Build.part(
+				m,
+				"Shelf",
+				Vector3.new(12, 0.3, 1.6),
+				cf * CFrame.new(0, 2 + row * 2.6, 5.3),
+				Color3.fromRGB(90, 92, 96),
+				{
+					Material = Enum.Material.Metal,
+				}
+			)
+			for i = 0, 9 do
+				local packColor = if (i + row) % 3 == 0
+					then Color3.fromRGB(200, 60, 40)
+					elseif (i + row) % 3 == 1 then Color3.fromRGB(230, 170, 40)
+					else Color3.fromRGB(60, 120, 200)
+				Build.part(
+					m,
+					"Ramen",
+					Vector3.new(0.9, 0.9, 0.4),
+					cf * CFrame.new(-5 + i * 1.1, 2.65 + row * 2.6, 5.2),
+					packColor
+				)
+			end
+		end
+		Build.npc(
+			m,
+			"Clerk",
+			cf * CFrame.new(0, 0, 2.4),
+			Color3.fromRGB(70, 90, 120),
+			Color3.fromRGB(30, 40, 60)
+		)
+		local board = Build.part(
+			m,
+			"Prices",
+			Vector3.new(3.6, 2.6, 0.2),
+			cf * CFrame.new(-5, 5.4, -0.25),
+			Color3.fromRGB(30, 34, 30)
+		)
+		Build.sign(
+			board,
+			Enum.NormalId.Front,
+			"RAMEN 🍜\nSOAP · SOCKS\nNO CREDIT",
+			Color3.fromRGB(230, 230, 220)
+		)
+		plate(m, title, cf * CFrame.new(0, 11.8, -0.25))
+	elseif kind == "Fence" then
+		-- a shady inmate on an upturned bucket with a laundry cart full of "goods"
+		top = Build.part(
+			m,
+			"Counter",
+			Vector3.new(4.6, 2.6, 3),
+			cf * CFrame.new(-2.5, 1.8, 0.6),
+			Color3.fromRGB(150, 150, 160),
+			{
+				Material = Enum.Material.Fabric,
+			}
+		)
+		Build.part(
+			m,
+			"CartFrame",
+			Vector3.new(4.8, 0.3, 3.2),
+			cf * CFrame.new(-2.5, 0.5, 0.6),
+			STEEL,
+			{ Material = Enum.Material.Metal }
+		)
+		for _, g in
+			{
+				{ -3.5, 3.4, 0.2, Color3.fromRGB(200, 170, 50) },
+				{ -2, 3.5, 1, Color3.fromRGB(120, 60, 160) },
+				{ -1.2, 3.3, 0.1, Color3.fromRGB(60, 160, 120) },
+			}
+		do
+			Build.part(
+				m,
+				"Goods",
+				Vector3.new(1.2, 1, 1),
+				cf * CFrame.new(g[1], g[2], g[3]) * CFrame.Angles(0.3, 0.6, 0),
+				g[4],
+				{
+					Material = Enum.Material.Neon,
+					Transparency = 0.2,
+				}
+			)
+		end
+		for i, c in { { 2, 0.8, 1.5 }, { 3.8, 0.8, 1.2 }, { 2.9, 2.3, 1.3 } } do
+			Build.part(
+				m,
+				"Crate",
+				Vector3.new(1.6, 1.5, 1.6),
+				cf * CFrame.new(c[1], c[2], c[3] + 2) * CFrame.Angles(0, i * 0.4, 0),
+				Color3.fromRGB(40, 90, 160),
+				{
+					Material = Enum.Material.Plastic,
+				}
+			)
+		end
+		Build.part(
+			m,
+			"Bucket",
+			Vector3.new(1.6, 1.4, 1.6),
+			cf * CFrame.new(1.5, 0.7, 1.5),
+			Color3.fromRGB(70, 90, 110),
+			{
+				Shape = Enum.PartType.Cylinder,
+				Orientation = Vector3.new(0, 0, 90),
+			}
+		)
+		local guy = Build.inmate(
+			m,
+			"Fence",
+			cf * CFrame.new(1.5, 1.2, 1.5) * CFrame.Angles(0, math.rad(-20), 0),
+			Color3.fromRGB(30, 30, 35)
+		)
+		local head = guy:FindFirstChild("Head") :: BasePart
+		Build.part(
+			guy,
+			"Shades",
+			Vector3.new(1.4, 0.35, 0.2),
+			head.CFrame * CFrame.new(0, 0.18, -0.72),
+			Color3.fromRGB(10, 10, 12)
+		)
+		-- blanket hung as a curtain behind him
+		Build.part(
+			m,
+			"Curtain",
+			Vector3.new(12, 9, 0.2),
+			cf * CFrame.new(0, 4.5, 5.5),
+			Color3.fromRGB(110, 40, 50),
+			{
+				Material = Enum.Material.Fabric,
+			}
+		)
+		local card = Build.part(
+			m,
+			"Cardboard",
+			Vector3.new(3.2, 2, 0.15),
+			cf * CFrame.new(-2.5, 4.1, -0.95) * CFrame.Angles(-0.2, 0, 0.05),
+			Color3.fromRGB(170, 130, 80)
+		)
+		Build.sign(
+			card,
+			Enum.NormalId.Front,
+			"WE BUY\nSTUFF",
+			Color3.fromRGB(40, 30, 20),
+			Color3.fromRGB(170, 130, 80)
+		)
+		plate(m, title, cf * CFrame.new(0, 9.8, 5.3))
+	elseif kind == "Visitation" then
+		-- glass partition with phones: gifts from the outside world (the Robux store)
+		Build.part(
+			m,
+			"Desk",
+			Vector3.new(14, 3.4, 1.4),
+			cf * CFrame.new(0, 1.7, 0),
+			Color3.fromRGB(105, 108, 112),
+			{
+				Material = Enum.Material.Concrete,
+			}
+		)
+		top = Build.part(
+			m,
+			"Counter",
+			Vector3.new(14, 0.3, 1.8),
+			cf * CFrame.new(0, 3.55, -0.2),
+			Color3.fromRGB(140, 142, 146),
+			{
+				Material = Enum.Material.Metal,
+			}
+		)
+		Build.part(
+			m,
+			"Glass",
+			Vector3.new(14, 6, 0.2),
+			cf * CFrame.new(0, 6.7, 0.4),
+			Color3.fromRGB(190, 220, 230),
+			{
+				Material = Enum.Material.Glass,
+				Transparency = 0.6,
+			}
+		)
+		for i = -1, 1 do
+			Build.part(
+				m,
+				"Divider",
+				Vector3.new(0.3, 6, 2),
+				cf * CFrame.new(i * 4.6 + 2.3, 6.7, -0.4),
+				Color3.fromRGB(105, 108, 112)
+			)
+			Build.part(
+				m,
+				"Phone",
+				Vector3.new(0.5, 1.2, 0.4),
+				cf * CFrame.new(i * 4.6 - 1.2, 5.2, 0.2),
+				Color3.fromRGB(25, 25, 28)
+			)
+			Build.part(
+				m,
+				"Stool",
+				Vector3.new(1.4, 0.4, 1.4),
+				cf * CFrame.new(i * 4.6, 1.9, -2.2),
+				Color3.fromRGB(150, 40, 40)
+			)
+			Build.part(m, "StoolLeg", Vector3.new(0.3, 1.8, 0.3), cf * CFrame.new(i * 4.6, 0.9, -2.2), STEEL)
+		end
+		Build.npc(
+			m,
+			"Visitor",
+			cf * CFrame.new(0, 0, 2.6),
+			Color3.fromRGB(230, 200, 60),
+			Color3.fromRGB(200, 60, 120)
+		)
+		plate(m, title, cf * CFrame.new(0, 10.6, 0.4), 13)
+	elseif kind == "Laundry" then
+		-- folding table with stacks of uniforms, carts, a steaming press
+		top = Build.part(
+			m,
+			"Counter",
+			Vector3.new(10, 0.5, 3.2),
+			cf * CFrame.new(0, 3.2, 0),
+			Color3.fromRGB(180, 182, 186),
+			{
+				Material = Enum.Material.Metal,
+			}
+		)
+		for _, dx in { -4.5, 4.5 } do
+			Build.part(m, "Leg", Vector3.new(0.4, 3, 0.4), cf * CFrame.new(dx, 1.5, 0), STEEL)
+		end
+		local colors = {
+			Color3.fromRGB(214, 104, 34),
+			Color3.fromRGB(230, 230, 230),
+			Color3.fromRGB(60, 110, 200),
+			Color3.fromRGB(255, 120, 190),
+		}
+		for i, c in colors do
+			for k = 0, i % 3 + 1 do
+				Build.part(
+					m,
+					"Folded",
+					Vector3.new(1.8, 0.35, 1.4),
+					cf * CFrame.new(-4.5 + i * 2, 3.65 + k * 0.36, 0),
+					c,
+					{ Material = Enum.Material.Fabric }
+				)
+			end
+		end
+		for _, dx in { -4, 4 } do
+			Build.part(
+				m,
+				"Cart",
+				Vector3.new(3, 2.4, 2.4),
+				cf * CFrame.new(dx, 1.6, 4),
+				Color3.fromRGB(200, 200, 205),
+				{
+					Material = Enum.Material.Fabric,
+				}
+			)
+			Build.part(
+				m,
+				"CartLoad",
+				Vector3.new(2.8, 0.8, 2.2),
+				cf * CFrame.new(dx, 3, 4),
+				Color3.fromRGB(240, 240, 235),
+				{ Material = Enum.Material.Fabric }
+			)
+		end
+		Build.inmate(m, "Keeper", cf * CFrame.new(0, 0, 2.2))
+		plate(m, title, cf * CFrame.new(0, 8.5, 1.5))
+	elseif kind == "FenceHole" then
+		-- BLACK MARKET: a guy in a trench coat by a hole cut in the yard fence
+		top = Build.part(
+			m,
+			"Counter",
+			Vector3.new(3, 2.4, 2.4),
+			cf * CFrame.new(-2.5, 1.2, 0),
+			Color3.fromRGB(100, 80, 55),
+			{
+				Material = Enum.Material.WoodPlanks,
+			}
+		)
+		Build.part(
+			m,
+			"Crate2",
+			Vector3.new(2, 1.6, 2),
+			cf * CFrame.new(-2.3, 3.2, 0.2) * CFrame.Angles(0, 0.4, 0),
+			Color3.fromRGB(85, 70, 50),
+			{
+				Material = Enum.Material.WoodPlanks,
+			}
+		)
+		local coat = Color3.fromRGB(95, 75, 50)
+		local guy = Build.npc(m, "Dealer", cf * CFrame.new(2, 0, 1.5), coat, Color3.fromRGB(40, 35, 30), coat)
+		local head = guy:FindFirstChild("Head") :: BasePart
+		Build.part(
+			guy,
+			"Shades",
+			Vector3.new(1.4, 0.35, 0.2),
+			head.CFrame * CFrame.new(0, 0.18, -0.72),
+			Color3.fromRGB(10, 10, 12)
+		)
+		Build.part(
+			guy,
+			"CoatTail",
+			Vector3.new(2.4, 2.4, 1.3),
+			cf * CFrame.new(2, 1.6, 1.5),
+			coat,
+			{ Material = Enum.Material.Fabric }
+		)
+		-- the cut flap of fence + a flashlight on the ground
+		Build.part(
+			m,
+			"Flap",
+			Vector3.new(4, 4, 0.2),
+			cf * CFrame.new(0, 2, 5) * CFrame.Angles(0, 0.7, 0),
+			Color3.fromRGB(140, 145, 150),
+			{
+				Material = Enum.Material.DiamondPlate,
+				Transparency = 0.45,
+			}
+		)
+		local light = Build.part(
+			m,
+			"Flashlight",
+			Vector3.new(0.4, 0.4, 1.2),
+			cf * CFrame.new(-0.5, 0.2, -1),
+			Color3.fromRGB(30, 30, 30)
+		)
+		local spot = Instance.new("SpotLight")
+		spot.Range = 18
+		spot.Angle = 50
+		spot.Brightness = 2
+		spot.Color = Color3.fromRGB(255, 230, 170)
+		spot.Face = Enum.NormalId.Front
+		spot.Parent = light
+		local card = Build.part(
+			m,
+			"Cardboard",
+			Vector3.new(2.6, 1.6, 0.15),
+			cf * CFrame.new(-2.5, 2.6, -1.25),
+			Color3.fromRGB(170, 130, 80)
+		)
+		Build.sign(
+			card,
+			Enum.NormalId.Front,
+			"PSST...",
+			Color3.fromRGB(40, 30, 20),
+			Color3.fromRGB(170, 130, 80)
+		)
+		plate(m, title, cf * CFrame.new(0, 6.5, 2.5), 10)
+	else
+		error("unknown station " .. kind)
+	end
+	finishCounter(
+		top,
+		name,
+		title,
+		if kind == "Visitation"
+			then "Visit"
+			elseif kind == "Fence" or kind == "FenceHole" then "Trade"
+			else "Open"
+	)
 	return top
 end
 
@@ -666,27 +1203,22 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 
 	local shops: { [string]: BasePart } = {}
 	-- counters face into the room (their keeper stands between counter and wall)
-	shops.Workshop = counter(
+	shops.Workshop = station(
 		parent,
 		"Workshop",
-		"🔨 WORKSHOP",
+		"TOOL CRIB",
 		CFrame.new(cr.x + 20, 0, z0 + 10) * CFrame.Angles(0, math.pi, 0),
-		Color3.fromRGB(230, 130, 40)
+		"ToolCrib"
 	)
-	shops.Commissary = counter(
-		parent,
-		"Commissary",
-		"🎒 COMMISSARY",
-		CFrame.new(cr.x + 20, 0, z1 - 10),
-		Color3.fromRGB(60, 150, 230)
-	)
+	shops.Commissary =
+		station(parent, "Commissary", "COMMISSARY", CFrame.new(cr.x + 20, 0, z1 - 10), "Commissary")
 	-- STORE (Robux): passes and products with known contents
-	shops.Store = counter(
+	shops.Store = station(
 		parent,
 		"Store",
-		"⭐ STORE",
+		"VISITATION",
 		CFrame.new(x0 + 10, 0, 24) * CFrame.Angles(0, -math.pi / 2, 0),
-		Color3.fromRGB(255, 200, 40)
+		"Visitation"
 	)
 	-- VIP corner: glass wall + gold door (only VIPs pass; the client opens it for them)
 	local vx0, vz0 = x1 - 28, z1 - 26
@@ -769,13 +1301,7 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 			Material = Enum.Material.Neon,
 		}
 	)
-	shops.Fence = counter(
-		parent,
-		"Fence",
-		"💰 THE FENCE",
-		CFrame.new(cr.x - 30, 0, z1 - 10),
-		Color3.fromRGB(150, 80, 200)
-	)
+	shops.Fence = station(parent, "Fence", "THE FENCE", CFrame.new(cr.x - 30, 0, z1 - 10), "Fence")
 	return shops
 end
 
@@ -845,12 +1371,12 @@ local function buildMessHall(parent: Instance, shops: { [string]: BasePart })
 	CollectionService:AddTag(serving, "Shop")
 	shops.MessHall = serving
 	-- LAUNDRY counter along the west wall
-	shops.Laundry = counter(
+	shops.Laundry = station(
 		parent,
 		"Laundry",
-		"🧺 LAUNDRY",
+		"LAUNDRY",
 		CFrame.new(x0 + 8, 0, z0 + 30) * CFrame.Angles(0, -math.pi / 2, 0),
-		Color3.fromRGB(120, 210, 230)
+		"Laundry"
 	)
 	for i = 0, 2 do
 		Build.part(
@@ -1070,53 +1596,21 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 		Build.light(head, Color3.fromRGB(255, 250, 230), 60, 1.5)
 	end
 
-	-- BLACK MARKET: a shady tent in the far corner (stock rotates every day)
-	local bm = CFrame.new(x0 + 14, 0, z1 - 14) * CFrame.Angles(0, math.rad(-135), 0)
-	local tarp = Color3.fromRGB(60, 50, 70)
-	for _, d in { { -6, -4 }, { 6, -4 }, { -6, 4 }, { 6, 4 } } do
-		Build.part(
-			parent,
-			"TentPole",
-			Vector3.new(0.4, 8, 0.4),
-			bm * CFrame.new(d[1], 4, d[2]),
-			Color3.fromRGB(60, 60, 60)
-		)
-	end
-	Build.part(
-		parent,
-		"Tarp",
-		Vector3.new(14, 0.4, 10),
-		bm * CFrame.new(0, 8.2, 0) * CFrame.Angles(0.15, 0, 0),
-		tarp,
-		{
-			Material = Enum.Material.Fabric,
-		}
-	)
-	shops.BlackMarket = counter(
+	-- BLACK MARKET: a dealer by a hole cut in the yard fence (stock rotates every day)
+	shops.BlackMarket = station(
 		parent,
 		"BlackMarket",
-		"🕶️ BLACK MARKET",
-		bm * CFrame.new(0, 0, -2),
-		Color3.fromRGB(90, 70, 110)
+		"BLACK MARKET",
+		CFrame.new(x0 + 7, 0, z1 - 30) * CFrame.Angles(0, -math.pi / 2, 0),
+		"FenceHole"
 	)
-	local lantern = Build.part(
-		parent,
-		"Lantern",
-		Vector3.new(0.8, 1, 0.8),
-		bm * CFrame.new(4, 6.5, 0),
-		Color3.fromRGB(255, 160, 60),
-		{
-			Material = Enum.Material.Neon,
-		}
-	)
-	Build.light(lantern, Color3.fromRGB(255, 150, 60), 20, 1.5)
 
 	-- RUBBLE DUMP: a big skip next to the door from the Common Room
 	local dumpCf = CFrame.new(x1 - 22, 0, -32)
 	local dumpModel = Instance.new("Model")
 	dumpModel.Name = "Dump"
 	dumpModel.Parent = parent
-	local dumpColor = Color3.fromRGB(230, 170, 30)
+	local dumpColor = Color3.fromRGB(56, 78, 60) -- a beat-up industrial dumpster
 	Build.part(dumpModel, "SkipBottom", Vector3.new(16, 1, 10), dumpCf * CFrame.new(0, 0.5, 0), dumpColor, {
 		Material = Enum.Material.Metal,
 	})
@@ -1149,8 +1643,8 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 		dumpCf * CFrame.new(0, 10, -5.5),
 		Color3.fromRGB(35, 38, 46)
 	)
-	Build.sign(dumpSign, Enum.NormalId.Back, "🪨 RUBBLE DUMP", Color3.fromRGB(255, 220, 90))
-	Build.sign(dumpSign, Enum.NormalId.Front, "🪨 RUBBLE DUMP", Color3.fromRGB(255, 220, 90))
+	Build.sign(dumpSign, Enum.NormalId.Back, "RUBBLE", Color3.fromRGB(255, 220, 90))
+	Build.sign(dumpSign, Enum.NormalId.Front, "RUBBLE", Color3.fromRGB(255, 220, 90))
 	local dumpPrompt = Build.prompt(rubble, "Dump rubble", "Rubble Dump", Economy.DumpRange)
 	dumpPrompt.Name = "DumpPrompt"
 	CollectionService:AddTag(rubble, "Dump")
