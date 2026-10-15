@@ -130,6 +130,11 @@ def main():
         passed = result.get("passed", 0)
         failed = result.get("failed", 0)
         failures = result.get("failures") or []
+        world = result.get("world")
+        if world:
+            with open("world.txt", "w") as f:
+                f.write(world)
+            say(f"World dump: {len(world)} bytes -> world.txt")
         lines = [f"Smoke test: {passed} passed, {failed} failed"] + [f"- {x}" for x in failures]
         summary("\n".join(lines))
         for line in lines:

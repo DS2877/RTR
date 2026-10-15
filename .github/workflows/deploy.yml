@@ -47,6 +47,15 @@ jobs:
           if [ "$code" = "1" ]; then exit 1; fi
           exit 0
 
+      - name: Upload world dump (for tools/view)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: world
+          path: world.txt
+          if-no-files-found: ignore
+          retention-days: 5
+
       - name: Publish to Roblox
         if: github.ref == 'refs/heads/main'
         env:

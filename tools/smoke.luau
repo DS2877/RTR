@@ -90,7 +90,7 @@ step("Remotes.setup", Remotes.setup)
 if not step("WorldBuilder.build", function()
 	world = WorldBuilder.build()
 end) then
-	return { passed = passed, failed = #failures, failures = failures }
+	return { passed = passed, failed = #failures, failures = failures, world = worldDump }
 end
 step("Cells.start", function()
 	Cells.start(world)
@@ -285,6 +285,102 @@ do
 		print("zfight " .. hits[k])
 	end
 	check("no z-fighting faces", #hits == 0, hits[1])
+end
+
+-- ===== world dump (CI uploads it as an artifact; tools/view renders it so we can SEE the prison) =====
+local worldDump = ""
+do
+	local lines: { string } = {}
+	local function f(n: number): string
+		return string.format("%.2f", n)
+	end
+	local index: { [Instance]: number } = {}
+	for _, d in workspace:GetDescendants() do
+		if d:IsA("BasePart") and d.Transparency < 1 and d.Name ~= "Terrain" then
+			local cf = d.CFrame
+			local _, _, _, r00, r01, r02, r10, r11, r12, r20, r21, r22 = cf:GetComponents()
+			local shape = if d:IsA("Part")
+				then d.Shape.Name
+				elseif d:IsA("WedgePart") then "Wedge"
+				elseif d:IsA("SpawnLocation") then "Block"
+				else "Block"
+			local c = d.Color
+			table.insert(
+				lines,
+				table.concat({
+					"P",
+					d.Name,
+					shape,
+					f(cf.X),
+					f(cf.Y),
+					f(cf.Z),
+					f(r00),
+					f(r01),
+					f(r02),
+					f(r10),
+					f(r11),
+					f(r12),
+					f(r20),
+					f(r21),
+					f(r22),
+					f(d.Size.X),
+					f(d.Size.Y),
+					f(d.Size.Z),
+					tostring(math.floor(c.R * 255 + 0.5)),
+					tostring(math.floor(c.G * 255 + 0.5)),
+					tostring(math.floor(c.B * 255 + 0.5)),
+					d.Material.Name,
+					f(d.Transparency),
+				}, "|")
+			)
+			index[d] = #lines
+		end
+	end
+	for _, d in workspace:GetDescendants() do
+		local holder = d.Parent
+		if
+			(d:IsA("PointLight") or d:IsA("SpotLight") or d:IsA("SurfaceLight"))
+			and holder
+			and holder:IsA("BasePart")
+		then
+			local p = holder.Position
+			local c = d.Color
+			table.insert(
+				lines,
+				table.concat({
+					"L",
+					d.ClassName,
+					f(p.X),
+					f(p.Y),
+					f(p.Z),
+					tostring(math.floor(c.R * 255)),
+					tostring(math.floor(c.G * 255)),
+					tostring(math.floor(c.B * 255)),
+					f((d :: any).Range),
+					f((d :: any).Brightness),
+				}, "|")
+			)
+		elseif d:IsA("SurfaceGui") and holder and index[holder] then
+			local label = d:FindFirstChildWhichIsA("TextLabel", true)
+			if label and label.Text ~= "" then
+				local tc = label.TextColor3
+				table.insert(
+					lines,
+					table.concat({
+						"T",
+						tostring(index[holder]),
+						d.Face.Name,
+						(string.gsub(label.Text, "[|\n]", " ")),
+						tostring(math.floor(tc.R * 255)),
+						tostring(math.floor(tc.G * 255)),
+						tostring(math.floor(tc.B * 255)),
+					}, "|")
+				)
+			end
+		end
+	end
+	worldDump = table.concat(lines, "\n")
+	print(string.format("world dump: %d lines, %d bytes", #lines, #worldDump))
 end
 
 -- ===== simulated player =====
@@ -761,4 +857,4 @@ for _, list in { Assets.Animations.PunchR15, Assets.Animations.PunchR6 } do
 end
 
 print(string.format("smoke: %d passed, %d failed", passed, #failures))
-return { passed = passed, failed = #failures, failures = failures }
+return { passed = passed, failed = #failures, failures = failures, world = worldDump }
