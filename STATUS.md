@@ -187,6 +187,20 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Slaganimation, patrullerande vakter och fängelseschemat
+- **Slaganimation (fixad):** den förra animationen vred lederna direkt, vilket nyare Roblox-avatarer
+  inte alltid har – därför syntes inget. Nu spelas riktiga animationer via Animator (Robloxs egna
+  "lunge" och var tredje slag ett "slash"), som fungerar på alla avatarer och syns för alla andra.
+- **Vakter som patrullerar:** Officer Dave (Yard), Officer Brenda (Common Room) och Sgt. Lumpy
+  (korridoren). De går sina rundor, tittar runt i hörnen, och på natten går de i korridoren med
+  ficklampa. Var 9–15:e sekund säger de något i en pratbubbla – beroende på vad de *inte* ser: någon
+  som springer med stulet byte, slagsmål, grävljud, en fullproppad ryggsäck, någon som lyfter på
+  gymmet, eller ditt namn när du går förbi ("Gravel in your pockets, Philip? Must be a new diet.").
+- **Fängelseschemat styr spelet:** 📋 ROLL CALL → ☀️ YARD TIME → 🚨 LIGHTS OUT → 🌙 LOCKDOWN.
+  Vid roll call räknas alla som står i sin cell när den tar slut (+Noodles) – stanna eller rusa ut?
+  Klockan i spelet går hela tiden (06:00 → 18:00 → natt) med riktig gryning och skymning. En smal
+  ruta ovanför knapparna visar fas, klockslag, en tidslinje, reglerna just nu och vad som kommer.
+
 ### Ljud, balans och zoner (stora uppdateringen)
 - **Ljud (licensierade ProSoundEffects-ljud):** varje slag = luftsus + tung knytnäve + zonens
   materialljud (betong, tegel, jord, armeringsjärn, sten, glas/kristall). Ljudet blir ljusare för
@@ -259,11 +273,14 @@ köper nästa verktyg – det är tänkt så (som i andra simulatorspel), inte e
 12. M4: ADMIN → Bottom→Escape → tryck ESCAPE! (filmsekvens + High Security). ADMIN → 🌙 Night →
     Inspect me → tryck HIDE. ADMIN → 💰 Treasure och följ markeringen. ADMIN → 🧨 x5 och tryck 🧨
     mot väggen. Köp en lampa i Workshop → 💡 DECOR och placera den i tunneln med 💡-knappen.
-13. Ljud/zoner: ha ljudet på. Slå på väggen (hör sprickorna stiga i ton), krossa flera i rad.
+13. Schema/vakter: titta på rutan ovanför knapparna (fas + klocka). ADMIN → 📋 Roll call, stå kvar
+    i cellen tills YARD TIME → "Counted at roll call!". Gå förbi vakterna med full ryggsäck och läs
+    pratbubblorna. Slå på väggen och titta på gubben: den ska göra ett riktigt slag.
+14. Ljud/zoner: ha ljudet på. Slå på väggen (hör sprickorna stiga i ton), krossa flera i rad.
     ADMIN → Zone 4 (armeringsjärn), Zone 5 (rör), Zone 8 (kristaller), Zone 9 (lava) – gräv en bit
     och titta på väggarna och lyssna på bakgrundsljudet.
-14. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
-15. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
+15. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
+16. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
 
 ## ⏳ Saknas (kommande milstolpar)
 - Balansen bygger på simulatorn – finjustera med riktiga speldata när spelare kommer in.

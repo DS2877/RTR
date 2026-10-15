@@ -480,7 +480,7 @@ do
 	local ok, kind = pcall(Patrol.situation, Vector3.new(0, 3, 0), "Day")
 	check("guard situation", ok and typeof(kind) == "string", kind)
 	s.data.Bag = 1000
-	local _, kind2 = Patrol.situation(fake.Position, "Day")
+	local kind2 = Patrol.situation(fake.Position, "Day")
 	check("guard notices the full backpack", kind2 == "Bag" or kind2 == "Digging", kind2)
 	s.data.Bag = 0
 end
