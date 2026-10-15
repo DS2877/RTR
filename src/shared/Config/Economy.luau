@@ -11,17 +11,92 @@ local Economy = {
 	StartingStrength = 10,
 	WalkSpeed = 20,
 
-	-- Gym in the Yard: stand next to a station and tap LIFT. Strength is earned with time.
-	LiftInterval = 0.6, -- seconds between counted lifts
-	GymRange = 9, -- studs from the station
+	-- PRISON GYM in the Yard: tap a station to hoist the thing over your head, then tap LIFT when the
+	-- needle of the timing meter is in the green zone (perfect = gold center). Strength is earned
+	-- with time. meter = needle sweeps per second, zone = green width, perfect = gold width (0..1).
+	LiftInterval = 0.45, -- seconds between counted reps
+	GymRange = 10, -- studs from the station
+	LiftPerfect = 2, -- gain multiplier for a perfect rep
+	LiftComboStep = 0.1, -- +10% per perfect in a row...
+	LiftComboMax = 2, -- ...up to x2 on top
 	Gym = {
-		{ name = "Bench", emoji = "🏋️", gain = 1, minStrength = 0 },
-		{ name = "Dumbbells", emoji = "💪", gain = 3, minStrength = 100 },
-		{ name = "Barbell", emoji = "🏋️", gain = 10, minStrength = 600 },
-		{ name = "Tire Flip", emoji = "🛞", gain = 40, minStrength = 4000 },
-		{ name = "Pull-up Bar", emoji = "🤸", gain = 150, minStrength = 25000 },
-		{ name = "Boulder Lift", emoji = "🪨", gain = 600, minStrength = 150000 },
-		{ name = "Bus Pull", emoji = "🚌", gain = 2500, minStrength = 1000000 },
+		{
+			id = "Toilet",
+			name = "Toilet Curl",
+			emoji = "🚽",
+			gain = 1,
+			minStrength = 0,
+			meter = 0.8,
+			zone = 0.36,
+			perfect = 0.09,
+			line = "Don't ask whose it was.",
+		},
+		{
+			id = "Mattress",
+			name = "Mattress Stack",
+			emoji = "🛏️",
+			gain = 3,
+			minStrength = 100,
+			meter = 0.95,
+			zone = 0.32,
+			perfect = 0.08,
+			line = "Still warm.",
+		},
+		{
+			id = "Vending",
+			name = "Vending Machine",
+			emoji = "🥫",
+			gain = 10,
+			minStrength = 600,
+			meter = 1.1,
+			zone = 0.28,
+			perfect = 0.07,
+			line = "Shake it for free snacks.",
+		},
+		{
+			id = "Guard",
+			name = "Sleeping Guard",
+			emoji = "👮",
+			gain = 40,
+			minStrength = 4000,
+			meter = 1.25,
+			zone = 0.25,
+			perfect = 0.06,
+			line = "Shh... don't wake him.",
+		},
+		{
+			id = "Washer",
+			name = "Washing Machine",
+			emoji = "🧺",
+			gain = 150,
+			minStrength = 25000,
+			meter = 1.4,
+			zone = 0.22,
+			perfect = 0.055,
+			line = "Still on spin cycle.",
+		},
+		{
+			id = "Desk",
+			name = "Warden's Desk",
+			emoji = "🗄️",
+			gain = 600,
+			minStrength = 150000,
+			meter = 1.55,
+			zone = 0.2,
+			perfect = 0.05,
+			line = "With the warden's lunch on it.",
+		},
+		{
+			id = "Bus",
+			name = "Prison Bus",
+			emoji = "🚌",
+			gain = 2500,
+			minStrength = 1000000,
+			meter = 1.7,
+			zone = 0.18,
+			perfect = 0.045,
+			line = "The whole bus. Yes.",
+		},
 	},
 
 	-- what the game passes do (M4; the simulator already uses them)

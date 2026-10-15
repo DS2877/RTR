@@ -43,4 +43,5 @@ require(Controllers.Shops).openDecor = function()
 end
 require(Controllers.Moments).start()
 require(Controllers.Guide).start()
+require(Controllers.GymController).start()
 require(Controllers.Music).start()

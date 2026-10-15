@@ -167,5 +167,21 @@ return function()
 		end
 		check(any, "rarity in loot tables: " .. r)
 	end
+	-- gym meter
+	check(Progression.meterPos(0, 1) == 0 and Progression.meterPos(0.5, 1) == 0.5, "meter sweeps")
+	check(
+		math.abs(Progression.meterPos(1.5, 1) - 0.5) < 1e-9 and Progression.meterPos(2, 1) == 0,
+		"meter comes back"
+	)
+	check(Progression.liftQuality(0.5, 1) == "perfect", "center = perfect")
+	check(Progression.liftQuality(0.5 + Economy.Gym[1].zone / 2 - 0.01, 1) == "good", "green = good")
+	check(Progression.liftQuality(0.02, 1) == "miss", "edge = miss")
+	check(Progression.liftReward(1, "miss", 5, 0) == 0, "miss gives nothing")
+	check(Progression.liftReward(1, "good", 0, 0) == 1, "good = base")
+	check(Progression.liftReward(1, "perfect", 0, 0) == 2, "perfect = x2")
+	check(Progression.liftReward(3, "perfect", 100, 0) == 10 * 2 * Economy.LiftComboMax, "combo capped")
+	for i = 2, #Economy.Gym do
+		check(Economy.Gym[i].zone < Economy.Gym[i - 1].zone, "heavier = harder")
+	end
 	check(Progression.bestStation(0) == 1 and Progression.bestStation(1e9) == #Economy.Gym, "gym stations")
 end

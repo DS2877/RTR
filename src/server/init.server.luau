@@ -192,6 +192,7 @@ local function leave(player: Player)
 		s.data.LastOnline = os.time()
 	end
 	Raid.onLeaving(player)
+	Gym.onLeaving(player)
 	TopDog.onLeaving(player)
 	Events.onLeaving(player)
 	Market.clearRender(player)

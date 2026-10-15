@@ -637,9 +637,6 @@ function HUD.start()
 	punchBtn.Position = UDim2.new(1, -205, 1, -80)
 	local vacBtn = UI.actionButton(buttons, "Vacuum", "🌀", "VACUUM", 76)
 	vacBtn.Position = UDim2.new(1, -96, 1, -178)
-	local liftBtn = UI.actionButton(buttons, "Lift", "🏋️", "LIFT", 104)
-	liftBtn.Position = UDim2.new(1, -205, 1, -80)
-	liftBtn.Visible = false
 	holdable(punchBtn, function()
 		DigController.setHolding(true)
 	end, function()
@@ -659,16 +656,6 @@ function HUD.start()
 		setVac(true)
 	end, function()
 		setVac(false)
-	end)
-	local liftRemote = Remotes.get(Remotes.Names.Lift)
-	local lastLift = 0
-	liftBtn.Activated:Connect(function()
-		local now = os.clock()
-		if now - lastLift >= Economy.LiftInterval then
-			lastLift = now
-			liftRemote:FireServer()
-			UI.bump(liftBtn, 0.12)
-		end
 	end)
 
 	-- ===== RIGHT: admin tile =====
@@ -789,9 +776,8 @@ function HUD.start()
 		end
 	end)
 
-	-- context: zone label, LIFT near the gym, full prompt, auto-vacuum
+	-- context: zone label, full prompt, auto-vacuum (the gym has its own LIFT: GymController)
 	local fullKind: string? = nil
-	local stations = CollectionService:GetTagged("GymStation")
 	local acc = 0
 	RunService.Heartbeat:Connect(function(dt)
 		acc += dt
@@ -806,21 +792,7 @@ function HUD.start()
 		else
 			zoneText.Text = string.format("⛏️ Record %dm", attr("MaxDepth", 0))
 		end
-		local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		local nearGym = false
-		if r and r:IsA("BasePart") then
-			if #stations == 0 then
-				stations = CollectionService:GetTagged("GymStation")
-			end
-			for _, s in stations do
-				if ((s :: BasePart).Position - r.Position).Magnitude <= Economy.GymRange then
-					nearGym = true
-				end
-			end
-		end
-		liftBtn.Visible = nearGym
-		punchBtn.Visible = not nearGym
-		vacBtn.Visible = not nearGym and player:GetAttribute("AutoVacuum") ~= true
+		vacBtn.Visible = player:GetAttribute("AutoVacuum") ~= true
 		-- full prompt
 		local bag, cap, loose = attr("Bag", 0), attr("BagCap", 20), attr("Loose", 0)
 		local kind: string? = nil

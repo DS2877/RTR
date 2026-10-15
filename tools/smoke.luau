@@ -253,14 +253,24 @@ check("buy backpack", Shop.buy(fake, "Backpack") == 2)
 s.data.Noodles = 0
 check("too poor", select(2, Shop.buy(fake, "Backpack")) == "poor")
 
--- gym
+-- gym: hoist the toilet, rep with the needle in the gold center / at the edge
 fake.Position = world.stations[1].Position
 local before = s.data.Strength
-check("lift", Gym.lift(fake) == 1 and s.data.Strength == before + 1)
-check("lift rate limited", Gym.lift(fake) == 0)
-fake.Position = world.stations[3].Position
+check("no rep without lifting", select(2, Gym.lift(fake)) == "")
+check("start lifting", Gym.begin(fake, 1) == nil and Gym.lifting(fake) ~= nil)
+local l = Gym.lifting(fake)
+local speed = Economy.Gym[1].meter
+local gain, q = Gym.lift(fake, l.start + 0.5 / speed) -- needle exactly in the middle
+check("perfect rep", q == "perfect" and gain == 2 and s.data.Strength == before + 2, q)
+check("rep rate limited", select(2, Gym.lift(fake, l.start + 0.5 / speed)) == "")
 s.lastLift = 0
-check("barbell needs strength", Gym.lift(fake) == 0)
+local g2, q2 = Gym.lift(fake, l.start + 0.001) -- needle at the edge
+check("missed rep", q2 == "miss" and g2 == 0, q2)
+Gym.stop(fake)
+check("put it down", Gym.lifting(fake) == nil)
+fake.Position = world.stations[3].Position
+check("vending machine needs strength", Gym.begin(fake, 3) == "weak")
+check("gym props built", world.stations[1].Parent:FindFirstChild("Toilet") ~= nil)
 
 -- finds: break a find block on the face
 s.data.Strength = 1e6

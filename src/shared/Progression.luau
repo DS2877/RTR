@@ -342,6 +342,43 @@ function Progression.bestStation(strength: number): number
 	return best
 end
 
+-- The gym's timing meter: the needle sweeps 0 -> 1 -> 0 (`speed` sweeps per second).
+function Progression.meterPos(elapsed: number, speed: number): number
+	local t = (math.max(0, elapsed) * speed) % 2
+	return if t < 1 then t else 2 - t
+end
+
+-- "perfect" (gold center), "good" (green zone) or "miss" for a needle position.
+function Progression.liftQuality(pos: number, station: number): string
+	local st = Economy.Gym[station] or Economy.Gym[1]
+	local d = math.abs(pos - 0.5)
+	if d <= st.perfect / 2 then
+		return "perfect"
+	elseif d <= st.zone / 2 then
+		return "good"
+	end
+	return "miss"
+end
+
+-- Strength for one rep: miss = 0, good = base, perfect = x LiftPerfect with a combo bonus.
+function Progression.liftReward(
+	station: number,
+	quality: string,
+	combo: number,
+	rebirths: number,
+	multiplier: number?
+): number
+	if quality == "miss" then
+		return 0
+	end
+	local base = Progression.liftGain(station, rebirths, multiplier)
+	if quality == "good" then
+		return base
+	end
+	local comboMult = 1 + math.min(combo * Economy.LiftComboStep, Economy.LiftComboMax - 1)
+	return math.floor(base * Economy.LiftPerfect * comboMult)
+end
+
 function Progression.liftGain(station: number, rebirths: number, multiplier: number?): number
 	local st = Economy.Gym[station] or Economy.Gym[1]
 	return math.floor(st.gain * Progression.rebirthMultiplier(rebirths) * (multiplier or 1))

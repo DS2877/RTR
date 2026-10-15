@@ -13,6 +13,8 @@ local Economy = require(Shared.Config.Economy)
 local Tunnel = require(Shared.Tunnel)
 local Cycle = require(Shared.Config.Cycle)
 local Build = require(script.Parent.Parent.Util.Build)
+local GymProps = require(script.Parent.Parent.Util.GymProps)
+local Format = require(Shared.Format)
 
 local WorldBuilder = {}
 
@@ -1601,7 +1603,7 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 		parent,
 		"BlackMarket",
 		"BLACK MARKET",
-		CFrame.new(x0 + 7, 0, z1 - 30) * CFrame.Angles(0, -math.pi / 2, 0),
+		CFrame.new(x0 + 7, 0, z0 + 40) * CFrame.Angles(0, -math.pi / 2, 0),
 		"FenceHole"
 	)
 
@@ -1649,113 +1651,78 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 	dumpPrompt.Name = "DumpPrompt"
 	CollectionService:AddTag(rubble, "Dump")
 
-	-- GYM: one station per Economy.Gym entry
+	-- PRISON GYM: one ridiculous thing to lift per Economy.Gym entry, in a row along the fence
 	local stations: { BasePart } = {}
+	local spacing = (x1 - x0 - 50) / math.max(1, #Economy.Gym - 1)
 	for i, st in Economy.Gym do
-		local cf = CFrame.new(x1 - 30 - (i - 1) * 16, 0, 34)
+		local cf = CFrame.new(x1 - 30 - (i - 1) * spacing, 0, z1 - 22)
 		local m = Instance.new("Model")
 		m.Name = "Gym" .. i
 		m.Parent = parent
 		local mat = Build.part(
 			m,
 			"Mat",
-			Vector3.new(10, 0.3, 10),
+			Vector3.new(12, 0.3, 12),
 			cf * CFrame.new(0, 0.15, 0),
-			Color3.fromRGB(50, 50, 60),
+			Color3.fromRGB(38, 38, 44),
 			{
 				Material = Enum.Material.Rubber,
 			}
 		)
-		local metal = Color3.fromRGB(80, 84, 92)
-		if i == 1 then
-			Build.part(
-				m,
-				"Bench",
-				Vector3.new(2, 1.6, 6),
-				cf * CFrame.new(0, 1.1, 0),
-				Color3.fromRGB(200, 40, 40)
-			)
-			Build.part(m, "Bar", Vector3.new(7, 0.3, 0.3), cf * CFrame.new(0, 3.4, -1.5), metal)
-			for _, dx in { -3.2, 3.2 } do
-				Build.part(
-					m,
-					"Plate",
-					Vector3.new(0.5, 2, 2),
-					cf * CFrame.new(dx, 3.4, -1.5),
-					Color3.fromRGB(30, 30, 30)
-				)
-				Build.part(
-					m,
-					"Upright",
-					Vector3.new(0.3, 3.4, 0.3),
-					cf * CFrame.new(dx * 0.8, 1.7, -1.5),
-					metal
-				)
-			end
-		elseif i == 2 then
-			Build.part(m, "Rack", Vector3.new(6, 2.4, 1.6), cf * CFrame.new(0, 1.2, 0), metal)
-			for k = -2, 2 do
-				Build.part(
-					m,
-					"Dumbbell",
-					Vector3.new(0.9, 0.9, 1.6),
-					cf * CFrame.new(k * 1.1, 2.9, 0),
-					Color3.fromRGB(40, 120, 220)
-				)
-			end
-		elseif i == 4 then
-			Build.part(
-				m,
-				"Tire",
-				Vector3.new(1.6, 5, 5),
-				cf * CFrame.new(0, 0.8, 0) * CFrame.Angles(0, 0, math.pi / 2),
-				Color3.fromRGB(30, 30, 32),
-				{
-					Shape = Enum.PartType.Cylinder,
-					Material = Enum.Material.Rubber,
-				}
-			)
-		elseif i == 5 then
-			for _, dx in { -3, 3 } do
-				Build.part(m, "Post", Vector3.new(0.5, 9, 0.5), cf * CFrame.new(dx, 4.5, 0), metal)
-			end
-			Build.part(m, "PullBar", Vector3.new(6.5, 0.35, 0.35), cf * CFrame.new(0, 8.6, 0), metal)
-		else
-			Build.part(m, "Barbell", Vector3.new(9, 0.4, 0.4), cf * CFrame.new(0, 1.3, 0), metal)
-			for _, dx in { -4, 4 } do
-				Build.part(
-					m,
-					"Plate",
-					Vector3.new(0.7, 2.6, 2.6),
-					cf * CFrame.new(dx, 1.3, 0),
-					Color3.fromRGB(230, 170, 30)
-				)
-			end
-		end
+		local prop = GymProps.build(st.id)
+		prop:PivotTo(cf * CFrame.new(0, 0.3, 1.5))
+		prop.Parent = m
 		local board = Build.part(
 			m,
 			"Board",
-			Vector3.new(9, 3.4, 0.4),
-			cf * CFrame.new(0, 7, 5),
-			Color3.fromRGB(35, 38, 46)
+			Vector3.new(10, 3.6, 0.4),
+			cf * CFrame.new(0, 9.5, 6.2),
+			Color3.fromRGB(44, 47, 52),
+			{
+				Material = Enum.Material.Metal,
+			}
 		)
+		for _, dx in { -4.6, 4.6 } do
+			Build.part(
+				m,
+				"Post",
+				Vector3.new(0.4, 9.5, 0.4),
+				cf * CFrame.new(dx, 4.75, 6.2),
+				Color3.fromRGB(58, 62, 68)
+			)
+		end
 		local need = if st.minStrength > 0
-			then string.format("\nneeds %d 💪", st.minStrength)
-			else "\nfree for all"
+			then string.format("needs %s 💪", Format.number(st.minStrength))
+			else "anyone"
 		Build.sign(
 			board,
 			Enum.NormalId.Front,
-			string.format("%s %s +%d%s", st.emoji, string.upper(st.name), st.gain, need),
-			Color3.fromRGB(255, 235, 120)
+			string.format(
+				"%s %s\n+%s 💪 · %s",
+				st.emoji,
+				string.upper(st.name),
+				Format.number(st.gain),
+				need
+			),
+			Color3.fromRGB(235, 205, 90)
 		)
+		local prompt = Build.prompt(mat, "Lift", st.name, Economy.GymRange)
+		prompt.Name = "LiftPrompt"
 		mat:SetAttribute("Station", i)
 		CollectionService:AddTag(mat, "GymStation")
 		table.insert(stations, mat)
 	end
-	local gymSign =
-		Build.part(parent, "GymSign", Vector3.new(0.5, 5, 20), CFrame.new(x1 - 10, 8, 34), C.orange)
-	Build.sign(gymSign, Enum.NormalId.Left, "💪 GYM", Color3.new(1, 1, 1))
-	Build.sign(gymSign, Enum.NormalId.Right, "💪 GYM", Color3.new(1, 1, 1))
+	local gymSign = Build.part(
+		parent,
+		"GymSign",
+		Vector3.new(26, 4, 0.5),
+		CFrame.new((x0 + x1) / 2, 14, z1 - 2),
+		C.orange,
+		{
+			Material = Enum.Material.Metal,
+		}
+	)
+	Build.sign(gymSign, Enum.NormalId.Front, "YARD GYM", Color3.fromRGB(235, 205, 90))
 	return rubble, stations
 end
 
