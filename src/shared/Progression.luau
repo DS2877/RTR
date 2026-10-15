@@ -143,22 +143,17 @@ end
 
 -- ===== finds =====
 
--- The find inside block (x, y, z) of a tunnel with this seed, or nil. Deterministic.
-function Progression.findAt(seed: number, x: number, y: number, z: number): string?
-	if Progression.chamberAt(x, y, z) then
-		return nil
-	end
-	local zoneIndex = Progression.zoneAt(z)
-	local zone = Zones[zoneIndex]
+-- Weighted pick from a zone's loot table with roll in 0..1 (nil if the zone has no finds).
+function Progression.pickFind(zoneIndex: number, roll01: number): string?
 	local list = Finds.ByZone[zoneIndex]
-	if not list or Progression.hash01(seed, x, y, z, 1) >= zone.oreChance then
+	if not list then
 		return nil
 	end
 	local total = 0
 	for _, f in list do
 		total += f.weight
 	end
-	local roll = Progression.hash01(seed, x, y, z, 2) * total
+	local roll = roll01 * total
 	for _, f in list do
 		roll -= f.weight
 		if roll < 0 then
@@ -166,6 +161,42 @@ function Progression.findAt(seed: number, x: number, y: number, z: number): stri
 		end
 	end
 	return list[#list].id
+end
+
+-- The find inside block (x, y, z) of a tunnel with this seed, or nil. Deterministic.
+function Progression.findAt(seed: number, x: number, y: number, z: number): string?
+	if Progression.chamberAt(x, y, z) then
+		return nil
+	end
+	local zoneIndex = Progression.zoneAt(z)
+	local zone = Zones[zoneIndex]
+	if not Finds.ByZone[zoneIndex] or Progression.hash01(seed, x, y, z, 1) >= zone.oreChance then
+		return nil
+	end
+	return Progression.pickFind(zoneIndex, Progression.hash01(seed, x, y, z, 2))
+end
+
+-- Zones whose whole find set is in `found` (the collection album).
+function Progression.completedSets(found: { [string]: boolean }): { number }
+	local out = {}
+	for zone, list in Finds.ByZone do
+		local all = #list > 0
+		for _, f in list do
+			if not found[f.id] then
+				all = false
+			end
+		end
+		if all then
+			table.insert(out, zone)
+		end
+	end
+	table.sort(out)
+	return out
+end
+
+-- Permanent Noodles multiplier from completed collection sets.
+function Progression.collectionMultiplier(found: { [string]: boolean }): number
+	return 1 + #Progression.completedSets(found) * Economy.CollectionBonus
 end
 
 function Progression.findValue(id: string): number

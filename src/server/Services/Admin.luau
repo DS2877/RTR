@@ -1,7 +1,7 @@
 --!strict
 -- Admin commands for phone testing. The ADMIN button in the HUD (admins only) sends AdminCmd;
 -- the same commands work in chat with "!": !noodles 1e6  !strength 500  !zone 3  !resettunnel
--- !stress  !reset  (!day !night !inspect !event arrive with M2-M4).
+-- !stress  !reset  !day  !night  (!inspect !event arrive with M4).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,6 +21,7 @@ local Data = require(script.Parent.Data)
 local Stats = require(script.Parent.Stats)
 local Dig = require(script.Parent.Dig)
 local Loot = require(script.Parent.Loot)
+local DayNight = require(script.Parent.DayNight)
 
 local Admin = {}
 
@@ -95,8 +96,10 @@ function Admin.run(player: Player, cmd: string, arg: number?): boolean
 			player:Kick("Data reset. Rejoin!")
 		end
 		return true
-	elseif cmd == "day" or cmd == "night" or cmd == "inspect" or cmd == "event" then
-		Net.notice(player, "Comes with a later milestone (M2-M4)", "info")
+	elseif cmd == "day" or cmd == "night" then
+		DayNight.force(cmd)
+	elseif cmd == "inspect" or cmd == "event" then
+		Net.notice(player, "Comes with M4 (guards and events)", "info")
 		return true
 	else
 		Net.notice(player, "Unknown admin command: " .. cmd, "bad")

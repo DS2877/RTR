@@ -39,6 +39,7 @@ function Cells.release(player: Player)
 			local cell = world.cells[i]
 			cell.model:SetAttribute("Owner", nil)
 			cell.sign.Text = "CELL " .. i .. "\nFREE"
+			cell.shelf:ClearAllChildren()
 		end
 	end
 end

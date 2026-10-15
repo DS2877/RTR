@@ -20,7 +20,8 @@ local Loot = {}
 local world: any = nil
 
 local function noodleMult(s: State.PlayerState): number
-	return if s.passes.DoubleNoodles then Economy.PassEffects.DoubleNoodles else 1
+	local pass = if s.passes.DoubleNoodles then Economy.PassEffects.DoubleNoodles else 1
+	return pass * Progression.collectionMultiplier(s.data.Found)
 end
 
 function Loot.addNoodles(player: Player, amount: number)

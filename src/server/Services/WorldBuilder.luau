@@ -21,6 +21,11 @@ export type CellRecord = {
 	spawn: CFrame,
 	sign: TextLabel,
 	model: Model,
+	door: Model,
+	doorOpen: CFrame,
+	doorClosed: CFrame,
+	doorBlock: BasePart,
+	shelf: Frame, -- collection slots (Services/Collection fills it)
 }
 
 export type WorldRecord = {
@@ -197,7 +202,7 @@ local function buildCell(parent: Instance, index: number): CellRecord
 		C.wallLow,
 		{ CanCollide = false }
 	)
-	-- the barred door, slid open (it locks at night from M2)
+	-- the barred door: slid open by day, across the doorway at night (DayNight moves it)
 	local door = Instance.new("Model")
 	door.Name = "Door"
 	door.Parent = model
@@ -222,6 +227,17 @@ local function buildCell(parent: Instance, index: number): CellRecord
 			}
 		)
 	end
+	local doorOpen = CFrame.new(cx - doorHalf - 3.5, doorH / 2, doorZ)
+	door.WorldPivot = doorOpen
+	local doorClosed = doorOpen + Vector3.new(doorHalf + 3.5, 0, 0)
+	local doorBlock = Build.part(
+		model,
+		"DoorBlock",
+		Vector3.new(doorHalf * 2, doorH, 1),
+		CFrame.new(cx, doorH / 2, doorZ),
+		C.bars,
+		{ Transparency = 1, CanCollide = false }
+	)
 	-- name + depth sign above the door
 	local signPart = Build.part(
 		model,
@@ -326,7 +342,39 @@ local function buildCell(parent: Instance, index: number): CellRecord
 	local spawnPos = Vector3.new(cx, 3, (HALF_CORR + 13) * s)
 	local spawn = CFrame.lookAt(spawnPos, spawnPos + Vector3.new(0, 0, s))
 	model:SetAttribute("Cell", index)
-	return { index = index, frame = frame, spawn = spawn, sign = sign, model = model }
+	-- collection shelf above the bed: one slot per find, silhouettes for the missing ones
+	local shelfPart = Build.part(
+		model,
+		"Shelf",
+		Vector3.new(0.4, 7, 13),
+		inCell(-halfW + 0.2, 10.5, 9),
+		Color3.fromRGB(110, 78, 50),
+		{ Material = Enum.Material.WoodPlanks }
+	)
+	local shelfGui = Instance.new("SurfaceGui")
+	shelfGui.Name = "Collection"
+	shelfGui.Face = Enum.NormalId.Right
+	shelfGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	shelfGui.PixelsPerStud = 24
+	shelfGui.LightInfluence = 0.3
+	shelfGui.Parent = shelfPart
+	local shelf = Instance.new("Frame")
+	shelf.Name = "Slots"
+	shelf.BackgroundTransparency = 1
+	shelf.Size = UDim2.fromScale(1, 1)
+	shelf.Parent = shelfGui
+	return {
+		index = index,
+		frame = frame,
+		spawn = spawn,
+		sign = sign,
+		model = model,
+		door = door,
+		doorOpen = doorOpen,
+		doorClosed = doorClosed,
+		doorBlock = doorBlock,
+		shelf = shelf,
+	}
 end
 
 local function buildCorridor(parent: Instance)
@@ -438,7 +486,14 @@ local function buildCommonRoom(parent: Instance): { [string]: BasePart }
 	Build.box(parent, "CommonCeiling", Vector3.new(x0, h, z0), Vector3.new(x1, h + 2, z1), C.ceiling)
 	-- walls (+X wall has the corridor opening, -X wall the door to the Yard)
 	Build.box(parent, "Wall", Vector3.new(x0, 0, z0 - 4), Vector3.new(x1, h, z0), C.wall)
-	Build.box(parent, "Wall", Vector3.new(x0, 0, z1), Vector3.new(x1, h, z1 + 4), C.wall)
+	-- south wall: door to the Mess Hall in the middle
+	local mess = 6
+	Build.box(parent, "Wall", Vector3.new(x0, 0, z1), Vector3.new(cr.x - mess, h, z1 + 4), C.wall)
+	Build.box(parent, "Wall", Vector3.new(cr.x + mess, 0, z1), Vector3.new(x1, h, z1 + 4), C.wall)
+	Build.box(parent, "Wall", Vector3.new(cr.x - mess, 13, z1), Vector3.new(cr.x + mess, h, z1 + 4), C.wall)
+	local messSign =
+		Build.part(parent, "MessSign", Vector3.new(14, 3, 0.4), CFrame.new(cr.x, 15, z1 - 0.3), C.orange)
+	Build.sign(messSign, Enum.NormalId.Front, "🍲 MESS HALL", Color3.new(1, 1, 1))
 	Build.box(parent, "Wall", Vector3.new(x1 - 2, 0, z0), Vector3.new(x1 + 2, h, -HALF_CORR), C.wall)
 	Build.box(parent, "Wall", Vector3.new(x1 - 2, 0, HALF_CORR), Vector3.new(x1 + 2, h, z1), C.wall)
 	Build.box(parent, "Wall", Vector3.new(x1 - 2, H, -HALF_CORR), Vector3.new(x1 + 2, h, HALF_CORR), C.wall)
@@ -551,6 +606,132 @@ local function buildCommonRoom(parent: Instance): { [string]: BasePart }
 end
 
 -- ===== Yard =====
+
+-- ===== Mess Hall (south of the Common Room; buffs for the night arrive with M4) =====
+
+local function buildMessHall(parent: Instance)
+	local cr = World.CommonRoom
+	-- (the +X side stays 4 studs clear of the cell row's bedrock wall: no z-fighting)
+	local x0, x1 = cr.x - cr.sx / 2, cr.x + cr.sx / 2 - 4
+	local z0 = cr.z + cr.sz / 2 + 4
+	local z1 = z0 + 56
+	local h = 22
+	Build.box(
+		parent,
+		"MessFloor",
+		Vector3.new(x0, -4, z0),
+		Vector3.new(x1, 0, z1),
+		Color3.fromRGB(190, 190, 180),
+		{
+			Material = Enum.Material.Marble,
+		}
+	)
+	Build.box(parent, "MessCeiling", Vector3.new(x0, h, z0), Vector3.new(x1, h + 2, z1), C.ceiling)
+	Build.box(parent, "Wall", Vector3.new(x0 - 4, 0, z0), Vector3.new(x0, h, z1 + 4), C.wall)
+	Build.box(parent, "Wall", Vector3.new(x1, 0, z0), Vector3.new(x1 + 4, h, z1 + 4), C.wall)
+	Build.box(parent, "Wall", Vector3.new(x0, 0, z1), Vector3.new(x1, h, z1 + 4), C.wall)
+	Build.box(
+		parent,
+		"Paint",
+		Vector3.new(x0, 0, z1 - 0.1),
+		Vector3.new(x1, 6, z1),
+		C.wallLow,
+		{ CanCollide = false }
+	)
+	-- serving counter along the back wall with a cook
+	local counterCf = CFrame.new(cr.x, 0, z1 - 8)
+	Build.part(
+		parent,
+		"Serving",
+		Vector3.new(40, 3.4, 3),
+		counterCf * CFrame.new(0, 1.7, 0),
+		Color3.fromRGB(170, 175, 180),
+		{
+			Material = Enum.Material.Metal,
+		}
+	)
+	for i = -2, 2 do
+		Build.part(
+			parent,
+			"Pot",
+			Vector3.new(2.4, 1.6, 2.4),
+			counterCf * CFrame.new(i * 7, 4.2, 0),
+			Color3.fromRGB(90, 90, 95),
+			{
+				Material = Enum.Material.Metal,
+				Shape = Enum.PartType.Cylinder,
+				Orientation = Vector3.new(0, 0, 90),
+			}
+		)
+	end
+	Build.npc(
+		parent,
+		"Cook",
+		counterCf * CFrame.new(0, 0, 3.5),
+		Color3.fromRGB(245, 245, 245),
+		Color3.fromRGB(250, 250, 250)
+	)
+	local board = Build.part(
+		parent,
+		"Menu",
+		Vector3.new(24, 6, 0.5),
+		counterCf * CFrame.new(0, 11, 5.5),
+		Color3.fromRGB(35, 38, 46)
+	)
+	Build.sign(
+		board,
+		Enum.NormalId.Front,
+		"TODAY: NOODLES 🍜\n(buffs soon!)",
+		Color3.fromRGB(255, 235, 120)
+	)
+	-- long tables with benches
+	for row = 0, 2 do
+		for col = 0, 1 do
+			local tx = cr.x - 24 + col * 48
+			local tz = z0 + 10 + row * 12
+			Build.part(
+				parent,
+				"Table",
+				Vector3.new(30, 0.6, 4.5),
+				CFrame.new(tx, 3, tz),
+				Color3.fromRGB(150, 110, 70),
+				{
+					Material = Enum.Material.WoodPlanks,
+				}
+			)
+			for _, dx in { -12, 0, 12 } do
+				Build.part(parent, "Leg", Vector3.new(0.8, 2.7, 0.8), CFrame.new(tx + dx, 1.35, tz), C.bars)
+			end
+			for _, dz in { -3.6, 3.6 } do
+				Build.part(
+					parent,
+					"Bench",
+					Vector3.new(30, 0.5, 1.6),
+					CFrame.new(tx, 1.8, tz + dz),
+					Color3.fromRGB(120, 90, 60)
+				)
+			end
+			Build.part(
+				parent,
+				"Tray",
+				Vector3.new(2, 0.2, 1.4),
+				CFrame.new(tx - 6, 3.4, tz),
+				Color3.fromRGB(200, 120, 60)
+			)
+		end
+	end
+	for i = 0, 2 do
+		local lamp = Build.part(
+			parent,
+			"Lamp",
+			Vector3.new(6, 0.5, 6),
+			CFrame.new(cr.x - 36 + i * 36, h - 0.25, z0 + 26),
+			Color3.fromRGB(255, 248, 225),
+			{ Material = Enum.Material.Neon }
+		)
+		Build.light(lamp, Color3.fromRGB(255, 238, 205), 45, 1)
+	end
+end
 
 local function buildYard(parent: Instance): (BasePart, { BasePart })
 	local y = World.Yard
@@ -792,6 +973,23 @@ local function buildYard(parent: Instance): (BasePart, { BasePart })
 					Color3.fromRGB(40, 120, 220)
 				)
 			end
+		elseif i == 4 then
+			Build.part(
+				m,
+				"Tire",
+				Vector3.new(1.6, 5, 5),
+				cf * CFrame.new(0, 0.8, 0) * CFrame.Angles(0, 0, math.pi / 2),
+				Color3.fromRGB(30, 30, 32),
+				{
+					Shape = Enum.PartType.Cylinder,
+					Material = Enum.Material.Rubber,
+				}
+			)
+		elseif i == 5 then
+			for _, dx in { -3, 3 } do
+				Build.part(m, "Post", Vector3.new(0.5, 9, 0.5), cf * CFrame.new(dx, 4.5, 0), metal)
+			end
+			Build.part(m, "PullBar", Vector3.new(6.5, 0.35, 0.35), cf * CFrame.new(0, 8.6, 0), metal)
 		else
 			Build.part(m, "Barbell", Vector3.new(9, 0.4, 0.4), cf * CFrame.new(0, 1.3, 0), metal)
 			for _, dx in { -4, 4 } do
@@ -876,6 +1074,7 @@ function WorldBuilder.build(): WorldRecord
 	common.Name = "CommonRoom"
 	common.Parent = root
 	local shops = buildCommonRoom(common)
+	buildMessHall(common)
 	local yard = Instance.new("Folder")
 	yard.Name = "Yard"
 	yard.Parent = root

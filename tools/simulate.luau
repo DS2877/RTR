@@ -3,7 +3,7 @@
 --   lune run tools/simulate          (zones open right now)
 --   lune run tools/simulate all      (pretend every zone and upgrade is open: long-term pacing)
 -- Model: dig a 3x3 tunnel at the attack rate, vacuum (unless Auto-Vacuum), walk to the Yard when the
--- backpack is full, dump, lift at the gym for a bit, sell finds, buy the cheapest useful upgrade.
+-- backpack is full, dump, lift at the gym for a bit, sell finds, buy the most wanted upgrade.
 local process = require("@lune/process")
 local Progression = require("../src/shared/Progression")
 local Economy = require("../src/shared/Config/Economy")
@@ -17,7 +17,7 @@ local ALL = process.args[1] == "all"
 local CROSS = 9 -- blocks per tunnel layer (3 wide x 3 high: room to walk)
 local WALK = Economy.WalkSpeed -- studs per second
 local BASE_TRIP = 170 -- studs from an average cell to the Yard dump via the Common Room
-local GYM_PER_TRIP = 10 -- seconds a player lifts on each trip
+local GYM_SHARE = 0.15 -- on each trip a player lifts for this share of the time they just dug
 local SHOP_TIME = 8 -- seconds per trip at the counters
 local LIMIT = if ALL then 60 * 60 * 24 * 30 else 60 * 60 * 6
 
@@ -49,8 +49,25 @@ local function run(passes: boolean)
 	local depth, layerLeft = 0, CROSS
 	local bag, bagValue, findValue, findCount = 0, 0, 0, 0
 	local reached: { [number]: number } = { [1] = 0 }
+	local info: { [number]: string } = { [1] = "" }
 	local buys: { string } = {}
 	local firstBuy: number? = nil
+	local lastTrip = 0
+
+	-- the upgrade this player is saving for: (track, cost); tools and brushes count double
+	local function wanted(): (string?, number)
+		local bestTrack, bestCost, bestScore = nil :: string?, math.huge, math.huge
+		for track, level in lv do
+			local nxt = (Upgrades :: any)[track][level + 1]
+			local score = if nxt
+				then nxt.cost * (if track == "Tools" or track == "Brushes" then 0.5 else 1)
+				else math.huge
+			if nxt and level + 1 <= open(track) and score < bestScore then
+				bestTrack, bestCost, bestScore = track, nxt.cost, score
+			end
+		end
+		return bestTrack, bestCost
+	end
 
 	while t < LIMIT and depth < maxDepth do
 		local zone = Progression.zoneAt(depth)
@@ -81,29 +98,34 @@ local function run(passes: boolean)
 			local z = Progression.zoneAt(depth)
 			if not reached[z] and depth < maxDepth then
 				reached[z] = t
+				local p = Progression.punchPower(strength, lv.Tools, 0)
+				info[z] = string.format(
+					"power %s (%s x %s), %d hits/block, %s",
+					Format.number(p),
+					Format.number(strength),
+					Upgrades.Tools[lv.Tools].name,
+					Progression.hitsToBreak(Zones[z].hp, p),
+					Upgrades.Brushes[lv.Brushes].name
+				)
 			end
 		end
 
-		if bag >= cap then
+		local _, goal = wanted()
+		if bag >= cap or (bag >= 10 and noodles + (bagValue + findValue) * noodleMult >= goal) then
 			-- trip: out of the tunnel, Yard (dump + gym), Common Room (sell + shop), back
 			-- (the very first trip goes straight to the shop: nobody lifts before their first upgrade)
-			local gym = if firstBuy then GYM_PER_TRIP else 0
+			local gym = if firstBuy then (t - lastTrip) * GYM_SHARE else 0
 			t += (depth * World.BlockSize * 2 + BASE_TRIP * 2) / WALK + gym + SHOP_TIME
+			lastTrip = t
 			noodles += bagValue * noodleMult + findValue * noodleMult
 			bag, bagValue, findValue, findCount = 0, 0, 0, 0
 			local station = Progression.bestStation(strength)
 			strength += Progression.liftGain(station, 0, strengthMult) * math.floor(
 				gym / Economy.LiftInterval
 			)
-			-- buy the cheapest open upgrade, as long as we can afford one
+			-- buy the most wanted open upgrade, saving up for it
 			while true do
-				local bestTrack, bestCost = nil :: string?, math.huge
-				for track, level in lv do
-					local cost = (Upgrades :: any)[track][level + 1]
-					if cost and level + 1 <= open(track) and cost.cost < bestCost then
-						bestTrack, bestCost = track, cost.cost
-					end
-				end
+				local bestTrack, bestCost = wanted()
 				if not bestTrack or bestCost > noodles then
 					break
 				end
@@ -132,7 +154,13 @@ local function run(passes: boolean)
 	for z = 1, #Zones do
 		if reached[z] then
 			print(
-				string.format("  zone %2d %-20s reached at %s", z, Zones[z].name, Format.duration(reached[z]))
+				string.format(
+					"  zone %2d %-20s at %-8s %s",
+					z,
+					Zones[z].name,
+					Format.duration(reached[z]),
+					info[z] or ""
+				)
 			)
 		end
 	end

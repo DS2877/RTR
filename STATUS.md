@@ -1,6 +1,6 @@
 # STATUS – Dig Out! (fängelseflykt-grävspel)
 
-Senast uppdaterad: 2026-10-15 · Milstolpe: **M1 SPELBAR**
+Senast uppdaterad: 2026-10-15 · Milstolpe: **M2 FÄNGELSET** (M1 publicerad)
 
 Det gamla spelet (Rob the Rich!) är raderat från koden och arkiverat i git-taggen
 `archive/rob-the-rich` (sista commit `374cd1d`). Ny spelardata sparas i `DigOut_v1`, så gammal
@@ -54,14 +54,35 @@ data blandas aldrig in.
   (FPS, antal voxel-delar, smulor), återställ all data. Samma kommandon i chatten: `!noodles 1e6`,
   `!strength 500`, `!zone 3`, `!resettunnel`, `!stress`, `!fill`, `!reset`.
 
+### M2 – fängelset
+- **Dag/natt** för hela servern: DAG 3 min, NATT 5 min (Config/Cycle). Stor klocka uppe till höger
+  med nedräkning. 10 s före natten: siren + "LIGHTS OUT!"-nedräkning i mitten av skärmen. Vid
+  natt: alla som inte är i sin egen cell/tunnel förs tillbaka till cellen, gallerdörrarna glider
+  igen och låses. Himlen och ljuset tonar mellan dag och natt (solnedgång).
+- **Nattgrävning ger +25 % fynd** (extra överraskningsfynd i vanliga block).
+- **Zon 1–6 öppna:** Plaster, Brick, Concrete, Reinforced Concrete, Clay & Pipes, Sewer, med
+  kamrar vid varje zongräns (Rebar Vault, Pipe Junction, Old Sewer Canal …).
+- 27 fynd totalt, nu även **Epic** (zon 4–6). Fler verktyg (Jackhammer, Drill), penseln Big Cross,
+  större ryggsäckar, fler fyndplatser, större dammsugare.
+- **Samlingshylla** i cellen (ovanför sängen): varje zon har en rad, saknade fynd visas som "?".
+  **Komplett zon-set = +10 % Noodles för alltid** + meddelande till hela servern.
+- **Mess Hall** söder om Common Room (långbord, serveringsdisk, kock, meny). Buffar kommer i M4.
+- **Gym:** två nya stationer – Tire Flip (+40, kräver 4 000 💪) och Pull-up Bar (+150, kräver 25 000 💪).
+- Admin: ☀️ Day / 🌙 Night tvingar fram fas, Zone 4 / Zone 6.
+
 ### Balans (`lune run tools/simulate`)
 | | Gratis-spelare | Med alla pass |
 |---|---|---|
-| Första uppgraderingen | 51 s | 1:04 |
-| Zon 2 (Brick) | 4:18 | 3:04 |
-| Zon 3 (Concrete) | 12:22 | 11:16 |
+| Första uppgraderingen | 38 s | 34 s |
+| Zon 2 (Brick) | 4:11 | 3:51 |
+| Zon 3 (Concrete) | 9:41 | 8:25 |
+| Zon 4 (Reinforced) | 14:47 | 12:08 |
+| Zon 5 (Clay & Pipes) | 23:35 | 19:20 |
+| Zon 6 (Sewer) | 42:52 | 48:46 |
 
-Mål: första uppgradering < 60 s ✅, zon 2 ≈ 5 min ✅, zon 3 ≈ 15 min ✅.
+Mål: första uppgradering < 60 s ✅, zon 2 ≈ 5 min ✅, zon 3 ≈ 15 min (nu ~10 min, lite snabbt).
+Siffrorna är en första omgång – simulatorn är förenklad (passen ger t.ex. för lite effekt i den).
+Antal slag per block när man når en ny zon: 7–20 (zon 5 ~70 med Pickaxe → köp Jackhammer).
 
 ### Kontroller
 - CI: StyLua, Selene, Lune-tester, balanssimulering, Rojo-bygge och **smoke-test i den riktiga
@@ -82,14 +103,15 @@ Mål: första uppgradering < 60 s ✅, zon 2 ≈ 5 min ✅, zon 3 ≈ 15 min ✅
 5. Gå tillbaka in i Common Room: **Workshop** – köp Spoon (15 🍜). Slå igen: färre slag per block.
 6. Gå till **Gym** i Yard och tryck LIFT några gånger – styrkan går upp.
 7. Leta efter mörka block med färgad ådra (fynd) och sälj dem hos **The Fence**.
-8. Gräv 25 block djupt → kammaren Old Boiler Room + "BRICK"-banner. (Snabbt: ADMIN → Zone 2 och slå
+8. Vänta på natten (eller ADMIN → 🌙 Night): siren, nedräkning, dörren låses, du flyttas in
+   i cellen om du var ute. ADMIN → ☀️ Day öppnar igen.
+9. Titta på hyllan ovanför sängen: hittade fynd syns, saknade är "?".
+10. Gräv 25 block djupt → kammaren Old Boiler Room + "BRICK"-banner. (Snabbt: ADMIN → Zone 2 och slå
    sönder blocket framför dig.)
-9. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
-10. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
+11. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
+12. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
 
 ## ⏳ Saknas (kommande milstolpar)
-- **M2 Fängelset:** dag/natt med dörrar som låses, siren + "LIGHTS OUT!", teleport in i cellen,
-  zon 4–6, samlingshylla i cellen, Mess Hall.
 - **M3 PvP:** Yard Brawl, Stash + cellräder + lås/fälla/larm, Top Dog-kedja, topplistor.
 - **M4 Djup:** zon 7–10, alla 9 rariteter, vakt-inspektioner, snitch, skattjakt, events, flykt/rebirth,
   dekorationer, Laundry, Black Market, dagliga belöningar, Cellmate offline, pass/produkter.
@@ -100,8 +122,9 @@ Mål: första uppgradering < 60 s ✅, zon 2 ≈ 5 min ✅, zon 3 ≈ 15 min ✅
 
 ## ☑️ Manuell checklista för Philip (Creator Hub)
 Ops-workflowen försöker göra detta automatiskt – se `tools/ops/ops-log.md` för resultatet:
-- [ ] Gamla pass/produkter (Rob the Rich) står som "off sale".
-- [ ] Upplevelsens namn: **Dig Out! Prison Escape** och ny beskrivning.
-- [ ] Max Players = 12.
+- [x] Gamla pass/produkter (Rob the Rich, 7 pass + 11 produkter) satta "off sale" (HTTP 204, 15 okt).
+- [x] Upplevelsens namn: **Dig Out! Prison Escape** + ny beskrivning (plats och universum, HTTP 200).
+- [x] Max Players = 12.
+- [x] Arkivtaggen `archive/rob-the-rich` skapad.
 - [ ] **Ny ikon och thumbnails** (kan inte göras via API:t – ladda upp manuellt).
 - [ ] Genre/kategori och åldersenkät (Experience Questionnaire) uppdaterade för det nya spelet.

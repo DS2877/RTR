@@ -56,6 +56,8 @@ local Loot = req(Services, "Loot")
 local Shop = req(Services, "Shop")
 local Gym = req(Services, "Gym")
 local Admin = req(Services, "Admin")
+local DayNight = req(Services, "DayNight")
+local Collection = req(Services, "Collection")
 
 local sent: { { name: string, args: { any } } } = {}
 Net.sink = function(_player: any, name: string, args: { any })
@@ -93,7 +95,11 @@ step("Gym.start", function()
 	Gym.start(world)
 end)
 step("Admin.start", Admin.start)
+step("DayNight.start", function()
+	DayNight.start(world)
+end)
 Dig.onPiles = Loot.sendPiles
+Dig.onFind = Collection.onFound
 
 -- ===== world checks =====
 check("12 cells", #world.cells == World.CellCount, #world.cells)
@@ -249,6 +255,44 @@ local box = Progression.chamberBox(2)
 check("chamber opened", box ~= nil and Voxel.isDug(s.grid, box.x0 + 1, 1, box.z0 + 1))
 check("zone 2 reached", s.data.Zone == 2 and count("Zone") >= 1, s.data.Zone)
 check("chamber event", count("Chamber") >= 1)
+
+-- collection shelf
+step("collection render", function()
+	Collection.render(fake)
+end)
+check(
+	"collection shelf filled",
+	#world.cells[1].shelf:GetChildren() > Economy.OpenZones,
+	#world.cells[1].shelf:GetChildren()
+)
+local all: { [string]: boolean } = {}
+for _, f in req(Config, "Finds").ByZone[1] do
+	all[f.id] = true
+end
+check("a full zone set gives a bonus", Progression.collectionMultiplier(all) > 1)
+
+-- day / night
+check("starts by day", ReplicatedStorage:GetAttribute("Phase") == "Day")
+check("doors open by day", world.cells[1].doorBlock.CanCollide == false)
+DayNight.force("night")
+task.wait(0.6)
+check(
+	"night phase",
+	ReplicatedStorage:GetAttribute("Phase") == "Night",
+	ReplicatedStorage:GetAttribute("Phase")
+)
+check("doors locked at night", world.cells[1].doorBlock.CanCollide == true)
+check("night find bonus", Dig.nightBonus > 0)
+check("cell counts as home", DayNight.inOwnCell(s, world.cells[1].spawn.Position))
+check("tunnel counts as home", DayNight.inOwnCell(s, Tunnel.blockCenter(frame, 9, 1, 30)))
+check("corridor is not home", not DayNight.inOwnCell(s, Vector3.new(0, 3, 0)))
+DayNight.force("day")
+task.wait(0.6)
+check(
+	"day again",
+	ReplicatedStorage:GetAttribute("Phase") == "Day" and world.cells[1].doorBlock.CanCollide == false
+)
+check("mess hall built", workspace.Prison.CommonRoom:FindFirstChild("MessFloor") ~= nil)
 
 -- locked zones can't be dug
 local locked = Progression.diggableDepth()

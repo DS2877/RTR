@@ -5,7 +5,7 @@ local Economy = {
 	DataStoreName = "DigOut_v1", -- never reuse the Rob the Rich store
 	ProfileVersion = 1,
 
-	OpenZones = 3, -- zones that can be dug right now (raised with the milestones)
+	OpenZones = 6, -- zones that can be dug right now (raised with the milestones)
 
 	StartingNoodles = 0,
 	StartingStrength = 10,
@@ -18,6 +18,8 @@ local Economy = {
 		{ name = "Bench", emoji = "🏋️", gain = 1, minStrength = 0 },
 		{ name = "Dumbbells", emoji = "💪", gain = 3, minStrength = 100 },
 		{ name = "Barbell", emoji = "🏋️", gain = 10, minStrength = 600 },
+		{ name = "Tire Flip", emoji = "🛞", gain = 40, minStrength = 4000 },
+		{ name = "Pull-up Bar", emoji = "🤸", gain = 150, minStrength = 25000 },
 	},
 
 	-- what the game passes do (M4; the simulator already uses them)
@@ -26,6 +28,9 @@ local Economy = {
 		DoubleStrength = 2, -- gym gains
 		HugeBackpack = 2, -- rubble capacity
 	},
+
+	-- every completed zone set in the collection: +10% Noodles from dumping and selling, forever
+	CollectionBonus = 0.1,
 
 	DumpRange = 14, -- studs from the Yard dump
 	ShopRange = 14, -- studs from a shop counter

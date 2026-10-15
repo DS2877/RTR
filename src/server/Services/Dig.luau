@@ -25,6 +25,10 @@ local W, H, D, CS = World.TunnelWidth, World.TunnelHeight, World.TunnelDepth, Wo
 
 -- hooks other services plug into (set in init) so Dig doesn't require them
 Dig.onPiles = nil :: ((player: Player) -> ())?
+Dig.onFind = nil :: ((player: Player, id: string, firstTime: boolean) -> ())?
+
+-- night digging: share of extra finds hidden in plain blocks (DayNight sets it)
+Dig.nightBonus = 0
 
 -- multiplies punch power for everyone (events like BLACKOUT set it, M4)
 Dig.globalBoost = 1
@@ -281,11 +285,21 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 				rubble += 1
 				value += Zones[Progression.zoneAt(tz)].rubble
 				deepest = math.max(deepest, tz)
+				if not find and Dig.nightBonus > 0 and #data.Finds < slots then
+					local zone = Progression.zoneAt(tz)
+					if math.random() < Zones[zone].oreChance * Dig.nightBonus then
+						find = Progression.pickFind(zone, math.random())
+					end
+				end
 				if find then
+					local firstTime = not data.Found[find]
 					table.insert(data.Finds, find)
 					data.Found[find] = true
 					data.Stats.FindsDug += 1
 					Net.fire(player, Remotes.Names.Found, find)
+					if Dig.onFind then
+						Dig.onFind(player, find, firstTime)
+					end
 				end
 			else
 				s.damage[idx] = hp

@@ -6,6 +6,7 @@ local Finds = require("../src/shared/Config/Finds")
 local Rarity = require("../src/shared/Config/Rarity")
 local Upgrades = require("../src/shared/Config/Upgrades")
 local World = require("../src/shared/Config/World")
+local Economy = require("../src/shared/Config/Economy")
 
 local function check(cond: boolean, msg: string)
 	if not cond then
@@ -124,5 +125,18 @@ return function()
 	end
 	check(Progression.nextCost("Tools", 1) == Upgrades.Tools[2].cost, "next cost")
 	check(Progression.nextCost("Tools", Upgrades.Open.Tools) == nil, "closed levels can't be bought")
-	check(Progression.bestStation(0) == 1 and Progression.bestStation(1e9) == 3, "gym stations")
+	-- collection sets
+	check(#Progression.completedSets({}) == 0 and Progression.collectionMultiplier({}) == 1, "no sets")
+	local z1: { [string]: boolean } = {}
+	for _, f in Finds.ByZone[1] do
+		z1[f.id] = true
+	end
+	check(#Progression.completedSets(z1) == 1, "zone 1 set complete")
+	check(math.abs(Progression.collectionMultiplier(z1) - (1 + Economy.CollectionBonus)) < 1e-9, "set bonus")
+	check(Progression.pickFind(1, 0) == Finds.ByZone[1][1].id, "pick first")
+	check(Progression.pickFind(1, 0.9999) == Finds.ByZone[1][#Finds.ByZone[1]].id, "pick last")
+	for zone = 1, Economy.OpenZones do
+		check(Finds.ByZone[zone] ~= nil, "open zone " .. zone .. " has finds")
+	end
+	check(Progression.bestStation(0) == 1 and Progression.bestStation(1e9) == #Economy.Gym, "gym stations")
 end

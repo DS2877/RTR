@@ -16,6 +16,7 @@ local Assets = {
 		Purchase = "rbxassetid://9117244567", -- Pay Phone Dropping Dimes
 		Vacuum = "rbxassetid://9126229255", -- Whoosh By Fast Airy
 		Full = "rbxassetid://9113087543", -- Alarm Buzzer 2
+		Siren = "rbxassetid://9113087543", -- Alarm Buzzer 2 (LIGHTS OUT)
 		Zone = "rbxassetid://1836473422", -- Victory Fanfare Sting (APM)
 		Announce = "rbxassetid://1841390412", -- Bouncy Bouncy Sting 1 (APM)
 		Rare = "rbxassetid://1841173427", -- Magical (c) (APM)

@@ -272,17 +272,20 @@ local function buildAdmin(parent: Instance)
 	})
 	local _ = grid
 	local perfOn = false
-	local cmds = {
+	local cmds: { { any } } = {
 		{ "+1M 🍜", "noodles", 1e6 },
 		{ "+1B 🍜", "noodles", 1e9 },
 		{ "💪 1K", "strength", 1000 },
 		{ "💪 100K", "strength", 1e5 },
 		{ "Zone 2", "zone", 2 },
 		{ "Zone 3", "zone", 3 },
+		{ "Zone 4", "zone", 4 },
+		{ "Zone 6", "zone", 6 },
 		{ "Fill bag", "fill", nil },
 		{ "Stress dig", "stress", nil },
 		{ "Reset tunnel", "resettunnel", nil },
-		{ "Day/Night", "day", nil },
+		{ "☀️ Day", "day", nil },
+		{ "🌙 Night", "night", nil },
 		{ "Perf", "perf", nil },
 		{ "RESET DATA", "reset", nil },
 	}
@@ -565,7 +568,7 @@ function HUD.start()
 	local adminBtn = UI.new("TextButton", {
 		Name = "Admin",
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -8, 0, 8),
+		Position = UDim2.new(1, -8, 0, 60),
 		Size = UDim2.fromOffset(84, 40),
 		BackgroundColor3 = Color3.fromRGB(255, 90, 90),
 		Text = "ADMIN",

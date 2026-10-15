@@ -20,6 +20,8 @@ local Loot = require(Services.Loot)
 local Shop = require(Services.Shop)
 local Gym = require(Services.Gym)
 local Admin = require(Services.Admin)
+local DayNight = require(Services.DayNight)
+local Collection = require(Services.Collection)
 
 Remotes.setup()
 
@@ -38,7 +40,9 @@ Loot.start(world)
 Shop.start(world)
 Gym.start(world)
 Admin.start()
+DayNight.start(world)
 Dig.onPiles = Loot.sendPiles
+Dig.onFind = Collection.onFound
 
 local function onCharacter(player: Player, character: Model)
 	local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
@@ -76,6 +80,7 @@ local function onPlayerAdded(player: Player)
 	Stats.sync(player)
 	Loot.sendFinds(player)
 	Loot.sendPiles(player)
+	Collection.render(player)
 	player:SetAttribute("Loaded", true)
 	player.CharacterAdded:Connect(function(character)
 		onCharacter(player, character)
