@@ -63,6 +63,11 @@ data blandas aldrig in.
 
 Mål: första uppgradering < 60 s ✅, zon 2 ≈ 5 min ✅, zon 3 ≈ 15 min ✅.
 
+### Kontroller
+- CI: StyLua, Selene, Lune-tester, balanssimulering, Rojo-bygge och **smoke-test i den riktiga
+  platsen: 154 godkända, 0 fel** (hela M1-loopen spelas av en simulerad spelare: slag, sönderslaget
+  block, dammsugning, dump, köp, gym, fynd + försäljning, kammare + zon 2, sparning, stresstest).
+
 ### Prestanda
 - Stresstestet (admin "Stress dig": 6×6-tunnel 120 block djup med 6 stora sidorum) ger **3 852
   skal-delar totalt, varav 1 416 inom strömningsradien** (budget 3 000). Smulor max 150.

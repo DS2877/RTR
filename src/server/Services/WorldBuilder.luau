@@ -323,7 +323,7 @@ local function buildCell(parent: Instance, index: number): CellRecord
 	)
 	Build.light(lamp, Color3.fromRGB(255, 240, 210), 30, 1.2)
 	-- where you spawn: inside, facing the back wall
-	local spawnPos = Vector3.new(cx, 3, (HALF_CORR + 8) * s)
+	local spawnPos = Vector3.new(cx, 3, (HALF_CORR + 13) * s)
 	local spawn = CFrame.lookAt(spawnPos, spawnPos + Vector3.new(0, 0, s))
 	model:SetAttribute("Cell", index)
 	return { index = index, frame = frame, spawn = spawn, sign = sign, model = model }
