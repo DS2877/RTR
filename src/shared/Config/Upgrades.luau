@@ -40,11 +40,11 @@ local Upgrades = {
 		{ name = "Spoon", emoji = "🥄", cost = 15, value = 2 },
 		{ name = "Shovel", emoji = "⚒️", cost = 300, value = 4 },
 		{ name = "Pickaxe", emoji = "⛏️", cost = 3000, value = 10 },
-		{ name = "Jackhammer", emoji = "🔨", cost = 150000, value = 30 },
-		{ name = "Drill", emoji = "🔩", cost = 5000000, value = 100 },
-		{ name = "Laser", emoji = "🔦", cost = 30000000, value = 400 },
-		{ name = "Plasma Cutter", emoji = "⚡", cost = 600000000, value = 1600 },
-		{ name = "Quantum Fist", emoji = "🌀", cost = 12000000000, value = 7000 },
+		{ name = "Jackhammer", emoji = "🔨", cost = 20000, value = 30 },
+		{ name = "Drill", emoji = "🔩", cost = 250000, value = 100 },
+		{ name = "Laser", emoji = "🔦", cost = 3000000, value = 400 },
+		{ name = "Plasma Cutter", emoji = "⚡", cost = 30000000, value = 1600 },
+		{ name = "Quantum Fist", emoji = "🌀", cost = 300000000, value = 7000 },
 	} :: { Level },
 
 	Brushes = {

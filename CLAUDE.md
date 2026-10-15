@@ -23,7 +23,9 @@ upgrade -> punch harder -> new zone. The punch and the crumble must feel amazing
    rate-limit every remote.
 3. Every balance number lives in `src/shared/Config/*`. Pure balance math lives in shared modules with Lune
    tests. `lune run tools/simulate` prints time-to-each-zone for a free player and for a player with
-   passes (`lune run tools/simulate all` = long-term pacing with every zone open). Re-run it after
+   passes (`lune run tools/simulate all` = long-term pacing with every zone open, targets: escape
+   <= 2:30 free, <= 15 average hits/block per zone). `lune run tools/tune write` re-solves zone hp
+   against the pacing targets in `tools/tune.luau` (model in `tools/simcore.luau`). Re-run after
    balance changes.
 4. Monetization follows Roblox rules: known contents for everything bought with Robux, no paid randomness.
 5. `--!strict` everywhere. StyLua + Selene + Lune tests must pass (CI runs them before publishing).
@@ -65,5 +67,5 @@ upgrade -> punch harder -> new zone. The punch and the crumble must feel amazing
 ## Local checks
 ```
 ./tools/install-tools.sh        # or: rokit install
-stylua --check src tools/smoke.luau tools/simulate.luau tests && selene src && lune run tests && lune run tools/simulate && rojo build default.project.json -o rtr.rbxl
+stylua --check src tools tests && selene src && lune run tests && lune run tools/simulate && rojo build default.project.json -o rtr.rbxl
 ```
