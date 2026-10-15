@@ -1,0 +1,136 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script>
+</head><body>
+<script type="module">
+import * as THREE from "three";
+const W = 1280, H = 720;
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(W, H);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 3000);
+
+const ROUGH = { Metal: [0.45, 0.6], DiamondPlate: [0.5, 0.6], CorrodedMetal: [0.8, 0.4], Foil: [0.3, 0.8],
+  Glass: [0.05, 0.1], Marble: [0.3, 0], SmoothPlastic: [0.5, 0], Plastic: [0.6, 0], Neon: [1, 0] };
+
+function wedgeGeometry() {
+  // Roblox wedge: full bottom and full back (+Z) face, slope rising toward +Z
+  const v = [-0.5,-0.5,-0.5, 0.5,-0.5,-0.5, 0.5,-0.5,0.5, -0.5,-0.5,0.5, -0.5,0.5,0.5, 0.5,0.5,0.5];
+  const idx = [0,2,1, 0,3,2, 3,4,5, 3,5,2, 0,1,5, 0,5,4, 0,4,3, 1,2,5];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+const GEO = {
+  Block: new THREE.BoxGeometry(1, 1, 1),
+  Cylinder: new THREE.CylinderGeometry(0.5, 0.5, 1, 20).rotateZ(Math.PI / 2),
+  Ball: new THREE.SphereGeometry(0.5, 20, 14),
+  Wedge: wedgeGeometry(),
+};
+const FACE = { Front: [0, 0, -1], Back: [0, 0, 1], Right: [1, 0, 0], Left: [-1, 0, 0], Top: [0, 1, 0], Bottom: [0, -1, 0] };
+
+window.load = (text) => {
+  const parts = [];
+  const lights = [];
+  for (const line of text.split("\n")) {
+    const f = line.split("|");
+    if (f[0] === "P") {
+      const [x, y, z, a, b, c, d, e, g, h, i, j, sx, sy, sz, r, gg, bb] = f.slice(3, 21).map(Number);
+      const mat = f[21], tr = Number(f[22]);
+      const color = new THREE.Color(`rgb(${r},${gg},${bb})`);
+      const [rough, metal] = ROUGH[mat] || [0.85, 0];
+      const m = new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal,
+        transparent: tr > 0.01, opacity: 1 - tr });
+      if (mat === "Neon") { m.emissive = color; m.emissiveIntensity = 1.6; }
+      const mesh = new THREE.Mesh(GEO[f[2]] || GEO.Block, m);
+      const M = new THREE.Matrix4().set(a, b, c, x, d, e, g, y, h, i, j, z, 0, 0, 0, 1);
+      M.multiply(new THREE.Matrix4().makeScale(sx, sy, sz));
+      mesh.matrixAutoUpdate = false;
+      mesh.matrix.copy(M);
+      mesh.castShadow = tr < 0.5 && mat !== "Neon";
+      mesh.receiveShadow = true;
+      mesh.userData = { M: new THREE.Matrix4().set(a, b, c, x, d, e, g, y, h, i, j, z, 0, 0, 0, 1), size: [sx, sy, sz] };
+      scene.add(mesh);
+      parts.push(mesh);
+    } else if (f[0] === "L") {
+      lights.push({ pos: new THREE.Vector3(+f[2], +f[3], +f[4]), color: new THREE.Color(`rgb(${f[5]},${f[6]},${f[7]})`), range: +f[8], brightness: +f[9] });
+    } else if (f[0] === "T") {
+      const part = parts[Number(f[1]) - 1];
+      if (!part) continue;
+      const n = FACE[f[2]] || FACE.Front;
+      const [sx, sy, sz] = part.userData.size;
+      // plane size = the face's two other dimensions
+      let w, h;
+      if (n[0]) { w = sz; h = sy; } else if (n[1]) { w = sx; h = sz; } else { w = sx; h = sy; }
+      const cv = document.createElement("canvas");
+      cv.width = 512; cv.height = Math.max(64, Math.round(512 * h / Math.max(w, 0.01)));
+      const ctx = cv.getContext("2d");
+      ctx.fillStyle = `rgb(${f[4]},${f[5]},${f[6]})`;
+      const lines = f[3].split("  ");
+      const fs = Math.min(cv.height * 0.6, 512 / Math.max(4, f[3].length * 0.62));
+      ctx.font = `900 ${fs}px sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(f[3], 256, cv.height / 2);
+      const tex = new THREE.CanvasTexture(cv);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+      const off = new THREE.Matrix4();
+      const dir = new THREE.Vector3(...n);
+      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+      off.compose(new THREE.Vector3(n[0] * (sx / 2 + 0.02), n[1] * (sy / 2 + 0.02), n[2] * (sz / 2 + 0.02)), q, new THREE.Vector3(1, 1, 1));
+      plane.matrixAutoUpdate = false;
+      plane.matrix.copy(part.userData.M).multiply(off);
+      scene.add(plane);
+    }
+  }
+  window.lights = lights;
+  return { parts: parts.length, lights: lights.length };
+};
+
+let dynamic = [];
+window.view = (v) => {
+  for (const l of dynamic) scene.remove(l);
+  dynamic = [];
+  const night = v.night;
+  const amb = night ? 0x1e2026 : 0x3e4044;
+  scene.background = new THREE.Color(night ? 0x0b0d14 : 0x8e949c);
+  scene.fog = new THREE.Fog(night ? 0x0b0d14 : 0x8e949c, 60, night ? 260 : 600);
+  const hemi = new THREE.HemisphereLight(night ? 0x2a3040 : 0xb8bec8, amb, night ? 0.35 : 1.1);
+  const sun = new THREE.DirectionalLight(night ? 0x6070a0 : 0xf0f2f6, night ? 0.25 : 1.6);
+  sun.position.set(v.at[0] + 120, v.at[1] + 220, v.at[2] + 90);
+  sun.target.position.set(...v.at);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(4096, 4096);
+  const s = 160; Object.assign(sun.shadow.camera, { left: -s, right: s, top: s, bottom: -s, near: 1, far: 800 });
+  sun.shadow.bias = -0.0005;
+  dynamic.push(hemi, sun, sun.target);
+  // the nearest Roblox lights as point lights
+  const eye = new THREE.Vector3(...v.eye);
+  const near = [...window.lights].sort((a, b) => a.pos.distanceTo(eye) - b.pos.distanceTo(eye)).slice(0, 16);
+  for (const l of near) {
+    const p = new THREE.PointLight(l.color, l.brightness * 60, l.range * 1.6, 1.6);
+    p.position.copy(l.pos);
+    dynamic.push(p);
+  }
+  if (v.lamp) {
+    // the player's headlamp (CameraController: Range 26)
+    const lamp = new THREE.PointLight(0xfff0d7, 60, 40, 1.4);
+    lamp.position.set(v.eye[0] + 1.4, v.eye[1] - 1, v.eye[2] - 2);
+    dynamic.push(lamp);
+  }
+  for (const l of dynamic) scene.add(l);
+  camera.fov = v.fov || 70;
+  camera.updateProjectionMatrix();
+  camera.position.set(...v.eye);
+  camera.lookAt(...v.at);
+  renderer.render(scene, camera);
+  return renderer.domElement.toDataURL("image/png");
+};
+window.ready = true;
+</script></body></html>

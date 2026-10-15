@@ -90,7 +90,7 @@ step("Remotes.setup", Remotes.setup)
 if not step("WorldBuilder.build", function()
 	world = WorldBuilder.build()
 end) then
-	return { passed = passed, failed = #failures, failures = failures, world = worldDump }
+	return { passed = passed, failed = #failures, failures = failures }
 end
 step("Cells.start", function()
 	Cells.start(world)

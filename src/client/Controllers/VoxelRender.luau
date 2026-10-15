@@ -88,7 +88,7 @@ function VoxelRender.blockColor(x: number, y: number, z: number): Color3
 	-- inside the hole every voxel is a touch lighter or darker, so its edges read like carved stone
 	local h = Progression.hash01(0, x, y, z, 9)
 	local c = pal[1 + math.floor(h * #pal) % #pal]
-	local shade = 0.9 + Progression.hash01(0, x, y, z, 11) * 0.14
+	local shade = 0.95 + Progression.hash01(0, x, y, z, 11) * 0.07
 	return Color3.fromRGB(
 		math.min(255, c[1] * shade),
 		math.min(255, c[2] * shade),
@@ -105,7 +105,7 @@ local FACE_IDS = {
 	Enum.NormalId.Back,
 }
 
-local MAX_LIGHTS = 20 -- glowing features (crystals, lava, slime) with a PointLight, per client
+local MAX_LIGHTS = 28 -- glowing features (crystals, lava, slime) with a PointLight, per client
 local lit: { [Part]: boolean } = {}
 local litCount = 0
 local function unlight(p: Part)
@@ -127,7 +127,11 @@ local function acquire(): Part
 		p.Name = "V"
 	end
 	partCount += 1
-	return p :: Part
+	local q = p :: Part
+	q.Shape = Enum.PartType.Block
+	q.CanCollide = true
+	q.Transparency = 0
+	return q
 end
 
 -- running hit-jolt tweens (cancelled when the part goes back to the pool)
@@ -204,7 +208,10 @@ local function carveGui(p: Part, face: Enum.NormalId, kind: string, seed: number
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
 	gui.CanvasSize = Vector2.new(64, 64)
 	local r = Random.new(seed)
-	local ink = if kind == "Tally" then Color3.fromRGB(40, 40, 44) else Color3.fromRGB(110, 82, 40)
+	local ink = if kind == "Tally"
+		then Color3.fromRGB(40, 40, 44)
+		elseif kind == "Rebar" then Color3.fromRGB(112, 58, 34)
+		else Color3.fromRGB(110, 82, 40)
 	local function bar(x: number, y: number, w: number, hgt: number, rot: number)
 		local f = Instance.new("Frame")
 		f.BorderSizePixel = 0
@@ -216,7 +223,13 @@ local function carveGui(p: Part, face: Enum.NormalId, kind: string, seed: number
 		f.Rotation = rot
 		f.Parent = gui
 	end
-	if kind == "Tally" then
+	if kind == "Rebar" then
+		-- rusty steel bars showing through the broken concrete
+		bar(32, 22, 64, 6, 0)
+		bar(32, 46, 64, 6, 0)
+		bar(22, 32, 6, 64, 0)
+		bar(44, 32, 6, 64, 0)
+	elseif kind == "Tally" then
 		local n = r:NextInteger(3, 5)
 		for i = 1, n - (if n == 5 then 1 else 0) do
 			bar(18 + i * 7, 32 + r:NextNumber(-1, 1), 2, 26, r:NextNumber(-4, 4))
@@ -419,6 +432,84 @@ local function buildChunk(t: T, id: number)
 		p.Color = VoxelRender.blockColor(r.x0, r.y, 0)
 		p.Parent = folder
 		table.insert(runParts, p)
+	end
+	-- dug floor (y = 0): a thin plate in the zone's material so you never walk on black bedrock
+	-- (one plate per row of dug floor blocks), and a warm work lamp every 10 layers
+	local cx, cy, cz = Voxel.chunkCoords(t.grid, id)
+	local x0, z0 = cx * CS, cz * CS
+	if cy == 0 then
+		for z = z0, math.min(z0 + CS - 1, MAX_Z - 1) do
+			local runStart: number? = nil
+			for x = x0, math.min(x0 + CS, W) do
+				local open = x < math.min(x0 + CS, W) and Voxel.isDug(t.grid, x, 0, z)
+				if open and not runStart then
+					runStart = x
+				elseif not open and runStart then
+					local zone = Zones[Progression.zoneAt(z)]
+					local c = zone.palette[1]
+					local p = acquire()
+					local len = x - runStart
+					p.Size = Vector3.new(len * B, 0.2, B)
+					p.CFrame = t.frame
+						* CFrame.new(
+							Tunnel.localCenter((runStart + x - 1) / 2, 0, z) - Vector3.new(0, B / 2 - 0.1, 0)
+						)
+					p.Material = zoneMaterial(Progression.zoneAt(z))
+					p.Color = Color3.fromRGB(c[1] * 0.82, c[2] * 0.82, c[3] * 0.82)
+					p.Parent = folder
+					table.insert(runParts, p)
+					runStart = nil
+				end
+			end
+		end
+	end
+	for z = z0, math.min(z0 + CS - 1, MAX_Z - 1) do
+		if z % 10 == 5 then
+			-- the highest dug block nearest the middle whose ceiling is solid
+			local best: { number }? = nil
+			local bestScore = -math.huge
+			for x = x0, math.min(x0 + CS - 1, W - 1) do
+				for y = cy * CS, math.min(cy * CS + CS - 1, H - 1) do
+					if Voxel.isDug(t.grid, x, y, z) and not Voxel.isDug(t.grid, x, y + 1, z) then
+						local score = y * 10 - math.abs(x - W / 2)
+						if score > bestScore then
+							best, bestScore = { x, y }, score
+						end
+					end
+				end
+			end
+			if best and best[2] >= 2 then
+				local top = t.frame
+					* CFrame.new(Tunnel.localCenter(best[1], best[2], z) + Vector3.new(0, B / 2, 0))
+				local cable = acquire()
+				cable.Size = Vector3.new(0.12, 0.7, 0.12)
+				cable.CFrame = top * CFrame.new(0, -0.35, 0)
+				cable.Material = Enum.Material.SmoothPlastic
+				cable.Color = Color3.fromRGB(25, 25, 28)
+				cable.CanCollide = false
+				cable.Parent = folder
+				local bulb = acquire()
+				bulb.Shape = Enum.PartType.Ball
+				bulb.Size = Vector3.new(0.55, 0.55, 0.55)
+				bulb.CFrame = top * CFrame.new(0, -0.95, 0)
+				bulb.Material = Enum.Material.Neon
+				bulb.Color = Color3.fromRGB(255, 196, 120)
+				bulb.CanCollide = false
+				bulb.Parent = folder
+				if litCount < MAX_LIGHTS then
+					local l = Instance.new("PointLight")
+					l.Color = Color3.fromRGB(255, 190, 120)
+					l.Range = 18
+					l.Brightness = 1.3
+					l.Shadows = true
+					l.Parent = bulb
+					lit[bulb] = true
+					litCount += 1
+				end
+				table.insert(runParts, cable)
+				table.insert(runParts, bulb)
+			end
+		end
 	end
 	t.runParts[id] = runParts
 	t.rendered[id] = true

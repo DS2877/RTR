@@ -29,7 +29,7 @@ Strata.Looks = {
 	Bracket = { color = { 60, 62, 68 }, material = "Metal" },
 	Conduit = { color = { 150, 156, 162 }, material = "Metal" },
 	Aggregate = { color = { 170, 172, 168 }, material = "Pebble" },
-	Rebar = { color = { 120, 64, 40 }, material = "Metal", shade = 0.15 },
+	Rebar = { color = { 104, 110, 120 }, material = "Concrete", carve = "Rebar", shade = 0.04 },
 	Terracotta = { color = { 196, 104, 60 }, material = "SmoothPlastic", shade = 0.06 },
 	PipeInside = { color = { 26, 22, 20 }, material = "SmoothPlastic" },
 	Iron = { color = { 96, 62, 48 }, material = "CorrodedMetal" },
@@ -39,9 +39,9 @@ Strata.Looks = {
 	Grate = { color = { 50, 54, 58 }, material = "DiamondPlate" },
 	Quartz = { color = { 186, 178, 210 }, material = "Marble", shade = 0.06 },
 	Fossil = { color = { 226, 214, 186 }, material = "Limestone" },
-	CrystalCyan = { color = { 90, 230, 255 }, material = "Glass", glow = { 90, 220, 255 } },
-	CrystalPink = { color = { 255, 120, 220 }, material = "Glass", glow = { 255, 110, 220 } },
-	CrystalViolet = { color = { 190, 120, 255 }, material = "Glass", glow = { 180, 110, 255 } },
+	CrystalCyan = { color = { 70, 190, 230 }, material = "Neon", glow = { 90, 220, 255 } },
+	CrystalPink = { color = { 220, 90, 190 }, material = "Neon", glow = { 255, 110, 220 } },
+	CrystalViolet = { color = { 160, 100, 230 }, material = "Neon", glow = { 180, 110, 255 } },
 	Lava = { color = { 255, 120, 30 }, material = "Neon", glow = { 255, 120, 40 } },
 	Obsidian = { color = { 24, 20, 28 }, material = "Glass" },
 	Pillar = { color = { 226, 200, 140 }, material = "Limestone", shade = 0.04 },
@@ -68,6 +68,29 @@ Strata.Air = {
 local function h(x: number, y: number, z: number, salt: number): number
 	return Progression.hash01(0, x, y, z, salt)
 end
+
+-- smooth 3D value noise (0..1) with features about `scale` blocks across: organic veins and
+-- clusters instead of grid-looking patterns
+local function noise(x: number, y: number, z: number, scale: number, salt: number): number
+	local fx, fy, fz = x / scale, y / scale, z / scale
+	local x0, y0, z0 = math.floor(fx), math.floor(fy), math.floor(fz)
+	local function s(t: number): number
+		return t * t * (3 - 2 * t)
+	end
+	local tx, ty, tz = s(fx - x0), s(fy - y0), s(fz - z0)
+	local function lerp(a: number, b: number, t: number): number
+		return a + (b - a) * t
+	end
+	local function v(i: number, j: number, k: number): number
+		return Progression.hash01(0, x0 + i, y0 + j, z0 + k, salt)
+	end
+	return lerp(
+		lerp(lerp(v(0, 0, 0), v(1, 0, 0), tx), lerp(v(0, 1, 0), v(1, 1, 0), tx), ty),
+		lerp(lerp(v(0, 0, 1), v(1, 0, 1), tx), lerp(v(0, 1, 1), v(1, 1, 1), tx), ty),
+		tz
+	)
+end
+Strata.noise = noise
 
 -- The feature at block (x, y, z), or nil for plain rock. z = 0 (the cell's back wall) is always
 -- plain so the wall stays one seamless surface.
@@ -116,24 +139,25 @@ function Strata.featureAt(x: number, y: number, z: number): string?
 			return "RustPipe"
 		elseif y == 0 and zl % 10 == 0 then
 			return "Grate"
-		elseif h(x, y, z, 36) < 0.03 then
+		elseif y <= 3 and noise(x, y, z, 3, 36) > 0.78 then
 			return "Slime"
 		end
 	elseif zone == 7 then
 		-- diagonal quartz veins through the basalt, the odd fossil
-		if (x + 2 * y + 3 * z) % 19 == 0 then
+		if math.abs(noise(x, y, z, 6, 37) - 0.5) < 0.026 then
 			return "Quartz"
 		elseif h(x, y, z, 37) < 0.006 then
 			return "Fossil"
 		end
 	elseif zone == 8 then
-		local r = h(x, y, z, 38)
-		if r < 0.07 then
-			local hue = h(x, y, z, 39)
+		-- crystal clusters (one color per cluster) in dark rock
+		if noise(x, y, z, 3.5, 38) > 0.74 then
+			local hue = noise(x, y, z, 10, 39)
 			return if hue < 0.34 then "CrystalCyan" elseif hue < 0.67 then "CrystalPink" else "CrystalViolet"
 		end
 	elseif zone == 9 then
-		if (2 * x + y + z) % 13 == 0 or (x - 2 * y + 2 * z) % 17 == 0 then
+		-- thin glowing veins winding through dark rock, and the odd molten pocket
+		if math.abs(noise(x, y, z, 6, 40) - 0.5) < 0.022 or noise(x, y, z, 4, 42) > 0.86 then
 			return "Lava"
 		elseif h(x, y, z, 40) < 0.04 then
 			return "Obsidian"

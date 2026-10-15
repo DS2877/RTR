@@ -143,7 +143,7 @@ local Zones: { Zone } = {
 		rubble = 30000,
 		oreChance = 0.05,
 		material = "Glass",
-		palette = { { 120, 70, 190 }, { 100, 56, 170 }, { 150, 90, 220 } },
+		palette = { { 58, 48, 82 }, { 50, 42, 72 }, { 66, 54, 92 } },
 		tint = { 240, 215, 255 },
 		brightness = 0.7,
 		chamber = { name = "Crystal Grotto", width = 16, height = 9, depth = 8, light = { 210, 120, 255 } },
@@ -157,7 +157,7 @@ local Zones: { Zone } = {
 		rubble = 250000,
 		oreChance = 0.05,
 		material = "CrackedLava",
-		palette = { { 90, 40, 30 }, { 70, 30, 24 }, { 110, 50, 34 } },
+		palette = { { 52, 38, 36 }, { 44, 32, 30 }, { 60, 44, 40 } },
 		tint = { 255, 220, 200 },
 		brightness = 0.7,
 		chamber = {
