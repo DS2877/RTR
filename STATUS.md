@@ -1,6 +1,6 @@
 # STATUS – Dig Out! (fängelseflykt-grävspel)
 
-Senast uppdaterad: 2026-10-15 · Milstolpe: **M4 DJUP** (M1–M3 publicerade)
+Senast uppdaterad: 2026-10-15 · Milstolpe: **M5 POLISH** (M1–M4 publicerade)
 
 Det gamla spelet (Rob the Rich!) är raderat från koden och arkiverat i git-taggen
 `archive/rob-the-rich` (sista commit `374cd1d`). Ny spelardata sparas i `DigOut_v1`, så gammal
@@ -123,6 +123,17 @@ data blandas aldrig in.
 - Admin-panelen har nu: Zone 10, Bottom→Escape, Inspect me, Blackout, Riot, Inspection,
   Treasure, 🧨 x5.
 
+### M5 – polish
+- **Tutorial** första minuten: en instruktion i taget + en gul stråle dit du ska: PUNCH väggen →
+  VACUUM gruset → DUMP i Yard → SÄLJ hos The Fence (hoppas över om du inte har fynd) → KÖP en
+  uppgradering i Workshop. Sparas, så den visas bara tills den är klar.
+- **Musik:** licensierad spellista (Heist Time m.fl.) + jakt-musik medan du bär ett stulet fynd.
+  🎵-knappen nere till vänster stänger av.
+- **Gnistor** vid varje slag (direkt, innan servern svarat) för mer "punch".
+- **Fotoläge** för ikon/thumbnails: ADMIN → 📸 Photo döljer allt UI i 15 s.
+- **Analytics** (Creator Hub → Analytics): onboarding-tratt (Joined → Punch → Vacuum → Dump →
+  Sell → Upgrade → TutorialDone), zon-progression, försäljningar, uppgraderingar och sessionslängd.
+
 ### Balans (`lune run tools/simulate`)
 | | Gratis-spelare | Med alla pass |
 |---|---|---|
@@ -180,7 +191,7 @@ Antal slag per block när man når en ny zon: 7–20 (zon 5 ~70 med Pickaxe → 
   i Config/Products.luau). Innan dess säger STORE "opens very soon".
 - Djupa zoner (8–10) kräver många slag per block i simulatorn – behöver finjusteras med riktiga
   speldata.
-- **M5 Polish:** tutorial, musik, ljudpass, analytics.
+- Ljudpass: riktiga slag-/smul-ljud behöver väljas i Creator Store (nu återanvända ljud).
 - Ljuden är tillfälliga (återanvända Roblox-ljud som är kontrollerade). Riktiga slag/smul-ljud
   behöver väljas i Creator Store.
 - Andra spelare ser inte ditt armslag (bara smulorna och hålen).

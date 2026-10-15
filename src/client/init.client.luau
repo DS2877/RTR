@@ -15,7 +15,23 @@ Shake.start()
 require(Controllers.CameraController).start()
 require(Controllers.VoxelRender).start()
 require(Controllers.DigFX).start()
-require(Controllers.DigController).start()
+local DigController = require(Controllers.DigController)
+DigController.start()
+-- impact sparks on every punch (before the server's answer arrives)
+do
+	local DigFX = require(Controllers.DigFX)
+	local VoxelRender = require(Controllers.VoxelRender)
+	local Tunnel = require(game:GetService("ReplicatedStorage").Shared.Tunnel)
+	DigController.onPunch = function(a)
+		local t = VoxelRender.own()
+		if t then
+			DigFX.sparks(
+				Tunnel.blockCenter(t.frame, a.x, a.y, a.z),
+				VoxelRender.blockColor(a.x, a.y, a.z):Lerp(Color3.new(1, 1, 1), 0.5)
+			)
+		end
+	end
+end
 require(Controllers.HUD).start()
 require(Controllers.Shops).start()
 require(Controllers.Clock).start()

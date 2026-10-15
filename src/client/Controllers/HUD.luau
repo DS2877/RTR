@@ -295,6 +295,7 @@ local function buildAdmin(parent: Instance)
 		{ "💰 Treasure", "treasure", nil },
 		{ "🧨 x5", "dynamite", 5 },
 		{ "Perf", "perf", nil },
+		{ "📸 Photo", "photo", nil },
 		{ "RESET DATA", "reset", nil },
 	}
 	local remote = Remotes.get(Remotes.Names.AdminCmd)
@@ -322,6 +323,27 @@ local function buildAdmin(parent: Instance)
 			if c[2] == "perf" then
 				perfOn = not perfOn
 				perf.Visible = perfOn
+			elseif c[2] == "photo" then
+				-- photo mode for icons/thumbnails: hide every UI for 15 s
+				local guis = {}
+				for _, g in player:WaitForChild("PlayerGui"):GetChildren() do
+					if g:IsA("ScreenGui") and g.Enabled then
+						g.Enabled = false
+						table.insert(guis, g)
+					end
+				end
+				pcall(function()
+					StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
+				end)
+				task.delay(15, function()
+					for _, g in guis do
+						g.Enabled = true
+					end
+					pcall(function()
+						StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true)
+						StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
+					end)
+				end)
 			else
 				remote:FireServer(c[2], c[3])
 			end
