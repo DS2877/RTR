@@ -29,6 +29,7 @@ local Product = require(Services.Product)
 local Escape = require(Services.Escape)
 local Rewards = require(Services.Rewards)
 local Guards = require(Services.Guards)
+local Patrol = require(Services.Patrol)
 local Events = require(Services.Events)
 local Market = require(Services.Market)
 local Tutorial = require(Services.Tutorial)
@@ -58,6 +59,8 @@ Product.start()
 Escape.start()
 Rewards.start()
 Guards.start()
+Patrol.phase = DayNight.phase
+Patrol.start()
 Events.startService()
 Market.start(world)
 Dig.onPiles = Loot.sendPiles
@@ -70,6 +73,7 @@ Raid.isDay = isDay
 Brawl.onCarrierHit = function(thief)
 	Raid.returnCarry(thief, "you got hit")
 end
+DayNight.onCounted = Rewards.rollCall
 DayNight.onDay = function()
 	Raid.newDay()
 	Market.morning()

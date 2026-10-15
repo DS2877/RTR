@@ -1,7 +1,11 @@
 --!strict
--- Server-wide day/night cycle (Config/Cycle). Day: cell doors open. LIGHTS OUT: siren + PA with a
--- countdown. Night: everyone outside their own cell/tunnel is walked back in, doors lock, digging
--- gives bonus finds. Phase + end time are ReplicatedStorage attributes ("Phase", "PhaseEnds").
+-- The prison schedule (Config/Cycle.Schedule) that runs the server:
+--   ROLL CALL (RollCall): doors open; whoever is in their own cell when it ends is counted (bonus).
+--   YARD TIME (Day): doors open, shops, fights and raids.
+--   LIGHTS OUT (LightsOut): siren + PA countdown.
+--   LOCKDOWN (Night): everyone is walked back to their cell, doors lock, digging gives bonus finds.
+-- Phase + start + end are ReplicatedStorage attributes ("Phase", "PhaseStart", "PhaseEnds"); the
+-- clients drive the sky (prison time) and the schedule widget from them.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -22,6 +26,7 @@ local endsAt = 0
 local forced: string? = nil
 
 DayNight.onDay = nil :: (() -> ())?
+DayNight.onCounted = nil :: ((player: Player) -> ())? -- in your cell when roll call ended
 DayNight.riot = function(): boolean
 	return false
 end
@@ -63,10 +68,36 @@ local function sendEveryoneHome()
 	end
 end
 
-local function setPhase(p: string, seconds: number)
+local SECONDS = {
+	RollCall = Cycle.RollCallSeconds,
+	Day = Cycle.DaySeconds,
+	LightsOut = Cycle.LightsOutWarning,
+	Night = Cycle.NightSeconds,
+}
+local NEXT = { RollCall = "Day", Day = "LightsOut", LightsOut = "Night", Night = "RollCall" }
+
+local function countHeads()
+	for player, s in State.all() do
+		local pos = State.root(player)
+		if pos and DayNight.inOwnCell(s, pos) then
+			if DayNight.onCounted then
+				DayNight.onCounted(player)
+			end
+		elseif pos and typeof(player) == "Instance" then
+			Net.notice(player, "You missed roll call. The guard wrote 'probably fine'.", "info")
+		end
+	end
+end
+
+local function setPhase(p: string, seconds: number?)
+	if phase == "RollCall" and p ~= "RollCall" then
+		countHeads()
+	end
 	phase = p
-	endsAt = now() + seconds
+	local t = now()
+	endsAt = t + (seconds or SECONDS[p] or Cycle.DaySeconds)
 	ReplicatedStorage:SetAttribute("Phase", p)
+	ReplicatedStorage:SetAttribute("PhaseStart", t)
 	ReplicatedStorage:SetAttribute("PhaseEnds", endsAt)
 	Dig.nightBonus = if p == "Night" then Cycle.NightFindBonus else 0
 	if p == "LightsOut" then
@@ -80,10 +111,13 @@ local function setPhase(p: string, seconds: number)
 			sendEveryoneHome()
 			setDoors(true)
 		end
-		Net.announce("Doors locked. Night digging gives +25% finds!", { 140, 170, 255 }, nil)
+		Net.announce("LOCKDOWN. Doors locked. Night digging gives +25% finds!", { 140, 170, 255 }, nil)
+	elseif p == "RollCall" then
+		setDoors(false)
+		Net.announce("ROLL CALL! Stay in your cell to be counted.", { 255, 220, 120 }, "Announce")
 	else
 		setDoors(false)
-		Net.announce("Good morning! Cell doors are open. Watch your Stash!", { 255, 220, 120 }, "Announce")
+		Net.announce("YARD TIME! Doors open. Watch your Stash!", { 255, 220, 120 }, "Announce")
 		if DayNight.onDay then
 			DayNight.onDay()
 		end
@@ -107,26 +141,16 @@ end
 
 function DayNight.start(w: any)
 	world = w
-	setPhase("Day", Cycle.DaySeconds)
+	setPhase("Day")
 	task.spawn(function()
 		while true do
 			task.wait(0.25)
 			if forced then
 				local f = forced
 				forced = nil
-				if f == "night" then
-					setPhase("Night", Cycle.NightSeconds)
-				else
-					setPhase("Day", Cycle.DaySeconds)
-				end
+				setPhase(if f == "night" then "Night" elseif f == "rollcall" then "RollCall" else "Day")
 			elseif now() >= endsAt then
-				if phase == "Day" then
-					setPhase("LightsOut", Cycle.LightsOutWarning)
-				elseif phase == "LightsOut" then
-					setPhase("Night", Cycle.NightSeconds)
-				else
-					setPhase("Day", Cycle.DaySeconds)
-				end
+				setPhase(NEXT[phase] or "Day")
 			elseif phase == "Night" and not DayNight.riot() then
 				-- nobody wanders the halls at night
 				sendEveryoneHome()

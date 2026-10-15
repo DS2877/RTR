@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Economy = require(Shared.Config.Economy)
+local Cycle = require(Shared.Config.Cycle)
 local Zones = require(Shared.Config.Zones)
 local Remotes = require(Shared.Remotes)
 local Format = require(Shared.Format)
@@ -46,6 +47,18 @@ function Rewards.daily(player: Player, day: number?): number
 		text ..= " + 🧨"
 	end
 	Net.fire(player, Remotes.Names.Reward, "daily", text)
+	return amount
+end
+
+-- Counted at roll call (in your own cell when it ended).
+function Rewards.rollCall(player: Player): number
+	local s = State.get(player)
+	if not s then
+		return 0
+	end
+	local amount = Cycle.RollCallBlocks * zoneValue(s)
+	Loot.addNoodles(player, amount)
+	Net.fire(player, Remotes.Names.Reward, "rollcall", "Counted at roll call! +" .. Format.noodles(amount))
 	return amount
 end
 

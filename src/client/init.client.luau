@@ -41,7 +41,7 @@ do
 	local DigAudio = require(Controllers.DigAudio)
 	VoxelRender.onHit = function(_t, puncher, z)
 		if puncher ~= player.UserId then
-			PunchAnim.playPlayer(puncher)
+			-- (their punch animation replicates by itself: it plays on their own Animator)
 			local p = game:GetService("Players"):GetPlayerByUserId(puncher)
 			local r = p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
 			if r and r:IsA("BasePart") then
@@ -62,6 +62,7 @@ end
 require(Controllers.Moments).start()
 require(Controllers.Guide).start()
 require(Controllers.GymController).start()
+require(Controllers.GuardController).start()
 local Music = require(Controllers.Music)
 Music.start()
 do

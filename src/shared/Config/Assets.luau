@@ -36,6 +36,15 @@ local Assets = {
 	},
 
 	Images = {} :: { [string]: string },
+
+	-- Roblox's own avatar animations (from the default Animate script, usable in every experience):
+	-- the punch plays the tool lunge (a straight forward thrust) and every 3rd hit the slash.
+	-- The smoke test checks these are Animation assets.
+	Animations = {
+		PunchR15 = { "rbxassetid://522638767", "rbxassetid://522635514" }, -- toollunge, toolslash
+		PunchR6 = { "rbxassetid://129967478", "rbxassetid://129967390" }, -- toollunge, toolslash
+		PunchSpeed = 1.7,
+	},
 }
 
 return Assets

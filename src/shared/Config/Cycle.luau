@@ -3,9 +3,44 @@
 -- bonus finds. Day: doors open, shops open, free movement (PvP from M3).
 
 local Cycle = {
-	NightSeconds = 300,
-	DaySeconds = 180,
+	NightSeconds = 270,
+	DaySeconds = 160,
+	RollCallSeconds = 25,
 	LightsOutWarning = 10, -- "LIGHTS OUT!" countdown before the doors lock
+	RollCallBlocks = 25, -- in your cell when roll call ends: this many blocks of rubble (deepest zone)
+
+	-- THE PRISON SCHEDULE: the phases in order. Phase ids are what the code checks ("Day" = Yard
+	-- Time: doors open, fights on). clock = prison time (Lighting.ClockTime) at the start and end.
+	Schedule = {
+		{
+			id = "RollCall",
+			name = "ROLL CALL",
+			emoji = "📋",
+			clock = { 6, 7.5 },
+			rules = "Stay in your cell to be counted",
+		},
+		{
+			id = "Day",
+			name = "YARD TIME",
+			emoji = "☀️",
+			clock = { 7.5, 18 },
+			rules = "Doors open · Fights on",
+		},
+		{
+			id = "LightsOut",
+			name = "LIGHTS OUT",
+			emoji = "🚨",
+			clock = { 18, 19 },
+			rules = "Back to your cell!",
+		},
+		{
+			id = "Night",
+			name = "LOCKDOWN",
+			emoji = "🌙",
+			clock = { 19, 30 },
+			rules = "Doors locked · +25% finds",
+		},
+	} :: { { id: string, name: string, emoji: string, clock: { number }, rules: string } },
 	NightFindBonus = 0.25, -- +25% finds at night (bonus finds in plain blocks)
 	DayClock = 14, -- Lighting.ClockTime
 	NightClock = 0.5,

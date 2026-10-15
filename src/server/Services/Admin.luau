@@ -101,7 +101,7 @@ function Admin.run(player: Player, cmd: string, arg: number?): boolean
 			player:Kick("Data reset. Rejoin!")
 		end
 		return true
-	elseif cmd == "day" or cmd == "night" then
+	elseif cmd == "day" or cmd == "night" or cmd == "rollcall" then
 		DayNight.force(cmd)
 	elseif cmd == "inspect" then
 		Guards.inspect(player)

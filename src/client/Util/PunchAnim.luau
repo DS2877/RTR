@@ -1,11 +1,14 @@
 --!strict
--- A procedural full-body punch for any character (R15 + R6 fallback): wind-up, torso twist, lean
--- into it, straight arm, then recover. Drives the joints' C0 so it layers over the default
--- animations. Used for your own punches (DigController) and for other players' hits (their
--- Delta arrives with the puncher's id), so everyone sees everyone punch.
+-- Your character's punch. Plays real animation tracks through the Humanoid's Animator (Roblox's
+-- own lunge / slash, Config/Assets.Animations): works on every rig (Motor6D or the new animation
+-- constraints) and replicates to everyone automatically. If no Animator/track is available it
+-- falls back to a procedural punch on the shoulder/waist joints (wind-up, twist, straight arm).
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+
+local Assets = require(ReplicatedStorage.Shared.Config.Assets)
 
 local PunchAnim = {}
 
@@ -139,9 +142,58 @@ local function reset(r: Rig)
 	end
 end
 
--- Punch with the next arm (alternates right / left).
+-- ===== animation tracks (preferred) =====
+
+local trackSets: { [Model]: { AnimationTrack } } = {}
+local counts: { [Model]: number } = {}
+local function tracksFor(c: Model): { AnimationTrack }?
+	local cached = trackSets[c]
+	if cached then
+		return if #cached > 0 then cached else nil
+	end
+	local list: { AnimationTrack } = {}
+	trackSets[c] = list
+	local humanoid = c:FindFirstChildOfClass("Humanoid")
+	local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+	if not humanoid or not animator then
+		trackSets[c] = nil -- try again once the Animator exists
+		return nil
+	end
+	local ids = if humanoid.RigType == Enum.HumanoidRigType.R15
+		then Assets.Animations.PunchR15
+		else Assets.Animations.PunchR6
+	for _, id in ids do
+		local ok, track = pcall(function()
+			local a = Instance.new("Animation")
+			a.AnimationId = id
+			return animator:LoadAnimation(a)
+		end)
+		if ok and track then
+			track.Priority = Enum.AnimationPriority.Action
+			track.Looped = false
+			table.insert(list, track)
+		end
+	end
+	c.AncestryChanged:Connect(function()
+		if not c.Parent then
+			trackSets[c] = nil
+			counts[c] = nil
+		end
+	end)
+	return if #list > 0 then list else nil
+end
+
+-- Punch (lunge; every 3rd punch the slash).
 function PunchAnim.play(c: Model?)
 	if not c then
+		return
+	end
+	local list = tracksFor(c)
+	if list then
+		local n = (counts[c] or 0) + 1
+		counts[c] = n
+		local track = list[if n % 3 == 0 and #list > 1 then 2 else 1]
+		track:Play(0.04, 1, Assets.Animations.PunchSpeed)
 		return
 	end
 	local r = rigFor(c)

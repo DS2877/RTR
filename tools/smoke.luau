@@ -455,6 +455,35 @@ check(
 	ReplicatedStorage:GetAttribute("Phase") == "Day" and world.cells[1].doorBlock.CanCollide == false
 )
 check("mess hall built", workspace.Prison.CommonRoom:FindFirstChild("MessFloor") ~= nil)
+-- roll call: whoever stands in their own cell when it ends is counted
+do
+	local counted = false
+	DayNight.onCounted = function(p)
+		if p == fake then
+			counted = true
+		end
+	end
+	fake.Position = world.cells[1].spawn.Position
+	DayNight.force("rollcall")
+	task.wait(0.6)
+	check("roll call phase", ReplicatedStorage:GetAttribute("Phase") == "RollCall")
+	check("doors open at roll call", world.cells[1].doorBlock.CanCollide == false)
+	DayNight.force("day")
+	task.wait(0.6)
+	check("counted at roll call", counted)
+	DayNight.onCounted = nil
+end
+-- patrolling guards: a line for every situation
+do
+	local Patrol = req(Services, "Patrol")
+	Patrol.phase = DayNight.phase
+	local ok, kind = pcall(Patrol.situation, Vector3.new(0, 3, 0), "Day")
+	check("guard situation", ok and typeof(kind) == "string", kind)
+	s.data.Bag = 1000
+	local _, kind2 = Patrol.situation(fake.Position, "Day")
+	check("guard notices the full backpack", kind2 == "Bag" or kind2 == "Digging", kind2)
+	s.data.Bag = 0
+end
 
 -- ===== M3: PvP with a second simulated player =====
 local raider: any = { UserId = -5151, Name = "SmokeRaider", Position = Vector3.zero }
@@ -713,6 +742,20 @@ for name, id in allSounds do
 			"sound " .. name .. " exists",
 			ok and info ~= nil and (info :: any).AssetTypeId == 3,
 			if ok then nil else info
+		)
+	end
+end
+
+for _, list in { Assets.Animations.PunchR15, Assets.Animations.PunchR6 } do
+	for _, id in list do
+		local num = tonumber(string.match(id, "%d+"))
+		local ok, info = pcall(function()
+			return MarketplaceService:GetProductInfo(num, Enum.InfoType.Asset)
+		end)
+		check(
+			"animation " .. id .. " exists",
+			ok and info ~= nil and (info :: any).AssetTypeId == 24,
+			if ok and info then (info :: any).AssetTypeId else info
 		)
 	end
 end

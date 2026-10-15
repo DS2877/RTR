@@ -343,6 +343,7 @@ local function buildAdmin(parent: Instance)
 		{ "Reset tunnel", "resettunnel", nil },
 		{ "☀️ Day", "day", nil },
 		{ "🌙 Night", "night", nil },
+		{ "📋 Roll call", "rollcall", nil },
 		{ "Zone 10", "zone", 10 },
 		{ "Bottom→Escape", "bottom", nil },
 		{ "👮 Inspect me", "inspect", nil },
