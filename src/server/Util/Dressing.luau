@@ -384,14 +384,14 @@ local function commonRoom(prison: Instance)
 	-- posters with fair warnings
 	poster(
 		d,
-		CFrame.new(x0 + 40, 8, z0 + 0.06) * CFrame.Angles(0, math.pi, 0),
+		CFrame.new(x0 + 40, 8, z0 + 0.18) * CFrame.Angles(0, math.pi, 0),
 		"NO DIGGING",
 		Color3.fromRGB(190, 40, 40),
 		Color3.new(1, 1, 1)
 	)
 	poster(
 		d,
-		CFrame.new(x0 + 18, 8, z0 + 0.06) * CFrame.Angles(0, math.pi, 0),
+		CFrame.new(x0 + 18, 8, z0 + 0.18) * CFrame.Angles(0, math.pi, 0),
 		"SMILE! YOU'RE ON CAMERA",
 		Color3.fromRGB(230, 200, 60),
 		Color3.fromRGB(30, 30, 30)
@@ -453,13 +453,17 @@ local function yard(prison: Instance)
 	-- basketball court: lines + two hoops
 	local cx0, cx1 = x0 + 20, x1 - 30
 	local line = Color3.fromRGB(225, 225, 215)
+	local lines = 0
 	local function courtLine(a: Vector3, b: Vector3)
 		local len = (b - a).Magnitude
+		lines += 1
+		-- each line a little higher than the last: their crossings never fight
+		local y = 0.12 + (lines % 3) * 0.035
 		p(
 			d,
 			"CourtLine",
 			Vector3.new(0.35, 0.04, len + 0.35),
-			CFrame.lookAt((a + b) / 2, b) + Vector3.new(0, 0.12, 0),
+			CFrame.lookAt((a + b) / 2, b) + Vector3.new(0, y, 0),
 			line,
 			Enum.Material.SmoothPlastic,
 			{ CanCollide = false }
@@ -512,7 +516,7 @@ local function yard(prison: Instance)
 		end
 	end
 	-- benches along the Common Room side, puddles on the asphalt
-	for _, z in { -50, -44, 44, 50 } do
+	for _, z in { -53, -43, 43, 53 } do
 		bench(d, CFrame.new(x1 - 6, 0, z) * CFrame.Angles(0, math.pi / 2, 0))
 	end
 	for i, pos in { Vector3.new(-300, 0, 24), Vector3.new(-372, 0, -26), Vector3.new(-330, 0, -40) } do
@@ -581,8 +585,8 @@ local function yard(prison: Instance)
 		)
 	end
 	wall(Vector3.new(wx0, 0, wz0), Vector3.new(wx0, 0, wz1))
-	wall(Vector3.new(wx0, 0, wz0), Vector3.new(wallEnd, 0, wz0))
-	wall(Vector3.new(wx0, 0, wz1), Vector3.new(wallEnd, 0, wz1))
+	wall(Vector3.new(wx0 + 2, 0, wz0), Vector3.new(wallEnd, 0, wz0))
+	wall(Vector3.new(wx0 + 2, 0, wz1), Vector3.new(wallEnd, 0, wz1))
 	for _, c in { Vector3.new(wx0, 0, wz0), Vector3.new(wx0, 0, wz1) } do
 		p(
 			d,
