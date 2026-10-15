@@ -187,8 +187,6 @@ Antal slag per block när man når en ny zon: 7–20 (zon 5 ~70 med Pickaxe → 
 14. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
 
 ## ⏳ Saknas (kommande milstolpar)
-- Passen/produkterna skapas i Creator Hub av ops-workflowen när M4 är publicerad (id:n skrivs in
-  i Config/Products.luau). Innan dess säger STORE "opens very soon".
 - Djupa zoner (8–10) kräver många slag per block i simulatorn – behöver finjusteras med riktiga
   speldata.
 - Ljudpass: riktiga slag-/smul-ljud behöver väljas i Creator Store (nu återanvända ljud).
@@ -202,5 +200,7 @@ Ops-workflowen försöker göra detta automatiskt – se `tools/ops/ops-log.md` 
 - [x] Upplevelsens namn: **Dig Out! Prison Escape** + ny beskrivning (plats och universum, HTTP 200).
 - [x] Max Players = 12.
 - [x] Arkivtaggen `archive/rob-the-rich` skapad.
+- [x] De nya passen (5) och produkterna (4) skapade i Creator Hub (15 okt) med id:n i Config/Products.
+- [ ] **Ikoner för passen/produkterna** (de har Robloxs standardikon – ladda upp bilder i Creator Hub).
 - [ ] **Ny ikon och thumbnails** (kan inte göras via API:t – ladda upp manuellt).
 - [ ] Genre/kategori och åldersenkät (Experience Questionnaire) uppdaterade för det nya spelet.
