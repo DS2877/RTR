@@ -20,6 +20,16 @@ local Clock = {}
 local player = Players.LocalPlayer
 local DARK = Color3.fromRGB(20, 20, 28)
 
+local function rgb(c: { number }): Color3
+	return Color3.fromRGB(c[1], c[2], c[3])
+end
+
+-- the indoor ambient for this moment of the day (CameraController darkens it in tunnels)
+local baseAmbient = rgb(Cycle.Look.Day.ambient)
+function Clock.ambient(): Color3
+	return baseAmbient
+end
+
 function Clock.phase(): string
 	local p = ReplicatedStorage:GetAttribute("Phase")
 	return if typeof(p) == "string" then p else "Day"
@@ -97,8 +107,10 @@ function Clock.start()
 		local target = if phase == "Night" then 1 elseif phase == "LightsOut" then 0.6 else 0
 		tint += (target - tint) * math.min(1, dt * 0.8)
 		Lighting.ClockTime = Cycle.DayClock + (24 + Cycle.NightClock - Cycle.DayClock) * tint
-		Lighting.Brightness = 2 - 1.4 * tint
-		Lighting.OutdoorAmbient = Color3.fromRGB(130, 130, 140):Lerp(Color3.fromRGB(40, 45, 80), tint)
+		local day, night = Cycle.Look.Day, Cycle.Look.Night
+		Lighting.Brightness = day.brightness + (night.brightness - day.brightness) * tint
+		Lighting.OutdoorAmbient = rgb(day.outdoor):Lerp(rgb(night.outdoor), tint)
+		baseAmbient = rgb(day.ambient):Lerp(rgb(night.ambient), tint)
 	end)
 end
 

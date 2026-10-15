@@ -38,9 +38,9 @@ local Zones: { Zone } = {
 		hp = 30,
 		rubble = 1,
 		oreChance = 0.05,
-		material = "SmoothPlastic",
-		palette = { { 214, 210, 200 }, { 200, 196, 186 }, { 226, 222, 212 } },
-		tint = { 255, 252, 245 },
+		material = "Concrete",
+		palette = { { 142, 146, 152 }, { 136, 140, 146 }, { 148, 152, 158 } },
+		tint = { 240, 244, 250 },
 		brightness = 1,
 	},
 	{

@@ -7,8 +7,14 @@ local Cycle = {
 	DaySeconds = 180,
 	LightsOutWarning = 10, -- "LIGHTS OUT!" countdown before the doors lock
 	NightFindBonus = 0.25, -- +25% finds at night (bonus finds in plain blocks)
-	DayClock = 13, -- Lighting.ClockTime
+	DayClock = 14, -- Lighting.ClockTime
 	NightClock = 0.5,
+	-- the prison look: grey, overcast and cold; night is dark (colors are RGB)
+	Look = {
+		Day = { brightness = 1.15, ambient = { 62, 64, 68 }, outdoor = { 92, 94, 100 } },
+		Night = { brightness = 0.18, ambient = { 30, 32, 38 }, outdoor = { 22, 24, 34 } },
+		Tunnel = { ambient = { 38, 38, 44 } },
+	},
 
 	-- guard inspections at night: every InspectEvery seconds a prisoner may get a visit
 	InspectEvery = 40,

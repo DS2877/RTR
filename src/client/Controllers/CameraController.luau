@@ -57,8 +57,10 @@ end
 
 function CameraController.start()
 	local tint = Lighting:WaitForChild("ZoneTint", 10) :: ColorCorrectionEffect?
-	local baseAmbient = Lighting.Ambient
-	local tunnelAmbient = Color3.fromRGB(70, 68, 76)
+	local look = require(Shared.Config.Cycle).Look
+	local tunnelAmbient =
+		Color3.fromRGB(look.Tunnel.ambient[1], look.Tunnel.ambient[2], look.Tunnel.ambient[3])
+	local Clock = require(script.Parent.Clock)
 	local acc = 0
 	RunService.Heartbeat:Connect(function(dt)
 		acc += dt
@@ -98,7 +100,7 @@ function CameraController.start()
 		if tint then
 			tint.TintColor = tint.TintColor:Lerp(targetTint, k)
 		end
-		Lighting.Ambient = Lighting.Ambient:Lerp(if inTunnel then tunnelAmbient else baseAmbient, k)
+		Lighting.Ambient = Lighting.Ambient:Lerp(if inTunnel then tunnelAmbient else Clock.ambient(), k)
 	end)
 	player.CharacterAdded:Connect(function(c)
 		inTunnel = false

@@ -11,6 +11,7 @@ local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
 local Economy = require(Shared.Config.Economy)
 local Tunnel = require(Shared.Tunnel)
+local Cycle = require(Shared.Config.Cycle)
 local Build = require(script.Parent.Parent.Util.Build)
 
 local WorldBuilder = {}
@@ -37,17 +38,19 @@ export type WorldRecord = {
 	stations: { BasePart },
 }
 
+-- the prison palette: grey concrete, dirty green paint, dark steel, worn yellow lines
 local C = {
-	floor = Color3.fromRGB(150, 150, 146),
-	corridorFloor = Color3.fromRGB(120, 124, 128),
-	wall = Color3.fromRGB(196, 192, 180),
-	wallLow = Color3.fromRGB(70, 110, 120), -- painted lower half of prison walls
-	ceiling = Color3.fromRGB(170, 170, 165),
-	bedrock = Color3.fromRGB(38, 36, 42),
-	bars = Color3.fromRGB(70, 74, 82),
-	line = Color3.fromRGB(240, 200, 40),
-	grass = Color3.fromRGB(96, 160, 72),
-	orange = Color3.fromRGB(255, 140, 40),
+	floor = Color3.fromRGB(88, 90, 92),
+	corridorFloor = Color3.fromRGB(74, 76, 80),
+	wall = Color3.fromRGB(128, 130, 132),
+	wallLow = Color3.fromRGB(52, 72, 66), -- painted lower half of prison walls
+	ceiling = Color3.fromRGB(95, 97, 100),
+	bedrock = Color3.fromRGB(34, 33, 38),
+	bars = Color3.fromRGB(58, 62, 68),
+	line = Color3.fromRGB(176, 150, 46),
+	grass = Color3.fromRGB(84, 82, 76), -- the yard: trampled gravel and dirt
+	orange = Color3.fromRGB(46, 49, 54), -- sign plates: dark steel
+	lamp = Color3.fromRGB(225, 235, 240), -- cold fluorescent tubes
 }
 
 local H = World.TunnelHeight * World.BlockSize -- 24: cell and corridor height
@@ -105,7 +108,7 @@ local function buildRowShell(parent: Instance, row: number)
 		Vector3.new(ROW_HALF + 2, H + 5, c1),
 		C.grass,
 		{
-			Material = Enum.Material.Grass,
+			Material = Enum.Material.Pavement,
 		}
 	)
 	local e0, e1 = zz(END_Z, END_Z + WALL)
@@ -329,17 +332,10 @@ local function buildCell(parent: Instance, index: number): CellRecord
 	Build.sign(poster, Enum.NormalId.Left, "🏝️\nDREAM BIG", Color3.new(1, 1, 1))
 	Build.sign(poster, Enum.NormalId.Right, "🏝️\nDREAM BIG", Color3.new(1, 1, 1))
 	-- ceiling lamp
-	local lamp = Build.part(
-		model,
-		"Lamp",
-		Vector3.new(4, 0.5, 2),
-		inCell(0, H - 0.25, 8),
-		Color3.fromRGB(255, 250, 225),
-		{
-			Material = Enum.Material.Neon,
-		}
-	)
-	Build.light(lamp, Color3.fromRGB(255, 240, 210), 30, 1.2)
+	local lamp = Build.part(model, "Lamp", Vector3.new(4, 0.5, 2), inCell(0, H - 0.25, 8), C.lamp, {
+		Material = Enum.Material.Neon,
+	})
+	Build.light(lamp, Color3.fromRGB(215, 228, 235), 30, 1.2)
 	-- where you spawn: inside, facing the back wall
 	local spawnPos = Vector3.new(cx, 3, (HALF_CORR + 13) * s)
 	local spawn = CFrame.lookAt(spawnPos, spawnPos + Vector3.new(0, 0, s))
@@ -458,10 +454,10 @@ local function buildCorridor(parent: Instance)
 			"Lamp",
 			Vector3.new(6, 0.5, 2),
 			CFrame.new(-100 + i * 40, H - 0.25, 0),
-			Color3.fromRGB(255, 250, 225),
+			C.lamp,
 			{ Material = Enum.Material.Neon }
 		)
-		Build.light(lamp, Color3.fromRGB(255, 240, 210), 40, 1)
+		Build.light(lamp, Color3.fromRGB(215, 228, 235), 40, 1)
 	end
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "Spawn"
@@ -517,7 +513,7 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 		"CommonFloor",
 		Vector3.new(x0, -4, z0),
 		Vector3.new(x1, 0, z1),
-		Color3.fromRGB(176, 150, 120),
+		Color3.fromRGB(96, 98, 100),
 		{
 			Material = Enum.Material.Wood,
 		}
@@ -546,7 +542,7 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 	Build.sign(yardSign, Enum.NormalId.Left, "COMMON ROOM", Color3.new(1, 1, 1))
 	local crSign =
 		Build.part(parent, "CommonSign", Vector3.new(0.4, 4, 20), CFrame.new(x1 - 2.3, 17, 0), C.orange)
-	Build.sign(crSign, Enum.NormalId.Right, "COMMON ROOM ★ SHOPS", Color3.new(1, 1, 1))
+	Build.sign(crSign, Enum.NormalId.Right, "COMMON ROOM", Color3.new(1, 1, 1))
 	-- painted lower walls
 	Build.box(
 		parent,
@@ -571,10 +567,10 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 				"Lamp",
 				Vector3.new(6, 0.5, 6),
 				CFrame.new(x0 + 22 + i * 38, h - 0.25, -22 + j * 44),
-				Color3.fromRGB(255, 248, 225),
+				C.lamp,
 				{ Material = Enum.Material.Neon }
 			)
-			Build.light(lamp, Color3.fromRGB(255, 238, 205), 50, 1.1)
+			Build.light(lamp, Color3.fromRGB(215, 228, 235), 50, 1.1)
 		end
 	end
 	-- tables with benches in the middle
@@ -925,10 +921,10 @@ local function buildMessHall(parent: Instance, shops: { [string]: BasePart })
 			"Lamp",
 			Vector3.new(6, 0.5, 6),
 			CFrame.new(cr.x - 36 + i * 36, h - 0.25, z0 + 26),
-			Color3.fromRGB(255, 248, 225),
+			C.lamp,
 			{ Material = Enum.Material.Neon }
 		)
-		Build.light(lamp, Color3.fromRGB(255, 238, 205), 45, 1)
+		Build.light(lamp, Color3.fromRGB(215, 228, 235), 45, 1)
 	end
 end
 
@@ -937,7 +933,7 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 	local x0, x1 = y.x - y.sx / 2, y.x + y.sx / 2
 	local z0, z1 = y.z - y.sz / 2, y.z + y.sz / 2
 	Build.box(parent, "YardGround", Vector3.new(x0, -4, z0), Vector3.new(x1, 0, z1), C.grass, {
-		Material = Enum.Material.Grass,
+		Material = Enum.Material.Pavement,
 	})
 	Build.box(
 		parent,
@@ -956,9 +952,9 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 			"Outside",
 			Vector3.new(x0 - 300, -5, zr[1]),
 			Vector3.new(x1 + 1000, -4, zr[2]),
-			Color3.fromRGB(80, 130, 60),
+			Color3.fromRGB(70, 72, 66),
 			{
-				Material = Enum.Material.Grass,
+				Material = Enum.Material.Pavement,
 			}
 		)
 	end
@@ -1270,23 +1266,42 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 end
 
 local function setupLighting()
-	Lighting.ClockTime = 14
-	Lighting.Brightness = 2
-	Lighting.Ambient = Color3.fromRGB(110, 110, 118)
-	Lighting.OutdoorAmbient = Color3.fromRGB(130, 130, 140)
-	Lighting.EnvironmentDiffuseScale = 0.4
-	Lighting.EnvironmentSpecularScale = 0.2
+	local day = Cycle.Look.Day
+	Lighting.ClockTime = Cycle.DayClock
+	Lighting.Brightness = day.brightness
+	Lighting.Ambient = Build.rgb(day.ambient)
+	Lighting.OutdoorAmbient = Build.rgb(day.outdoor)
+	Lighting.EnvironmentDiffuseScale = 0.25
+	Lighting.EnvironmentSpecularScale = 0.1
 	Lighting.GlobalShadows = true
+	Lighting.ShadowSoftness = 0.6
+	-- cold, desaturated prison grading
 	local cc = Instance.new("ColorCorrectionEffect")
 	cc.Name = "ZoneTint"
-	cc.Saturation = 0.08
-	cc.Contrast = 0.05
+	cc.Saturation = -0.35
+	cc.Contrast = 0.14
+	cc.Brightness = -0.02
+	cc.TintColor = Color3.fromRGB(232, 238, 245)
 	cc.Parent = Lighting
+	-- grey haze and an overcast sky
 	local atm = Instance.new("Atmosphere")
-	atm.Density = 0.25
-	atm.Haze = 1
-	atm.Color = Color3.fromRGB(200, 210, 225)
+	atm.Density = 0.38
+	atm.Offset = 0.1
+	atm.Haze = 2.2
+	atm.Glare = 0
+	atm.Color = Color3.fromRGB(150, 155, 162)
+	atm.Decay = Color3.fromRGB(90, 95, 105)
 	atm.Parent = Lighting
+	local clouds = Instance.new("Clouds")
+	clouds.Cover = 0.85
+	clouds.Density = 0.65
+	clouds.Color = Color3.fromRGB(150, 152, 158)
+	clouds.Parent = workspace.Terrain
+	local bloom = Instance.new("BloomEffect")
+	bloom.Intensity = 0.4
+	bloom.Size = 20
+	bloom.Threshold = 1.6
+	bloom.Parent = Lighting
 end
 
 function WorldBuilder.build(): WorldRecord

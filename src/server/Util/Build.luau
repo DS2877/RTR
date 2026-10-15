@@ -44,7 +44,7 @@ function Build.box(parent: Instance, name: string, a: Vector3, b: Vector3, color
 	return Build.part(parent, name, hi - lo, CFrame.new((lo + hi) / 2), color, props)
 end
 
--- Big chunky text on one face of a part.
+-- Stenciled sign text on one face of a part.
 function Build.sign(
 	part: BasePart,
 	face: Enum.NormalId,
@@ -56,26 +56,27 @@ function Build.sign(
 	gui.Face = face
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	gui.PixelsPerStud = 30
-	gui.LightInfluence = 0
+	gui.LightInfluence = 0.5 -- signs get darker at night, like real paint
 	gui.Parent = part
+	-- stenciled prison signage: heavy industrial capitals, slightly faded color
 	local label = Instance.new("TextLabel")
 	label.Name = "Text"
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.fromScale(1, 1)
-	label.Font = Enum.Font.FredokaOne
+	label.Font = Enum.Font.GothamBlack
 	label.TextScaled = true
 	label.Text = text
-	label.TextColor3 = textColor or Color3.new(1, 1, 1)
+	label.TextColor3 = (textColor or Color3.fromRGB(225, 225, 220)):Lerp(Color3.fromRGB(150, 150, 150), 0.18)
 	label.Parent = gui
 	local s = Instance.new("UIStroke")
-	s.Thickness = 3
+	s.Thickness = 1.5
 	s.Color = stroke or Color3.fromRGB(20, 20, 25)
 	s.Parent = label
 	local pad = Instance.new("UIPadding")
-	pad.PaddingLeft = UDim.new(0.04, 0)
-	pad.PaddingRight = UDim.new(0.04, 0)
-	pad.PaddingTop = UDim.new(0.08, 0)
-	pad.PaddingBottom = UDim.new(0.08, 0)
+	pad.PaddingLeft = UDim.new(0.05, 0)
+	pad.PaddingRight = UDim.new(0.05, 0)
+	pad.PaddingTop = UDim.new(0.12, 0)
+	pad.PaddingBottom = UDim.new(0.12, 0)
 	pad.Parent = label
 	return label
 end
