@@ -1,6 +1,7 @@
 --!strict
--- Kid-friendly modal panel: bright header band with a big title, red round close button, cream
--- body with a scrolling list. Only one panel is open at a time.
+-- Slim modal panel in the HUD style: glossy colored header band with a small outlined title,
+-- small red round close button, light body with a scrolling list, thin outlines everywhere.
+-- Only one panel is open at a time.
 -- No dimmed backdrop: the world stays visible and the joystick keeps working; X closes.
 
 local Players = game:GetService("Players")
@@ -41,11 +42,11 @@ function Panel.new(name: string, title: string, color: Color3, dark: Color3, siz
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.53),
 		Size = UDim2.fromOffset(dims.X, dims.Y),
-		BackgroundColor3 = Color3.fromRGB(255, 248, 230),
+		BackgroundColor3 = Color3.fromRGB(246, 246, 250),
 		Parent = gui,
 	}, {
-		UI.corner(22),
-		UI.stroke(dark, 4),
+		UI.corner(16),
+		UI.stroke(UI.INK, 2),
 	})
 	-- Only the panel box scales (not the whole layer).
 	UI.scaleObject(frame, UI.PANEL_SCALE)
@@ -53,20 +54,20 @@ function Panel.new(name: string, title: string, color: Color3, dark: Color3, siz
 	-- Header band
 	local header = UI.new("Frame", {
 		Name = "Header",
-		Size = UDim2.new(1, 0, 0, 54),
+		Size = UDim2.new(1, 0, 0, 44),
 		BackgroundColor3 = color,
 		Parent = frame,
 	}, {
-		UI.corner(22),
+		UI.corner(16),
 		UI.new("UIGradient", {
-			Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(200, 200, 200)),
+			Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(205, 205, 205)),
 			Rotation = 90,
 		}),
 	})
 	-- square off the header's bottom corners
 	UI.new("Frame", {
-		Position = UDim2.new(0, 0, 1, -22),
-		Size = UDim2.new(1, 0, 0, 22),
+		Position = UDim2.new(0, 0, 1, -16),
+		Size = UDim2.new(1, 0, 0, 16),
 		BackgroundColor3 = color,
 		BorderSizePixel = 0,
 		Parent = header,
@@ -77,48 +78,48 @@ function Panel.new(name: string, title: string, color: Color3, dark: Color3, siz
 		}),
 	})
 	UI.bigText({
-		Position = UDim2.fromOffset(18, 8),
-		Size = UDim2.new(0.5, -18, 0, 40),
+		Position = UDim2.fromOffset(14, 8),
+		Size = UDim2.new(0.55, -14, 0, 28),
 		Text = title,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		ZIndex = 2,
 		Parent = header,
-	}, dark, 3.5)
+	}, UI.INK, 1.6)
 	local subtitle = UI.bigText({
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -70, 0, 14),
-		Size = UDim2.new(0.5, -70, 0, 28),
+		Position = UDim2.new(1, -52, 0, 12),
+		Size = UDim2.new(0.45, -52, 0, 22),
 		Text = "",
 		TextXAlignment = Enum.TextXAlignment.Right,
 		ZIndex = 2,
 		Parent = header,
-	}, dark, 2.5)
+	}, UI.INK, 1.4)
 
 	local close: TextButton = UI.new("TextButton", {
 		Name = "Close",
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(1, -8, 0, 8),
-		Size = UDim2.fromOffset(50, 50),
-		BackgroundColor3 = Color3.fromRGB(255, 80, 90),
+		Position = UDim2.new(1, -6, 0, 6),
+		Size = UDim2.fromOffset(38, 38),
+		BackgroundColor3 = Color3.fromRGB(240, 60, 70),
 		Text = "",
 		ZIndex = 5,
 		Parent = frame,
-	}, { UI.corner(25), UI.stroke(Color3.fromRGB(130, 20, 30), 3.5) })
+	}, { UI.corner(19), UI.stroke(UI.INK, 2) })
 	UI.bigText({
-		Position = UDim2.fromOffset(10, 10),
-		Size = UDim2.new(1, -20, 1, -20),
+		Position = UDim2.fromOffset(9, 8),
+		Size = UDim2.new(1, -18, 1, -16),
 		Text = "X",
 		ZIndex = 6,
 		Parent = close,
-	}, Color3.fromRGB(130, 20, 30), 2.5)
+	}, UI.INK, 1.4)
 
 	local body: ScrollingFrame = UI.new("ScrollingFrame", {
 		Name = "Body",
-		Position = UDim2.fromOffset(10, 62),
-		Size = UDim2.new(1, -20, 1, -72),
+		Position = UDim2.fromOffset(10, 52),
+		Size = UDim2.new(1, -20, 1, -60),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		ScrollBarThickness = 8,
+		ScrollBarThickness = 5,
 		ScrollBarImageColor3 = dark,
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		CanvasSize = UDim2.new(),
@@ -191,19 +192,20 @@ function Panel.button(
 		base[k] = v
 	end
 	local b: TextButton = UI.new("TextButton", base, {
-		UI.corner(12),
-		UI.stroke(dark, 3),
+		UI.corner(10),
+		UI.stroke(UI.INK, 1.5),
 		UI.new("UIGradient", {
 			Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(200, 200, 200)),
 			Rotation = 90,
 		}),
 	})
 	local l = UI.bigText({
-		Position = UDim2.fromOffset(6, 6),
-		Size = UDim2.new(1, -12, 1, -12),
+		Position = UDim2.fromOffset(8, 9),
+		Size = UDim2.new(1, -16, 1, -18),
 		Text = text,
 		Parent = b,
-	}, dark, 2.5)
+	}, UI.INK, 1.4)
+	local _ = dark
 	return b, l
 end
 

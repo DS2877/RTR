@@ -28,6 +28,13 @@ function Collection.render(player: Player)
 	if not s or not s.cell then
 		return
 	end
+	if typeof(player) == "Instance" then
+		local ids = {}
+		for id in s.data.Found do
+			table.insert(ids, id)
+		end
+		player:SetAttribute("FoundList", table.concat(ids, ","))
+	end
 	local record = Cells.record(s.cell)
 	local frame: Frame = record.shelf
 	frame:ClearAllChildren()

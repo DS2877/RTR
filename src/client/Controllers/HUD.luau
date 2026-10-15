@@ -1,7 +1,8 @@
 --!strict
--- Heads-up display, mobile first: big PUNCH / VACUUM / LIFT buttons in the lower right, Noodles,
--- strength, backpack and find slots, the zone + depth, toasts, banners, the BACKPACK FULL prompt
--- with a guide beam to the Yard dump, find popups, and the ADMIN panel for phone testing.
+-- Heads-up display in the slim simulator style: icon tiles with tiny labels on the left (Store,
+-- Event, Index, Gift + a Music switch), stat lines without boxes in the lower left, a hotbar in the
+-- bottom middle, translucent round PUNCH / VACUUM / LIFT buttons next to the jump button, the zone
+-- + depth on top, toasts, banners, the BACKPACK FULL pill with a guide beam, find popups, ADMIN.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -26,8 +27,15 @@ local DigController = require(script.Parent.DigController)
 local DigFX = require(script.Parent.DigFX)
 local VoxelRender = require(script.Parent.VoxelRender)
 local CameraController = require(script.Parent.CameraController)
+local ExtraShops = require(script.Parent.ExtraShops)
+local Music = require(script.Parent.Music)
 
 local HUD = {}
+
+-- containers other controllers fill (set in HUD.start)
+HUD.hotbar = nil :: Frame?
+HUD.buttons = nil :: Frame?
+HUD.right = nil :: Frame?
 
 local player = Players.LocalPlayer
 local gui: ScreenGui
@@ -43,61 +51,6 @@ local function rgb(c: { number }): Color3
 end
 
 -- ===== pieces =====
-
-local function pill(parent: Instance, pos: UDim2, size: UDim2, color: Color3, icon: string): TextLabel
-	local f = UI.new("Frame", {
-		Position = pos,
-		Size = size,
-		BackgroundColor3 = color,
-		Parent = parent,
-	}, { UI.corner(14), UI.stroke(DARK, 3), UI.gradient(Color3.new(1, 1, 1), Color3.fromRGB(205, 205, 205)) })
-	UI.bigText({
-		Position = UDim2.fromOffset(6, 4),
-		Size = UDim2.new(0, 34, 1, -8),
-		Text = icon,
-		Parent = f,
-	})
-	return UI.bigText({
-		Name = "Value",
-		Position = UDim2.fromOffset(42, 5),
-		Size = UDim2.new(1, -50, 1, -10),
-		Text = "0",
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Parent = f,
-	})
-end
-
-local function roundButton(
-	parent: Instance,
-	name: string,
-	text: string,
-	color: Color3,
-	size: number,
-	pos: UDim2
-): TextButton
-	local b: TextButton = UI.new("TextButton", {
-		Name = name,
-		AnchorPoint = Vector2.new(1, 1),
-		Position = pos,
-		Size = UDim2.fromOffset(size, size),
-		BackgroundColor3 = color,
-		Text = "",
-		AutoButtonColor = false,
-		Parent = parent,
-	}, {
-		UI.corner(size // 2),
-		UI.stroke(DARK, 4),
-		UI.gradient(Color3.new(1, 1, 1), Color3.fromRGB(180, 180, 180)),
-	})
-	UI.bigText({
-		Name = "Label",
-		Position = UDim2.fromScale(0.1, 0.2),
-		Size = UDim2.fromScale(0.8, 0.6),
-		Text = text,
-		Parent = b,
-	}, DARK, 3)
-	return b
-end
 
 -- press-and-hold helper that works for touch, mouse and gamepad-select
 local function holdable(b: TextButton, onDown: () -> (), onUp: () -> ())
@@ -133,7 +86,7 @@ local function toast(text: string, kind: string?)
 		info = Color3.fromRGB(240, 240, 240),
 	}
 	local l = UI.bigText({
-		Size = UDim2.new(1, 0, 0, 30),
+		Size = UDim2.new(1, 0, 0, 22),
 		Text = text,
 		TextColor3 = colors[kind or "info"] or colors.info,
 		Parent = toastHolder,
@@ -256,6 +209,83 @@ local function setGuide(on: boolean)
 end
 
 -- ===== admin =====
+
+-- INDEX: the collection album (every find per zone, "?" for the missing ones)
+local function buildIndex(): Panel.Panel
+	local panel = Panel.new(
+		"IndexPanel",
+		"📖 INDEX",
+		Color3.fromRGB(110, 200, 255),
+		Color3.fromRGB(20, 60, 140),
+		Vector2.new(600, 330)
+	)
+	UI.new(
+		"UIListLayout",
+		{ Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = panel.body }
+	)
+	local function render()
+		for _, c in panel.body:GetChildren() do
+			if not c:IsA("UIListLayout") then
+				c:Destroy()
+			end
+		end
+		local found: { [string]: boolean } = {}
+		for _, id in string.split(tostring(player:GetAttribute("FoundList") or ""), ",") do
+			found[id] = true
+		end
+		local have, total = 0, 0
+		for zone, z in Zones do
+			local list = Finds.ByZone[zone] or {}
+			local row = UI.new("Frame", {
+				LayoutOrder = zone,
+				Size = UDim2.new(1, -8, 0, 44),
+				BackgroundColor3 = Color3.new(1, 1, 1),
+				Parent = panel.body,
+			}, { UI.corner(10), UI.stroke(Color3.fromRGB(205, 205, 215), 1) })
+			local complete = #list > 0
+			for _, f in list do
+				if not found[f.id] then
+					complete = false
+				end
+			end
+			UI.label({
+				Position = UDim2.fromOffset(8, 4),
+				Size = UDim2.new(0.3, -8, 1, -8),
+				Text = z.name .. (if complete then " ✅" else ""),
+				TextColor3 = Color3.fromRGB(40, 40, 55),
+				TextXAlignment = Enum.TextXAlignment.Left,
+				Parent = row,
+			})
+			for i, f in list do
+				total += 1
+				local got = found[f.id] == true
+				if got then
+					have += 1
+				end
+				local tier = Rarity.Tiers[f.rarity]
+				UI.new("TextLabel", {
+					Position = UDim2.new(0.3, (i - 1) * 40, 0, 4),
+					Size = UDim2.fromOffset(36, 36),
+					BackgroundColor3 = if got then rgb(tier.color) else Color3.fromRGB(60, 60, 70),
+					BackgroundTransparency = if got then 0.35 else 0,
+					Text = if got then f.emoji else "?",
+					TextScaled = true,
+					Font = Enum.Font.FredokaOne,
+					TextColor3 = Color3.fromRGB(200, 200, 210),
+					Parent = row,
+				}, { UI.corner(8) })
+			end
+		end
+		panel.subtitle.Text = string.format("%d/%d found", have, total)
+	end
+	panel.onOpen = render
+	player:GetAttributeChangedSignal("FoundList"):Connect(function()
+		if panel.isOpen() then
+			render()
+		end
+	end)
+	return panel
+end
 
 local function buildAdmin(parent: Instance)
 	local panel = Panel.new(
@@ -383,185 +413,232 @@ function HUD.start()
 		Parent = player:WaitForChild("PlayerGui"),
 	})
 
-	-- top-left stats
+	-- ===== LEFT: icon tiles (Store / Event, Index / Gift) + Music switch =====
+	local left = UI.new("Frame", {
+		Name = "Left",
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 12, 0.4, 0),
+		Size = UDim2.fromOffset(160, 190),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	}, { UI.new("UIListLayout", { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder }) })
+	UI.scaleObject(left)
+	local function tileRow(order: number): Frame
+		return UI.new("Frame", {
+			LayoutOrder = order,
+			Size = UDim2.new(1, 0, 0, 62),
+			BackgroundTransparency = 1,
+			Parent = left,
+		}, {
+			UI.new("UIListLayout", {
+				FillDirection = Enum.FillDirection.Horizontal,
+				Padding = UDim.new(0, 12),
+				SortOrder = Enum.SortOrder.LayoutOrder,
+			}),
+		})
+	end
+	local row1, row2 = tileRow(1), tileRow(2)
+	local storeTile =
+		UI.tile(row1, "Store", "🛒", "Store", Color3.fromRGB(255, 120, 200), Color3.fromRGB(110, 90, 255))
+	storeTile.LayoutOrder = 1
+	UI.badge(storeTile, "!")
+	local eventTile =
+		UI.tile(row1, "Event", "⚡", "Event", Color3.fromRGB(255, 190, 70), Color3.fromRGB(240, 100, 40))
+	eventTile.LayoutOrder = 2
+	eventTile.Visible = false
+	local indexTile =
+		UI.tile(row2, "Index", "📖", "Index", Color3.fromRGB(110, 200, 255), Color3.fromRGB(40, 90, 220))
+	indexTile.LayoutOrder = 1
+	UI.badge(indexTile, "")
+	local giftTile =
+		UI.tile(row2, "Gift", "🎁", "10m", Color3.fromRGB(140, 240, 120), Color3.fromRGB(30, 160, 80))
+	giftTile.LayoutOrder = 2
+	UI.toggle(left, 3, "Music", true, function(on)
+		Music.setEnabled(on)
+	end)
+	storeTile.Activated:Connect(function()
+		Sound.play("Click")
+		UI.badge(storeTile, "")
+		ExtraShops.open("Store")
+	end)
+	local newFinds = 0
+	local indexPanel = buildIndex()
+	indexTile.Activated:Connect(function()
+		Sound.play("Click")
+		newFinds = 0
+		UI.badge(indexTile, "")
+		indexPanel.toggle()
+	end)
+	giftTile.Activated:Connect(function()
+		toast("🎁 A free gift every " .. Economy.GiftMinutes .. " minutes you play!", "info")
+	end)
+	Remotes.get(Remotes.Names.Found).OnClientEvent:Connect(function()
+		newFinds += 1
+		UI.badge(indexTile, tostring(newFinds))
+	end)
+
+	-- ===== BOTTOM LEFT: stat lines without boxes =====
 	local stats = UI.new("Frame", {
 		Name = "Stats",
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 12, 1, -10),
+		Size = UDim2.fromOffset(260, 150),
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(10, 8),
-		Size = UDim2.fromOffset(250, 210),
 		Parent = gui,
+	}, {
+		UI.new("UIListLayout", {
+			Padding = UDim.new(0, 2),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			VerticalAlignment = Enum.VerticalAlignment.Bottom,
+		}),
 	})
 	UI.scaleObject(stats)
-	local noodles =
-		pill(stats, UDim2.fromOffset(0, 0), UDim2.fromOffset(240, 50), Color3.fromRGB(255, 200, 70), "🍜")
-	local strength =
-		pill(stats, UDim2.fromOffset(0, 56), UDim2.fromOffset(240, 42), Color3.fromRGB(255, 120, 110), "💪")
-	local bagFrame = UI.new("Frame", {
-		Position = UDim2.fromOffset(0, 104),
-		Size = UDim2.fromOffset(240, 42),
-		BackgroundColor3 = Color3.fromRGB(60, 60, 70),
-		Parent = stats,
-	}, { UI.corner(14), UI.stroke(DARK, 3) })
-	local bagFill = UI.new("Frame", {
-		Size = UDim2.fromScale(0, 1),
-		BackgroundColor3 = Color3.fromRGB(170, 150, 120),
-		Parent = bagFrame,
-	}, { UI.corner(14) })
-	local bagText = UI.bigText({
-		Position = UDim2.fromOffset(8, 5),
-		Size = UDim2.new(1, -16, 1, -10),
-		Text = "🪨 0/20",
-		ZIndex = 2,
-		Parent = bagFrame,
-	})
-	local slots = pill(
-		stats,
-		UDim2.fromOffset(0, 152),
-		UDim2.fromOffset(240, 40),
-		Color3.fromRGB(190, 140, 255),
-		"💎"
-	)
+	local boost = UI.slimText({ LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 15), Text = "", Parent = stats })
+	local strength = UI.statLine(stats, 2, "💪", Color3.fromRGB(255, 120, 110), 24)
+	local bagText = UI.statLine(stats, 3, "🪨", Color3.fromRGB(235, 205, 150), 24)
+	local slots = UI.statLine(stats, 4, "💎", Color3.fromRGB(205, 160, 255), 24)
+	local noodles = UI.statLine(stats, 5, "🍜", Color3.fromRGB(255, 215, 70), 32)
 
-	-- top-center zone / depth
-	local zoneBox = UI.new("Frame", {
+	-- ===== TOP CENTER: zone + depth, toasts, full prompt =====
+	local zoneText = UI.bigText({
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 6),
-		Size = UDim2.fromOffset(300, 40),
-		BackgroundColor3 = Color3.fromRGB(30, 32, 40),
-		BackgroundTransparency = 0.25,
-		Parent = gui,
-	}, { UI.corner(12) })
-	UI.scaleObject(zoneBox)
-	local zoneText = UI.bigText({
-		Position = UDim2.fromOffset(8, 4),
-		Size = UDim2.new(1, -16, 1, -8),
+		Size = UDim2.fromOffset(320, 26),
 		Text = "CELL BLOCK",
-		Parent = zoneBox,
-	})
+		Parent = gui,
+	}, UI.INK, 1.6)
+	UI.scaleObject(zoneText)
 
 	toastHolder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 56),
-		Size = UDim2.fromOffset(460, 200),
+		Position = UDim2.new(0.5, 0, 0, 118),
+		Size = UDim2.fromOffset(460, 140),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, {
 		UI.new(
 			"UIListLayout",
-			{ Padding = UDim.new(0, 2), HorizontalAlignment = Enum.HorizontalAlignment.Center }
+			{ Padding = UDim.new(0, 1), HorizontalAlignment = Enum.HorizontalAlignment.Center }
 		),
 	})
 	UI.scaleObject(toastHolder)
 
-	-- big banner (zone reached, announcements)
+	-- big banner (zone reached)
 	banner = UI.bigText({
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.3),
-		Size = UDim2.fromScale(0.8, 0.13),
+		Size = UDim2.fromScale(0.6, 0.1),
 		Text = "",
 		Visible = false,
 		Parent = gui,
-	}, DARK, 4)
+	}, UI.INK, 2)
 	bannerSub = UI.bigText({
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.4),
-		Size = UDim2.fromScale(0.6, 0.06),
+		Position = UDim2.fromScale(0.5, 0.38),
+		Size = UDim2.fromScale(0.4, 0.045),
 		Text = "",
 		Visible = false,
 		Parent = gui,
-	}, DARK, 3)
+	}, UI.INK, 1.4)
 
-	-- find card
+	-- find card: slim dark card outlined in the rarity color
 	findCard = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.42),
-		Size = UDim2.fromOffset(260, 150),
-		BackgroundColor3 = Color3.fromRGB(30, 30, 40),
+		Size = UDim2.fromOffset(220, 120),
+		BackgroundColor3 = Color3.fromRGB(25, 25, 34),
+		BackgroundTransparency = 0.15,
 		Visible = false,
 		Parent = gui,
-	}, { UI.corner(20), UI.stroke(Color3.new(1, 1, 1), 5) })
+	}, { UI.corner(14), UI.stroke(Color3.new(1, 1, 1), 2) })
 	UI.bigText({
 		Name = "Title",
 		Position = UDim2.fromOffset(10, 4),
-		Size = UDim2.new(1, -20, 0, 26),
+		Size = UDim2.new(1, -20, 0, 18),
 		Text = "YOU FOUND",
 		Parent = findCard,
 	})
 	UI.bigText({
 		Name = "Emoji",
-		Position = UDim2.fromOffset(10, 30),
-		Size = UDim2.new(1, -20, 0, 54),
+		Position = UDim2.fromOffset(10, 24),
+		Size = UDim2.new(1, -20, 0, 44),
 		Text = "",
 		Parent = findCard,
 	})
 	UI.bigText({
 		Name = "Name",
-		Position = UDim2.fromOffset(10, 86),
-		Size = UDim2.new(1, -20, 0, 32),
+		Position = UDim2.fromOffset(10, 70),
+		Size = UDim2.new(1, -20, 0, 24),
 		Text = "",
 		Parent = findCard,
 	})
 	UI.bigText({
 		Name = "Rarity",
-		Position = UDim2.fromOffset(10, 118),
-		Size = UDim2.new(1, -20, 0, 24),
+		Position = UDim2.fromOffset(10, 96),
+		Size = UDim2.new(1, -20, 0, 18),
 		Text = "",
 		Parent = findCard,
 	})
 
-	-- FULL prompt
+	-- FULL prompt: slim red pill
 	local fullBox = UI.new("TextButton", {
 		Name = "Full",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 52),
-		Size = UDim2.fromOffset(420, 64),
-		BackgroundColor3 = Color3.fromRGB(255, 80, 80),
+		Position = UDim2.new(0.5, 0, 0, 34),
+		Size = UDim2.fromOffset(360, 36),
+		BackgroundColor3 = Color3.fromRGB(240, 70, 70),
 		Text = "",
 		Visible = false,
 		Parent = gui,
-	}, { UI.corner(16), UI.stroke(DARK, 4), UI.gradient(Color3.new(1, 1, 1), Color3.fromRGB(200, 200, 200)) })
+	}, {
+		UI.corner(18),
+		UI.stroke(UI.INK, 2),
+		UI.gradient(Color3.new(1, 1, 1), Color3.fromRGB(210, 210, 210)),
+	})
 	UI.scaleObject(fullBox)
 	local fullText = UI.bigText({
-		Position = UDim2.fromOffset(10, 6),
-		Size = UDim2.new(1, -20, 1, -12),
+		Position = UDim2.fromOffset(12, 7),
+		Size = UDim2.new(1, -24, 1, -14),
 		Text = "BACKPACK FULL → Dump in the Yard",
 		Parent = fullBox,
-	}, DARK, 3)
+	}, UI.INK, 1.4)
 
-	-- buttons (lower right, above the jump button)
+	-- ===== BOTTOM CENTER: hotbar (Moments puts 🧨 / 🪔 here) =====
+	local hotbar: Frame = UI.new("Frame", {
+		Name = "Hotbar",
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -8),
+		Size = UDim2.fromOffset(300, 58),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	}, {
+		UI.new("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			Padding = UDim.new(0, 6),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	})
+	UI.scaleObject(hotbar)
+	HUD.hotbar = hotbar
+
+	-- ===== BOTTOM RIGHT: action buttons next to the jump button =====
 	local buttons = UI.new("Frame", {
 		Name = "Buttons",
 		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -8, 1, -8),
-		Size = UDim2.fromOffset(330, 300),
+		Position = UDim2.new(1, 0, 1, 0),
+		Size = UDim2.fromOffset(280, 260),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	})
-	UI.scaleObject(buttons, 1.15)
-	local punchBtn = roundButton(
-		buttons,
-		"Punch",
-		"👊\nPUNCH",
-		Color3.fromRGB(255, 170, 50),
-		150,
-		UDim2.new(1, -96, 1, -96)
-	)
-	local vacBtn = roundButton(
-		buttons,
-		"Vacuum",
-		"🌀\nVACUUM",
-		Color3.fromRGB(90, 200, 255),
-		104,
-		UDim2.new(1, -254, 1, -40)
-	)
-	local liftBtn = roundButton(
-		buttons,
-		"Lift",
-		"🏋️\nLIFT",
-		Color3.fromRGB(255, 110, 110),
-		150,
-		UDim2.new(1, -96, 1, -96)
-	)
+	UI.scaleObject(buttons, 1.1)
+	HUD.buttons = buttons
+	local punchBtn = UI.actionButton(buttons, "Punch", "👊", "PUNCH", 104)
+	punchBtn.Position = UDim2.new(1, -205, 1, -80)
+	local vacBtn = UI.actionButton(buttons, "Vacuum", "🌀", "VACUUM", 76)
+	vacBtn.Position = UDim2.new(1, -96, 1, -178)
+	local liftBtn = UI.actionButton(buttons, "Lift", "🏋️", "LIFT", 104)
+	liftBtn.Position = UDim2.new(1, -205, 1, -80)
 	liftBtn.Visible = false
 	holdable(punchBtn, function()
 		DigController.setHolding(true)
@@ -575,6 +652,7 @@ function HUD.start()
 			vacuuming = on
 			vacRemote:FireServer(on)
 			DigFX.setVacuum(on)
+			vacBtn.BackgroundTransparency = if on then 0.15 else 0.45
 		end
 	end
 	holdable(vacBtn, function()
@@ -589,26 +667,33 @@ function HUD.start()
 		if now - lastLift >= Economy.LiftInterval then
 			lastLift = now
 			liftRemote:FireServer()
-			UI.bump(liftBtn, 0.15)
+			UI.bump(liftBtn, 0.12)
 		end
 	end)
 
-	-- admin
-	local adminPanel = nil
-	local adminBtn = UI.new("TextButton", {
-		Name = "Admin",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -8, 0, 60),
-		Size = UDim2.fromOffset(84, 40),
-		BackgroundColor3 = Color3.fromRGB(255, 90, 90),
-		Text = "ADMIN",
-		Font = Enum.Font.FredokaOne,
-		TextScaled = true,
-		TextColor3 = Color3.new(1, 1, 1),
-		Visible = false,
+	-- ===== RIGHT: admin tile =====
+	local right = UI.new("Frame", {
+		Name = "Right",
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -12, 0.4, 0),
+		Size = UDim2.fromOffset(56, 130),
+		BackgroundTransparency = 1,
 		Parent = gui,
-	}, { UI.corner(10), UI.stroke(DARK, 3) })
-	UI.scaleObject(adminBtn)
+	}, { UI.new("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder }) })
+	UI.scaleObject(right)
+	HUD.right = right
+	local adminPanel = nil
+	local adminBtn = UI.tile(
+		right,
+		"Admin",
+		"🛠️",
+		"Admin",
+		Color3.fromRGB(255, 130, 120),
+		Color3.fromRGB(200, 40, 50),
+		54
+	)
+	adminBtn.LayoutOrder = 9
+	adminBtn.Visible = false
 	local function refreshAdmin()
 		adminBtn.Visible = player:GetAttribute("Admin") == true
 		if adminBtn.Visible and not adminPanel then
@@ -629,16 +714,47 @@ function HUD.start()
 		local bag, cap = attr("Bag", 0), attr("BagCap", 20)
 		local loose = attr("Loose", 0)
 		strength.Text =
-			string.format("%s  ⚡%s", Format.number(attr("Strength", 10)), Format.number(attr("Power", 10)))
-		bagText.Text = string.format("🪨 %s/%s", Format.number(bag), Format.number(cap))
+			string.format("%s   ⚡%s", Format.number(attr("Strength", 10)), Format.number(attr("Power", 10)))
+		bagText.Text = string.format("%s/%s", Format.number(bag), Format.number(cap))
 			.. (if loose > 0 then string.format("  +%s", Format.number(loose)) else "")
-		bagFill.Size = UDim2.fromScale(math.clamp(bag / math.max(1, cap), 0, 1), 1)
-		bagFill.BackgroundColor3 = if bag >= cap
-			then Color3.fromRGB(255, 90, 90)
-			else Color3.fromRGB(170, 150, 120)
-		slots.Text = string.format("Finds %d/%d", attr("SlotsUsed", 0), attr("Slots", 3))
+		bagText.TextColor3 = if bag >= cap then Color3.fromRGB(255, 90, 90) else Color3.fromRGB(235, 205, 150)
+		slots.Text = string.format("%d/%d", attr("SlotsUsed", 0), attr("Slots", 3))
+		local parts = {}
+		if player:GetAttribute("TopDog") == true then
+			table.insert(parts, "🐶 TOP DOG")
+		end
+		local rebirths = attr("Rebirths", 0)
+		if rebirths > 0 then
+			table.insert(parts, string.format("Escapes x%s", Format.number(1 + rebirths * 0.5)))
+		end
+		if player:GetAttribute("GroupBonus") == true then
+			table.insert(parts, "Group Boost: +10%")
+		end
+		local buffs = tostring(player:GetAttribute("Buffs") or "")
+		if buffs ~= "" then
+			table.insert(parts, "Buffs: " .. buffs)
+		end
+		boost.Text = table.concat(parts, " · ")
+		local minutes = attr("PlayMinutes", 0)
+		local label = giftTile:FindFirstChild("Label") :: TextLabel
+		label.Text = (Economy.GiftMinutes - minutes % Economy.GiftMinutes) .. "m"
 	end
-	for _, name in { "Bag", "BagCap", "Loose", "Strength", "Power", "SlotsUsed", "Slots" } do
+	for _, name in
+		{
+			"Bag",
+			"BagCap",
+			"Loose",
+			"Strength",
+			"Power",
+			"SlotsUsed",
+			"Slots",
+			"Rebirths",
+			"GroupBonus",
+			"Buffs",
+			"PlayMinutes",
+			"TopDog",
+		}
+	do
 		player:GetAttributeChangedSignal(name):Connect(refresh)
 	end
 	refresh()
@@ -650,9 +766,27 @@ function HUD.start()
 			shownNoodles += (target - shownNoodles) * math.min(1, dt * 8)
 		end
 		noodles.Text = Format.number(math.floor(shownNoodles + 0.5))
+		-- event tile shows the running event's timer
+		local ev = ReplicatedStorage:GetAttribute("Event")
+		local running = typeof(ev) == "string" and ev ~= ""
+		eventTile.Visible = running
+		if running then
+			local ends = ReplicatedStorage:GetAttribute("EventEnds")
+			local left = if typeof(ends) == "number"
+				then math.max(0, ends - workspace:GetServerTimeNow())
+				else 0
+			local label = eventTile:FindFirstChild("Label") :: TextLabel
+			label.Text = Format.duration(left)
+		end
 	end)
 	player:GetAttributeChangedSignal("Noodles"):Connect(function()
-		UI.bump(noodles.Parent :: GuiObject, 0.12)
+		UI.bump(noodles.Parent :: GuiObject, 0.08)
+	end)
+	eventTile.Activated:Connect(function()
+		local ev = ReplicatedStorage:GetAttribute("Event")
+		if typeof(ev) == "string" and ev ~= "" then
+			toast("⚡ " .. ev .. " is on!", "cash")
+		end
 	end)
 
 	-- context: zone label, LIFT near the gym, full prompt, auto-vacuum

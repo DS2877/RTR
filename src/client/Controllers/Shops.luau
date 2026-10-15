@@ -93,7 +93,7 @@ local function row(body: Instance, order: number, height: number?): Frame
 		Size = UDim2.new(1, -8, 0, height or 70),
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		Parent = body,
-	}, { UI.corner(14), UI.stroke(Color3.fromRGB(220, 200, 170), 2) })
+	}, { UI.corner(10), UI.stroke(Color3.fromRGB(205, 205, 215), 1) })
 end
 
 local function upgradePanel(shop: string, title: string, color: Color3, dark: Color3)

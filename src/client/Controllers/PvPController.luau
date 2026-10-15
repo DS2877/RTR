@@ -407,23 +407,28 @@ function PvPController.start()
 	)
 	local bar = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -20),
-		Size = UDim2.fromOffset(260, 22),
+		Position = UDim2.new(0.5, 0, 1, -76),
+		Size = UDim2.fromOffset(220, 12),
 		BackgroundColor3 = Color3.fromRGB(40, 40, 50),
 		Visible = false,
 		Parent = gui,
-	}, { UI.corner(11), UI.stroke(Color3.fromRGB(20, 20, 28), 3) })
+	}, { UI.corner(6), UI.stroke(UI.INK, 1.5) })
 	UI.scaleObject(bar)
 	local fill = UI.new(
 		"Frame",
 		{ Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(90, 220, 110), Parent = bar },
-		{ UI.corner(11) }
+		{ UI.corner(6) }
 	)
-	UI.bigText({ Size = UDim2.fromScale(1, 1), Text = "STAMINA", ZIndex = 2, Parent = bar })
+	UI.slimText({
+		Position = UDim2.new(0, 0, 0, -16),
+		Size = UDim2.new(1, 0, 0, 14),
+		Text = "STAMINA",
+		Parent = bar,
+	})
 	local topDog = UI.bigText({
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 50),
-		Size = UDim2.fromOffset(240, 28),
+		Position = UDim2.new(0.5, 0, 0, 32),
+		Size = UDim2.fromOffset(200, 20),
 		Text = "🐶 YOU ARE TOP DOG",
 		TextColor3 = Color3.fromRGB(255, 210, 60),
 		Visible = false,
@@ -462,7 +467,7 @@ function PvPController.start()
 			local stamina = if typeof(st) == "number" then st else PvP.MaxStamina
 			bar.Visible = stamina < PvP.MaxStamina - 0.5
 			fill.Size = UDim2.fromScale(math.clamp(stamina / PvP.MaxStamina, 0, 1), 1)
-			topDog.Visible = player:GetAttribute("TopDog") == true
+			topDog.Visible = false -- shown in the HUD's boost line instead
 		end
 		-- raid beam target follows
 		if beam then

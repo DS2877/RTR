@@ -46,14 +46,18 @@ local function bigButton(name: string, text: string, color: Color3, pos: UDim2, 
 		Text = "",
 		Visible = false,
 		Parent = gui,
-	}, { UI.corner(18), UI.stroke(DARK, 4), UI.gradient(Color3.new(1, 1, 1), Color3.fromRGB(190, 190, 190)) })
+	}, {
+		UI.corner(math.floor(size.Y / 2)),
+		UI.stroke(UI.INK, 2),
+		UI.gradient(Color3.new(1, 1, 1), Color3.fromRGB(205, 205, 205)),
+	})
 	UI.bigText({
 		Name = "Label",
-		Position = UDim2.fromScale(0.06, 0.12),
-		Size = UDim2.fromScale(0.88, 0.76),
+		Position = UDim2.fromScale(0.08, 0.2),
+		Size = UDim2.fromScale(0.84, 0.6),
 		Text = text,
 		Parent = b,
-	}, DARK, 3)
+	}, UI.INK, 1.5)
 	UI.scaleObject(b, 1.1)
 	return b
 end
@@ -244,41 +248,34 @@ function Moments.start()
 	folder.Name = "MomentsFX"
 	folder.Parent = workspace
 
-	-- buttons on the left of PUNCH/VACUUM
-	local dynamiteBtn = bigButton(
-		"Dynamite",
-		"🧨",
-		Color3.fromRGB(255, 90, 70),
-		UDim2.new(1, -330, 1, -170),
-		Vector2.new(84, 84)
-	)
+	-- hotbar slots (bottom middle) for the tunnel tools, slim pills for the big moments
+	local hotbar = HUD.hotbar :: Frame
+	local dynamiteBtn = UI.slot(hotbar, "Dynamite", "🧨", "BUY", 58)
+	dynamiteBtn.LayoutOrder = 1
+	dynamiteBtn.Visible = false
 	local escapeBtn = bigButton(
 		"Escape",
 		"🏃 ESCAPE!",
 		Color3.fromRGB(90, 230, 120),
-		UDim2.new(0.5, 130, 1, -120),
-		Vector2.new(260, 90)
+		UDim2.new(0.5, 110, 1, -84),
+		Vector2.new(220, 52)
 	)
-	local decorBtn = bigButton(
-		"Decor",
-		"🪔",
-		Color3.fromRGB(255, 200, 110),
-		UDim2.new(1, -330, 1, -80),
-		Vector2.new(74, 74)
-	)
+	local decorBtn = UI.slot(hotbar, "Decor", "🪔", "Decor", 58)
+	decorBtn.LayoutOrder = 2
+	decorBtn.Visible = false
 	local hideBtn = bigButton(
 		"Hide",
 		"🛏️ HIDE!",
 		Color3.fromRGB(120, 160, 255),
-		UDim2.new(0.5, 130, 1, -150),
-		Vector2.new(260, 110)
+		UDim2.new(0.5, 110, 1, -140),
+		Vector2.new(220, 58)
 	)
 	local bribeBtn = bigButton(
 		"Bribe",
 		"💰 BRIBE",
 		Color3.fromRGB(255, 210, 70),
-		UDim2.new(0.5, 130, 1, -40),
-		Vector2.new(260, 80)
+		UDim2.new(0.5, 110, 1, -84),
+		Vector2.new(220, 46)
 	)
 
 	dynamiteBtn.Activated:Connect(function()
@@ -488,7 +485,7 @@ function Moments.start()
 		dynamiteBtn.Visible = inTunnel
 		local n = player:GetAttribute("Dynamite")
 		local label = dynamiteBtn:FindFirstChild("Label") :: TextLabel
-		label.Text = if typeof(n) == "number" and n > 0 then "🧨" .. n else "🧨+"
+		label.Text = if typeof(n) == "number" and n > 0 then "x" .. n else "BUY"
 		decorBtn.Visible = inTunnel
 		-- event timer
 		local ev = ReplicatedStorage:GetAttribute("Event")
@@ -499,7 +496,7 @@ function Moments.start()
 				then math.max(0, ends - workspace:GetServerTimeNow())
 				else 0
 			eventLabel.Text = string.format("⚡ %s %s", cfg.name, Format.duration(left))
-			eventLabel.Visible = true
+			eventLabel.Visible = false -- the Event tile on the left shows it
 		else
 			eventLabel.Visible = false
 		end

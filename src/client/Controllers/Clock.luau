@@ -1,5 +1,5 @@
 --!strict
--- The day/night clock: a big HUD clock with the countdown to the next phase, the LIGHTS OUT
+-- The day/night clock: slim "🌙 in 2:31" text with the countdown to the next phase, the LIGHTS OUT
 -- countdown with a siren, and the sky/lighting fading between day and night.
 
 local Lighting = game:GetService("Lighting")
@@ -32,20 +32,17 @@ function Clock.start()
 		DisplayOrder = 3,
 		Parent = player:WaitForChild("PlayerGui"),
 	})
-	local box = UI.new("Frame", {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -8, 0, 8),
-		Size = UDim2.fromOffset(170, 44),
-		BackgroundColor3 = Color3.fromRGB(255, 220, 110),
-		Parent = gui,
-	}, { UI.corner(12), UI.stroke(DARK, 3) })
-	UI.scaleObject(box)
+	-- slim "🌙 in 2:31" text above the action buttons, no box (the phase that comes next)
 	local text = UI.bigText({
-		Position = UDim2.fromOffset(6, 4),
-		Size = UDim2.new(1, -12, 1, -8),
-		Text = "☀️ DAY",
-		Parent = box,
-	})
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, -14, 1, -246),
+		Size = UDim2.fromOffset(170, 28),
+		Text = "",
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Parent = gui,
+	}, UI.INK, 1.6)
+	UI.scaleObject(text)
+	local box = text
 	local warning = UI.bigText({
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.22),
@@ -54,7 +51,7 @@ function Clock.start()
 		TextColor3 = Color3.fromRGB(255, 80, 80),
 		Visible = false,
 		Parent = gui,
-	}, DARK, 4)
+	}, DARK, 2)
 
 	local tint = 0 -- 0 = day, 1 = night
 	local lastPhase = ""
@@ -66,14 +63,18 @@ function Clock.start()
 		local mins = math.floor(left / 60)
 		local secs = math.floor(left % 60)
 		if phase == "Day" then
-			text.Text = string.format("☀️ DAY %d:%02d", mins, secs)
-			box.BackgroundColor3 = Color3.fromRGB(255, 220, 110)
+			text.Text = if mins > 0
+				then string.format("🌙 in %d:%02d", mins, secs)
+				else string.format("🌙 in %ds", secs)
+			box.TextColor3 = Color3.fromRGB(255, 255, 255)
 		elseif phase == "LightsOut" then
-			text.Text = string.format("🚨 %d", math.ceil(left))
-			box.BackgroundColor3 = Color3.fromRGB(255, 90, 90)
+			text.Text = string.format("🚨 lights out in %ds", math.ceil(left))
+			box.TextColor3 = Color3.fromRGB(255, 110, 110)
 		else
-			text.Text = string.format("🌙 NIGHT %d:%02d", mins, secs)
-			box.BackgroundColor3 = Color3.fromRGB(120, 140, 255)
+			text.Text = if mins > 0
+				then string.format("☀️ in %d:%02d", mins, secs)
+				else string.format("☀️ in %ds", secs)
+			box.TextColor3 = Color3.fromRGB(190, 205, 255)
 		end
 		-- LIGHTS OUT countdown
 		warning.Visible = phase == "LightsOut"

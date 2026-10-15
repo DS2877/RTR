@@ -128,11 +128,30 @@ data blandas aldrig in.
   VACUUM gruset → DUMP i Yard → SÄLJ hos The Fence (hoppas över om du inte har fynd) → KÖP en
   uppgradering i Workshop. Sparas, så den visas bara tills den är klar.
 - **Musik:** licensierad spellista (Heist Time m.fl.) + jakt-musik medan du bär ett stulet fynd.
-  🎵-knappen nere till vänster stänger av.
+  Music-switchen till vänster stänger av.
 - **Gnistor** vid varje slag (direkt, innan servern svarat) för mer "punch".
 - **Fotoläge** för ikon/thumbnails: ADMIN → 📸 Photo döljer allt UI i 15 s.
 - **Analytics** (Creator Hub → Analytics): onboarding-tratt (Joined → Punch → Vacuum → Dump →
   Sell → Upgrade → TutorialDone), zon-progression, försäljningar, uppgraderingar och sessionslängd.
+
+### Ny HUD (inspirerad av din referensbild)
+- **Vänster:** glansiga ikonrutor med liten text över nederkanten och röda "!"-bubblor:
+  🛒 **Store** (Robux-butiken), ⚡ **Event** (syns bara under ett event, visar nedräkningen),
+  📖 **Index** (samlingsalbumet – bubblan räknar nya fynd), 🎁 **Gift** (minuter till nästa
+  speltidsgåva). Under dem en liten **Music**-switch (som "Slow Mode").
+- **Nere till vänster:** siffror utan rutor, bara ikon + färgad text med tunn kontur:
+  🍜 Noodles (störst), 💎 fynd, 🪨 ryggsäck (blir röd när den är full), 💪 styrka + ⚡ slagkraft,
+  och en liten boost-rad (TOP DOG, flykt-multiplikator, grupp-boost, aktiva buffar).
+- **Nere i mitten:** hotbar-rutor (mörka, genomskinliga) för 🧨 Dynamite (antal) och 🪔 Decor –
+  bara i din tunnel.
+- **Nere till höger:** genomskinliga runda knappar med tunn vit ring, som hoppknappen: stor
+  👊 PUNCH, 🌀 VACUUM ovanför, 🏋️ LIFT vid gymmet. Klockan som smal text: "🌙 in 2:31".
+- **Höger:** 🛠️ Admin-ruta (bara admins).
+- **Allt annat smalare:** tunnare konturer och text överallt, alla menyer/butiker har ny stil
+  (glansigt färgat huvud, liten röd X-knapp, ljus kropp, tunna rader), smala notiser, smal
+  "BACKPACK FULL"-pill, mindre fyndkort, smal stamina-mätare och tutorial-rad.
+- Obs: Store-knappen i HUD:en är Robux-butiken (som i referensen). Fängelsebutikerna (Workshop,
+  Commissary, The Fence m.fl.) öppnas fortfarande bara vid disken.
 
 ### Balans (`lune run tools/simulate`)
 | | Gratis-spelare | Med alla pass |

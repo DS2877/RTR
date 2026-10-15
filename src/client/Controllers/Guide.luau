@@ -69,12 +69,12 @@ function Guide.start()
 	)
 	local box = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 120),
-		Size = UDim2.fromOffset(520, 46),
+		Position = UDim2.new(0.5, 0, 0, 78),
+		Size = UDim2.fromOffset(440, 34),
 		BackgroundColor3 = Color3.fromRGB(255, 230, 90),
 		Visible = false,
 		Parent = gui,
-	}, { UI.corner(14), UI.stroke(DARK, 3) })
+	}, { UI.corner(17), UI.stroke(DARK, 2), UI.gradient(Color3.new(1, 1, 1), Color3.fromRGB(215, 215, 215)) })
 	UI.scaleObject(box)
 	local text = UI.bigText(
 		{ Position = UDim2.fromOffset(8, 5), Size = UDim2.new(1, -16, 1, -10), Text = "", Parent = box },

@@ -57,7 +57,7 @@ local function row(
 		Size = UDim2.new(1, -8, 0, 70),
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		Parent = body,
-	}, { UI.corner(14), UI.stroke(Color3.fromRGB(220, 200, 170), 2) })
+	}, { UI.corner(10), UI.stroke(Color3.fromRGB(205, 205, 215), 1) })
 	UI.label({
 		Position = UDim2.fromOffset(10, 6),
 		Size = UDim2.new(0.6, -10, 0, 26),
