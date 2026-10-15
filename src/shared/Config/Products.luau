@@ -17,7 +17,7 @@ local Products = {
 	Passes = {
 		{
 			key = "DoubleNoodles",
-			id = 0,
+			id = 2039846388,
 			name = "2x Noodles",
 			emoji = "🍜",
 			price = 199,
@@ -25,7 +25,7 @@ local Products = {
 		},
 		{
 			key = "AutoVacuum",
-			id = 0,
+			id = 2039576400,
 			name = "Auto-Vacuum",
 			emoji = "🌀",
 			price = 149,
@@ -33,7 +33,7 @@ local Products = {
 		},
 		{
 			key = "HugeBackpack",
-			id = 0,
+			id = 2036384610,
 			name = "Huge Backpack",
 			emoji = "🎒",
 			price = 149,
@@ -41,7 +41,7 @@ local Products = {
 		},
 		{
 			key = "DoubleStrength",
-			id = 0,
+			id = 2038250596,
 			name = "2x Strength",
 			emoji = "💪",
 			price = 199,
@@ -49,7 +49,7 @@ local Products = {
 		},
 		{
 			key = "VIP",
-			id = 0,
+			id = 2038340615,
 			name = "VIP Prisoner",
 			emoji = "⭐",
 			price = 299,
@@ -59,7 +59,7 @@ local Products = {
 	Items = {
 		{
 			key = "Dynamite",
-			id = 0,
+			id = 3718744920,
 			name = "Dynamite",
 			emoji = "🧨",
 			price = 49,
@@ -67,7 +67,7 @@ local Products = {
 		},
 		{
 			key = "NoodlesSmall",
-			id = 0,
+			id = 3718744921,
 			name = "Noodle Crate",
 			emoji = "🍜",
 			price = 39,
@@ -75,7 +75,7 @@ local Products = {
 		},
 		{
 			key = "NoodlesBig",
-			id = 0,
+			id = 3718744924,
 			name = "Noodle Truck",
 			emoji = "🚚",
 			price = 149,
@@ -83,7 +83,7 @@ local Products = {
 		},
 		{
 			key = "InstantEmpty",
-			id = 0,
+			id = 3718744929,
 			name = "Instant Backpack Empty",
 			emoji = "💨",
 			price = 25,
