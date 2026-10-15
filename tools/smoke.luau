@@ -336,7 +336,9 @@ check("can't punch yourself", brawl(fake, fake) == "no victim")
 raider.Position = yard + Vector3.new(30, 0, 0)
 check("out of reach", brawl(fake, raider) == "out of reach")
 raider.Position = world.shops.Workshop.Position
+fake.Position = world.shops.Workshop.Position + Vector3.new(0, 0, 4)
 check("safe zone", brawl(fake, raider) == "safe zone")
+fake.Position = yard
 -- knockout drops rubble + a find
 raider.Position = yard + Vector3.new(4, 0, 0)
 r.data.Bag, r.data.BagValue = 20, 40
