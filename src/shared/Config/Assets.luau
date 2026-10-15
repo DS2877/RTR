@@ -22,6 +22,19 @@ local Assets = {
 		Rare = "rbxassetid://1841173427", -- Magical (c) (APM)
 	} :: { [string]: string },
 
+	-- background playlist (loops) and the track that takes over while you carry a stolen find
+	Music = {
+		Playlist = {
+			"rbxassetid://1837463238", -- Heist Time (APM)
+			"rbxassetid://9045731376", -- Smooth Operator (APM)
+			"rbxassetid://9045939292", -- Code Heist (APM)
+			"rbxassetid://9038367768", -- Funky Disco Beats (APM)
+		},
+		Chase = "rbxassetid://9047963157", -- Spy Action (APM)
+		Volume = 0.25,
+		ChaseVolume = 0.4,
+	},
+
 	Images = {} :: { [string]: string },
 }
 

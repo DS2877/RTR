@@ -20,6 +20,10 @@ local Loot = {}
 local world: any = nil
 
 Loot.magnet = nil :: ((player: Player) -> boolean)?
+-- tutorial / analytics hooks
+Loot.onVacuum = nil :: ((player: Player) -> ())?
+Loot.onDump = nil :: ((player: Player, pay: number) -> ())?
+Loot.onSell = nil :: ((player: Player, total: number) -> ())?
 
 -- every Noodles multiplier: 2x pass, collection sets, rebirths, group bonus, buffs
 function Loot.multiplier(s: State.PlayerState): number
@@ -92,6 +96,9 @@ function Loot.vacuum(player: Player): number
 	end
 	s.piles = keep
 	if moved > 0 then
+		if Loot.onVacuum then
+			Loot.onVacuum(player)
+		end
 		Loot.sendPiles(player)
 		Stats.sync(player)
 		if room <= 0 then
@@ -120,6 +127,9 @@ function Loot.dump(player: Player): number
 	s.data.BagValue = 0
 	Loot.addNoodles(player, pay)
 	Net.fire(player, Remotes.Names.Dumped, pay)
+	if Loot.onDump then
+		Loot.onDump(player, pay)
+	end
 	return pay
 end
 
@@ -167,6 +177,9 @@ function Loot.sell(player: Player, slot: number): number
 	if total > 0 then
 		Loot.addNoodles(player, total)
 		Net.notice(player, "The Fence paid " .. Format.noodles(total), "cash")
+		if Loot.onSell then
+			Loot.onSell(player, total)
+		end
 	end
 	Loot.sendFinds(player)
 	return total

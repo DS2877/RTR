@@ -26,3 +26,5 @@ require(Controllers.Shops).openDecor = function()
 	ExtraShops.open("Decor")
 end
 require(Controllers.Moments).start()
+require(Controllers.Guide).start()
+require(Controllers.Music).start()

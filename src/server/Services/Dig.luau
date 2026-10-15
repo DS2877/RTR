@@ -36,6 +36,7 @@ Dig.findBoost = nil :: ((player: Player) -> number)?
 Dig.onBroken = nil :: ((player: Player, broken: { number }) -> ())?
 Dig.onBottom = nil :: ((player: Player) -> ())?
 Dig.speedBoost = nil :: ((player: Player) -> number)?
+Dig.onZone = nil :: ((player: Player, zone: number) -> ())?
 
 -- multiplies punch power for everyone (events like BLACKOUT set it, M4)
 Dig.globalBoost = 1
@@ -179,6 +180,9 @@ local function reachZone(player: Player, s: State.PlayerState, zone: number)
 	end
 	s.data.Zone = zone
 	Net.fire(player, Remotes.Names.Zone, zone)
+	if Dig.onZone then
+		Dig.onZone(player, zone)
+	end
 	Net.announce(
 		string.format("%s reached the %s!", player.Name, Zones[zone].name),
 		{ 255, 215, 60 },

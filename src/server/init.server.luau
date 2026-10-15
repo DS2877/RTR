@@ -31,6 +31,7 @@ local Rewards = require(Services.Rewards)
 local Guards = require(Services.Guards)
 local Events = require(Services.Events)
 local Market = require(Services.Market)
+local Tutorial = require(Services.Tutorial)
 
 Remotes.setup()
 
@@ -91,6 +92,30 @@ Shop.onBought = function(player, track)
 	if track == "Lock" then
 		Raid.refreshPrompt(player)
 	end
+	Tutorial.did(player, "Upgrade")
+	Tutorial.event(player, "Upgrade_" .. track)
+end
+-- tutorial + analytics (first punch, vacuum, sale, upgrade, zones, session length)
+local eventsOnBroken = Dig.onBroken
+Dig.onBroken = function(player, broken)
+	if eventsOnBroken then
+		eventsOnBroken(player, broken)
+	end
+	Tutorial.did(player, "Punch")
+end
+Loot.onVacuum = function(player)
+	Tutorial.did(player, "Vacuum")
+end
+Loot.onDump = function(player, pay)
+	Tutorial.did(player, "Dump")
+	Tutorial.event(player, "Dump", pay)
+end
+Loot.onSell = function(player, total)
+	Tutorial.did(player, "Sell")
+	Tutorial.event(player, "Sell", total)
+end
+Dig.onZone = function(player, zone)
+	Tutorial.zone(player, zone)
 end
 
 local function onCharacter(player: Player, character: Model)
@@ -137,6 +162,8 @@ local function onPlayerAdded(player: Player)
 	Product.syncPackAttributes(player)
 	Escape.check(player)
 	Rewards.onJoin(player)
+	Tutorial.onJoin(player)
+	player:SetAttribute("JoinedAt", os.time())
 	Market.renderDecor(player)
 	Market.sync(player)
 	player:SetAttribute("Stamina", 100)
@@ -157,6 +184,10 @@ end
 local function leave(player: Player)
 	local s = State.get(player)
 	if s then
+		local joined = player:GetAttribute("JoinedAt")
+		if typeof(joined) == "number" then
+			Tutorial.event(player, "SessionMinutes", math.floor((os.time() - joined) / 60))
+		end
 		Dig.saveTunnel(s)
 		s.data.LastOnline = os.time()
 	end

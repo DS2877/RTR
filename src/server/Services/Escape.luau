@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Economy = require(Shared.Config.Economy)
+local Extras = require(Shared.Config.Extras)
 local World = require(Shared.Config.World)
 local Voxel = require(Shared.Voxel)
 local Remotes = require(Shared.Remotes)
@@ -63,8 +64,10 @@ function Escape.escape(player: Player): string?
 	d.Finds, d.Stash = {}, {}
 	-- placed decor goes back into your decor box
 	for _, p in d.Placed do
-		local kind = tostring(p[1])
-		d.Decor[kind] = (d.Decor[kind] or 0) + 1
+		local item = Extras.Decor[p[1]]
+		if item then
+			d.Decor[item.id] = (d.Decor[item.id] or 0) + 1
+		end
 	end
 	d.Placed = {}
 	s.escapeReady = false

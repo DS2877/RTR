@@ -567,7 +567,12 @@ Cells.release(fake)
 State.remove(fake)
 
 -- ===== assets =====
-for name, id in Assets.Sounds do
+local allSounds: { [string]: string } = table.clone(Assets.Sounds)
+for i, id in Assets.Music.Playlist do
+	allSounds["Music" .. i] = id
+end
+allSounds.Chase = Assets.Music.Chase
+for name, id in allSounds do
 	local num = tonumber(string.match(id, "%d+"))
 	if num then
 		local ok, info = pcall(function()
