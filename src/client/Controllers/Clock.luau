@@ -4,6 +4,7 @@
 -- prison time runs continuously through each phase (Config/Cycle.Schedule clock ranges), with a
 -- real dawn and dusk.
 
+local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -159,6 +160,7 @@ function Clock.start()
 	local lastPhase = ""
 	local lastSecond = -1
 	local shownDark = 0
+	local searchBase: { [BasePart]: CFrame } = {}
 	RunService.RenderStepped:Connect(function(dt)
 		local phase = Clock.phase()
 		local nowT = workspace:GetServerTimeNow()
@@ -225,6 +227,32 @@ function Clock.start()
 		Lighting.Brightness = day.brightness + (night.brightness - day.brightness) * k
 		Lighting.OutdoorAmbient = rgb(day.outdoor):Lerp(rgb(night.outdoor), k)
 		baseAmbient = rgb(day.ambient):Lerp(rgb(night.ambient), k)
+
+		-- frosted windows go dark at night; the tower searchlight sweeps the Yard
+		for _, w in CollectionService:GetTagged("SkyWindow") do
+			local part = w :: BasePart
+			part.Color = Color3.fromRGB(210, 222, 235):Lerp(Color3.fromRGB(28, 32, 44), k)
+			local sl = part:FindFirstChildOfClass("SurfaceLight")
+			if sl then
+				sl.Brightness = 1.2 * (1 - k)
+			end
+		end
+		local t = workspace:GetServerTimeNow()
+		for _, s in CollectionService:GetTagged("Searchlight") do
+			local part = s :: BasePart
+			local base = searchBase[part]
+			if not base then
+				base = part.CFrame
+				searchBase[part] = base
+			end
+			part.CFrame = base :: CFrame
+				* CFrame.Angles(0, math.sin(t * 0.35) * 1.1 + 0.8, 0)
+				* CFrame.Angles(math.rad(-50 + math.sin(t * 0.7) * 8), 0, 0)
+			local beam = part:FindFirstChildOfClass("Beam")
+			if beam then
+				beam.Transparency = NumberSequence.new(0.92 - 0.2 * k, 1)
+			end
+		end
 	end)
 end
 

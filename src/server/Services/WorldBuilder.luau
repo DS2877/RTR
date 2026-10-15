@@ -14,6 +14,7 @@ local Tunnel = require(Shared.Tunnel)
 local Cycle = require(Shared.Config.Cycle)
 local Build = require(script.Parent.Parent.Util.Build)
 local GymProps = require(script.Parent.Parent.Util.GymProps)
+local Dressing = require(script.Parent.Parent.Util.Dressing)
 local Format = require(Shared.Format)
 
 local WorldBuilder = {}
@@ -1815,6 +1816,7 @@ function WorldBuilder.build(): WorldRecord
 	yard.Name = "Yard"
 	yard.Parent = root
 	local dump, stations = buildYard(yard, shops)
+	Dressing.dress(root, cells)
 	setupLighting()
 	return { cells = cells, boards = boards, shops = shops, dump = dump, stations = stations }
 end

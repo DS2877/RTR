@@ -30,7 +30,7 @@
 		"Lighting": {
 			"$properties": {
 				"Technology": {
-					"Enum": 3
+					"Enum": 4
 				}
 			}
 		}

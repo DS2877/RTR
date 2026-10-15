@@ -114,7 +114,8 @@ local function applyLooks(player: Player)
 	if not s or not character then
 		return
 	end
-	local uniform = find(Extras.Uniforms, s.data.Uniform)
+	-- every prisoner wears a jumpsuit (Classic Orange unless they picked another one)
+	local uniform = find(Extras.Uniforms, if s.data.Uniform ~= "" then s.data.Uniform else "Orange")
 	if uniform and uniform.color then
 		for _, c in character:GetChildren() do
 			if c:IsA("Shirt") or c:IsA("Pants") or c:IsA("ShirtGraphic") then
@@ -140,6 +141,32 @@ local function applyLooks(player: Player)
 				part.Color = color
 			end
 		end
+	end
+	-- the cell number stenciled on the back
+	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+	if torso and torso:IsA("BasePart") and s.cell and not torso:FindFirstChild("CellNumber") then
+		local gui = Instance.new("SurfaceGui")
+		gui.Name = "CellNumber"
+		gui.Face = Enum.NormalId.Back
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 40
+		gui.LightInfluence = 1
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 1
+		label.Size = UDim2.fromScale(1, 1)
+		label.Font = Enum.Font.GothamBlack
+		label.TextScaled = true
+		label.Text = string.format("%02d", s.cell)
+		label.TextColor3 = Color3.fromRGB(30, 30, 34)
+		label.TextTransparency = 0.15
+		local pad = Instance.new("UIPadding")
+		pad.PaddingTop = UDim.new(0.18, 0)
+		pad.PaddingBottom = UDim.new(0.18, 0)
+		pad.PaddingLeft = UDim.new(0.2, 0)
+		pad.PaddingRight = UDim.new(0.2, 0)
+		pad.Parent = label
+		label.Parent = gui
+		gui.Parent = torso
 	end
 	-- fists: VIP = gold hands, plus a trail on each fist
 	local gold = s.passes.VIP
@@ -179,6 +206,11 @@ end
 function Market.onCharacter(player: Player)
 	task.wait(0.5)
 	applyLooks(player)
+	-- the avatar's own clothes can arrive later: put the jumpsuit back on once they're in
+	if typeof(player) == "Instance" and not player:HasAppearanceLoaded() then
+		player.CharacterAppearanceLoaded:Wait()
+		applyLooks(player)
+	end
 end
 
 -- ===== decor =====
