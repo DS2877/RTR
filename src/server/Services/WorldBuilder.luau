@@ -131,11 +131,12 @@ local function buildRowShell(parent: Instance, row: number)
 		Build.box(parent, "CellWall", Vector3.new(x - 2, 0, a0), Vector3.new(x + 2, H, a1), C.wall, {
 			Material = Enum.Material.Concrete,
 		})
+		local l0, l1 = zz(HALF_CORR + 2, BACK_Z - 0.05)
 		Build.box(
 			parent,
 			"CellWallLow",
-			Vector3.new(x - 2.1, 0, a0),
-			Vector3.new(x + 2.1, 6, a1),
+			Vector3.new(x - 2.1, 0, l0),
+			Vector3.new(x + 2.1, 6, l1),
 			C.wallLow,
 			{
 				Material = Enum.Material.Concrete,
@@ -292,7 +293,7 @@ local function buildCell(parent: Instance, index: number): CellRecord
 		model,
 		"Pillow",
 		Vector3.new(3, 0.6, 1.6),
-		inCell(-halfW + 2.2, 2.6, 5.4),
+		inCell(-halfW + 2.2, 2.6, 5.7),
 		Color3.fromRGB(250, 250, 245)
 	)
 	-- toilet + sink
@@ -546,8 +547,8 @@ local function station(parent: Instance, name: string, title: string, cf: CFrame
 			Build.part(
 				m,
 				"Post",
-				Vector3.new(0.5, 10, 0.5),
-				cf * CFrame.new(side * 7.5, 5, 0),
+				Vector3.new(0.5, 10.4, 0.5),
+				cf * CFrame.new(side * 7.5, 5.2, 0),
 				STEEL,
 				{ Material = Enum.Material.Metal }
 			)
@@ -555,8 +556,8 @@ local function station(parent: Instance, name: string, title: string, cf: CFrame
 		Build.part(
 			m,
 			"MeshLow",
-			Vector3.new(6, 3.4, 0.2),
-			cf * CFrame.new(0, 1.7, 0),
+			Vector3.new(5.9, 3.3, 0.2),
+			cf * CFrame.new(0, 1.65, 0),
 			Color3.fromRGB(140, 145, 150),
 			{
 				Material = Enum.Material.DiamondPlate,
@@ -596,12 +597,12 @@ local function station(parent: Instance, name: string, title: string, cf: CFrame
 			{ 5, 6.5, 0.6, 2.8, 0 }, -- pickaxe
 			{ 5, 7.8, 2.4, 0.4, 0.2 },
 		}
-		for _, t in tools do
+		for k, t in tools do
 			Build.part(
 				m,
 				"Tool",
 				Vector3.new(t[3], t[4], 0.2),
-				cf * CFrame.new(t[1], t[2], 5.6) * CFrame.Angles(0, 0, t[5]),
+				cf * CFrame.new(t[1], t[2], 5.6 - k * 0.04) * CFrame.Angles(0, 0, t[5]),
 				DARK_STEEL,
 				{
 					Material = Enum.Material.Metal,
@@ -634,8 +635,8 @@ local function station(parent: Instance, name: string, title: string, cf: CFrame
 		Build.part(
 			keeper,
 			"Goggles",
-			Vector3.new(1.5, 0.35, 0.2),
-			head.CFrame * CFrame.new(0, 0.2, -0.72),
+			Vector3.new(1.56, 0.35, 0.2),
+			head.CFrame * CFrame.new(0, 0.2, -0.82),
 			Color3.fromRGB(30, 30, 30)
 		)
 		plate(m, title, cf * CFrame.new(0, 10.6, -0.2))
@@ -674,7 +675,7 @@ local function station(parent: Instance, name: string, title: string, cf: CFrame
 			wallColor,
 			{ Material = Enum.Material.Concrete }
 		)
-		bars(m, cf * CFrame.new(0, 3.4, -0.1), 6, 4, 0.75)
+		bars(m, cf * CFrame.new(0, 3.4, -0.35), 6, 4, 0.75)
 		top = Build.part(m, "Counter", Vector3.new(6, 0.35, 1.6), cf * CFrame.new(0, 3.55, -0.6), STEEL, {
 			Material = Enum.Material.Metal,
 		})
@@ -796,8 +797,8 @@ local function station(parent: Instance, name: string, title: string, cf: CFrame
 		Build.part(
 			guy,
 			"Shades",
-			Vector3.new(1.4, 0.35, 0.2),
-			head.CFrame * CFrame.new(0, 0.18, -0.72),
+			Vector3.new(1.52, 0.35, 0.2),
+			head.CFrame * CFrame.new(0, 0.18, -0.82),
 			Color3.fromRGB(10, 10, 12)
 		)
 		-- blanket hung as a curtain behind him
@@ -863,8 +864,8 @@ local function station(parent: Instance, name: string, title: string, cf: CFrame
 			Build.part(
 				m,
 				"Divider",
-				Vector3.new(0.3, 6, 2),
-				cf * CFrame.new(i * 4.6 + 2.3, 6.7, -0.4),
+				Vector3.new(0.3, 6.3, 2),
+				cf * CFrame.new(i * 4.6 + 2.3, 6.85, -0.4),
 				Color3.fromRGB(105, 108, 112)
 			)
 			Build.part(
@@ -974,8 +975,8 @@ local function station(parent: Instance, name: string, title: string, cf: CFrame
 		Build.part(
 			guy,
 			"Shades",
-			Vector3.new(1.4, 0.35, 0.2),
-			head.CFrame * CFrame.new(0, 0.18, -0.72),
+			Vector3.new(1.52, 0.35, 0.2),
+			head.CFrame * CFrame.new(0, 0.18, -0.82),
 			Color3.fromRGB(10, 10, 12)
 		)
 		Build.part(
@@ -1068,9 +1069,9 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 	local messSign =
 		Build.part(parent, "MessSign", Vector3.new(14, 3, 0.4), CFrame.new(cr.x, 15, z1 - 0.3), C.orange)
 	Build.sign(messSign, Enum.NormalId.Front, "🍲 MESS HALL", Color3.new(1, 1, 1))
-	Build.box(parent, "Wall", Vector3.new(x1 - 2, 0, z0), Vector3.new(x1 + 2, h, -HALF_CORR), C.wall)
-	Build.box(parent, "Wall", Vector3.new(x1 - 2, 0, HALF_CORR), Vector3.new(x1 + 2, h, z1), C.wall)
-	Build.box(parent, "Wall", Vector3.new(x1 - 2, H, -HALF_CORR), Vector3.new(x1 + 2, h, HALF_CORR), C.wall)
+	Build.box(parent, "Wall", Vector3.new(x1 - 2, 0, z0), Vector3.new(x1, h, -HALF_CORR), C.wall)
+	Build.box(parent, "Wall", Vector3.new(x1 - 2, 0, HALF_CORR), Vector3.new(x1, h, z1), C.wall)
+	Build.box(parent, "Wall", Vector3.new(x1 - 2, H, -HALF_CORR), Vector3.new(x1, h, HALF_CORR), C.wall)
 	local yardDoor = 12
 	Build.box(parent, "Wall", Vector3.new(x0 - 4, 0, z0), Vector3.new(x0, h, -yardDoor), C.wall)
 	Build.box(parent, "Wall", Vector3.new(x0 - 4, 0, yardDoor), Vector3.new(x0, h, z1), C.wall)
@@ -1087,7 +1088,7 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 		parent,
 		"Paint",
 		Vector3.new(x0, 0, z0),
-		Vector3.new(x1, 6, z0 + 0.1),
+		Vector3.new(x1 - 2, 6, z0 + 0.1),
 		C.wallLow,
 		{ CanCollide = false }
 	)
@@ -1095,7 +1096,7 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 		parent,
 		"Paint",
 		Vector3.new(x0, 0, z1 - 0.1),
-		Vector3.new(x1, 6, z1),
+		Vector3.new(x1 - 2, 6, z1),
 		C.wallLow,
 		{ CanCollide = false }
 	)
@@ -1285,8 +1286,8 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 		Build.part(
 			parent,
 			"CouchBack",
-			Vector3.new(9, 3, 1),
-			CFrame.new(cx, 2.5, z1 - 1.2),
+			Vector3.new(9.2, 3.2, 1),
+			CFrame.new(cx, 2.6, z1 - 1.2),
 			Color3.fromRGB(120, 20, 40),
 			{
 				Material = Enum.Material.Fabric,
@@ -1488,6 +1489,7 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 	end
 	-- fences: posts + see-through mesh panels
 	local fence = Color3.fromRGB(150, 155, 160)
+	local postAt: { [string]: boolean } = {}
 	local function fenceLine(a: Vector3, b: Vector3)
 		local len = (b - a).Magnitude
 		local mid = (a + b) / 2
@@ -1509,6 +1511,11 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 		local n = math.floor(len / 12)
 		for i = 0, n do
 			local p = a:Lerp(b, i / math.max(1, n))
+			local key = string.format("%d,%d", math.round(p.X), math.round(p.Z))
+			if postAt[key] then
+				continue
+			end
+			postAt[key] = true
 			Build.part(
 				parent,
 				"Post",
@@ -1686,7 +1693,7 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 			Build.part(
 				m,
 				"Post",
-				Vector3.new(0.4, 9.5, 0.4),
+				Vector3.new(0.4, 9.5, 0.3),
 				cf * CFrame.new(dx, 4.75, 6.2),
 				Color3.fromRGB(58, 62, 68)
 			)

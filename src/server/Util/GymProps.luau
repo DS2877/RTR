@@ -192,7 +192,7 @@ local builders: { [string]: (m: Model) -> () } = {
 				Shape = Enum.PartType.Cylinder,
 			}
 		)
-		p(m, "Panel", Vector3.new(3.4, 0.6, 0.3), CFrame.new(0, 3.3, -1.6), Color3.fromRGB(60, 60, 70))
+		p(m, "Panel", Vector3.new(3.3, 0.7, 0.3), CFrame.new(0, 3.3, -1.6), Color3.fromRGB(60, 60, 70))
 	end,
 	Desk = function(m)
 		local wood = Color3.fromRGB(100, 66, 40)
@@ -235,7 +235,7 @@ local builders: { [string]: (m: Model) -> () } = {
 	Bus = function(m)
 		local body = Color3.fromRGB(225, 225, 220)
 		p(m, "Body", Vector3.new(7, 6, 20), CFrame.new(0, 4, 0), body, { Material = Enum.Material.Metal })
-		p(m, "Stripe", Vector3.new(7.05, 0.8, 20.05), CFrame.new(0, 3.2, 0), Color3.fromRGB(40, 70, 130))
+		p(m, "Stripe", Vector3.new(7.14, 0.8, 20.14), CFrame.new(0, 3.2, 0), Color3.fromRGB(40, 70, 130))
 		p(m, "Roof", Vector3.new(6.6, 0.5, 19.6), CFrame.new(0, 7.2, 0), body)
 		for side = -1, 1, 2 do
 			for i = 0, 5 do
@@ -253,7 +253,7 @@ local builders: { [string]: (m: Model) -> () } = {
 					m,
 					"Bars",
 					Vector3.new(0.15, 1.8, 0.2),
-					CFrame.new(side * 3.56, 5.3, -7.5 + i * 3),
+					CFrame.new(side * 3.64, 5.3, -7.5 + i * 3),
 					Color3.fromRGB(30, 30, 30)
 				)
 			end

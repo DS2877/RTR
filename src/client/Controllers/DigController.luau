@@ -21,6 +21,7 @@ local Client = script.Parent.Parent
 local VoxelRender = require(script.Parent.VoxelRender)
 local Sound = require(Client.Util.Sound)
 local Shake = require(Client.Util.Shake)
+local PunchAnim = require(Client.Util.PunchAnim)
 
 local DigController = {}
 
@@ -182,47 +183,6 @@ local function flashPreview()
 	end
 end
 
--- ===== procedural punch (arm jab via the shoulder joint) =====
-
-local arms = { "Right", "Left" }
-local nextArm = 1
-local jab: { [string]: number } = { Right = 0, Left = 0 }
-local baseC0: { [Motor6D]: CFrame } = {}
-
-local function shoulder(side: string): Motor6D?
-	local c = player.Character
-	if not c then
-		return nil
-	end
-	local upper = c:FindFirstChild(side .. "UpperArm")
-	local m = upper and upper:FindFirstChild(side .. "Shoulder")
-	if not m then
-		local torso = c:FindFirstChild("Torso")
-		m = torso and torso:FindFirstChild(side .. " Shoulder")
-	end
-	return if m and m:IsA("Motor6D") then m else nil
-end
-
-local function animateArms(dt: number)
-	for _, side in arms do
-		local m = shoulder(side)
-		if m then
-			if not baseC0[m] then
-				baseC0[m] = m.C0
-			end
-			jab[side] = math.max(0, jab[side] - dt * 5)
-			local k = jab[side]
-			-- quick out, slower back: ease with k^2
-			local amount = math.sin(math.min(1, k) * math.pi * 0.5) ^ 2
-			local isR15 = m.Parent and m.Parent.Name ~= "Torso"
-			local rot = if isR15
-				then CFrame.Angles(math.rad(95) * amount, 0, 0)
-				else CFrame.Angles(0, 0, math.rad(if side == "Right" then 95 else -95) * amount)
-			m.C0 = baseC0[m] * rot
-		end
-	end
-end
-
 -- ===== punching =====
 
 local function punch()
@@ -236,14 +196,12 @@ local function punch()
 	if not a then
 		if DigController.onEmptyPunch and DigController.onEmptyPunch() then
 			lastPunch = now
-			jab[arms[nextArm]] = 1
-			nextArm = 3 - nextArm
+			PunchAnim.play(player.Character)
 		end
 		return
 	end
 	lastPunch = now
-	jab[arms[nextArm]] = 1
-	nextArm = 3 - nextArm
+	PunchAnim.play(player.Character)
 	punchRemote:FireServer(a.x, a.y, a.z, a.face)
 	Sound.play("Punch", 0.7, 0.75)
 	Shake.kick(0.16)
@@ -274,10 +232,6 @@ function DigController.start()
 	outlineFolder.Name = "AimPreview"
 	outlineFolder.Parent = workspace
 
-	player.CharacterAdded:Connect(function()
-		baseC0 = {}
-	end)
-
 	local acc = 0
 	RunService.RenderStepped:Connect(function(dt)
 		acc += dt
@@ -289,7 +243,6 @@ function DigController.start()
 		if holding then
 			punch()
 		end
-		animateArms(dt)
 	end)
 
 	-- PC / gamepad

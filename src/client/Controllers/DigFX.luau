@@ -6,6 +6,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
@@ -166,6 +167,34 @@ local function puff(pos: Vector3, color: Color3, amount: number, size: number)
 	task.delay(1.4, function()
 		a:Destroy()
 	end)
+end
+
+-- The punch landing: a quick white shock ring flat on the hit face + a dust puff.
+local function impact(pos: Vector3, normal: Vector3, color: Color3)
+	local at = pos + normal * (World.BlockSize / 2 + 0.06)
+	local ring = Instance.new("Part")
+	ring.Anchored = true
+	ring.CanCollide = false
+	ring.CanQuery = false
+	ring.CanTouch = false
+	ring.CastShadow = false
+	ring.Shape = Enum.PartType.Cylinder
+	ring.Material = Enum.Material.Neon
+	ring.Color = Color3.new(1, 1, 1)
+	ring.Transparency = 0.25
+	-- a cylinder's axis is its X: point it along the face normal
+	ring.CFrame = CFrame.lookAt(at, at + normal) * CFrame.Angles(0, math.pi / 2, 0)
+	ring.Size = Vector3.new(0.05, 0.6, 0.6)
+	ring.Parent = folder
+	TweenService:Create(
+		ring,
+		TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ Size = Vector3.new(0.05, 3.2, 3.2), Transparency = 1 }
+	):Play()
+	task.delay(0.2, function()
+		ring:Destroy()
+	end)
+	puff(at, color, 4, 0.6)
 end
 
 local function sparks(pos: Vector3, color: Color3)
@@ -563,5 +592,6 @@ end
 
 -- hit sparks at the aimed block (called by the HUD wiring when a punch lands)
 DigFX.sparks = sparks
+DigFX.impact = impact
 
 return DigFX

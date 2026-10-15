@@ -208,6 +208,10 @@ do
 			local v = if axis == 3 then 2 else 3
 			for _, sign in { -1, 1 } do
 				local d = if sign < 0 then l[axis] else h[axis]
+				-- bottoms resting on the floor are never seen
+				if axis == 2 and sign < 0 and d <= 0.05 then
+					continue
+				end
 				local key = axis .. ":" .. sign .. ":" .. math.floor(d * 20 + 0.5)
 				local list = faces[key]
 				if not list then
@@ -264,7 +268,12 @@ do
 					local line = short(a.name) .. " <> " .. short(b.name)
 					if not seen[line] then
 						seen[line] = true
-						table.insert(hits, string.format("%s (%.1fx%.1f)", line, du, dv))
+						if du * dv > 0.1 then
+							table.insert(
+								hits,
+								string.format("%s (%.1fx%.1f, axis %d at %.2f)", line, du, dv, a.axis, a.d)
+							)
+						end
 					end
 				end
 			end
@@ -275,6 +284,7 @@ do
 	for k = 1, math.min(#hits, 400) do
 		print("zfight " .. hits[k])
 	end
+	check("no z-fighting faces", #hits == 0, hits[1])
 end
 
 -- ===== simulated player =====

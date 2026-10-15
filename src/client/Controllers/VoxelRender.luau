@@ -51,6 +51,7 @@ local partCount = 0
 local imposters: { [number]: Part } = {}
 
 -- callbacks for FX (set by other controllers)
+VoxelRender.onHit = nil :: ((t: T, puncher: number) -> ())?
 VoxelRender.onBroken = nil :: ((t: T, broken: { number }, puncher: number) -> ())?
 VoxelRender.onDamaged = nil :: ((t: T, damaged: { number }, puncher: number) -> ())?
 VoxelRender.onChamber = nil :: ((t: T, zone: number) -> ())?
@@ -118,7 +119,15 @@ local function acquire(): Part
 	return p :: Part
 end
 
+-- running hit-jolt tweens (cancelled when the part goes back to the pool)
+local jolting: { [BasePart]: Tween } = {}
+
 local function release(p: Part)
+	local tw = jolting[p]
+	if tw then
+		jolting[p] = nil
+		tw:Cancel()
+	end
 	partCount -= 1
 	p.Parent = nil
 	for _, c in p:GetChildren() do
@@ -400,6 +409,33 @@ end
 
 -- ===== public =====
 
+-- The rendered part of a block jolting from a hit (strength 0..1). Rests at its grid spot.
+local function jolt(p: BasePart, strength: number)
+	if jolting[p] then
+		return
+	end
+	local base = p.CFrame
+	local j = 0.18 * strength
+	p.CFrame = base
+		* CFrame.new((math.random() - 0.5) * j, (math.random() - 0.5) * j, -j)
+		* CFrame.Angles((math.random() - 0.5) * 0.1 * strength, (math.random() - 0.5) * 0.1 * strength, 0)
+	local tw = TweenService:Create(p, TweenInfo.new(0.18, Enum.EasingStyle.Back), { CFrame = base })
+	jolting[p] = tw
+	tw.Completed:Once(function()
+		if jolting[p] == tw then
+			jolting[p] = nil
+		end
+	end)
+	tw:Play()
+end
+
+function VoxelRender.jolt(t: T, x: number, y: number, z: number)
+	local p = t.parts[Voxel.index(t.grid, x, y, z)]
+	if p then
+		jolt(p, 1)
+	end
+end
+
 function VoxelRender.get(owner: number): T?
 	return tunnels[owner]
 end
@@ -485,17 +521,17 @@ function VoxelRender.start()
 					c:Destroy()
 				end
 				styleBlock(t, idx, p)
-				-- the block jolts from the hit
-				local base = p.CFrame
-				local j = 0.14
-				p.CFrame = base
-					* CFrame.new((math.random() - 0.5) * j, (math.random() - 0.5) * j, -j)
-					* CFrame.Angles((math.random() - 0.5) * 0.08, (math.random() - 0.5) * 0.08, 0)
-				TweenService:Create(p, TweenInfo.new(0.16, Enum.EasingStyle.Back), { CFrame = base }):Play()
+				-- the block jolts from the hit (your own punches already jolted it locally)
+				if puncher ~= Players.LocalPlayer.UserId then
+					jolt(p, 1)
+				end
 			else
 				local x, y, z = Voxel.unindex(g, idx)
 				t.dirty[Voxel.chunkOf(g, x, y, z)] = true
 			end
+		end
+		if VoxelRender.onHit then
+			VoxelRender.onHit(t, puncher)
 		end
 		if VoxelRender.onBroken and #broken > 0 then
 			VoxelRender.onBroken(t, broken, puncher)

@@ -17,18 +17,30 @@ require(Controllers.VoxelRender).start()
 require(Controllers.DigFX).start()
 local DigController = require(Controllers.DigController)
 DigController.start()
--- impact sparks on every punch (before the server's answer arrives)
+-- every punch lands instantly (before the server's answer): shock ring, dust, the block jolts;
+-- other players' hits (their deltas) play their punch so everyone sees everyone dig
 do
 	local DigFX = require(Controllers.DigFX)
 	local VoxelRender = require(Controllers.VoxelRender)
-	local Tunnel = require(game:GetService("ReplicatedStorage").Shared.Tunnel)
+	local Shared = game:GetService("ReplicatedStorage").Shared
+	local Tunnel = require(Shared.Tunnel)
+	local Voxel = require(Shared.Voxel)
+	local PunchAnim = require(script.Util.PunchAnim)
+	PunchAnim.start()
 	DigController.onPunch = function(a)
 		local t = VoxelRender.own()
 		if t then
-			DigFX.sparks(
+			DigFX.impact(
 				Tunnel.blockCenter(t.frame, a.x, a.y, a.z),
+				Tunnel.faceDirection(t.frame, Voxel.Faces[a.face]),
 				VoxelRender.blockColor(a.x, a.y, a.z):Lerp(Color3.new(1, 1, 1), 0.5)
 			)
+			VoxelRender.jolt(t, a.x, a.y, a.z)
+		end
+	end
+	VoxelRender.onHit = function(_t, puncher)
+		if puncher ~= player.UserId then
+			PunchAnim.playPlayer(puncher)
 		end
 	end
 end
