@@ -1489,7 +1489,7 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 	end
 	-- fences: posts + see-through mesh panels
 	local fence = Color3.fromRGB(150, 155, 160)
-	local postAt: { [string]: boolean } = {}
+	local posts: { Vector3 } = {}
 	local function fenceLine(a: Vector3, b: Vector3)
 		local len = (b - a).Magnitude
 		local mid = (a + b) / 2
@@ -1511,11 +1511,16 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 		local n = math.floor(len / 12)
 		for i = 0, n do
 			local p = a:Lerp(b, i / math.max(1, n))
-			local key = string.format("%d,%d", math.round(p.X), math.round(p.Z))
-			if postAt[key] then
+			local taken = false
+			for _, q in posts do
+				if (q - p).Magnitude < 1.5 then
+					taken = true
+				end
+			end
+			if taken then
 				continue
 			end
-			postAt[key] = true
+			table.insert(posts, p)
 			Build.part(
 				parent,
 				"Post",
@@ -1532,8 +1537,8 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 	fenceLine(Vector3.new(x0, 0, z1), Vector3.new(x1 - 0.5, 0, z1))
 	fenceLine(Vector3.new(x0, 0, z0), Vector3.new(x0, 0, z1))
 	local crHalf = World.CommonRoom.sz / 2 + 4
-	fenceLine(Vector3.new(x1, 0, z0), Vector3.new(x1, 0, -crHalf))
-	fenceLine(Vector3.new(x1, 0, crHalf), Vector3.new(x1, 0, z1))
+	fenceLine(Vector3.new(x1, 0, z0), Vector3.new(x1, 0, -crHalf - 0.5))
+	fenceLine(Vector3.new(x1, 0, crHalf + 0.5), Vector3.new(x1, 0, z1))
 	-- guard tower in the far corner
 	local tx, tz = x0 + 10, z0 + 10
 	for _, d in { { -3, -3 }, { 3, -3 }, { -3, 3 }, { 3, 3 } } do
@@ -1620,9 +1625,16 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 	dumpModel.Name = "Dump"
 	dumpModel.Parent = parent
 	local dumpColor = Color3.fromRGB(56, 78, 60) -- a beat-up industrial dumpster
-	Build.part(dumpModel, "SkipBottom", Vector3.new(16, 1, 10), dumpCf * CFrame.new(0, 0.5, 0), dumpColor, {
-		Material = Enum.Material.Metal,
-	})
+	Build.part(
+		dumpModel,
+		"SkipBottom",
+		Vector3.new(15.4, 1, 9.4),
+		dumpCf * CFrame.new(0, 0.5, 0),
+		dumpColor,
+		{
+			Material = Enum.Material.Metal,
+		}
+	)
 	for _, side in { { 0, -5, 16, 0.6 }, { 0, 5, 16, 0.6 }, { -8, 0, 0.6, 9.4 }, { 8, 0, 0.6, 9.4 } } do
 		Build.part(
 			dumpModel,

@@ -78,52 +78,90 @@ end
 -- ===== toasts / banners =====
 
 local toastHolder: Frame
+-- Slim notice pill: dark translucent, a colored dot, clean text. Fades + slides in, fades out.
 local function toast(text: string, kind: string?)
 	local colors = {
 		good = Color3.fromRGB(90, 220, 110),
 		bad = Color3.fromRGB(255, 90, 90),
 		cash = Color3.fromRGB(255, 215, 60),
 		upgrade = Color3.fromRGB(120, 200, 255),
-		info = Color3.fromRGB(240, 240, 240),
+		info = Color3.fromRGB(220, 224, 230),
 	}
-	local l = UI.bigText({
-		Size = UDim2.new(1, 0, 0, 22),
-		Text = text,
-		TextColor3 = colors[kind or "info"] or colors.info,
+	local color = colors[kind or "info"] or colors.info
+	local pill: CanvasGroup = UI.new("CanvasGroup", {
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromOffset(0, 28),
+		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
+		BackgroundTransparency = 0.25,
+		GroupTransparency = 1,
 		Parent = toastHolder,
+	}, {
+		UI.corner(14),
+		UI.stroke(Color3.new(1, 1, 1), 1, 0.85),
+		UI.new("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 14) }),
+		UI.new("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			Padding = UDim.new(0, 8),
+		}),
 	})
+	UI.new("Frame", {
+		Size = UDim2.fromOffset(7, 7),
+		BackgroundColor3 = color,
+		Parent = pill,
+	}, { UI.corner(4) })
+	UI.new("TextLabel", {
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromOffset(0, 28),
+		BackgroundTransparency = 1,
+		Text = text,
+		TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.55),
+		Font = Enum.Font.GothamMedium,
+		TextSize = 14,
+		Parent = pill,
+	})
+	UI.tween(pill, 0.22, { GroupTransparency = 0 })
 	task.delay(2.6, function()
-		UI.tween(l, 0.4, { TextTransparency = 1 })
-		task.wait(0.45)
-		l:Destroy()
+		UI.tween(pill, 0.35, { GroupTransparency = 1 })
+		task.wait(0.4)
+		pill:Destroy()
 	end)
-	local kids = toastHolder:GetChildren()
-	if #kids > 5 then
-		for _, k in kids do
-			if k:IsA("TextLabel") then
-				k:Destroy()
-				break
-			end
+	local kids = {}
+	for _, k in toastHolder:GetChildren() do
+		if k:IsA("CanvasGroup") then
+			table.insert(kids, k)
 		end
+	end
+	if #kids > 4 then
+		kids[1]:Destroy()
 	end
 end
 HUD.toast = toast
 
-local banner: TextLabel
-local bannerSub: TextLabel
+local banner: CanvasGroup
+local bannerToken = 0
+-- Zone reached etc.: a thin cinematic strip (hairlines above and below, wide title, small sub).
 local function showBanner(title: string, sub: string, color: Color3)
-	banner.Text = title
-	banner.TextColor3 = color
-	bannerSub.Text = sub
+	bannerToken += 1
+	local mine = bannerToken
+	local t = banner:FindFirstChild("Title") :: TextLabel
+	local st = banner:FindFirstChild("Sub") :: TextLabel
+	t.Text = title
+	t.TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.2)
+	st.Text = string.upper(sub)
+	for _, n in { "LineTop", "LineBottom" } do
+		local line = banner:FindFirstChild(n) :: Frame
+		line.BackgroundColor3 = color
+		line.Size = UDim2.new(0, 0, 0, 1)
+		UI.tween(line, 0.6, { Size = UDim2.new(0.8, 0, 0, 1) }, Enum.EasingStyle.Quint)
+	end
 	banner.Visible = true
-	bannerSub.Visible = true
-	local scale = banner:FindFirstChildOfClass("UIScale") or UI.new("UIScale", { Parent = banner })
-	scale.Scale = 0.3
-	UI.tween(scale, 0.45, { Scale = 1 }, Enum.EasingStyle.Back)
-	task.delay(3.2, function()
-		if banner.Text == title then
-			banner.Visible = false
-			bannerSub.Visible = false
+	banner.GroupTransparency = 1
+	banner.Position = UDim2.fromScale(0.5, 0.31)
+	UI.tween(banner, 0.35, { GroupTransparency = 0, Position = UDim2.fromScale(0.5, 0.3) })
+	task.delay(3, function()
+		if bannerToken == mine then
+			UI.tween(banner, 0.5, { GroupTransparency = 1 })
 		end
 	end)
 end
@@ -507,28 +545,62 @@ function HUD.start()
 	}, {
 		UI.new(
 			"UIListLayout",
-			{ Padding = UDim.new(0, 1), HorizontalAlignment = Enum.HorizontalAlignment.Center }
+			{ Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center }
 		),
 	})
 	UI.scaleObject(toastHolder)
 
-	-- big banner (zone reached)
-	banner = UI.bigText({
+	-- zone banner: thin cinematic strip
+	banner = UI.new("CanvasGroup", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.3),
-		Size = UDim2.fromScale(0.6, 0.1),
-		Text = "",
+		Size = UDim2.fromOffset(520, 92),
+		BackgroundTransparency = 1,
 		Visible = false,
 		Parent = gui,
-	}, UI.INK, 2)
-	bannerSub = UI.bigText({
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.38),
-		Size = UDim2.fromScale(0.4, 0.045),
+	})
+	UI.scaleObject(banner)
+	for _, line in { { "LineTop", 0 }, { "LineBottom", 1 } } do
+		UI.new("Frame", {
+			Name = line[1],
+			AnchorPoint = Vector2.new(0.5, line[2]),
+			Position = UDim2.fromScale(0.5, line[2]),
+			Size = UDim2.new(0.8, 0, 0, 1),
+			BorderSizePixel = 0,
+			BackgroundColor3 = Color3.new(1, 1, 1),
+			Parent = banner,
+		}, {
+			UI.new("UIGradient", {
+				Transparency = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 1),
+					NumberSequenceKeypoint.new(0.5, 0),
+					NumberSequenceKeypoint.new(1, 1),
+				}),
+			}),
+		})
+	end
+	UI.new("TextLabel", {
+		Name = "Title",
+		Position = UDim2.fromOffset(0, 12),
+		Size = UDim2.new(1, 0, 0, 44),
+		BackgroundTransparency = 1,
 		Text = "",
-		Visible = false,
-		Parent = gui,
-	}, UI.INK, 1.4)
+		Font = Enum.Font.GothamBlack,
+		TextSize = 40,
+		TextColor3 = Color3.new(1, 1, 1),
+		Parent = banner,
+	}, { UI.textStroke(UI.INK, 1) })
+	UI.new("TextLabel", {
+		Name = "Sub",
+		Position = UDim2.fromOffset(0, 58),
+		Size = UDim2.new(1, 0, 0, 20),
+		BackgroundTransparency = 1,
+		Text = "",
+		Font = Enum.Font.GothamMedium,
+		TextSize = 14,
+		TextColor3 = Color3.fromRGB(215, 220, 228),
+		Parent = banner,
+	})
 
 	-- FULL prompt: slim red pill
 	local fullBox = UI.new("TextButton", {

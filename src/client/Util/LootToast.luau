@@ -1,7 +1,6 @@
 --!strict
 -- Slim loot notifications (finds, treasure, rewards): a dark translucent bar with a glossy
--- rarity tile, a tiny rarity tag, the name and the value. Slides + fades in under the top of the
--- screen, stacks (newest on top, max 3), then glides up and fades out. Rare+ gets a light sweep.
+-- rarity tile, a tiny rarity tag, the name and the value. Slides + fades in at the top right, stacks (newest on top, max 3), then glides up and fades out. Rare+ gets a light sweep.
 
 local Players = game:GetService("Players")
 
@@ -39,8 +38,8 @@ local function root(): Frame
 		Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
 	})
 	local h = UI.new("Frame", {
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 78),
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -14, 0, 12),
 		Size = UDim2.fromOffset(WIDTH, (HEIGHT + GAP) * MAX),
 		BackgroundTransparency = 1,
 		Parent = gui,
