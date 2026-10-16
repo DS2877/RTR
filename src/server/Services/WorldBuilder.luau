@@ -1171,6 +1171,13 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 		CFrame.new(x0 + 0.3, 13, -30) * CFrame.Angles(0, -math.pi / 2, 0),
 		Color3.fromRGB(120, 200, 255)
 	)
+	-- the weekly race (Services/TopDog): blocks broken since Monday, every server
+	boards.Week = board(
+		"WeekBoard",
+		"🏆 THIS WEEK",
+		CFrame.new(x0 + 0.3, 13, 30) * CFrame.Angles(0, -math.pi / 2, 0),
+		Color3.fromRGB(255, 170, 60)
+	)
 
 	local shops: { [string]: BasePart } = {}
 	-- counters face into the room (their keeper stands between counter and wall)

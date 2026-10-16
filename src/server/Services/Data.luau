@@ -49,6 +49,7 @@ export type PlayerData = {
 	Missions: { Day: number, Progress: { number }, Claimed: { boolean }, Bonus: boolean }, -- WORK DETAIL
 	LastOnline: number,
 	Pets: { Owned: { [string]: number }, Equipped: { string } }, -- CELLMATES: id -> XP, equipped ids
+	Week: { Id: number, Blocks: number }, -- the weekly race (Services/TopDog): blocks since Monday
 	Stats: {
 		Punches: number,
 		Blocks: number,
@@ -110,6 +111,7 @@ local TEMPLATE: PlayerData = {
 	Missions = { Day = 0, Progress = { 0, 0, 0 }, Claimed = { false, false, false }, Bonus = false },
 	LastOnline = 0,
 	Pets = { Owned = {}, Equipped = {} },
+	Week = { Id = 0, Blocks = 0 },
 	Stats = {
 		Punches = 0,
 		Blocks = 0,

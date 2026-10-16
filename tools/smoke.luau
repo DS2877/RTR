@@ -961,6 +961,23 @@ check("no raids at night", Raid.steal(raider, 1, true) == "night")
 DayNight.force("day")
 task.wait(0.6)
 step("top dog update", TopDog.update)
+-- the weekly race: weeks turn over on Monday 00:00 UTC; blocks count per week
+check(
+	"weeks start on Monday",
+	TopDog.week(345600) == TopDog.week(345599) + 1 and TopDog.week(345600) == TopDog.week(345600 + 6 * 86400)
+)
+do
+	s.data.Week = { Id = TopDog.week() - 1, Blocks = 999 }
+	TopDog.countBlocks(fake, 5)
+	check(
+		"a new week starts the count over",
+		s.data.Week.Id == TopDog.week() and s.data.Week.Blocks == 5,
+		s.data.Week.Blocks
+	)
+	TopDog.countBlocks(fake, 3)
+	check("blocks add up this week", s.data.Week.Blocks == 8)
+	check("week board built", world.boards.Week ~= nil)
+end
 Cells.release(raider)
 State.remove(raider)
 

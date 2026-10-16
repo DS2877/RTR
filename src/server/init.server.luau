@@ -148,6 +148,7 @@ Dig.onBroken = function(player, broken)
 	end
 	Tutorial.did(player, "Punch")
 	Missions.count(player, "Blocks", #broken)
+	TopDog.countBlocks(player, #broken)
 end
 Dig.onCrit = function(player)
 	Missions.count(player, "Crits", 1)
