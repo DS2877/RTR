@@ -12,6 +12,7 @@ local StarterGui = game:GetService("StarterGui")
 
 local Shared = ReplicatedStorage.Shared
 local Economy = require(Shared.Config.Economy)
+local Cycle = require(Shared.Config.Cycle)
 local Zones = require(Shared.Config.Zones)
 local Finds = require(Shared.Config.Finds)
 local Rarity = require(Shared.Config.Rarity)
@@ -397,6 +398,10 @@ local function buildAdmin(parent: Instance)
 		{ "🔓 Riot", "riot", nil },
 		{ "🧹 Inspection", "inspection", nil },
 		{ "💰 Treasure", "treasure", nil },
+		{ "💎 Gold rush", "goldrush", nil },
+		{ "🍜 Payday", "payday", nil },
+		{ "🌋 Quake", "earthquake", nil },
+		{ "📦 Supply", "supplydrop", nil },
 		{ "🧨 x5", "dynamite", 5 },
 		{ "Perf", "perf", nil },
 		{ "📸 Photo", "photo", nil },
@@ -834,6 +839,11 @@ function HUD.start()
 				else 0
 			local label = eventTile:FindFirstChild("Label") :: TextLabel
 			label.Text = Format.duration(left)
+			local cfg = Cycle.Events[ev :: string]
+			local icon = eventTile:FindFirstChild("Icon")
+			if cfg and icon and icon:IsA("TextLabel") then
+				icon.Text = cfg.emoji
+			end
 		end
 	end)
 	player:GetAttributeChangedSignal("Noodles"):Connect(function()
@@ -841,8 +851,9 @@ function HUD.start()
 	end)
 	eventTile.Activated:Connect(function()
 		local ev = ReplicatedStorage:GetAttribute("Event")
-		if typeof(ev) == "string" and ev ~= "" then
-			toast("⚡ " .. ev .. " is on!", "cash")
+		local cfg = if typeof(ev) == "string" then Cycle.Events[ev] else nil
+		if cfg then
+			toast(cfg.emoji .. " " .. cfg.name .. ": " .. cfg.text, "cash")
 		end
 	end)
 

@@ -436,21 +436,88 @@ function Moments.start()
 		end)
 
 	-- events
-	local eventLabel = UI.bigText({
+	-- a slim card under the top bar while an event runs: icon, name, what it does, time left
+	local eventCard = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 84),
-		Size = UDim2.fromOffset(420, 30),
-		Text = "",
-		TextColor3 = Color3.fromRGB(255, 140, 70),
+		Position = UDim2.new(0.5, 0, 0, 78),
+		Size = UDim2.fromOffset(330, 44),
+		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
+		BackgroundTransparency = 0.18,
 		Visible = false,
 		Parent = gui,
-	}, DARK, 3)
-	UI.scaleObject(eventLabel)
+	}, { UI.corner(12), UI.stroke(Color3.fromRGB(255, 170, 70), 1, 0.5) })
+	UI.scaleObject(eventCard)
+	local eventIcon = UI.new("TextLabel", {
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(8, 6),
+		Size = UDim2.fromOffset(32, 32),
+		Text = "",
+		TextScaled = true,
+		Font = Enum.Font.GothamBold,
+		Parent = eventCard,
+	})
+	local eventName = UI.new("TextLabel", {
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(46, 5),
+		Size = UDim2.new(1, -110, 0, 18),
+		Text = "",
+		Font = Enum.Font.GothamBlack,
+		TextSize = 15,
+		TextColor3 = Color3.fromRGB(255, 190, 90),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Parent = eventCard,
+	})
+	local eventText = UI.new("TextLabel", {
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(46, 23),
+		Size = UDim2.new(1, -110, 0, 15),
+		Text = "",
+		Font = Enum.Font.GothamMedium,
+		TextSize = 11,
+		TextColor3 = Color3.fromRGB(200, 204, 214),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = eventCard,
+	})
+	local eventTime = UI.new("TextLabel", {
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -12, 0.5, 0),
+		Size = UDim2.fromOffset(56, 20),
+		Text = "",
+		Font = Enum.Font.GothamBold,
+		TextSize = 15,
+		TextColor3 = Color3.new(1, 1, 1),
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Parent = eventCard,
+	})
+	local eventBar = UI.new("Frame", {
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 12, 1, -3),
+		Size = UDim2.new(1, -24, 0, 2),
+		BackgroundColor3 = Color3.fromRGB(255, 170, 70),
+		BorderSizePixel = 0,
+		Parent = eventCard,
+	}, { UI.corner(1) })
+	local eventScale = UI.new("UIScale", { Parent = eventIcon })
 	Remotes.get(Remotes.Names.Event).OnClientEvent:Connect(function(id: string)
 		local cfg = Cycle.Events[id]
-		if cfg then
-			HUD.toast("⚡ " .. cfg.name .. ": " .. cfg.text, "cash")
-			Shake.kick(0.3)
+		if not cfg then
+			return
+		end
+		HUD.toast(cfg.emoji .. " " .. cfg.name .. "! " .. cfg.text, "cash")
+		Sound.play("Upgrade", 0.6, 0.8)
+		Shake.kick(0.3)
+		eventScale.Scale = 2
+		UI.tween(eventScale, 0.45, { Scale = 1 }, Enum.EasingStyle.Back)
+		if id == "EARTHQUAKE" then
+			-- rumble for a few seconds
+			Sound.play("Boom", 0.8, 0.6)
+			for i = 0, 14 do
+				task.delay(i * 0.2, function()
+					Shake.kick(0.5 - i * 0.025)
+				end)
+			end
 		end
 	end)
 
@@ -548,10 +615,14 @@ function Moments.start()
 			local left = if typeof(ends) == "number"
 				then math.max(0, ends - workspace:GetServerTimeNow())
 				else 0
-			eventLabel.Text = string.format("⚡ %s %s", cfg.name, Format.duration(left))
-			eventLabel.Visible = false -- the Event tile on the left shows it
+			eventIcon.Text = cfg.emoji
+			eventName.Text = cfg.name
+			eventText.Text = cfg.text
+			eventTime.Text = Format.duration(left)
+			eventBar.Size = UDim2.new(math.clamp(left / cfg.seconds, 0, 1), -24, 0, 2)
+			eventCard.Visible = true
 		else
-			eventLabel.Visible = false
+			eventCard.Visible = false
 		end
 	end)
 end

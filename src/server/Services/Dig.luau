@@ -31,6 +31,7 @@ Dig.onFind = nil :: ((player: Player, id: string, firstTime: boolean) -> ())?
 
 -- night digging: share of extra finds hidden in plain blocks (DayNight sets it)
 Dig.nightBonus = 0
+Dig.eventBonus = 0 -- GOLD RUSH (Services/Events)
 -- per-player boosts (buffs) and event hooks, set in init
 Dig.powerBoost = nil :: ((player: Player) -> number)?
 Dig.findBoost = nil :: ((player: Player) -> number)?
@@ -284,7 +285,7 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 	local grid = s.grid
 	local data = s.data
 	local slots = Progression.findSlots(data.Levels.FindSlots)
-	local bonus = Dig.nightBonus + (if Dig.findBoost then Dig.findBoost(player) else 0)
+	local bonus = Dig.nightBonus + Dig.eventBonus + (if Dig.findBoost then Dig.findBoost(player) else 0)
 	local broken: { number } = {}
 	local damaged: { number } = {}
 	local sum = Vector3.zero

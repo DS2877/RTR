@@ -816,6 +816,27 @@ if tidx then
 	Dig.applyHits(fake, s, { { tx, ty, tz } }, math.huge)
 	check("treasure won", s.data.Noodles > n5 and Events.current() == nil and #s.data.Stash >= 1)
 end
+Events.stop()
+check("gold rush", Events.trigger("GOLDRUSH") and Dig.eventBonus > 0)
+Events.stop()
+check("gold rush ends", Dig.eventBonus == 0)
+check("payday", Events.trigger("PAYDAY") and Loot.eventMult == Cycle.PaydayMult)
+Events.stop()
+local blocksBefore = s.data.Stats.Blocks
+check(
+	"earthquake breaks blocks",
+	Events.trigger("EARTHQUAKE") and s.data.Stats.Blocks > blocksBefore,
+	s.data.Stats.Blocks - blocksBefore
+)
+Events.stop()
+check("supply drop", Events.trigger("SUPPLYDROP") and Events.crate() ~= nil)
+local dropped = Events.crate()
+if dropped and dropped.PrimaryPart then
+	fake.Position = dropped.PrimaryPart.Position
+	local n6 = s.data.Noodles
+	check("grab the crate", Events.claimCrate(fake) > 0 and s.data.Noodles > n6 and Events.crate() == nil)
+end
+Events.stop()
 -- Mess Hall, Laundry, Decor, Black Market
 fake.Position = world.shops.MessHall.Position
 check("eat stew", Market.buy(fake, "MessHall", "Stew") == nil and Market.powerBoost(fake) > 1.2)

@@ -187,6 +187,31 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Grävningen stoppas aldrig + gömställe + nya händelser
+- **Full ryggsäck stoppar inte längre grävningen:** du kan slå vidare, gruset blir liggande på
+  golvet (värt något först när du har plats igen) och rutan varnar. Ryggsäckarna rymmer 3× mer
+  (Pockets 60, Sock 180 … Garbage Truck 25 000), så turerna till dumpen blir färre. Balansen är
+  omkörd: alla mål håller fortfarande (flykt 2:03 för gratisspelare, ≤ 15 slag/block).
+- **Fulla fyndplatser stoppar inte heller:** nya fynd hamnar i din Stash-kista (om det finns plats,
+  annars smulas fyndet sönder) och du får en varning.
+- **"Håll VACUUM"-rutan** visas inte längre om du har Auto-Vacuum (då finns ingen knapp).
+- **Inga gratislampor i tunneln:** arbetslamporna som sattes ut automatiskt är borta. Ljus köper
+  du som Decor och placerar själv (pannlampan finns kvar).
+- **Gömställe i cellen:**
+  - **Tapeten** (förut den platta "DREAM BIG"-skylten) är nu en stor väggbonad med solnedgång,
+    hav, palmer och "DREAM BIG · NOTHING TO SEE BEHIND HERE" på en trärulle. Knappen 🖼️
+    **Cover/Uncover** rullar ner/upp den när du vill (alla ser den). Slår du på väggen rullas den upp.
+  - Knappen 🛏️ **Sleep** lägger dig **liggande i sängen** (på rygg, huvudet på kudden) när du vill.
+    Tryck **Get up** eller rör joysticken/hoppa för att kliva upp. Inga slag från sängen.
+  - **Inspektion:** du klarar dig bara om du ligger i sängen OCH hålet är täckt (eller du inte har
+    grävt än). HIDE-knappen under inspektionen gör båda på en gång. Ligger du i sängen men hålet
+    syns: "The guard spotted the hole in your wall!".
+- **Händelser:** var 5–8:e minut (förut 15–25), aldrig samma två gånger i rad. Nya:
+  💎 GOLD RUSH (mycket fler fynd), 🍜 PAYDAY (dumpa/spola ger 2×), 🌋 EARTHQUAKE (skakningar och
+  ett 20-tal block bryts loss gratis längst fram i allas tunnlar), 📦 SUPPLY DROP (dagtid: en låda
+  med fallskärm landar i Yard – först dit får Noodles). Ett smalt kort under toppen visar händelsen,
+  vad den gör och en nedräkning; Event-rutan till vänster får händelsens ikon.
+
 ### Natten: kortare + något att göra med full ryggsäck
 - **Natten är kortare:** LOCKDOWN 3:00 (var 4:30), YARD TIME 3:20 (var 2:40).
 - **Spola ner gruset:** på natten (LIGHTS OUT + LOCKDOWN) får toaletten i din cell en prompt
@@ -357,7 +382,11 @@ köper nästa verktyg – det är tänkt så (som i andra simulatorspel), inte e
 16. Ljud/zoner: ha ljudet på. Slå på väggen (hör sprickorna stiga i ton), krossa flera i rad.
     ADMIN → Zone 4 (armeringsjärn), Zone 5 (rör), Zone 8 (kristaller), Zone 9 (lava) – gräv en bit
     och titta på väggarna och lyssna på bakgrundsljudet.
-17. Natt: ADMIN → 🌙 Night, gräv tills ryggsäcken är full, gå till toaletten i cellen → "Flush
+17. Nytt: gräv med full ryggsäck (fortsätter, gruset blir liggande). Stå i cellen: 🖼️ Cover
+    (tapeten rullar ner) och 🛏️ Sleep (du ligger i sängen) – rör joysticken för att kliva upp.
+    ADMIN → 👮 Inspect me och testa med/utan täckt hål. ADMIN → 💎 Gold rush / 🍜 Payday /
+    🌋 Quake / 📦 Supply (gå ut i Yard och ta lådan).
+    Natt: ADMIN → 🌙 Night, gräv tills ryggsäcken är full, gå till toaletten i cellen → "Flush
     rubble". Kolla att inspektionsvakten står på golvet. Slå några slag i rad: garden, växling
     höger/vänster, vart 4:e tyngre. Full ryggsäck på dagen: liten pil på golvet + "DUMP"-etikett.
     Titta också på gubben (VIP/TOP DOG) – inga lysande klumpar på händer/bröst. Öppna Visitation

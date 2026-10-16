@@ -35,6 +35,7 @@ function Loot.multiplier(s: State.PlayerState): number
 		* group
 end
 local noodleMult = Loot.multiplier
+Loot.eventMult = 1 -- PAYDAY (Services/Events): dump + flush
 
 function Loot.addNoodles(player: Player, amount: number)
 	local s = State.get(player)
@@ -122,7 +123,7 @@ function Loot.dump(player: Player): number
 		Net.notice(player, "Your backpack is empty. Go dig!", "info")
 		return 0
 	end
-	local pay = math.floor(s.data.BagValue * noodleMult(s) + 0.5)
+	local pay = math.floor(s.data.BagValue * noodleMult(s) * Loot.eventMult + 0.5)
 	s.data.Bag = 0
 	s.data.BagValue = 0
 	Loot.addNoodles(player, pay)
@@ -152,7 +153,7 @@ function Loot.flush(player: Player): number
 		Net.notice(player, "Nothing to flush. Go dig!", "info")
 		return 0
 	end
-	local pay = math.floor(s.data.BagValue * Economy.FlushRate * noodleMult(s) + 0.5)
+	local pay = math.floor(s.data.BagValue * Economy.FlushRate * noodleMult(s) * Loot.eventMult + 0.5)
 	s.data.Bag = 0
 	s.data.BagValue = 0
 	Loot.addNoodles(player, pay)

@@ -58,21 +58,50 @@ local Cycle = {
 	BribeBlocks = 150, -- bribe = this many blocks of rubble from your deepest zone
 	SnitchBlocks = 300, -- snitching costs this many blocks of rubble from the TARGET's zone
 
-	-- server events (random, every EventMin..EventMax seconds)
-	EventMin = 900,
-	EventMax = 1500,
+	-- server events (random, every EventMin..EventMax seconds; never the same one twice in a row)
+	EventMin = 300,
+	EventMax = 480,
 	Events = {
-		BLACKOUT = { name = "BLACKOUT", seconds = 120, text = "All walls are 2x weaker!" },
-		RIOT = { name = "RIOT", seconds = 90, text = "The doors are open tonight!" },
+		BLACKOUT = { name = "BLACKOUT", emoji = "⚡", seconds = 120, text = "All walls are 2x weaker!" },
+		RIOT = { name = "RIOT", emoji = "🔓", seconds = 90, text = "The doors are open tonight!" },
 		INSPECTION = {
 			name = "INSPECTION DAY",
+			emoji = "🧹",
 			seconds = 60,
 			text = "Be in your cell with an empty backpack!",
 		},
-		TREASURE = { name = "TREASURE RACE", seconds = 180, text = "First to dig to the treasure wins!" },
-	} :: { [string]: { name: string, seconds: number, text: string } },
+		TREASURE = {
+			name = "TREASURE RACE",
+			emoji = "💰",
+			seconds = 180,
+			text = "First to dig to the treasure wins!",
+		},
+		GOLDRUSH = { name = "GOLD RUSH", emoji = "💎", seconds = 90, text = "Finds are way more common!" },
+		PAYDAY = { name = "PAYDAY", emoji = "🍜", seconds = 120, text = "Dumping and flushing pay 2x!" },
+		EARTHQUAKE = {
+			name = "EARTHQUAKE",
+			emoji = "🌋",
+			seconds = 12,
+			text = "The ground shakes: free blocks break in every tunnel!",
+		},
+		SUPPLYDROP = {
+			name = "SUPPLY DROP",
+			emoji = "📦",
+			seconds = 75,
+			text = "A crate landed in the Yard: first one there gets it!",
+		},
+	} :: { [string]: { name: string, emoji: string, seconds: number, text: string } },
+	-- which events can happen in each part of the schedule
+	EventPools = {
+		Day = { "BLACKOUT", "INSPECTION", "TREASURE", "GOLDRUSH", "PAYDAY", "EARTHQUAKE", "SUPPLYDROP" },
+		Night = { "BLACKOUT", "RIOT", "TREASURE", "GOLDRUSH", "PAYDAY", "EARTHQUAKE" },
+	} :: { [string]: { string } },
 	InspectionDayBlocks = 80, -- reward for a tidy cell
 	TreasureBlocks = 600, -- treasure prize (plus the best find of your zone)
+	GoldRushBonus = 2, -- extra finds in plain blocks: oreChance x this (like the night bonus)
+	PaydayMult = 2, -- dump / flush pay
+	QuakeBlocks = 24, -- blocks the earthquake breaks at the front of every tunnel
+	SupplyBlocks = 400, -- supply crate prize: this many blocks of rubble of the winner's zone
 }
 
 return Cycle

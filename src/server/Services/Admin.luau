@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage.Shared
 local AdminConfig = require(Shared.Config.Admin)
+local Cycle = require(Shared.Config.Cycle)
 local World = require(Shared.Config.World)
 local Progression = require(Shared.Progression)
 local Tunnel = require(Shared.Tunnel)
@@ -105,7 +106,7 @@ function Admin.run(player: Player, cmd: string, arg: number?): boolean
 		DayNight.force(cmd)
 	elseif cmd == "inspect" then
 		Guards.inspect(player)
-	elseif cmd == "blackout" or cmd == "riot" or cmd == "inspection" or cmd == "treasure" then
+	elseif Cycle.Events[string.upper(cmd)] then
 		Events.stop()
 		Events.trigger(string.upper(cmd))
 	elseif cmd == "dynamite" then
