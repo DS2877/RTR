@@ -28,7 +28,77 @@ type Guard = {
 	text: TextLabel,
 	scale: UIScale,
 	shownAt: number,
+	-- a real avatar (from ReplicatedStorage.NPCTemplates.Guard) once it's there
+	avatar: { hrp: BasePart, off: number, walk: AnimationTrack?, idle: AnimationTrack? }?,
 }
+
+local Assets = require(Shared.Config.Assets)
+
+-- Swaps a blocky guard for the avatar template: same bubble + flashlight, walk/idle animations.
+local function toAvatar(g: Guard, template: Model, parent: Instance)
+	local rig = template:Clone()
+	rig.Name = g.model.Name
+	local hrp = rig:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local head = rig:FindFirstChild("Head") :: BasePart?
+	local hand = rig:FindFirstChild("RightHand") :: BasePart?
+	local humanoid = rig:FindFirstChildOfClass("Humanoid")
+	if not hrp or not head or not humanoid then
+		rig:Destroy()
+		return
+	end
+	hrp.Anchored = true
+	for _, part in rig:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.CanCollide = false
+			part.CanQuery = false
+			part.CanTouch = false
+		end
+	end
+	-- the flashlight in the right hand
+	if hand then
+		local torch = Instance.new("Part")
+		torch.Name = "Flashlight"
+		torch.Size = Vector3.new(0.25, 0.25, 0.8)
+		torch.Color = Color3.fromRGB(40, 40, 44)
+		torch.Material = Enum.Material.Metal
+		torch.CanCollide = false
+		torch.CanQuery = false
+		torch.Massless = true
+		torch.CFrame = hand.CFrame * CFrame.new(0, -0.15, -0.35)
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = hand
+		weld.Part1 = torch
+		weld.Parent = torch
+		torch.Parent = rig
+		g.light.Face = Enum.NormalId.Front
+		g.light.Parent = torch
+	end
+	g.bubble.Parent = head
+	local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator")
+	animator.Parent = humanoid
+	local function load(id: string): AnimationTrack?
+		local ok, track = pcall(function()
+			local a = Instance.new("Animation")
+			a.AnimationId = id
+			return (animator :: Animator):LoadAnimation(a)
+		end)
+		if ok and track then
+			track.Looped = true
+			return track
+		end
+		return nil
+	end
+	local off = rig:GetAttribute("FeetOffset")
+	g.avatar = {
+		hrp = hrp,
+		off = if typeof(off) == "number" then off else 3,
+		walk = load(Assets.Animations.WalkR15),
+		idle = load(Assets.Animations.IdleR15),
+	}
+	g.model:Destroy()
+	g.model = rig
+	rig.Parent = parent
+end
 
 local function part(m: Model, name: string, size: Vector3, color: Color3, mat: Enum.Material?): Part
 	local p = Instance.new("Part")
@@ -138,6 +208,16 @@ function GuardController.start()
 	for i in Config.Guards do
 		guards[i] = build(i, folder)
 	end
+	-- real avatars as soon as the server published the template
+	task.spawn(function()
+		local templates = ReplicatedStorage:WaitForChild("NPCTemplates", 60)
+		local t = templates and templates:WaitForChild("Guard", 60)
+		if t and t:IsA("Model") then
+			for _, g in guards do
+				pcall(toAvatar, g, t, folder)
+			end
+		end
+	end)
 	local said = ReplicatedStorage:WaitForChild("Patrol", 30)
 	local function show(i: number)
 		local g = guards[i]
@@ -178,7 +258,25 @@ function GuardController.start()
 			local base = CFrame.new(pose.x, 0, pose.z) * CFrame.Angles(0, pose.heading + math.pi, 0)
 			local swing = if pose.walking then math.sin(t * 7 + i) * 0.5 else 0
 			local bob = if pose.walking then math.abs(math.sin(t * 7 + i)) * 0.12 else 0
-			for name, bp in g.parts do
+			local av = g.avatar
+			if av then
+				-- the avatar walks its route; its animations do the legs and arms
+				av.hrp.CFrame = base
+					* CFrame.new(0, av.off, 0)
+					* CFrame.Angles(0, if pose.walking then 0 else look * 0.6, 0)
+				local walkT, idleT = av.walk, av.idle
+				if walkT and idleT then
+					if pose.walking and not walkT.IsPlaying then
+						idleT:Stop(0.25)
+						walkT:Play(0.25, 1, Config.Speed / 9)
+					elseif not pose.walking and not idleT.IsPlaying then
+						walkT:Stop(0.25)
+						idleT:Play(0.25)
+					end
+				end
+				g.light.Enabled = dark
+			end
+			for name, bp in (if av then {} else g.parts) :: { [string]: BasePart } do
 				local o = g.offsets[name]
 				local cf = base * CFrame.new(0, bob, 0)
 				if name == "LegL" or name == "LegR" then

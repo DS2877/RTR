@@ -950,6 +950,7 @@ for _, list in
 		Assets.Animations.PunchR15,
 		Assets.Animations.PunchR6,
 		{ Assets.Animations.LiftR15, Assets.Animations.LiftR6 },
+		{ Assets.Animations.IdleR15, Assets.Animations.WalkR15 },
 	}
 do
 	for _, id in list do
@@ -963,6 +964,33 @@ do
 			if ok and info then (info :: any).AssetTypeId else info
 		)
 	end
+end
+
+-- NPC outfits: catalog items can be taken down; report them (not fatal: the NPCs fall back to
+-- the blocky stand-ins), and check one avatar actually builds
+for role, o in Assets.Outfits do
+	if typeof(o) == "table" then
+		for slot, v in o do
+			for _, id in (if typeof(v) == "table" then v else { v }) :: { any } do
+				local ok, info = pcall(function()
+					return MarketplaceService:GetProductInfo(tonumber(id) :: number, Enum.InfoType.Asset)
+				end)
+				if not ok or not info then
+					print(string.format("WARN outfit %s.%s %s is gone", role, slot, tostring(id)))
+				end
+			end
+		end
+	end
+end
+do
+	local Util = Server:WaitForChild("Util")
+	local Characters = req(Util, "Characters")
+	local Build = req(Util, "Build")
+	local probe = Build.npc(workspace, "Guard", CFrame.new(0, 200, 0), Color3.new(), nil)
+	local ok, err = pcall(Characters.upgrade, probe)
+	print("avatar probe:", ok, err, probe:GetAttribute("Avatar"))
+	check("npc avatar builds", ok and probe:GetAttribute("Avatar") == true, err)
+	probe:Destroy()
 end
 
 print(string.format("smoke: %d passed, %d failed", passed, #failures))

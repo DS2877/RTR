@@ -46,6 +46,42 @@ local Assets = {
 		PunchSpeed = 1.7,
 		LiftR15 = "rbxassetid://507770677", -- cheer: both arms up (held still = hoisting the prop)
 		LiftR6 = "rbxassetid://129423030",
+		IdleR15 = "rbxassetid://507766388", -- NPCs standing around
+		WalkR15 = "rbxassetid://507777826", -- patrolling guards
+	},
+
+	-- NPC outfits (Util/Characters builds real R15 avatars from these catalog items). Shirt / Pants =
+	-- classic clothing; the others are accessories ("id,id" lists allowed).
+	Outfits = {
+		guard = {
+			Shirt = 6180109308, -- blue police shirt with badge
+			Pants = 2430769797, -- dark uniform pants with a belt
+			Hat = "6377328912", -- vintage police cap
+			Waist = "4376960922", -- utility belt
+		},
+		chef = {
+			Shirt = 6780936233, -- white chef jacket
+			Pants = 398633812, -- black jeans (Roblox)
+			Hat = "96678446", -- The Star Chef (Roblox)
+		},
+		inmate = {
+			Shirt = 562522990, -- orange "Prison" shirt
+			Pants = 7562301741, -- orange INMATE pants
+			Hair = { "1772336109", "221175236", "236398436", "319642066" }, -- Roblox hair (one per NPC)
+		},
+		visitor = {
+			Shirt = 12142438478, -- dark suit
+			Pants = 398633812,
+			Hair = { "1772336109" },
+		},
+		glasses = "62690529", -- thick rimmed glasses (Roblox): The Fence + the Black Market dealer
+	} :: { [string]: any },
+	Skin = {
+		{ 234, 184, 146 },
+		{ 204, 142, 105 },
+		{ 160, 102, 70 },
+		{ 110, 70, 48 },
+		{ 245, 205, 170 },
 	},
 }
 

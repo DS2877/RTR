@@ -1,6 +1,8 @@
 --!strict
 -- Small helpers for building the world in code.
 
+local CollectionService = game:GetService("CollectionService")
+
 local Build = {}
 
 export type Props = { [string]: any }
@@ -157,6 +159,18 @@ function Build.npc(
 		Build.part(m, "Hat", Vector3.new(1.6, 0.5, 1.6), cf * CFrame.new(0, 6.2, 0), hat)
 		Build.part(m, "Brim", Vector3.new(1.7, 0.15, 0.6), cf * CFrame.new(0, 5.88, -1.0), hat)
 	end
+	-- Util/Characters swaps this stand-in for a real avatar (role from the name)
+	local role = if name == "Guard" or name == "MessGuard"
+		then "guard"
+		elseif name == "Cook" then "chef"
+		elseif name == "Visitor" or name == "Dealer" then "visitor"
+		else "inmate"
+	m:SetAttribute("Role", role)
+	m:SetAttribute("Feet", cf)
+	if name == "Dealer" or name == "Fence" then
+		m:SetAttribute("Glasses", true)
+	end
+	CollectionService:AddTag(m, "NPC")
 	m.Parent = parent
 	return m
 end
