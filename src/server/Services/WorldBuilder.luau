@@ -1096,29 +1096,14 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 			Build.light(lamp, Color3.fromRGB(215, 228, 235), 50, 1.1)
 		end
 	end
-	-- tables with benches in the middle
-	for i = 0, 1 do
-		local tx = cr.x - 14 + i * 28
-		Build.part(
+	-- prison tables (steel, stools welded on) in the middle
+	for i, tx in { cr.x - 18, cr.x - 10, cr.x + 10, cr.x + 18 } do
+		Props.prisonTable(
 			parent,
-			"Table",
-			Vector3.new(12, 0.6, 5),
-			CFrame.new(tx, 3, 0),
-			Color3.fromRGB(120, 124, 130),
-			{
-				Material = Enum.Material.Metal,
-			}
+			Vector3.new(tx, 0, 0),
+			(i % 2) * 0.3,
+			if i == 2 then "chess" elseif i == 3 then "cards" else nil
 		)
-		Build.part(parent, "Leg", Vector3.new(1, 3, 1), CFrame.new(tx, 1.4, 0), C.bars)
-		for _, dz in { -4, 4 } do
-			Build.part(
-				parent,
-				"Bench",
-				Vector3.new(12, 0.5, 1.8),
-				CFrame.new(tx, 1.8, dz),
-				Color3.fromRGB(120, 124, 130)
-			)
-		end
 	end
 	-- wall clock + PA speaker
 	local clock = Build.part(

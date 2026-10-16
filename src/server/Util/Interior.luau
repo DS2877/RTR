@@ -73,8 +73,7 @@ local function can(
 end
 
 local function poster(parent: Instance, cf: CFrame, text: string, bg: Color3, fg: Color3)
-	local part = p(parent, "Poster", Vector3.new(4.2, 5.4, 0.12), cf, bg)
-	Build.sign(part, Enum.NormalId.Front, text, fg)
+	Props.poster(parent, cf, text, bg, fg)
 end
 
 -- a fake window on a wall: glowing frosted glass, a steel frame, bars and a sill. cf = the wall

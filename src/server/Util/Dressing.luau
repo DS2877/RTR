@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local World = require(ReplicatedStorage.Shared.Config.World)
 local Build = require(script.Parent.Build)
+local Props = require(script.Parent.Props)
 local GymProps = require(script.Parent.GymProps)
 local Interior = require(script.Parent.Interior)
 
@@ -124,8 +125,7 @@ local function camera(parent: Instance, at: Vector3, facing: Vector3)
 end
 
 local function poster(parent: Instance, cf: CFrame, text: string, bg: Color3, fg: Color3)
-	local part = p(parent, "Poster", Vector3.new(4.2, 5.4, 0.12), cf, bg)
-	signOn(part, Enum.NormalId.Front, text, fg)
+	Props.poster(parent, cf, text, bg, fg)
 end
 
 local function trashCan(parent: Instance, at: Vector3)

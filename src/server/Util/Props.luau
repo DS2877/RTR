@@ -244,6 +244,158 @@ function Props.sink(model: Instance, at: At, x: number, y: number, d: number): B
 	return basin
 end
 
+-- The classic prison table: a round steel top on a pedestal with four stools welded to it.
+-- extra = "chess" | "cards" | nil: something left on the table.
+function Props.prisonTable(parent: Instance, at: Vector3, yaw: number, extra: string?)
+	local steel = Color3.fromRGB(128, 132, 138)
+	local dark = Color3.fromRGB(82, 86, 92)
+	local cf = CFrame.new(at) * CFrame.Angles(0, yaw, 0)
+	post(parent, "TableBase", 2.6, 0.16, cf * CFrame.new(0, 0.08, 0), dark)
+	post(parent, "TablePost", 0.8, 2.8, cf * CFrame.new(0, 1.5, 0), dark)
+	post(parent, "Table", 4.4, 0.24, cf * CFrame.new(0, 3.02, 0), steel, { Reflectance = 0.06 })
+	post(parent, "TableRim", 4.56, 0.08, cf * CFrame.new(0, 2.86, 0), dark, { CanCollide = false })
+	for k = 0, 3 do
+		local a = k * math.pi / 2 + math.pi / 4
+		local arm = cf * CFrame.Angles(0, a, 0)
+		part(
+			parent,
+			"StoolArm",
+			Vector3.new(0.3, 0.22, 2.6),
+			arm * CFrame.new(0, 0.5, -1.75),
+			dark,
+			{ Material = Enum.Material.Metal }
+		)
+		post(parent, "StoolPost", 0.3, 1.5, arm * CFrame.new(0, 1.15, -3.0), dark)
+		post(parent, "Stool", 1.5, 0.22, arm * CFrame.new(0, 1.95, -3.0), steel, { Reflectance = 0.06 })
+	end
+	if extra == "chess" then
+		local board = part(
+			parent,
+			"ChessBoard",
+			Vector3.new(1.8, 0.06, 1.8),
+			cf * CFrame.new(0, 3.17, 0),
+			Color3.fromRGB(230, 220, 200),
+			{
+				CanCollide = false,
+			}
+		)
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = Enum.NormalId.Top
+		gui.CanvasSize = Vector2.new(160, 160)
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
+		gui.LightInfluence = 1
+		gui.Parent = board
+		for i = 0, 7 do
+			for j = 0, 7 do
+				if (i + j) % 2 == 1 then
+					local f = Instance.new("Frame")
+					f.BorderSizePixel = 0
+					f.BackgroundColor3 = Color3.fromRGB(60, 44, 34)
+					f.Position = UDim2.fromScale(i / 8, j / 8)
+					f.Size = UDim2.fromScale(1 / 8, 1 / 8)
+					f.Parent = gui
+				end
+			end
+		end
+		for k = 0, 5 do
+			post(
+				parent,
+				"ChessPiece",
+				0.16,
+				0.3,
+				cf * CFrame.new(-0.6 + (k % 3) * 0.55, 3.35, if k < 3 then -0.65 else 0.65),
+				if k < 3 then Color3.fromRGB(240, 236, 226) else Color3.fromRGB(30, 28, 26),
+				{
+					Material = Enum.Material.SmoothPlastic,
+					CanCollide = false,
+				}
+			)
+		end
+	elseif extra == "cards" then
+		for k = 0, 4 do
+			part(
+				parent,
+				"Card",
+				Vector3.new(0.5, 0.02, 0.72),
+				cf * CFrame.new(-0.9 + k * 0.42, 3.16, 0.2) * CFrame.Angles(0, (k - 2) * 0.25, 0),
+				Color3.fromRGB(248, 248, 244),
+				{
+					CanCollide = false,
+				}
+			)
+		end
+		post(parent, "Cup", 0.42, 0.55, cf * CFrame.new(1.2, 3.42, -0.8), Color3.fromRGB(235, 236, 240), {
+			Material = Enum.Material.SmoothPlastic,
+			CanCollide = false,
+		})
+	end
+end
+
+-- A paper poster with a printed look: gradient, an inner border, a big title and tape on the
+-- corners. cf = on the wall, -Z out of the wall.
+function Props.poster(parent: Instance, cf: CFrame, text: string, bg: Color3, fg: Color3)
+	local paper = part(
+		parent,
+		"Poster",
+		Vector3.new(4.2, 5.4, 0.06),
+		cf * CFrame.Angles(0, 0, math.rad(math.random(-3, 3))),
+		bg,
+		{
+			CanCollide = false,
+		}
+	)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Front
+	gui.CanvasSize = Vector2.new(210, 270)
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
+	gui.LightInfluence = 1
+	gui.Parent = paper
+	local root = Instance.new("Frame")
+	root.Size = UDim2.fromScale(1, 1)
+	root.BorderSizePixel = 0
+	root.BackgroundColor3 = bg
+	root.Parent = gui
+	local g = Instance.new("UIGradient")
+	g.Rotation = 90
+	g.Color = ColorSequence.new(bg:Lerp(Color3.new(1, 1, 1), 0.12), bg:Lerp(Color3.new(0, 0, 0), 0.25))
+	g.Parent = root
+	local inner = Instance.new("Frame")
+	inner.BackgroundTransparency = 1
+	inner.Position = UDim2.fromOffset(10, 10)
+	inner.Size = UDim2.new(1, -20, 1, -20)
+	inner.Parent = root
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = fg
+	stroke.Transparency = 0.4
+	stroke.Thickness = 3
+	stroke.Parent = inner
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Position = UDim2.fromOffset(22, 26)
+	label.Size = UDim2.new(1, -44, 1, -52)
+	label.Font = Enum.Font.GothamBlack
+	label.TextScaled = true
+	label.TextWrapped = true
+	label.Text = text
+	label.TextColor3 = fg
+	label.Parent = root
+	-- strips of tape
+	for _, c in { { -1, 1 }, { 1, 1 } } do
+		part(
+			parent,
+			"Tape",
+			Vector3.new(0.9, 0.3, 0.02),
+			paper.CFrame * CFrame.new(c[1] * 1.8, c[2] * 2.55, -0.04) * CFrame.Angles(0, 0, c[1] * 0.6),
+			Color3.fromRGB(236, 226, 190),
+			{
+				Transparency = 0.15,
+				CanCollide = false,
+			}
+		)
+	end
+	return paper
+end
+
 -- A leafy bush: overlapping balls in a few greens (reads far better than one green ball).
 function Props.bush(parent: Instance, at: Vector3, size: number, seed: number?)
 	local greens = {
