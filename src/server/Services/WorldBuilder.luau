@@ -13,6 +13,7 @@ local Economy = require(Shared.Config.Economy)
 local Tunnel = require(Shared.Tunnel)
 local Cycle = require(Shared.Config.Cycle)
 local Build = require(script.Parent.Parent.Util.Build)
+local Props = require(script.Parent.Parent.Util.Props)
 local GymProps = require(script.Parent.Parent.Util.GymProps)
 local Dressing = require(script.Parent.Parent.Util.Dressing)
 local Format = require(Shared.Format)
@@ -274,41 +275,9 @@ local function buildCell(parent: Instance, index: number): CellRecord
 	local function inCell(x: number, y: number, depthFromFront: number): CFrame
 		return CFrame.new(cx + x, y, innerZ + depthFromFront * s)
 	end
-	-- bed
-	Build.part(model, "BedFrame", Vector3.new(4, 1.6, 9), inCell(-halfW + 2.2, 0.8, 9), C.bars, {
-		Material = Enum.Material.Metal,
-	})
-	Build.part(
-		model,
-		"Mattress",
-		Vector3.new(3.8, 0.8, 8.8),
-		inCell(-halfW + 2.2, 2, 9),
-		Color3.fromRGB(230, 230, 220),
-		{
-			Material = Enum.Material.Fabric,
-		}
-	)
-	Build.part(model, "Blanket", Vector3.new(3.9, 0.3, 5.5), inCell(-halfW + 2.2, 2.5, 10.5), C.orange, {
-		Material = Enum.Material.Fabric,
-	})
-	Build.part(
-		model,
-		"Pillow",
-		Vector3.new(3, 0.6, 1.6),
-		inCell(-halfW + 2.2, 2.6, 5.7),
-		Color3.fromRGB(250, 250, 245)
-	)
-	-- toilet + sink
-	local toilet = Build.part(
-		model,
-		"Toilet",
-		Vector3.new(2.4, 2.2, 2.6),
-		inCell(halfW - 1.6, 1.1, 14),
-		Color3.fromRGB(235, 238, 240),
-		{
-			Material = Enum.Material.Marble,
-		}
-	)
+	-- bed, toilet, sink (Util/Props: detailed; the named parts keep their jobs)
+	Props.bed(model, inCell, -halfW + 2.2, 9, Color3.fromRGB(190, 92, 40))
+	local toilet = Props.toilet(model, inCell, halfW - 1.6, 14)
 	-- at night the toilet is your rubble dump (Loot.flush)
 	local flush = Build.prompt(
 		toilet,
@@ -318,23 +287,7 @@ local function buildCell(parent: Instance, index: number): CellRecord
 	)
 	flush.Name = "FlushPrompt"
 	flush.Enabled = false
-	Build.part(
-		model,
-		"Tank",
-		Vector3.new(2.6, 2.4, 1),
-		inCell(halfW - 1.6, 3, 15.4),
-		Color3.fromRGB(235, 238, 240)
-	)
-	Build.part(
-		model,
-		"Sink",
-		Vector3.new(2.2, 0.8, 1.8),
-		inCell(halfW - 1.4, 4, 9),
-		Color3.fromRGB(220, 224, 228),
-		{
-			Material = Enum.Material.Metal,
-		}
-	)
+	Props.sink(model, inCell, halfW - 1.4, 4, 9)
 	-- poster on the side wall
 	local poster = Build.part(
 		model,
