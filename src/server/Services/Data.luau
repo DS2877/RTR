@@ -48,6 +48,7 @@ export type PlayerData = {
 	TourDone: boolean, -- saw the first-join tour (Controllers/Tour)
 	Missions: { Day: number, Progress: { number }, Claimed: { boolean }, Bonus: boolean }, -- WORK DETAIL
 	LastOnline: number,
+	Pets: { Owned: { [string]: number }, Equipped: { string } }, -- CELLMATES: id -> XP, equipped ids
 	Stats: {
 		Punches: number,
 		Blocks: number,
@@ -108,6 +109,7 @@ local TEMPLATE: PlayerData = {
 	TourDone = false,
 	Missions = { Day = 0, Progress = { 0, 0, 0 }, Claimed = { false, false, false }, Bonus = false },
 	LastOnline = 0,
+	Pets = { Owned = {}, Equipped = {} },
 	Stats = {
 		Punches = 0,
 		Blocks = 0,

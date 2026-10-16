@@ -9,6 +9,7 @@ local Economy = require(Shared.Config.Economy)
 local Progression = require(Shared.Progression)
 local Remotes = require(Shared.Remotes)
 local Format = require(Shared.Format)
+local Pets = require(Shared.Pets)
 
 local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
@@ -33,11 +34,29 @@ function Loot.multiplier(s: State.PlayerState): number
 	local pass = if s.passes.DoubleNoodles then Economy.PassEffects.DoubleNoodles else 1
 	local group = if s.groupBonus then 1 + Economy.GroupBonus else 1
 	local crew = 1 + (if Loot.crewBonus then Loot.crewBonus(s) else 0)
+	local pets = s.data.Pets
+	local pet = 1 + (if pets then Pets.bonus(pets.Owned, pets.Equipped, "value") else 0)
 	return pass
 		* Progression.collectionMultiplier(s.data.Found)
 		* Progression.rebirthMultiplier(s.data.Rebirths)
 		* group
 		* crew
+		* pet
+end
+
+-- The Roach: auto-vacuum + range (CELLMATES)
+local function vacuumPet(s: State.PlayerState): number
+	local pets = s.data.Pets
+	if not pets then
+		return -1 -- (-1 = no vacuum pet)
+	end
+	for _, id in pets.Equipped do
+		local p = Pets.get(id)
+		if p and p.perk == "vacuum" and pets.Owned[id] then
+			return Pets.bonus(pets.Owned, pets.Equipped, "vacuum")
+		end
+	end
+	return -1
 end
 local noodleMult = Loot.multiplier
 Loot.eventMult = 1 -- PAYDAY (Services/Events): dump + flush
@@ -80,7 +99,7 @@ function Loot.vacuum(player: Player): number
 	if not s or not root or #s.piles == 0 then
 		return 0
 	end
-	local range = Progression.vacuumRange(s.data.Levels.Vacuum)
+	local range = Progression.vacuumRange(s.data.Levels.Vacuum) * (1 + math.max(0, vacuumPet(s)))
 	local room = Stats.capacity(s) - s.data.Bag
 	local moved = 0
 	local keep = {}
@@ -270,7 +289,7 @@ function Loot.start(w: any)
 		while true do
 			task.wait(0.2)
 			for player, s in State.all() do
-				local magnet = Loot.magnet ~= nil and Loot.magnet(player)
+				local magnet = (Loot.magnet ~= nil and Loot.magnet(player)) or vacuumPet(s) >= 0
 				if (s.vacuuming or s.passes.AutoVacuum or magnet) and #s.piles > 0 then
 					Loot.vacuum(player)
 				end

@@ -13,6 +13,8 @@ Remotes.Names = {
 	Punch = "Punch", -- (x, y, z, face, ownerId?) punch a block of your tunnel (or your CREW host's)
 	CrewInvite = "CrewInvite", -- (userId: number) invite a player to dig in your tunnel
 	CrewAnswer = "CrewAnswer", -- (hostId: number, accept: boolean) answer an invite
+	PetBuy = "PetBuy", -- (id: string) buy a cellmate (known price)
+	PetEquip = "PetEquip", -- (id: string, on: boolean) take a cellmate out / back to the cell
 	CrewLeave = "CrewLeave", -- (kickUserId: number?) leave your crew (host: nil = disband, id = kick)
 	Vacuum = "Vacuum", -- (on: boolean) holding the VACUUM button
 	Lift = "Lift", -- () one rep while you hold a gym station's thing over your head
@@ -62,6 +64,8 @@ Remotes.Names = {
 	Raid = "Raid", -- (kind: "alarm" | "stolen" | "carry" | "home" | "dropped", text, userId?)
 	Boom = "Boom", -- (owner: number, x, y, z) dynamite went off
 	Crit = "Crit", -- (x, y, z, owner) your punch was a CRIT (owner = whose tunnel)
+	PetAct = "PetAct", -- (ownerUserId, petId, x, y, z, tunnelOwner) a pet swung at a block
+	PetLevel = "PetLevel", -- (petId, level) your pet leveled up
 	CrewInvited = "CrewInvited", -- (hostId: number, hostName: string, friend: boolean) an invite
 	Combo = "Combo", -- (hits: number, tier: number, bonus: number) your combo chain after a punch
 	Gold = "Gold", -- (owner, x, y, z, kind: "gold" | "jackpot", paid: number, puncher) gold broke

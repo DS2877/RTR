@@ -42,6 +42,8 @@ export type PlayerState = {
 	comboHits: number,
 	comboLast: number,
 	comboBonus: number,
+	lastHit: { number }?, -- the last punched block {x, y, z, ownerUserId} (the dig pet works there)
+	petDigAt: number, -- os.clock() of the dig pet's next swing
 }
 
 local State = {}
@@ -82,6 +84,8 @@ function State.add(player: Player, data: Data.PlayerData): PlayerState
 		comboHits = 0,
 		comboLast = -math.huge,
 		comboBonus = 0,
+		lastHit = nil,
+		petDigAt = 0,
 	}
 	states[player] = s
 	return s

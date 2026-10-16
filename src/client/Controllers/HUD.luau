@@ -39,6 +39,7 @@ local HUD = {}
 HUD.hotbar = nil :: Frame?
 HUD.buttons = nil :: Frame?
 HUD.crewTile = nil :: GuiButton? -- Controllers/Crew wires it
+HUD.petsTile = nil :: GuiButton? -- Controllers/Pets wires it
 HUD.right = nil :: Frame?
 HUD.replayTour = nil :: (() -> ())? -- (admin) the first-join tour again (Controllers/Tour)
 
@@ -624,6 +625,11 @@ function HUD.start()
 		UI.tile(row3, "Crew", "👥", "Crew", Color3.fromRGB(120, 230, 255), Color3.fromRGB(40, 120, 220))
 	crewTile.LayoutOrder = 1
 	HUD.crewTile = crewTile
+	-- CELLMATES (Controllers/Pets)
+	local petsTile =
+		UI.tile(row3, "Pets", "🐀", "Pets", Color3.fromRGB(255, 200, 120), Color3.fromRGB(190, 110, 40))
+	petsTile.LayoutOrder = 2
+	HUD.petsTile = petsTile
 	left.Size = UDim2.fromOffset(160, 264)
 	UI.toggle(left, 4, "Music", true, function(on)
 		Music.setEnabled(on)

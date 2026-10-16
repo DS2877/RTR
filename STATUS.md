@@ -187,6 +187,34 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### CELLMATES: husdjur som följer dig och hjälper till
+- Tryck på **🐀 Pets** (bredvid Crew). Där finns 8 cellkamrater med **kända priser** och inga
+  slumpade lådor, eftersom Noodles kan köpas för Robux och då får inget slumpmässigt säljas.
+  Varje husdjur låses upp när du har nått en viss zon. Rekordet räknas, så upplåsningen finns
+  kvar efter en rymning.
+  | Husdjur | Förmåga | Zon |
+  |---|---|---|
+  | 🐀 Sewer Rat | +6–15 % Noodles från grus | 1 |
+  | 🪳 Roach Swarm | dammsuger själv, +5–50 % räckvidd | 2 |
+  | 🐈 Alley Cat | +6–15 % slagkraft | 3 |
+  | 🐦 Carrier Pigeon | +10–28 % chans till fynd | 4 |
+  | 🦡 Tunnel Badger | **gräver själv** ett block bredvid ditt var 2,5 s | 5 |
+  | 🦜 Pirate Parrot | +25–70 % guldutbetalning | 6 |
+  | 🐶 Warden's Bulldog | +12–26 % slagkraft | 7 |
+  | 🐀 Golden Rat (glittrar) | +15–33 % Noodles | 8 |
+- **Nivåer:** husdjuren får XP för varje block du bryter medan de är ute, upp till nivå 10.
+  Förmågan växer med nivån. Nivå-upp ger ett kort och ljud. Panelen visar nivå, XP-mätare och
+  vad förmågan ger just nu.
+- **Platser:** du kan ha 1 husdjur ute, 2 efter din första rymning och 3 efter den tredje.
+- **I världen:** husdjuren följer efter dig. De på marken hoppar fram, fåglarna flaxar ovanför,
+  och alla har en liten namnskylt med nivå. Grävlingen gör ett skutt mot stenen när den gräver.
+  Alla spelare ser varandras husdjur.
+- **Balans:** simulatorn köper och använder husdjur. Rymningen tar 2:07 (mål 2:30), och alla
+  zoner ligger på högst 15 slag per block.
+- **Testa på iPhone:** ADMIN → Noodles, öppna 🐀 Pets, köp Sewer Rat och se den följa dig. Gräv
+  en stund så går den upp i nivå. ADMIN → Zone 5, köp grävlingen och se den skutta mot väggen
+  medan du slår.
+
 ### CREW: gräv tillsammans med kompisar
 - Tryck på **👥 Crew** (ny ruta under Index/Gift) för att se din crew och alla andra på servern.
   Varje spelare har en **Invite**-knapp. Där finns också **📨 Invite friends**, som öppnar

@@ -9,6 +9,8 @@ local World = require("../src/shared/Config/World")
 local Zones = require("../src/shared/Config/Zones")
 local Finds = require("../src/shared/Config/Finds")
 local Format = require("../src/shared/Format")
+local Pets = require("../src/shared/Pets")
+local PetConfig = require("../src/shared/Config/Pets")
 
 local CROSS = 9 -- blocks per tunnel layer (3 wide x 3 high: room to walk)
 local WALK = Economy.WalkSpeed -- studs per second
@@ -71,6 +73,19 @@ local function run(passes: boolean): Result
 	local firstBuy: number? = nil
 	local lastTrip = 0
 	local comboPunches = 0 -- punches since the last trip (the combo chain)
+	-- pets: the sim keeps one slot (no escapes here) and equips its best digging pet
+	local petXp: { [string]: number } = {}
+	local pet: string? = nil
+	local function petBonus(perk: string): number
+		if not pet then
+			return 0
+		end
+		return Pets.bonus(petXp, { pet }, perk)
+	end
+	-- a dig pet's extra damage as a share of your own punching
+	local function petPower(): number
+		return 1 + petBonus("power") + petBonus("dig") * World.AttackInterval / PetConfig.DigInterval
+	end
 	local hitStats: { [number]: { sum: number, n: number } } = {}
 	local farmed: { [number]: number } = {}
 
@@ -91,7 +106,7 @@ local function run(passes: boolean): Result
 
 	while t < LIMIT and depth < maxDepth do
 		local frontier = Progression.zoneAt(depth)
-		local power = Progression.punchPower(strength, lv.Tools, 0) * Progression.critFactor()
+		local power = Progression.punchPower(strength, lv.Tools, 0) * Progression.critFactor() * petPower()
 		-- too tough to push on: farm wider in the deepest zone that still breaks comfortably
 		local zone = frontier
 		while zone > 1 and Progression.hitsToBreak(Zones[zone].hp, power) > MAX_HITS do
@@ -124,7 +139,12 @@ local function run(passes: boolean): Result
 		t += perBlock
 		bag += 1
 		comboPunches += hits / perPunch / Progression.caveInFactor()
-		bagValue += Zones[zone].rubble * Progression.comboMult(comboPunches * COMBO_EFF)
+		bagValue += Zones[zone].rubble * Progression.comboMult(comboPunches * COMBO_EFF) * (1 + petBonus(
+			"value"
+		))
+		if pet then
+			petXp[pet] += 1
+		end
 		-- gold and jackpot blocks pay out on the spot
 		noodles += Zones[zone].rubble * Progression.goldFactor() * noodleMult
 		if findCount < Progression.findSlots(lv.FindSlots) then
@@ -163,6 +183,35 @@ local function run(passes: boolean): Result
 			noodles += bagValue * noodleMult + findValue * noodleMult
 			bag, bagValue, findValue, findCount = 0, 0, 0, 0
 			comboPunches = 0
+			-- pets: once no upgrade is affordable, buy the next pet you can (power / dig / value)
+			-- and equip whichever helps digging most
+			do
+				local bestTrack, bestCost = wanted()
+				if not bestTrack or bestCost > noodles then
+					for _, p in PetConfig.List do
+						local zoneOk = reached[p.zone] ~= nil
+						local useful = p.perk == "power" or p.perk == "dig" or p.perk == "value"
+						if zoneOk and useful and petXp[p.id] == nil and Pets.price(p.id) <= noodles * 0.5 then
+							noodles -= Pets.price(p.id)
+							petXp[p.id] = 0
+							table.insert(
+								buys,
+								string.format("%7s %-10s %s", Format.duration(t), "Pet", p.name)
+							)
+						end
+					end
+					local bestScore = -1
+					for id, xp in petXp do
+						local lvl = Pets.level(xp)
+						local perk = Pets.get(id).perk
+						local score = Pets.perk(id, lvl)
+							* (if perk == "power" then 1.5 elseif perk == "dig" then 0.25 else 1)
+						if score > bestScore then
+							bestScore, pet = score, id
+						end
+					end
+				end
+			end
 			local station = Progression.bestStation(strength)
 			strength += Progression.liftGain(station, 0, strengthMult) * math.floor(
 				gym / Economy.LiftInterval

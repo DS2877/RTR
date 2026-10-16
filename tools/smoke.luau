@@ -73,6 +73,7 @@ local Missions = req(Services, "Missions")
 local Events = req(Services, "Events")
 local Market = req(Services, "Market")
 local Crew = req(Services, "Crew")
+local PetService = req(Services, "Pets")
 
 local sent: { { name: string, args: { any } } } = {}
 Net.sink = function(_player: any, name: string, args: { any })
@@ -135,6 +136,7 @@ step("Market.start", function()
 	Market.start(world)
 end)
 step("Crew.start", Crew.start)
+step("Pets.start", PetService.start)
 DayNight.riot = Events.riot
 Events.onRiot = DayNight.setRiot
 Events.phase = DayNight.phase
@@ -591,6 +593,69 @@ do
 	s.data.Noodles, s.data.Bag, s.data.BagValue = 0, 0, 0
 	s.piles, s.loose = {}, 0
 	s.comboHits, s.comboLast, s.comboBonus = 0, -math.huge, 0
+end
+
+-- ===== CELLMATES =====
+do
+	local PetMath = req(Shared, "Pets")
+	s.data.Noodles = 0
+	check("pet: too poor", PetService.buy(fake, "Rat") == "poor")
+	check("pet: zone-locked", PetService.buy(fake, "Bulldog") == "locked")
+	s.data.Noodles = PetMath.price("Rat") + 5
+	check("pet: buy the rat", PetService.buy(fake, "Rat") == nil and s.data.Noodles == 5, s.data.Noodles)
+	check("pet: the rat comes out", s.data.Pets.Equipped[1] == "Rat")
+	check("pet: can't buy twice", PetService.buy(fake, "Rat") == "owned")
+	local base = Loot.multiplier(s)
+	check("pet: the rat adds Noodles", base > 1, base)
+	-- XP from breaking blocks
+	PetService.addXp(fake, PetMath.xpFor(1))
+	check("pet: levels up", PetMath.level(s.data.Pets.Owned.Rat) == 2, s.data.Pets.Owned.Rat)
+	-- one slot before the first escape: taking out another sends the first back
+	s.data.Zone = 6
+	s.data.Noodles = PetMath.price("Roach") + PetMath.price("Badger")
+	check("pet: buy the roach", PetService.buy(fake, "Roach") == nil)
+	check("pet: one slot", #s.data.Pets.Equipped == 1, #s.data.Pets.Equipped)
+	check(
+		"pet: equip the roach",
+		PetService.equip(fake, "Roach", true) == nil and s.data.Pets.Equipped[1] == "Roach"
+	)
+	-- the roach vacuums on its own (no button held)
+	s.vacuuming = false
+	check("pet: buy the badger", PetService.buy(fake, "Badger") == nil)
+	PetService.equip(fake, "Badger", true)
+	check("pet: badger out", s.data.Pets.Equipped[1] == "Badger")
+	-- the badger swings at your last punch
+	standAt(9, 1, -2)
+	local bx2, by2 = nil, nil
+	for yy = 2, 4 do
+		for xx = 3, 15 do
+			if
+				not bx2
+				and Voxel.isSolid(s.grid, xx, yy, 0)
+				and not Progression.findAt(s.data.Seed, xx, yy, 0)
+			then
+				bx2, by2 = xx, yy
+			end
+		end
+	end
+	if bx2 then
+		s.lastHit = { bx2, by2 :: number, 0, fake.UserId }
+		s.lastPunch = os.clock()
+		s.petDigAt = 0
+		local acts = count("PetAct")
+		local hits = s.data.Stats.Blocks
+		local hp = s.damage[Voxel.index(s.grid, bx2, by2 :: number, 0)]
+		PetService._digPet(fake, s, os.clock())
+		check(
+			"pet: the badger digs",
+			count("PetAct") > acts
+				and (s.data.Stats.Blocks > hits or s.damage[Voxel.index(s.grid, bx2, by2 :: number, 0)] ~= hp)
+		)
+	end
+	-- back to no pets for the rest of the run
+	s.data.Pets = { Owned = {}, Equipped = {} }
+	s.data.Zone, s.data.Noodles = 1, 0
+	s.lastHit = nil
 end
 
 -- ===== CREW: a guest digs in the host's tunnel =====

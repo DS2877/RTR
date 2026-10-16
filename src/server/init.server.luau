@@ -38,6 +38,7 @@ local Market = require(Services.Market)
 local Tutorial = require(Services.Tutorial)
 local Breakout = require(Services.Breakout)
 local Crew = require(Services.Crew)
+local Pets = require(Services.Pets)
 
 Remotes.setup()
 
@@ -66,6 +67,7 @@ Product.start()
 Escape.start()
 Breakout.start()
 Crew.start()
+Pets.start()
 Crew.canVisit = function()
 	local phase = DayNight.phase()
 	return phase == "Day" or phase == "RollCall"
@@ -124,7 +126,10 @@ Dig.powerBoost = Market.powerBoost
 Dig.findBoost = Market.findBoost
 Dig.speedBoost = Market.speedBoost
 Loot.magnet = Market.magnet
-Escape.onEscaped = Market.renderDecor
+Escape.onEscaped = function(player)
+	Market.renderDecor(player)
+	Pets.sync(player) -- escapes open pet slots
+end
 Product.onPasses = function(player)
 	task.spawn(Market.onCharacter, player)
 end
@@ -236,6 +241,7 @@ local function onPlayerAdded(player: Player)
 	Rewards.onJoin(player)
 	Tutorial.onJoin(player)
 	Missions.sync(player)
+	Pets.sync(player)
 	player:SetAttribute("JoinedAt", os.time())
 	Market.renderDecor(player)
 	Market.sync(player)

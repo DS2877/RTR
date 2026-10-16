@@ -15,6 +15,7 @@ local Remotes = require(Shared.Remotes)
 local Products = require(Shared.Config.Products)
 local PvP = require(Shared.Config.PvP)
 local Format = require(Shared.Format)
+local Pets = require(Shared.Pets)
 
 local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
@@ -49,6 +50,15 @@ Dig.onGold = nil :: ((player: Player, kind: string, paid: number) -> ())?
 Dig.onCombo = nil :: ((player: Player, hits: number) -> ())?
 -- CREW (Services/Crew): the host whose tunnel `guest` may dig in (nil = not allowed)
 Dig.crewHost = nil :: ((guest: Player, ownerId: number) -> Player?)?
+-- CELLMATES (Services/Pets): XP for the equipped pets
+Dig.onPetXp = nil :: ((player: Player, blocks: number) -> ())?
+
+-- A pet perk of this player right now (Shared/Pets over the saved pets).
+local function petBonus(s: State.PlayerState, perk: string): number
+	local p = s.data.Pets
+	return if p then Pets.bonus(p.Owned, p.Equipped, perk) else 0
+end
+Dig.petBonus = petBonus
 Dig.onCaveIn = nil :: ((player: Player, blocks: number) -> ())?
 
 -- multiplies punch power for everyone (events like BLACKOUT set it, M4)
@@ -338,7 +348,11 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any, ownerId: a
 	s.lastPunch = now
 	comboHit(player, s, now)
 	local data = s.data
-	local power = Stats.power(s) * Dig.globalBoost * (if Dig.powerBoost then Dig.powerBoost(player) else 1)
+	s.lastHit = { x, y, z, (host or player).UserId }
+	local power = Stats.power(s)
+		* Dig.globalBoost
+		* (if Dig.powerBoost then Dig.powerBoost(player) else 1)
+		* (1 + petBonus(s, "power"))
 	-- CRIT: a lucky punch hits much harder (the client pops "CRIT!" on the block)
 	if math.random() < World.CritChance then
 		power *= World.CritMult
@@ -437,7 +451,10 @@ function Dig.applyHits(
 	local data = s.data
 	local seed = ts.data.Seed
 	local slots = Progression.findSlots(data.Levels.FindSlots)
-	local bonus = Dig.nightBonus + Dig.eventBonus + (if Dig.findBoost then Dig.findBoost(player) else 0)
+	local bonus = Dig.nightBonus
+		+ Dig.eventBonus
+		+ (if Dig.findBoost then Dig.findBoost(player) else 0)
+		+ petBonus(s, "finds")
 	local broken: { number } = {}
 	local damaged: { number } = {}
 	local sum = Vector3.zero
@@ -551,6 +568,9 @@ function Dig.applyHits(
 		if Dig.onBroken then
 			Dig.onBroken(player, broken)
 		end
+		if Dig.onPetXp then
+			Dig.onPetXp(player, #broken)
+		end
 		if deepest >= D - 1 and Dig.onBottom then
 			Dig.onBottom(owner)
 		end
@@ -558,7 +578,7 @@ function Dig.applyHits(
 		for _, g in golds do
 			local gx, gy, gz, kind = g[1], g[2], g[3], g[4]
 			local worth = Progression.goldBlocks(kind) * Zones[Progression.zoneAt(gz)].rubble
-			local paid = math.floor(worth * Loot.multiplier(s) + 0.5)
+			local paid = math.floor(worth * Loot.multiplier(s) * (1 + petBonus(s, "gold")) + 0.5)
 			Loot.addNoodles(player, paid)
 			if Dig.onGold then
 				Dig.onGold(player, kind, paid)
@@ -718,7 +738,8 @@ function Dig.start()
 	end)
 end
 
--- exposed for the smoke test
+-- exposed for the smoke test and the pets
 Dig._updateWatching = updateWatching
+Dig.watchersOf = watchersOf
 
 return Dig
