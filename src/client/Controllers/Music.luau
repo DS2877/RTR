@@ -1,6 +1,7 @@
 --!strict
--- Background music: a looping playlist of licensed sneaky/funk tracks, crossfading to a chase
--- track while you carry a stolen find. The Music switch in the HUD mutes it.
+-- Background music: the prison-yard radio. A shuffled playlist of licensed 90s boom bap / G-funk
+-- tracks with a small "now playing" chip in the top-left corner, crossfading to a chase track while
+-- you carry a stolen find. The Music switch in the HUD mutes it.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -8,6 +9,7 @@ local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
 local Assets = require(ReplicatedStorage.Shared.Config.Assets)
+local UI = require(script.Parent.Parent.Util.UI)
 
 local Music = {}
 
@@ -19,6 +21,10 @@ local chasing = false
 local index = 0
 local main: Sound
 local chase: Sound
+local order: { number } = {}
+local chip: Frame? = nil
+local chipText: TextLabel? = nil
+local chipToken = 0
 
 local function fade(s: Sound, volume: number)
 	TweenService:Create(s, TweenInfo.new(1.2, Enum.EasingStyle.Sine), { Volume = volume }):Play()
@@ -29,11 +35,88 @@ local function refresh()
 	fade(chase, if enabled and chasing then M.ChaseVolume else 0)
 end
 
+-- a slim "now playing" chip that slides in for a few seconds when a track starts
+local function nowPlaying(title: string, artist: string)
+	if not chip then
+		local gui = UI.new("ScreenGui", {
+			Name = "NowPlaying",
+			ResetOnSpawn = false,
+			DisplayOrder = 2,
+			Parent = player:WaitForChild("PlayerGui"),
+		})
+		chip = UI.new("Frame", {
+			AnchorPoint = Vector2.new(0, 0),
+			Position = UDim2.fromOffset(-320, 10),
+			Size = UDim2.fromOffset(0, 26),
+			AutomaticSize = Enum.AutomaticSize.X,
+			BackgroundColor3 = Color3.fromRGB(14, 15, 19),
+			BackgroundTransparency = 0.3,
+			Parent = gui,
+		}, {
+			UI.corner(13),
+			UI.new("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 12) }),
+		})
+		chipText = UI.new("TextLabel", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(0, 0, 1, 0),
+			AutomaticSize = Enum.AutomaticSize.X,
+			Font = Enum.Font.GothamMedium,
+			TextSize = 12,
+			RichText = true,
+			TextColor3 = Color3.fromRGB(200, 204, 214),
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Text = "",
+			Parent = chip,
+		})
+	end
+	local c, t = chip :: Frame, chipText :: TextLabel
+	if not enabled then
+		return
+	end
+	chipToken += 1
+	local token = chipToken
+	t.Text = string.format('📻  <font color="#FFB547"><b>%s</b></font>  ·  %s', title, artist)
+	c.Size = UDim2.fromOffset(0, 26)
+	c.Position = UDim2.fromOffset(-340, 10)
+	UI.tween(c, 0.5, { Position = UDim2.fromOffset(12, 10) }, Enum.EasingStyle.Quint)
+	task.delay(5, function()
+		if token == chipToken then
+			UI.tween(c, 0.5, { Position = UDim2.fromOffset(-340, 10) }, Enum.EasingStyle.Quint)
+		end
+	end)
+end
+
+-- shuffle the whole playlist, then play it through before reshuffling (never the same track twice
+-- in a row across the seam)
+local function reshuffle()
+	local last = order[#order]
+	order = {}
+	for i = 1, #M.Playlist do
+		order[i] = i
+	end
+	for i = #order, 2, -1 do
+		local j = math.random(1, i)
+		order[i], order[j] = order[j], order[i]
+	end
+	if #order > 1 and order[1] == last then
+		order[1], order[2] = order[2], order[1]
+	end
+	index = 0
+end
+
 local function nextTrack()
-	index = index % #M.Playlist + 1
-	main.SoundId = M.Playlist[index]
+	index += 1
+	if index > #order then
+		reshuffle()
+		index = 1
+	end
+	local track = M.Playlist[order[index]]
+	main.SoundId = track.id
 	main.TimePosition = 0
 	main:Play()
+	if not chasing then
+		nowPlaying(track.title, track.artist)
+	end
 end
 
 function Music.start()
@@ -49,7 +132,7 @@ function Music.start()
 	chase.Parent = SoundService
 	chase:Play()
 	main.Ended:Connect(nextTrack)
-	index = math.random(0, #M.Playlist - 1)
+	reshuffle()
 	nextTrack()
 	refresh()
 	player:GetAttributeChangedSignal("Carrying"):Connect(function()

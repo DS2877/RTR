@@ -187,6 +187,19 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Ny musik: fängelseradio med 90-tals gangster-hiphop
+- Den gamla funk/spion-musiken är utbytt mot 14 riktiga, inspelade 90-talsbeats i stil med
+  G-funk, West Coast och boom bap (83–99 BPM, samma tempo som Tupac/Biggie-eran). Låtarna är
+  licensierade från Robloxs musikbibliotek (APM), så de får användas och tas inte bort. Riktiga
+  Tupac/Biggie-låtar går inte att använda (upphovsrätt, Roblox tar bort dem).
+- Spellistan blandas och spelas igenom utan upprepning. En smal "📻 Now playing"-skylt glider in
+  uppe till vänster i 5 sekunder när en ny låt börjar.
+- När du bär ett stulet fynd byts musiken mot ett mörkare jaktspår ("Gangsta Brutality").
+- **Testa på iPhone:** starta spelet och lyssna, skylten visar låtnamnet. Säg vilka låtar du
+  inte gillar, så byter jag ut just dem.
+- **Saknas:** jag kan inte lyssna själv, så jag har valt låtarna efter stil, album och tempo.
+  Några av dem kan ha rap-sång.
+
 ### Kvalitetslyftet: riktiga figurer och detaljerade föremål överallt
 - **Riktiga avatarer för alla NPC:er:** vakter, kock, försäljare, besökare och medfångar är nu
   riktiga R15-figurer med kläder från katalogen (vaktuniform med keps och bälte, kockrock och

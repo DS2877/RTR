@@ -22,17 +22,37 @@ local Assets = {
 		Rare = "rbxassetid://1841173427", -- Magical (c) (APM)
 	} :: { [string]: string },
 
-	-- background playlist (loops) and the track that takes over while you carry a stolen find
+	-- background playlist (loops, shuffled) and the track that takes over while you carry a stolen
+	-- find. Prison-yard radio: real-played 90s boom bap / G-funk / West Coast from the licensed APM
+	-- library (free in every experience). title/artist show in the "now playing" chip.
 	Music = {
 		Playlist = {
-			"rbxassetid://1837463238", -- Heist Time (APM)
-			"rbxassetid://9045731376", -- Smooth Operator (APM)
-			"rbxassetid://9045939292", -- Code Heist (APM)
-			"rbxassetid://9038367768", -- Funky Disco Beats (APM)
-		},
-		Chase = "rbxassetid://9047963157", -- Spy Action (APM)
+			{ id = "rbxassetid://1842771788", title = "G Funkin", artist = "Geoffrey Wilkinson" },
+			{ id = "rbxassetid://9040327518", title = "West Coast Lo Rider", artist = "Red Line" },
+			{ id = "rbxassetid://1844096934", title = "Ghetto Life", artist = "Score Production Music" },
+			{ id = "rbxassetid://1842771655", title = "Brooklyn Strut", artist = "Geoffrey Wilkinson" },
+			{ id = "rbxassetid://9042398678", title = "Don't Come Round Here", artist = "Charlie Cosmic" },
+			{ id = "rbxassetid://1837359223", title = "Hooded Head", artist = "Gum Motion Tracks" },
+			{ id = "rbxassetid://9040327320", title = "Palm Trees in LA", artist = "Red Line" },
+			{ id = "rbxassetid://1842771765", title = "Covert Operation", artist = "Geoffrey Wilkinson" },
+			{
+				id = "rbxassetid://9038773540",
+				title = "Cruising through the Neighborhood",
+				artist = "Charlie Cosmic",
+			},
+			{ id = "rbxassetid://1839361813", title = "Deviant Behavior", artist = "Sylvain Raymond Lux" },
+			{ id = "rbxassetid://9040328482", title = "Walk on the West", artist = "Red Line" },
+			{ id = "rbxassetid://1842771974", title = "Just Chillin", artist = "Geoffrey Wilkinson" },
+			{
+				id = "rbxassetid://9038774201",
+				title = "Always Twisted in the Streets",
+				artist = "Charlie Cosmic",
+			},
+			{ id = "rbxassetid://9040330242", title = "Big Grizzly Walking", artist = "Red Line" },
+		} :: { { id: string, title: string, artist: string } },
+		Chase = "rbxassetid://1846934387", -- Gangsta Brutality A (APM)
 		Volume = 0.25,
-		ChaseVolume = 0.4,
+		ChaseVolume = 0.35,
 	},
 
 	Images = {} :: { [string]: string },

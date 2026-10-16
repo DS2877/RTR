@@ -915,8 +915,8 @@ State.remove(fake)
 
 -- ===== assets =====
 local allSounds: { [string]: string } = table.clone(Assets.Sounds)
-for i, id in Assets.Music.Playlist do
-	allSounds["Music" .. i] = id
+for i, track in Assets.Music.Playlist do
+	allSounds["Music" .. i] = track.id
 end
 allSounds.Chase = Assets.Music.Chase
 local Audio = req(Config, "Audio")
