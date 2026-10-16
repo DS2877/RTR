@@ -78,6 +78,7 @@ local Assets = {
 			Pants = 2430769797, -- dark uniform pants with a belt
 			Hat = "6377328912", -- vintage police cap
 			Waist = "4376960922", -- utility belt
+			Faces = { 31117267, 7074786 }, -- Skeptic, Check It: guards don't smile
 		},
 		chef = {
 			Shirt = 6780936233, -- white chef jacket
@@ -96,6 +97,17 @@ local Assets = {
 		},
 		glasses = "62690529", -- thick rimmed glasses (Roblox): The Fence + the Black Market dealer
 	} :: { [string]: any },
+	-- NPC bodies: Roblox's free "Man" bundle (a real body shape instead of the blocky default)
+	Body = {
+		Head = 86498048,
+		Torso = 86500008,
+		RightArm = 86500036,
+		LeftArm = 86500054,
+		LeftLeg = 86500064,
+		RightLeg = 86500078,
+	},
+	-- free Roblox faces (Smile, Chill, Check It, Skeptic, Freckles, Hmmm...)
+	Faces = { 144075659, 7074764, 7074786, 31117267, 12145366, 7076076 },
 	Skin = {
 		{ 234, 184, 146 },
 		{ 204, 142, 105 },

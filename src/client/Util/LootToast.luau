@@ -39,7 +39,8 @@ local function root(): Frame
 	})
 	local h = UI.new("Frame", {
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -14, 0, 12),
+		-- under the clock + event card column (Controllers/Clock, Moments)
+		Position = UDim2.new(1, -14, 0, 10 + 124 * UI.screenScale()),
 		Size = UDim2.fromOffset(WIDTH, (HEIGHT + GAP) * MAX),
 		BackgroundTransparency = 1,
 		Parent = gui,

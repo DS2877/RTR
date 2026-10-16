@@ -995,6 +995,20 @@ do
 	local ok, err = pcall(Characters.upgrade, probe)
 	print("avatar probe:", ok, err, probe:GetAttribute("Avatar"))
 	check("npc avatar builds", ok and probe:GetAttribute("Avatar") == true, err)
+	-- not the all-black, faceless default: skin on the body, a face, a real (mesh) body
+	local bc = probe:FindFirstChildOfClass("BodyColors")
+	local head = probe:FindFirstChild("Head")
+	local torso = probe:FindFirstChild("UpperTorso")
+	local skinOk = bc ~= nil and (bc.HeadColor3.R + bc.HeadColor3.G + bc.HeadColor3.B) > 0.6
+	local face = head and (head:FindFirstChildOfClass("Decal") or head:FindFirstChild("face", true))
+	print(
+		"avatar look:",
+		bc and bc.HeadColor3,
+		face and face.ClassName,
+		torso and torso:IsA("MeshPart") and (torso :: MeshPart).MeshId
+	)
+	check("npc avatar has skin colour", skinOk, bc and bc.HeadColor3)
+	check("npc avatar has a face", face ~= nil)
 	probe:Destroy()
 end
 

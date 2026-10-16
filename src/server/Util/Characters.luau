@@ -16,9 +16,32 @@ local Characters = {}
 
 local templates: { [string]: Model } = {}
 
-local function describe(role: string, variant: number, glasses: boolean): HumanoidDescription
+local function skinColor(index: number): Color3
+	local c = Assets.Skin[(index - 1) % #Assets.Skin + 1]
+	return Color3.fromRGB(c[1], c[2], c[3])
+end
+
+-- A fresh HumanoidDescription is all black, faceless and blocky: give it the "Man" body, a face
+-- and the skin on every body part (BodyColors would otherwise paint over any part colour).
+local function describe(role: string, variant: number, glasses: boolean, skin: number): HumanoidDescription
 	local o = Assets.Outfits[role] or Assets.Outfits.inmate
 	local d = Instance.new("HumanoidDescription")
+	local body = Assets.Body
+	d.Head = body.Head
+	d.Torso = body.Torso
+	d.LeftArm = body.LeftArm
+	d.RightArm = body.RightArm
+	d.LeftLeg = body.LeftLeg
+	d.RightLeg = body.RightLeg
+	local faces = o.Faces or Assets.Faces
+	d.Face = faces[(variant + skin - 2) % #faces + 1]
+	local color = skinColor(skin)
+	d.HeadColor = color
+	d.TorsoColor = color
+	d.LeftArmColor = color
+	d.RightArmColor = color
+	d.LeftLegColor = color
+	d.RightLegColor = color
 	if o.Shirt then
 		d.Shirt = o.Shirt
 	end
@@ -40,16 +63,17 @@ local function describe(role: string, variant: number, glasses: boolean): Humano
 	return d
 end
 
--- A built avatar for this role (cached per role + hair variant; nil if it can't be built).
-local function template(role: string, variant: number, glasses: boolean?): Model?
-	local key = role .. variant .. (if glasses then "g" else "")
+-- A built avatar for this role (cached per role + hair variant + skin; nil if it can't be built).
+local function template(role: string, variant: number, glasses: boolean?, skin: number?): Model?
+	local tone = skin or 1
+	local key = role .. variant .. "_" .. tone .. (if glasses then "g" else "")
 	local t = templates[key]
 	if t then
 		return t
 	end
 	local ok, rig = pcall(function()
 		return Players:CreateHumanoidModelFromDescription(
-			describe(role, variant, glasses == true),
+			describe(role, variant, glasses == true, tone),
 			Enum.HumanoidRigType.R15
 		)
 	end)
@@ -70,16 +94,6 @@ local function feetOffset(rig: Model): number
 	local humanoid = rig:FindFirstChildOfClass("Humanoid")
 	local hrp = rig:FindFirstChild("HumanoidRootPart") :: BasePart?
 	return (if humanoid then humanoid.HipHeight else 2) + (if hrp then hrp.Size.Y / 2 else 1)
-end
-
-local function skin(rig: Model, seed: number)
-	local c = Assets.Skin[seed % #Assets.Skin + 1]
-	local color = Color3.fromRGB(c[1], c[2], c[3])
-	for _, part in rig:GetChildren() do
-		if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-			part.Color = color
-		end
-	end
 end
 
 local function idle(humanoid: Humanoid)
@@ -108,12 +122,11 @@ function Characters.upgrade(m: Model)
 		return
 	end
 	local seed = math.floor(math.abs(feet.Position.X * 7 + feet.Position.Z * 13))
-	local t = template(role, seed % 4 + 1, m:GetAttribute("Glasses") == true)
+	local t = template(role, seed % 4 + 1, m:GetAttribute("Glasses") == true, seed % #Assets.Skin + 1)
 	if not t then
 		return
 	end
 	local rig = t:Clone()
-	skin(rig, seed)
 	local hrp = rig:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not hrp then
 		rig:Destroy()

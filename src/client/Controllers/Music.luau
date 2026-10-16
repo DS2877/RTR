@@ -5,6 +5,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
@@ -104,7 +105,9 @@ local function reshuffle()
 	index = 0
 end
 
+local startedAt = 0
 local function nextTrack()
+	startedAt = os.clock()
 	index += 1
 	if index > #order then
 		reshuffle()
@@ -132,6 +135,36 @@ function Music.start()
 	chase.Parent = SoundService
 	chase:Play()
 	main.Ended:Connect(nextTrack)
+	-- watchdog: a track that never loads, gets stopped or stalls never fires Ended (that left the
+	-- radio silent for good). Every 2 s: not playing / not loaded after 20 s / stuck -> next track.
+	local acc, lastPos, stuck = 0, -1, 0
+	RunService.Heartbeat:Connect(function(dt)
+		acc += dt
+		if acc < 2 then
+			return
+		end
+		acc = 0
+		if not chase.IsPlaying then
+			chase:Play()
+		end
+		local age = os.clock() - startedAt
+		if age < 4 then
+			lastPos, stuck = -1, 0
+			return
+		end
+		local pos = main.TimePosition
+		stuck = if main.IsLoaded and main.IsPlaying and math.abs(pos - lastPos) < 0.05 then stuck + 1 else 0
+		lastPos = pos
+		local len = main.TimeLength
+		if
+			not main.IsPlaying
+			or (not main.IsLoaded and age > 20)
+			or stuck >= 3
+			or (len > 0 and pos >= len - 0.15)
+		then
+			nextTrack()
+		end
+	end)
 	reshuffle()
 	nextTrack()
 	refresh()

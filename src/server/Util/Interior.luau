@@ -188,6 +188,9 @@ local function fan(parent: Instance, at: Vector3, ceiling: number)
 		)
 	end
 	m.PrimaryPart = hub
+	-- the hub cylinder lies on its side (axis = X): keep the pivot upright so the client spins the
+	-- fan around the world's vertical axis, not like a windmill
+	hub.PivotOffset = CFrame.Angles(0, 0, -math.pi / 2)
 	m.Parent = parent
 	CollectionService:AddTag(m, "CeilingFan")
 end

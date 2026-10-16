@@ -456,11 +456,12 @@ function Moments.start()
 		end)
 
 	-- events
-	-- a slim card under the top bar while an event runs: icon, name, what it does, time left
+	-- a slim card in the top-right column, right under the schedule clock (Controllers/Clock),
+	-- while an event runs: icon, name, what it does, time left
 	local eventCard = UI.new("Frame", {
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 78),
-		Size = UDim2.fromOffset(330, 44),
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -14, 0, 10 + 70 * UI.screenScale()),
+		Size = UDim2.fromOffset(240, 44),
 		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
 		BackgroundTransparency = 0.18,
 		Visible = false,
@@ -479,10 +480,11 @@ function Moments.start()
 	local eventName = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
 		Position = UDim2.fromOffset(46, 5),
-		Size = UDim2.new(1, -110, 0, 18),
+		Size = UDim2.new(1, -104, 0, 18),
 		Text = "",
 		Font = Enum.Font.GothamBlack,
-		TextSize = 15,
+		TextSize = 14,
+		TextTruncate = Enum.TextTruncate.AtEnd,
 		TextColor3 = Color3.fromRGB(255, 190, 90),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Parent = eventCard,
@@ -490,7 +492,7 @@ function Moments.start()
 	local eventText = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
 		Position = UDim2.fromOffset(46, 23),
-		Size = UDim2.new(1, -110, 0, 15),
+		Size = UDim2.new(1, -104, 0, 15),
 		Text = "",
 		Font = Enum.Font.GothamMedium,
 		TextSize = 11,

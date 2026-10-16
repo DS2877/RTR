@@ -187,6 +187,23 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Fixar: NPC-kroppar, fläktar, musiken och klockans plats
+- **NPC:erna var kolsvarta och klossiga:** en tom avatarbeskrivning är svart, saknar ansikte och
+  har den gamla klossiga kroppen. Nu får alla NPC:er Robloxs gratis "Man"-kropp, ett ansikte
+  (vakterna ser sura ut, fångarna har olika miner) och en riktig hudfärg på hela kroppen. Även
+  de patrullerande vakterna. Röktestet kollar nu att figurerna har hudfärg och ansikte.
+- **Fläktarna i Mess Hall** snurrade som väderkvarnar. Nu snurrar de runt taket som riktiga
+  takfläktar.
+- **Musiken dog och kom aldrig tillbaka:** en låt som inte laddas, stoppas eller fastnar
+  skickar aldrig signalen "låten är slut", så radion tystnade för gott. Nu kollar en vakt var
+  2:a sekund att musiken spelar och hoppar annars till nästa låt.
+- **Dygnsklockan** (YARD TIME / ROLL CALL) låg mitt på högerkanten över Admin-knappen. Nu sitter
+  den i övre högra hörnet. Händelsekortet (t.ex. TREASURE RACE) ligger direkt under den i stället
+  för mitt i bild, och fynd-korten kommer under båda.
+- **Testa på iPhone:** titta på kocken, vakterna och fångarna (hudfärg, ansikte, riktig kropp),
+  fläktarna i Mess Hall, gå in i tunneln och ut igen (musiken ska höras), och kolla att klockan
+  sitter i hörnet.
+
 ### Ny musik: fängelseradio med 90-tals gangster-hiphop
 - Den gamla funk/spion-musiken är utbytt mot 14 riktiga, inspelade 90-talsbeats i stil med
   G-funk, West Coast och boom bap (83–99 BPM, samma tempo som Tupac/Biggie-eran). Låtarna är

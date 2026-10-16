@@ -81,11 +81,11 @@ function Clock.start()
 		DisplayOrder = 3,
 		Parent = player:WaitForChild("PlayerGui"),
 	})
-	-- the schedule widget, above the action buttons
+	-- the schedule widget, in the top-right corner (the event card and the loot cards stack under it)
 	local card: Frame = UI.new("Frame", {
-		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -14, 1, -246),
-		Size = UDim2.fromOffset(206, 62),
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -14, 0, 10),
+		Size = UDim2.fromOffset(240, 62),
 		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
 		BackgroundTransparency = 0.3,
 		Parent = gui,
