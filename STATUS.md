@@ -187,6 +187,23 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Inspektion, säng, Mess Hall-dörren, banner, vaktbubbla, VIP
+- **Mer tid vid inspektion:** 15 sekunder (förut 5) från fotstegen till att vakten står vid dörren.
+- **Gömma sig är inte längre en skärmknapp:** gå fram till sängen och **håll** "Sleep" (1,2 s) för
+  att lägga dig, och gå fram till väggen och håll "Cover the hole" (0,8 s) för att rulla ner
+  tapeten. HIDE-knappen vid inspektion är borta – du måste själv hinna till sängen och väggen.
+  Bara din egen cells prompter syns. Rör joysticken eller håll "Get up" för att kliva upp.
+- **Dörren till Mess Hall var blockerad:** det fanns ett hål i golvet i dörröppningen och den
+  målade väggranden gick tvärs över öppningen. Båda fixade, och röktestet kollar nu att dörrarna
+  till Mess Hall och Yard har golv och är fria.
+- **Zon-bannern** ("CONCRETE – NEW ZONE UNLOCKED") försvinner nu säkert efter ~3,5 s.
+- **Vakternas pratbubbla:** en liten halvgenomskinlig skylt i världen, storleksatt i studs så den
+  krymper med avståndet (täcker aldrig skärmen), utan pil och utan skrivmaskinseffekt.
+- **VIP-loungen** är ombyggd: mörka trähalvväggar med rökfärgat glas och guldlister, guldstolpar,
+  röd matta med guldkanter från ett sammetsrep (VIP ser repet avhakat och går rakt in),
+  "★ VIP LOUNGE ★" i guld på svart skylt, skinnsoffor med guldkuddar, marmorbord med
+  champagne, minibar med flaskor, krukväxter, tavla och en kristallkrona med varmt ljus.
+
 ### Grävningen stoppas aldrig + gömställe + nya händelser
 - **Full ryggsäck stoppar inte längre grävningen:** du kan slå vidare, gruset blir liggande på
   golvet (värt något först när du har plats igen) och rutan varnar. Ryggsäckarnas storlek är
@@ -381,9 +398,9 @@ köper nästa verktyg – det är tänkt så (som i andra simulatorspel), inte e
 16. Ljud/zoner: ha ljudet på. Slå på väggen (hör sprickorna stiga i ton), krossa flera i rad.
     ADMIN → Zone 4 (armeringsjärn), Zone 5 (rör), Zone 8 (kristaller), Zone 9 (lava) – gräv en bit
     och titta på väggarna och lyssna på bakgrundsljudet.
-17. Nytt: gräv med full ryggsäck (fortsätter, gruset blir liggande). Stå i cellen: 🖼️ Cover
-    (tapeten rullar ner) och 🛏️ Sleep (du ligger i sängen) – rör joysticken för att kliva upp.
-    ADMIN → 👮 Inspect me och testa med/utan täckt hål. ADMIN → 💎 Gold rush / 🍜 Payday /
+17. Nytt: gräv med full ryggsäck (fortsätter, gruset blir liggande). I cellen: håll "Cover the
+    hole" vid väggen och "Sleep" vid sängen – rör joysticken för att kliva upp. ADMIN → 👮 Inspect
+    me: du har 15 s att täcka hålet och lägga dig. Gå in i Mess Hall. Titta på VIP-loungen. ADMIN → 💎 Gold rush / 🍜 Payday /
     🌋 Quake / 📦 Supply (gå ut i Yard och ta lådan).
     Natt: ADMIN → 🌙 Night, gräv tills ryggsäcken är full, gå till toaletten i cellen → "Flush
     rubble". Kolla att inspektionsvakten står på golvet. Slå några slag i rad: garden, växling
