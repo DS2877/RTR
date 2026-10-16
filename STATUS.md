@@ -189,9 +189,8 @@ data blandas aldrig in.
 
 ### Grävningen stoppas aldrig + gömställe + nya händelser
 - **Full ryggsäck stoppar inte längre grävningen:** du kan slå vidare, gruset blir liggande på
-  golvet (värt något först när du har plats igen) och rutan varnar. Ryggsäckarna rymmer 3× mer
-  (Pockets 60, Sock 180 … Garbage Truck 25 000), så turerna till dumpen blir färre. Balansen är
-  omkörd: alla mål håller fortfarande (flykt 2:03 för gratisspelare, ≤ 15 slag/block).
+  golvet (värt något först när du har plats igen) och rutan varnar. Ryggsäckarnas storlek är
+  tillbaka som förut (Pockets 20, Sock 60 … Garbage Truck 8 000) – 3× större var för mycket.
 - **Fulla fyndplatser stoppar inte heller:** nya fynd hamnar i din Stash-kista (om det finns plats,
   annars smulas fyndet sönder) och du får en varning.
 - **"Håll VACUUM"-rutan** visas inte längre om du har Auto-Vacuum (då finns ingen knapp).
