@@ -429,6 +429,9 @@ local function punch(x: number, y: number, z: number, face: number): string?
 	return Dig.punch(fake, x, y, z, face)
 end
 
+-- crits are random: switch them off so hit counts are exact (restored after the dig tests)
+local critChance = World.CritChance;
+(World :: any).CritChance = 0
 -- in front of the back wall (z = -2 is inside the cell)
 standAt(9, 1, -2)
 check("bad args rejected", punch(9.5, 1, 0, 6) == "bad args")
@@ -454,7 +457,7 @@ check(
 )
 check("punch accepted", punch(bx, 1, 0, 6) == nil)
 check("block broken after " .. hits .. " hits", Voxel.isDug(s.grid, bx, 1, 0))
-check("delta sent", count("Delta") >= hits, count("Delta"))
+check("delta sent", count("Delta") >= hits, count("Delta"))(World :: any).CritChance = critChance
 check("rubble pile", s.loose == 1 and #s.piles == 1, s.loose)
 check("block behind is exposed now", Voxel.isExposed(s.grid, bx, 1, 1))
 
