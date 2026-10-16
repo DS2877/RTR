@@ -390,6 +390,20 @@ function Progression.caveInChance(broken: number): number
 	return 1 - (1 - World.CaveInChance) ^ broken
 end
 
+-- The vault door in front of zone `zone`'s chamber: its HP and what cracking it pays (rubble
+-- blocks' worth, before multipliers). Zone 1 has no chamber and no door.
+function Progression.bossHp(zone: number): number
+	if zone <= 1 or not Zones[zone] then
+		return 0
+	end
+	return Zones[zone - 1].hp * World.BossBlocks
+end
+
+function Progression.bossReward(zone: number): number
+	local z = Zones[math.clamp(zone, 1, #Zones)]
+	return World.BossReward * z.rubble
+end
+
 -- Average damage multiplier from CRITs (the balance sim uses it).
 function Progression.critFactor(): number
 	return 1 + World.CritChance * (World.CritMult - 1)

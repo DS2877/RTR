@@ -252,4 +252,11 @@ return function()
 	check(Progression.caveInChance(9) > Progression.caveInChance(1), "more broken = likelier")
 	check(Progression.caveInChance(9) < 0.5, "cave-ins stay rare")
 	check(Progression.caveInFactor() > 1 and Progression.caveInFactor() < 1.3, "cave-ins: a modest speedup")
+
+	-- vault doors: one per chamber zone, tougher and richer the deeper you go
+	check(Progression.bossHp(1) == 0, "no door before zone 2")
+	for zone = 3, #Zones do
+		check(Progression.bossHp(zone) > Progression.bossHp(zone - 1), "doors get tougher: " .. zone)
+		check(Progression.bossReward(zone) > Progression.bossReward(zone - 1), "doors pay more: " .. zone)
+	end
 end

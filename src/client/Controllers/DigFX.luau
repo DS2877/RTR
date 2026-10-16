@@ -765,6 +765,109 @@ local function onCaveIn(owner: number, x: number, y: number, z: number, blocks: 
 	Shake.punch(4)
 end
 
+-- ===== vault doors =====
+
+local function findDoor(owner: number, zone: number): Model?
+	local f = workspace:FindFirstChild("VaultDoors")
+	if not f then
+		return nil
+	end
+	for _, m in f:GetChildren() do
+		if m:IsA("Model") and m:GetAttribute("Owner") == owner and m:GetAttribute("Zone") == zone then
+			return m
+		end
+	end
+	return nil
+end
+
+local shaking: { [Model]: boolean } = {}
+local function shakeDoor(m: Model, strength: number)
+	if shaking[m] then
+		return
+	end
+	shaking[m] = true
+	local base = m:GetPivot()
+	task.spawn(function()
+		for k = 1, 5 do
+			if not m.Parent then
+				break
+			end
+			local a = strength * (1 - k / 6)
+			m:PivotTo(base * CFrame.new((math.random() - 0.5) * a, (math.random() - 0.5) * a, 0))
+			task.wait(0.03)
+		end
+		if m.Parent then
+			m:PivotTo(base)
+		end
+		shaking[m] = nil
+	end)
+end
+
+local function onBoss(kind: string, owner: number, zone: number, hp: number?, max: number?, puncher: number?)
+	local door = findDoor(owner, zone)
+	local mine = owner == player.UserId or puncher == player.UserId
+	local center = if door then door:GetPivot().Position else nil
+	if kind == "appear" then
+		if center then
+			puff(center, Color3.fromRGB(150, 150, 150), 30, 2)
+			Sound.at("CellDoor", center, 1, 0.6, 120)
+		end
+		if mine then
+			Shake.kick(0.6)
+		end
+	elseif kind == "hit" then
+		if door and center then
+			shakeDoor(door, if puncher == player.UserId then 0.5 else 0.25)
+			local toward = (door:GetPivot().LookVector * -1)
+			impact(center + toward * 0.6, toward, Color3.fromRGB(255, 220, 140))
+			Sound.at("HitMetal", center, 0.7, 0.8 + (1 - (hp or 0) / math.max(max or 1, 1)) * 0.4, 90)
+		end
+	elseif kind == "dead" then
+		if door and center then
+			for _ = 1, 6 do
+				puff(
+					center + Vector3.new((math.random() - 0.5) * 8, (math.random() - 0.5) * 6, 0),
+					Color3.fromRGB(170, 160, 150),
+					20,
+					2
+				)
+			end
+			Sound.at("Boom", center, 1, 0.9, 160)
+			Sound.at("BigBreak", center, 1, 0.8, 160)
+			-- the door tips over toward you
+			local base = door:GetPivot()
+			local value = Instance.new("CFrameValue")
+			value.Value = base
+			value.Changed:Connect(function(cf)
+				if door.Parent then
+					door:PivotTo(cf)
+				end
+			end)
+			TweenService:Create(value, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Value = base * CFrame.new(0, -3, 2.5) * CFrame.Angles(math.rad(-80), 0, 0),
+			}):Play()
+			task.delay(1.2, function()
+				value:Destroy()
+			end)
+			if mine then
+				DigFX.confetti(center)
+				Shake.kick(1)
+				Shake.punch(6)
+				popText(center + Vector3.new(0, 3, 0), "VAULT CRACKED!", Color3.fromRGB(255, 210, 90), 9, 1.8)
+				Sound.play("Zone", 0.8)
+			end
+		end
+	elseif kind == "reward" then
+		local paid = hp or 0
+		local at = center or (if root() then (root() :: BasePart).Position + Vector3.new(0, 3, 0) else nil)
+		if at then
+			coinFountain(at, 24, GOLD)
+			popText(at + Vector3.new(0, 1, 0), "+" .. Format.number(paid) .. " 🍜", GOLD, 7, 1.6)
+		end
+		Sound.play("Dump", 0.9)
+	end
+end
+
 function DigFX.start()
 	folder = Instance.new("Folder")
 	folder.Name = "DigFX"
@@ -783,6 +886,7 @@ function DigFX.start()
 	RunService.Heartbeat:Connect(updateVacuum)
 	Remotes.get(Remotes.Names.Gold).OnClientEvent:Connect(onGold)
 	Remotes.get(Remotes.Names.CaveIn).OnClientEvent:Connect(onCaveIn)
+	Remotes.get(Remotes.Names.Boss).OnClientEvent:Connect(onBoss)
 	-- CRIT: a hot flash, a bigger kick and a "CRIT!" that pops off the block
 	Remotes.get(Remotes.Names.Crit).OnClientEvent
 		:Connect(function(x: number, y: number, z: number, owner: number?)

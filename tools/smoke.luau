@@ -788,7 +788,28 @@ standAt(mid, 1, start2 - 3)
 local reason = punch(mid, 1, start2 - 1, 6)
 check("break into zone 2", reason == nil and Voxel.isDug(s.grid, mid, 1, start2 - 1), reason)
 local box = Progression.chamberBox(2)
-check("chamber opened", box ~= nil and Voxel.isDug(s.grid, box.x0 + 1, 1, box.z0 + 1))
+-- the VAULT DOOR comes out first; the chamber opens when it cracks
+check("vault door appears", s.bosses[2] ~= nil and count("Boss") >= 1)
+check(
+	"vault door built",
+	workspace:FindFirstChild("VaultDoors") ~= nil and workspace.VaultDoors:FindFirstChild("VaultDoor2") ~= nil
+)
+check("chamber still sealed", box ~= nil and Voxel.isSolid(s.grid, box.x0 + 1, 1, box.z0 + 1))
+check("the brush can't break chamber rock", Voxel.isSolid(s.grid, mid, 1, start2))
+do
+	local n0 = s.data.Noodles
+	local cracked = false
+	for _ = 1, 30 do
+		if not s.bosses[2] then
+			cracked = true
+			break
+		end
+		punch(mid, 1, start2, 6)
+	end
+	cracked = cracked or s.bosses[2] == nil
+	check("vault door cracks", cracked)
+	check("cracking pays everyone who hit it", s.data.Noodles > n0, s.data.Noodles - n0)
+end
 check("zone 2 reached", s.data.Zone == 2 and count("Zone") >= 1, s.data.Zone)
 check("chamber event", count("Chamber") >= 1)
 

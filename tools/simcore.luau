@@ -160,6 +160,12 @@ local function run(passes: boolean): Result
 			layerLeft = math.max(CROSS, #Upgrades.Brushes[lv.Brushes].cells)
 			local z = Progression.zoneAt(depth)
 			if not reached[z] and depth < maxDepth then
+				-- the vault door in front of the new zone's chamber: single-target punches
+				local doorHp = Progression.bossHp(z)
+				if doorHp > 0 then
+					t += math.ceil(doorHp / power) * World.AttackInterval
+					noodles += Progression.bossReward(z) * noodleMult
+				end
 				reached[z] = t
 				local p = Progression.punchPower(strength, lv.Tools, 0)
 				info[z] = string.format(

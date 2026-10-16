@@ -23,6 +23,7 @@ local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Stats = require(script.Parent.Stats)
 local Cells = require(script.Parent.Cells)
 local Loot = require(script.Parent.Loot)
+local VaultDoor = require(script.Parent.Parent.Util.VaultDoor)
 
 local Dig = {}
 
@@ -52,6 +53,7 @@ Dig.onCombo = nil :: ((player: Player, hits: number) -> ())?
 Dig.crewHost = nil :: ((guest: Player, ownerId: number) -> Player?)?
 -- CELLMATES (Services/Pets): XP for the equipped pets
 Dig.onPetXp = nil :: ((player: Player, blocks: number) -> ())?
+Dig.onBoss = nil :: ((player: Player, zone: number) -> ())? -- every player who hit a door that cracked
 
 -- A pet perk of this player right now (Shared/Pets over the saved pets).
 local function petBonus(s: State.PlayerState, perk: string): number
@@ -162,6 +164,10 @@ end
 
 -- An owner left: everyone stops rendering their tunnel.
 function Dig.forget(owner: Player)
+	local os_ = State.get(owner)
+	if os_ then
+		Dig.clearDoors(os_) -- (defined further down)
+	end
 	for viewer, vs in State.all() do
 		if vs.watching[owner.UserId] then
 			vs.watching[owner.UserId] = nil
@@ -240,6 +246,110 @@ local function openChamber(player: Player, s: State.PlayerState, zone: number)
 	end
 	reachZone(player, s, zone)
 end
+
+-- ===== vault doors =====
+
+local doorFolder: Folder? = nil
+local function doorParent(): Folder
+	if not doorFolder or not doorFolder.Parent then
+		local f = Instance.new("Folder")
+		f.Name = "VaultDoors"
+		f.Parent = workspace
+		doorFolder = f
+	end
+	return doorFolder :: Folder
+end
+
+-- The door in front of `zone`'s chamber in `owner`'s tunnel (brought out the first time).
+local function bossAppear(owner: Player, ts: State.PlayerState, zone: number): any
+	local b = ts.bosses[zone]
+	if b then
+		return b
+	end
+	local max = Progression.bossHp(zone)
+	local c = Zones[zone] and Zones[zone].chamber
+	if max <= 0 or not c or not ts.frame then
+		return nil
+	end
+	local door = VaultDoor.build(doorParent(), ts.frame, zone)
+	if door then
+		VaultDoor.setHp(door, max, max)
+		door.model:SetAttribute("Owner", owner.UserId)
+	end
+	b = { hp = max, max = max, door = door, hitters = {} }
+	ts.bosses[zone] = b
+	for _, viewer in watchersOf(owner) do
+		Net.fire(viewer, Remotes.Names.Boss, "appear", owner.UserId, zone, max, max)
+	end
+	Net.notice(owner, "🔒 A VAULT DOOR seals the " .. string.upper(c.name) .. "! Punch it open!", "info")
+	return b
+end
+
+-- One punch on the door (any block of the sealed chamber counts).
+local function bossHit(player: Player, owner: Player, ts: State.PlayerState, zone: number, power: number)
+	local b = bossAppear(owner, ts, zone)
+	if not b then
+		return
+	end
+	b.hp -= power
+	b.hitters[player] = true
+	if b.door then
+		VaultDoor.setHp(b.door, b.hp, b.max)
+	end
+	for _, viewer in watchersOf(owner) do
+		Net.fire(viewer, Remotes.Names.Boss, "hit", owner.UserId, zone, b.hp, b.max, player.UserId)
+	end
+	if b.hp > 0 then
+		return
+	end
+	-- cracked: everyone who hit it gets paid, the chamber opens
+	ts.bosses[zone] = nil
+	local reward = Progression.bossReward(zone)
+	for hitter in b.hitters do
+		local hs = State.get(hitter)
+		if hs then
+			local pay = math.floor(reward * Loot.multiplier(hs) + 0.5)
+			Loot.addNoodles(hitter, pay)
+			Net.fire(hitter, Remotes.Names.Boss, "reward", owner.UserId, zone, pay)
+			if Dig.onBoss then
+				Dig.onBoss(hitter, zone)
+			end
+		end
+	end
+	for _, viewer in watchersOf(owner) do
+		Net.fire(viewer, Remotes.Names.Boss, "dead", owner.UserId, zone, 0, b.max, player.UserId)
+	end
+	if zone >= 5 then
+		local c = Zones[zone].chamber
+		Net.announce(
+			string.format(
+				"💥 %s cracked the vault door of the %s!",
+				player.Name,
+				if c then c.name else "deep"
+			),
+			{ 255, 200, 90 },
+			"Announce"
+		)
+	end
+	local model = b.door and b.door.model
+	if model then
+		task.delay(1.6, function()
+			model:Destroy()
+		end)
+	end
+	openChamber(owner, ts, zone)
+end
+
+-- Removes every door of a tunnel (reset, escape, leaving).
+local function clearDoors(ts: State.PlayerState)
+	for _, b in ts.bosses do
+		if b.door then
+			b.door.model:Destroy()
+		end
+	end
+	ts.bosses = {}
+end
+Dig.clearDoors = clearDoors
 
 -- ===== combo =====
 
@@ -361,8 +471,16 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any, ownerId: a
 			Dig.onCrit(player)
 		end
 	end
-	local targets = Progression.brushTargets(grid, x, y, z, face, data.Levels.Brushes, function(_, _, tz)
-		return tz < maxZ
+	-- a sealed chamber: the punch hits its vault door (one hit, whatever the brush)
+	local sealed = Progression.chamberAt(x, y, z)
+	if sealed then
+		data.Stats.Punches += 1
+		bossHit(player, host or player, ts, sealed, power)
+		sendCombo(player, s)
+		return nil
+	end
+	local targets = Progression.brushTargets(grid, x, y, z, face, data.Levels.Brushes, function(tx, ty, tz)
+		return tz < maxZ and not Progression.chamberAt(tx, ty, tz)
 	end)
 	data.Stats.Punches += 1
 	local broken = Dig.applyHits(player, s, targets, power, host)
@@ -465,7 +583,8 @@ function Dig.applyHits(
 	for _, t in targets do
 		local tx, ty, tz = t[1], t[2], t[3]
 		local find = Progression.findAt(seed, tx, ty, tz)
-		if not Voxel.isSolid(grid, tx, ty, tz) then
+		-- (a sealed chamber only opens through its vault door)
+		if not Voxel.isSolid(grid, tx, ty, tz) or Progression.chamberAt(tx, ty, tz) then
 			continue
 		end
 		do
@@ -560,7 +679,7 @@ function Dig.applyHits(
 			Net.fire(viewer, Remotes.Names.Delta, owner.UserId, broken, damaged, player.UserId)
 		end
 		for zone in opened do
-			openChamber(owner, ts, zone)
+			bossAppear(owner, ts, zone)
 		end
 		if Dig.onPiles then
 			Dig.onPiles(player)
@@ -687,6 +806,7 @@ function Dig.resetTunnel(player: Player)
 	if not s then
 		return
 	end
+	clearDoors(s)
 	s.grid = Voxel.new(W, H, D, CS)
 	s.damage = {}
 	s.piles = {}

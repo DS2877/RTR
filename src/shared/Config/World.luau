@@ -58,6 +58,12 @@ local World = {
 	CaveInRadius = 2,
 	CaveInMax = 14,
 	CaveInExpected = 7,
+	-- VAULT DOORS: each zone's sealed chamber is guarded by a door. Breaking next to the chamber
+	-- brings it out; punching the chamber hits the door (one hit per punch, whatever the brush).
+	-- HP = BossBlocks blocks of the zone before it; everyone who hit it gets BossReward blocks of
+	-- the new zone's rubble when it cracks.
+	BossBlocks = 14,
+	BossReward = 60,
 
 	-- client rendering budget (iPhone 11)
 	StreamRadius = 40, -- blocks around the camera

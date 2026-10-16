@@ -44,6 +44,8 @@ export type PlayerState = {
 	comboBonus: number,
 	lastHit: { number }?, -- the last punched block {x, y, z, ownerUserId} (the dig pet works there)
 	petDigAt: number, -- os.clock() of the dig pet's next swing
+	-- VAULT DOORS out in this player's tunnel: zone -> { hp, max, door, hitters }
+	bosses: { [number]: any },
 }
 
 local State = {}
@@ -86,6 +88,7 @@ function State.add(player: Player, data: Data.PlayerData): PlayerState
 		comboBonus = 0,
 		lastHit = nil,
 		petDigAt = 0,
+		bosses = {},
 	}
 	states[player] = s
 	return s

@@ -72,6 +72,9 @@ Remotes.Names = {
 	-- THE BREAKOUT: ("start", serverTime, practice) | ("reset", reason, checkpoint, spotted)
 	-- | ("checkpoint", n) | ("finish", seconds, medal, cash, rebirths, prison, spotted, practice)
 	Breakout = "Breakout",
+	-- VAULT DOORS: ("appear" | "hit" | "dead", owner, zone, hp, max, puncher) to the tunnel's
+	-- watchers; ("reward", owner, zone, paid) to each player who hit it
+	Boss = "Boss",
 	CaveIn = "CaveIn", -- (owner, x, y, z, blocks: number, puncher) the rock came down
 	MissionDone = "MissionDone", -- (index) a WORK DETAIL job just got finished
 	EscapeReady = "EscapeReady", -- () you reached the bottom: the ESCAPE button appears
