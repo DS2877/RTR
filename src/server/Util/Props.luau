@@ -396,6 +396,190 @@ function Props.poster(parent: Instance, cf: CFrame, text: string, bg: Color3, fg
 	return paper
 end
 
+-- A worn couch: base, seat cushions, back cushions, arms. cf = floor center, -Z = facing.
+function Props.couch(parent: Instance, cf: CFrame, color: Color3)
+	local fabric = { Material = Enum.Material.Fabric }
+	local dark = color:Lerp(Color3.new(0, 0, 0), 0.25)
+	part(parent, "CouchBase", Vector3.new(7, 1.2, 3.2), cf * CFrame.new(0, 0.75, 0), dark, fabric)
+	for k = -1, 1, 2 do
+		part(
+			parent,
+			"Cushion",
+			Vector3.new(2.9, 0.6, 2.6),
+			cf * CFrame.new(k * 1.5, 1.65, -0.2),
+			color,
+			fabric
+		)
+		part(
+			parent,
+			"BackCushion",
+			Vector3.new(2.9, 2.2, 0.7),
+			cf * CFrame.new(k * 1.5, 2.6, 1.15) * CFrame.Angles(math.rad(-8), 0, 0),
+			color,
+			fabric
+		)
+		part(parent, "Arm", Vector3.new(0.7, 1.6, 3.2), cf * CFrame.new(k * 3.35, 1.55, 0), dark, fabric)
+	end
+	part(parent, "CouchBack", Vector3.new(7, 2.6, 0.5), cf * CFrame.new(0, 2.0, 1.55), dark, fabric)
+	for _, x in { -3.2, 3.2 } do
+		for _, z in { -1.3, 1.3 } do
+			part(
+				parent,
+				"CouchFoot",
+				Vector3.new(0.3, 0.15, 0.3),
+				cf * CFrame.new(x, 0.075, z),
+				Color3.fromRGB(40, 30, 24)
+			)
+		end
+	end
+end
+
+-- An old CRT on a rolling cart with a glowing screen (a news ticker). cf = floor, -Z = screen side.
+function Props.tv(parent: Instance, cf: CFrame)
+	local steel = Color3.fromRGB(70, 74, 80)
+	part(
+		parent,
+		"CartTop",
+		Vector3.new(4, 0.2, 2.6),
+		cf * CFrame.new(0, 3, 0),
+		steel,
+		{ Material = Enum.Material.Metal }
+	)
+	part(
+		parent,
+		"CartShelf",
+		Vector3.new(4, 0.2, 2.6),
+		cf * CFrame.new(0, 1, 0),
+		steel,
+		{ Material = Enum.Material.Metal }
+	)
+	for _, x in { -1.85, 1.85 } do
+		for _, z in { -1.15, 1.15 } do
+			part(
+				parent,
+				"CartLeg",
+				Vector3.new(0.2, 2.9, 0.2),
+				cf * CFrame.new(x, 1.6, z),
+				steel,
+				{ Material = Enum.Material.Metal }
+			)
+			post(
+				parent,
+				"Wheel",
+				0.4,
+				0.15,
+				cf * CFrame.new(x, 0.2, z) * CFrame.Angles(0, 0, math.pi / 2),
+				Color3.fromRGB(30, 30, 32)
+			)
+		end
+	end
+	part(parent, "VCR", Vector3.new(3, 0.6, 2), cf * CFrame.new(0, 1.4, 0), Color3.fromRGB(28, 28, 30))
+	part(
+		parent,
+		"TVBody",
+		Vector3.new(3.6, 2.9, 2.6),
+		cf * CFrame.new(0, 4.55, 0.1),
+		Color3.fromRGB(46, 46, 50)
+	)
+	part(
+		parent,
+		"TVBack",
+		Vector3.new(2.6, 2.1, 0.8),
+		cf * CFrame.new(0, 4.5, 1.7),
+		Color3.fromRGB(40, 40, 44)
+	)
+	local screen = part(
+		parent,
+		"TVScreen",
+		Vector3.new(2.9, 2.2, 0.06),
+		cf * CFrame.new(-0.15, 4.6, -1.23),
+		Color3.fromRGB(20, 40, 60),
+		{
+			CanCollide = false,
+		}
+	)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Front
+	gui.LightInfluence = 0
+	gui.CanvasSize = Vector2.new(290, 220)
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
+	gui.Parent = screen
+	local bg = Instance.new("Frame")
+	bg.Size = UDim2.fromScale(1, 1)
+	bg.BorderSizePixel = 0
+	bg.BackgroundColor3 = Color3.new(1, 1, 1)
+	bg.Parent = gui
+	local g = Instance.new("UIGradient")
+	g.Rotation = 90
+	g.Color = ColorSequence.new(Color3.fromRGB(60, 110, 170), Color3.fromRGB(20, 40, 80))
+	g.Parent = bg
+	local title = Instance.new("TextLabel")
+	title.BackgroundTransparency = 1
+	title.Position = UDim2.fromScale(0.06, 0.12)
+	title.Size = UDim2.fromScale(0.88, 0.3)
+	title.Font = Enum.Font.GothamBlack
+	title.TextScaled = true
+	title.Text = "PRISON NEWS"
+	title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	title.Parent = bg
+	local ticker = Instance.new("TextLabel")
+	ticker.Position = UDim2.fromScale(0, 0.72)
+	ticker.Size = UDim2.fromScale(1, 0.18)
+	ticker.BorderSizePixel = 0
+	ticker.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+	ticker.Font = Enum.Font.GothamBold
+	ticker.TextScaled = true
+	ticker.Text = "BREAKING: WARDEN SAYS TUNNELS ARE 'NOT A THING'"
+	ticker.TextColor3 = Color3.new(1, 1, 1)
+	ticker.Parent = bg
+	for k = 0, 10 do
+		local line = Instance.new("Frame")
+		line.BorderSizePixel = 0
+		line.BackgroundColor3 = Color3.new(0, 0, 0)
+		line.BackgroundTransparency = 0.85
+		line.Position = UDim2.fromScale(0, k / 11)
+		line.Size = UDim2.new(1, 0, 0, 2)
+		line.Parent = bg
+	end
+	local glow = Instance.new("SurfaceLight")
+	glow.Face = Enum.NormalId.Front
+	glow.Color = Color3.fromRGB(140, 180, 255)
+	glow.Brightness = 1.2
+	glow.Range = 16
+	glow.Angle = 70
+	glow.Parent = screen
+	post(
+		parent,
+		"Knob",
+		0.3,
+		0.12,
+		cf * CFrame.new(1.5, 4.2, -1.25) * CFrame.Angles(0, math.pi / 2, math.pi / 2),
+		Color3.fromRGB(150, 150, 154)
+	)
+	post(
+		parent,
+		"Knob",
+		0.3,
+		0.12,
+		cf * CFrame.new(1.5, 4.8, -1.25) * CFrame.Angles(0, math.pi / 2, math.pi / 2),
+		Color3.fromRGB(150, 150, 154)
+	)
+	-- rabbit-ear antenna
+	for _, a in { -0.5, 0.5 } do
+		part(
+			parent,
+			"Antenna",
+			Vector3.new(0.08, 2.2, 0.08),
+			cf * CFrame.new(a * 0.8, 6.9, 0.6) * CFrame.Angles(0, 0, a),
+			Color3.fromRGB(180, 180, 186),
+			{
+				Material = Enum.Material.Metal,
+				CanCollide = false,
+			}
+		)
+	end
+end
+
 -- A leafy bush: overlapping balls in a few greens (reads far better than one green ball).
 function Props.bush(parent: Instance, at: Vector3, size: number, seed: number?)
 	local greens = {

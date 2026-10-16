@@ -754,6 +754,30 @@ function Interior.commonRoom(common: Instance)
 	for _, x in { x0 + 50, x0 + 80 } do
 		vent(d, CFrame.new(x, 19.5, z0) * CFrame.Angles(0, math.pi, 0))
 	end
+	-- the TV corner: an old CRT on a cart, two worn couches facing it (-Z), a rug
+	local tvAt = CFrame.new(x0 + 22, 0.04, z0 + 6) * CFrame.Angles(0, math.pi, 0) -- screen faces +z
+	Props.tv(d, tvAt)
+	p(
+		d,
+		"TVRug",
+		Vector3.new(16, 0.05, 11),
+		CFrame.new(x0 + 22, 0.065, z0 + 17),
+		Color3.fromRGB(110, 70, 50),
+		Enum.Material.Fabric,
+		{
+			CanCollide = false,
+		}
+	)
+	Props.couch(
+		d,
+		CFrame.new(x0 + 17.5, 0.09, z0 + 19) * CFrame.Angles(0, 0.2, 0),
+		Color3.fromRGB(96, 110, 80)
+	)
+	Props.couch(
+		d,
+		CFrame.new(x0 + 27, 0.09, z0 + 20) * CFrame.Angles(0, -0.25, 0),
+		Color3.fromRGB(130, 90, 70)
+	)
 	drain(d, Vector3.new(cr.x, 0.04, 20))
 	drain(d, Vector3.new(cr.x + 30, 0.04, -12))
 	mopBucket(d, Vector3.new(cr.x - 14, 0.04, z1 - 4))
