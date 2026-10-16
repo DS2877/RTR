@@ -168,6 +168,11 @@ function Product.start()
 			Net.notice(player, "The Store opens very soon!", "info")
 			return
 		end
+		local st = State.get(player)
+		if key == "InstantEmpty" and st and st.data.Bag <= 0 and st.loose <= 0 then
+			Net.notice(player, "Your backpack is already empty!", "info")
+			return
+		end
 		if pass then
 			MarketplaceService:PromptGamePassPurchase(player, p.id)
 		else

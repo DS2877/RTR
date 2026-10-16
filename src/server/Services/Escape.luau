@@ -76,6 +76,10 @@ function Escape.escape(player: Player): string?
 		player:SetAttribute("Rebirths", d.Rebirths)
 	end
 	Dig.resetTunnel(player)
+	-- the old tunnel is solid rock again: put the character back in the cell (not inside it)
+	if typeof(player) == "Instance" then
+		task.spawn(Cells.toCell, player)
+	end
 	local name = Escape.prisonName(d.Rebirths)
 	Net.fire(player, Remotes.Names.Escaped, d.Rebirths, name)
 	Net.announce(

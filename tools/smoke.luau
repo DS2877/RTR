@@ -68,6 +68,7 @@ local Escape = req(Services, "Escape")
 local Rewards = req(Services, "Rewards")
 local Guards = req(Services, "Guards")
 local Hideout = req(Services, "Hideout")
+local Missions = req(Services, "Missions")
 local Events = req(Services, "Events")
 local Market = req(Services, "Market")
 
@@ -800,6 +801,13 @@ check("cellmate capped by the backpack", Rewards.cellmate(fake, 999999) <= Stats
 -- guard inspection: hide = safe, caught = unsold finds gone
 s.data.Finds = { "OldCoin" }
 check("every cell has a cover", world.cells[1].model:FindFirstChild("Cover") ~= nil)
+-- (stand at the bed: the warning is the base time; it's night for the guards)
+local bedPart = world.cells[s.cell].model:FindFirstChild("Mattress") :: BasePart
+fake.Position = bedPart.Position
+local oldNight = Guards.isNight
+Guards.isNight = function()
+	return true
+end
 check("inspection starts", Guards.inspect(fake))
 check("hide = bed + cover", Guards.hide(fake) and s.hidden and s.coverDown)
 check("no punching from bed", Hideout.beforePunch(fake, s) == false)
@@ -814,6 +822,7 @@ Hideout.setHidden(fake, false)
 s.data.Finds = { "OldCoin" }
 Hideout.setCover(fake, true)
 check("punching rolls the cover up", Hideout.beforePunch(fake, s) == true and not s.coverDown)
+Guards.isNight = oldNight
 s.data.Finds = {}
 local snitchVictim: any = { UserId = -6262, Name = "SmokeSnitched", Position = Vector3.zero }
 local sv = State.add(snitchVictim, Data.fresh())
@@ -857,6 +866,20 @@ if dropped and dropped.PrimaryPart then
 	check("grab the crate", Events.claimCrate(fake) > 0 and s.data.Noodles > n6 and Events.crate() == nil)
 end
 Events.stop()
+-- WORK DETAIL: three jobs, paid once each, plus the bonus
+do
+	local jobs = Missions.list(s)
+	check("three jobs today", #jobs == 3, #jobs)
+	check("unfinished job can't be claimed", Missions.claim(fake, 1) == 0)
+	local n0 = s.data.Noodles
+	for _, j in jobs do
+		Missions.count(fake, j.stat, j.goal)
+	end
+	local paid = Missions.claim(fake, 1) + Missions.claim(fake, 2) + Missions.claim(fake, 3)
+	check("jobs pay", paid > 0 and s.data.Noodles == n0 + paid, paid)
+	check("a job pays once", Missions.claim(fake, 1) == 0)
+	check("all-three bonus", Missions.claim(fake, 4) > 0 and Missions.claim(fake, 4) == 0)
+end
 -- Mess Hall, Laundry, Decor, Black Market
 fake.Position = world.shops.MessHall.Position
 check("eat stew", Market.buy(fake, "MessHall", "Stew") == nil and Market.powerBoost(fake) > 1.2)

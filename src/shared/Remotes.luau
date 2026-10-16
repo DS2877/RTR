@@ -26,6 +26,7 @@ Remotes.Names = {
 	Cover = "Cover", -- (down: boolean?) roll your cell's tapestry down / up (nil = toggle)
 	Sleep = "Sleep", -- (on: boolean?) lie down in your bed / get up (nil = toggle)
 	TourDone = "TourDone", -- () finished or skipped the first-join tour
+	ClaimMission = "ClaimMission", -- (index: number) claim a finished WORK DETAIL job (4 = bonus)
 	Bribe = "Bribe", -- () bribe the guard (snitched players)
 	Snitch = "Snitch", -- (userId: number) pay to tip off the guard
 	BuyItem = "BuyItem", -- (shop: string, id: string) Laundry / Black Market / Mess Hall / Decor
@@ -58,6 +59,7 @@ Remotes.Names = {
 	Raid = "Raid", -- (kind: "alarm" | "stolen" | "carry" | "home" | "dropped", text, userId?)
 	Boom = "Boom", -- (owner: number, x, y, z) dynamite went off
 	Crit = "Crit", -- (x, y, z) your punch was a CRIT
+	MissionDone = "MissionDone", -- (index) a WORK DETAIL job just got finished
 	EscapeReady = "EscapeReady", -- () you reached the bottom: the ESCAPE button appears
 	Escaped = "Escaped", -- (rebirths: number, tierName: string) play the escape cinematic
 	Inspect = "Inspect", -- (phase: "warn" | "caught" | "safe", seconds: number, snitched: boolean)

@@ -21,6 +21,8 @@ local Stats = require(script.Parent.Stats)
 
 local Gym = {}
 
+Gym.onLift = nil :: ((player: Player, quality: string) -> ())?
+
 local world: any = nil
 
 export type Lifting = {
@@ -69,6 +71,9 @@ function Gym.begin(player: Player, station: number): string?
 		return "bad"
 	end
 	if lifting[player] then
+		return "busy"
+	end
+	if s.carrying or s.hidden then
 		return "busy"
 	end
 	if (part.Position - root).Magnitude > Economy.GymRange + 4 then
@@ -203,6 +208,9 @@ function Gym.lift(player: Player, at: number?): (number, string)
 		Stats.sync(player)
 	end
 	bob(l, gain > 0)
+	if Gym.onLift then
+		Gym.onLift(player, q)
+	end
 	Net.fire(player, Remotes.Names.Lifted, gain, q, l.combo, l.reps, l.clean, bonus)
 	return gain, q
 end
@@ -227,8 +235,11 @@ function Gym.start(w: any)
 			Gym.lift(player)
 		end
 	end)
+	local stopLimit = RateLimit.new(2, 4)
 	Net.on(Remotes.Names.GymStop, function(player)
-		Gym.stop(player)
+		if stopLimit(player) then
+			Gym.stop(player)
+		end
 	end)
 	-- walked away / teleported / died: put it down
 	task.spawn(function()

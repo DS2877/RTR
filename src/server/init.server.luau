@@ -30,6 +30,7 @@ local Escape = require(Services.Escape)
 local Rewards = require(Services.Rewards)
 local Guards = require(Services.Guards)
 local Hideout = require(Services.Hideout)
+local Missions = require(Services.Missions)
 local Patrol = require(Services.Patrol)
 local Events = require(Services.Events)
 local Market = require(Services.Market)
@@ -62,13 +63,17 @@ Product.start()
 Escape.start()
 Rewards.start()
 Tutorial.start()
+Missions.start()
 Guards.start()
 Patrol.phase = DayNight.phase
 Patrol.start()
 Events.startService()
 Market.start(world)
 Dig.onPiles = Loot.sendPiles
-Dig.onFind = Collection.onFound
+Dig.onFind = function(player, id, firstTime)
+	Collection.onFound(player, id, firstTime)
+	Missions.count(player, "Finds", 1)
+end
 local function isDay(): boolean
 	return DayNight.phase() == "Day"
 end
@@ -91,7 +96,12 @@ end
 DayNight.onPhase = function(p)
 	Loot.setFlush(p == "Night" or p == "LightsOut")
 end
-Events.onRiot = DayNight.setRiot
+Events.onRiot = function(on)
+	DayNight.setRiot(on)
+	-- (during a riot the doors are open: the toilets stop taking rubble)
+	local p = DayNight.phase()
+	Loot.setFlush(not on and (p == "Night" or p == "LightsOut"))
+end
 Events.phase = DayNight.phase
 Guards.isNight = function(): boolean
 	return DayNight.phase() == "Night"
@@ -118,6 +128,21 @@ Dig.onBroken = function(player, broken)
 		eventsOnBroken(player, broken)
 	end
 	Tutorial.did(player, "Punch")
+	Missions.count(player, "Blocks", #broken)
+end
+Dig.onCrit = function(player)
+	Missions.count(player, "Crits", 1)
+end
+Dig.onDeeper = function(player, layers)
+	Missions.count(player, "Depth", layers)
+end
+Gym.onLift = function(player, q)
+	if q == "good" or q == "perfect" then
+		Missions.count(player, "Lifts", 1)
+	end
+	if q == "perfect" then
+		Missions.count(player, "Perfects", 1)
+	end
 end
 Loot.onVacuum = function(player)
 	Tutorial.did(player, "Vacuum")
@@ -125,9 +150,13 @@ end
 Loot.onDump = function(player, pay)
 	Tutorial.did(player, "Dump")
 	Tutorial.event(player, "Dump", pay)
+	if pay > 0 then
+		Missions.count(player, "Dumps", 1)
+	end
 end
-Loot.onSell = function(player, total)
+Loot.onSell = function(player, total, count)
 	Tutorial.did(player, "Sell")
+	Missions.count(player, "Sells", count)
 	Tutorial.event(player, "Sell", total)
 end
 Dig.onZone = function(player, zone)
@@ -135,6 +164,8 @@ Dig.onZone = function(player, zone)
 end
 
 local function onCharacter(player: Player, character: Model)
+	-- respawning (reset) never smuggles a stolen find home
+	Raid.returnCarry(player, "respawned")
 	local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
 	if not humanoid then
 		return
@@ -180,6 +211,7 @@ local function onPlayerAdded(player: Player)
 	Escape.check(player)
 	Rewards.onJoin(player)
 	Tutorial.onJoin(player)
+	Missions.sync(player)
 	player:SetAttribute("JoinedAt", os.time())
 	Market.renderDecor(player)
 	Market.sync(player)

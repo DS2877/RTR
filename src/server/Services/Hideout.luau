@@ -12,6 +12,7 @@ local TweenService = game:GetService("TweenService")
 local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
 local Cycle = require(Shared.Config.Cycle)
+local Voxel = require(Shared.Voxel)
 local Tunnel = require(Shared.Tunnel)
 local Remotes = require(Shared.Remotes)
 
@@ -271,7 +272,8 @@ end
 
 -- Inspection rule: in bed, and the hole covered (no hole yet counts as covered).
 function Hideout.isSafe(s: State.PlayerState): boolean
-	return s.hidden and (s.coverDown or s.data.MaxDepth <= 0)
+	-- (the tunnel as it is now: after an escape the wall is whole again)
+	return s.hidden and (s.coverDown or s.grid == nil or Voxel.depth(s.grid) <= 0)
 end
 
 -- ===== sleeping =====
@@ -287,9 +289,13 @@ function Hideout.setHidden(player: Player, on: boolean, force: boolean?): boolea
 	if not s or not s.cell then
 		return false
 	end
-	if on and not force and not inOwnCell(player, s) then
-		Net.notice(player, "Go to your own cell to sleep.", "info")
-		return false
+	if on and not force then
+		local bedPart = world.cells[s.cell].model:FindFirstChild("Mattress") :: BasePart?
+		local pos = State.root(player)
+		if not inOwnCell(player, s) or not bedPart or not pos or (bedPart.Position - pos).Magnitude > 12 then
+			Net.notice(player, "Walk up to your own bed to sleep.", "info")
+			return false
+		end
 	end
 	if s.hidden == on then
 		return true

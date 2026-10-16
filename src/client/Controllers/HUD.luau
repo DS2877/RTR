@@ -11,7 +11,6 @@ local StarterGui = game:GetService("StarterGui")
 
 local Shared = ReplicatedStorage.Shared
 local Economy = require(Shared.Config.Economy)
-local Cycle = require(Shared.Config.Cycle)
 local Zones = require(Shared.Config.Zones)
 local Finds = require(Shared.Config.Finds)
 local Rarity = require(Shared.Config.Rarity)
@@ -201,6 +200,149 @@ end
 -- ===== admin =====
 
 -- INDEX: the collection album (every find per zone, "?" for the missing ones)
+-- WORK DETAIL: today's three jobs (server: Services/Missions, attribute "Missions" = JSON)
+local function readJobs(): any
+	local raw = player:GetAttribute("Missions")
+	if typeof(raw) ~= "string" then
+		return nil
+	end
+	local ok, data = pcall(function()
+		return game:GetService("HttpService"):JSONDecode(raw)
+	end)
+	return if ok then data else nil
+end
+
+local function claimable(data: any): number
+	if not data then
+		return 0
+	end
+	local n, all = 0, true
+	for _, it in data.items do
+		if it.progress >= it.goal and not it.claimed then
+			n += 1
+		end
+		if not it.claimed then
+			all = false
+		end
+	end
+	if all and not data.bonus then
+		n += 1
+	end
+	return n
+end
+
+local function buildJobs(): Panel.Panel
+	local panel = Panel.new(
+		"JobsPanel",
+		"📋 WORK DETAIL",
+		Color3.fromRGB(255, 170, 60),
+		Color3.fromRGB(110, 60, 0),
+		Vector2.new(540, 300)
+	)
+	UI.new(
+		"UIListLayout",
+		{ Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = panel.body }
+	)
+	local claim = Remotes.get(Remotes.Names.ClaimMission)
+	local function render()
+		for _, c in panel.body:GetChildren() do
+			if not c:IsA("UIListLayout") then
+				c:Destroy()
+			end
+		end
+		local data = readJobs()
+		if not data then
+			return
+		end
+		local left = math.max(0, (data.resets or 0) - os.time())
+		panel.subtitle.Text = "new jobs in " .. Format.duration(left)
+		local allClaimed = true
+		for i, it in data.items do
+			local done = it.progress >= it.goal
+			allClaimed = allClaimed and it.claimed
+			local r = Panel.row(panel.body, i, 58)
+			Panel.text("title", it.emoji .. "  " .. it.text, {
+				Position = UDim2.fromOffset(12, 9),
+				Size = UDim2.new(0.66, -12, 0, 18),
+				Parent = r,
+			})
+			-- progress bar + count
+			local bar = UI.new("Frame", {
+				Position = UDim2.fromOffset(12, 36),
+				Size = UDim2.new(0.5, -12, 0, 5),
+				BackgroundColor3 = Color3.new(1, 1, 1),
+				BackgroundTransparency = 0.88,
+				Parent = r,
+			}, { UI.corner(3) })
+			UI.new("Frame", {
+				Size = UDim2.fromScale(math.clamp(it.progress / it.goal, 0, 1), 1),
+				BackgroundColor3 = if done
+					then Color3.fromRGB(90, 220, 110)
+					else Color3.fromRGB(255, 170, 60),
+				Parent = bar,
+			}, { UI.corner(3) })
+			Panel.text("desc", string.format("%d / %d", it.progress, it.goal), {
+				Position = UDim2.new(0.5, 6, 0, 30),
+				Size = UDim2.new(0.16, 0, 0, 16),
+				TextSize = 12,
+				Parent = r,
+			})
+			local b = Panel.button(
+				{
+					AnchorPoint = Vector2.new(1, 0.5),
+					Position = UDim2.new(1, -10, 0.5, 0),
+					Size = UDim2.new(0.28, 0, 0, 36),
+				},
+				if done and not it.claimed
+					then Color3.fromRGB(90, 220, 110)
+					else Color3.fromRGB(190, 190, 190),
+				Color3.fromRGB(30, 80, 40),
+				if it.claimed then "✓ PAID" else Format.noodles(it.reward)
+			)
+			b.Parent = r
+			b.Activated:Connect(function()
+				if done and not it.claimed then
+					Sound.play("Coin")
+					claim:FireServer(i)
+				end
+			end)
+		end
+		-- the bonus for all three
+		local r = Panel.row(panel.body, 10, 50)
+		Panel.text("note", "🎁  Finish all three jobs", {
+			Position = UDim2.fromOffset(12, 0),
+			Size = UDim2.new(0.66, -12, 1, 0),
+			TextSize = 14,
+			Parent = r,
+		})
+		local ready = allClaimed and not data.bonus
+		local b = Panel.button(
+			{
+				AnchorPoint = Vector2.new(1, 0.5),
+				Position = UDim2.new(1, -10, 0.5, 0),
+				Size = UDim2.new(0.28, 0, 0, 32),
+			},
+			if ready then Color3.fromRGB(255, 200, 70) else Color3.fromRGB(190, 190, 190),
+			Color3.fromRGB(110, 70, 0),
+			if data.bonus then "✓ PAID" else Format.noodles(data.bonusReward)
+		)
+		b.Parent = r
+		b.Activated:Connect(function()
+			if ready then
+				Sound.play("Coin")
+				claim:FireServer(4)
+			end
+		end)
+	end
+	panel.onOpen = render
+	player:GetAttributeChangedSignal("Missions"):Connect(function()
+		if panel.isOpen() then
+			render()
+		end
+	end)
+	return panel
+end
+
 local function buildIndex(): Panel.Panel
 	local panel = Panel.new(
 		"IndexPanel",
@@ -437,10 +579,37 @@ function HUD.start()
 		UI.tile(row1, "Store", "🛒", "Store", Color3.fromRGB(255, 120, 200), Color3.fromRGB(110, 90, 255))
 	storeTile.LayoutOrder = 1
 	UI.badge(storeTile, "!")
-	local eventTile =
-		UI.tile(row1, "Event", "⚡", "Event", Color3.fromRGB(255, 190, 70), Color3.fromRGB(240, 100, 40))
-	eventTile.LayoutOrder = 2
-	eventTile.Visible = false
+	-- WORK DETAIL (the running event has its own card at the top)
+	local jobsTile =
+		UI.tile(row1, "Jobs", "📋", "Jobs", Color3.fromRGB(255, 190, 70), Color3.fromRGB(240, 100, 40))
+	jobsTile.LayoutOrder = 2
+	local jobsPanel = buildJobs()
+	local function jobsBadge()
+		local n = claimable(readJobs())
+		UI.badge(jobsTile, if n > 0 then tostring(n) else "", Color3.fromRGB(60, 190, 90))
+	end
+	player:GetAttributeChangedSignal("Missions"):Connect(jobsBadge)
+	task.defer(jobsBadge)
+	jobsTile.Activated:Connect(function()
+		Sound.play("Click")
+		jobsPanel.toggle()
+	end)
+	Remotes.get(Remotes.Names.MissionDone).OnClientEvent:Connect(function(i: number)
+		local data = readJobs()
+		local it = data and data.items[i]
+		if it then
+			LootToast.show({
+				icon = it.emoji,
+				title = it.text,
+				tag = "Job done · tap 📋 Jobs",
+				value = Format.noodles(it.reward),
+				color = Color3.fromRGB(255, 170, 60),
+				seconds = 3.4,
+			})
+			Sound.play("Upgrade", 0.5, 1.1)
+			UI.bump(jobsTile, 0.2)
+		end
+	end)
 	local indexTile =
 		UI.tile(row2, "Index", "📖", "Index", Color3.fromRGB(110, 200, 255), Color3.fromRGB(40, 90, 220))
 	indexTile.LayoutOrder = 1
@@ -820,23 +989,6 @@ function HUD.start()
 			shownNoodles += (target - shownNoodles) * math.min(1, dt * 8)
 		end
 		noodles.Text = Format.number(math.floor(shownNoodles + 0.5))
-		-- event tile shows the running event's timer
-		local ev = ReplicatedStorage:GetAttribute("Event")
-		local running = typeof(ev) == "string" and ev ~= ""
-		eventTile.Visible = running
-		if running then
-			local ends = ReplicatedStorage:GetAttribute("EventEnds")
-			local left = if typeof(ends) == "number"
-				then math.max(0, ends - workspace:GetServerTimeNow())
-				else 0
-			local label = eventTile:FindFirstChild("Label") :: TextLabel
-			label.Text = Format.duration(left)
-			local cfg = Cycle.Events[ev :: string]
-			local icon = eventTile:FindFirstChild("Icon")
-			if cfg and icon and icon:IsA("TextLabel") then
-				icon.Text = cfg.emoji
-			end
-		end
 	end)
 	player:GetAttributeChangedSignal("Noodles"):Connect(function()
 		UI.bump(noodles.Parent :: GuiObject, 0.08)
@@ -867,13 +1019,6 @@ function HUD.start()
 		end
 	end
 	player:GetAttributeChangedSignal("Noodles"):Connect(checkUpgrades)
-	eventTile.Activated:Connect(function()
-		local ev = ReplicatedStorage:GetAttribute("Event")
-		local cfg = if typeof(ev) == "string" then Cycle.Events[ev] else nil
-		if cfg then
-			toast(cfg.emoji .. " " .. cfg.name .. ": " .. cfg.text, "cash")
-		end
-	end)
 
 	-- context: zone label, full prompt, auto-vacuum (the gym has its own LIFT: GymController)
 	local fullKind: string? = nil

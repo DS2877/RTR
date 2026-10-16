@@ -104,7 +104,12 @@ function Tutorial.onJoin(player: Player)
 end
 
 function Tutorial.start()
+	local seen: { [any]: boolean } = {}
 	Net.on(Remotes.Names.TourDone, function(player)
+		if seen[player] then
+			return
+		end
+		seen[player] = true
 		local s = State.get(player)
 		if s and not (s.data :: any).TourDone then
 			(s.data :: any).TourDone = true

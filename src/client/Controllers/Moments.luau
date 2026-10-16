@@ -338,7 +338,7 @@ function Moments.start()
 		"Bribe",
 		"💰 BRIBE",
 		Color3.fromRGB(255, 210, 70),
-		UDim2.new(0.5, 110, 1, -84),
+		UDim2.new(0.5, 110, 1, -140), -- (not on top of ESCAPE)
 		Vector2.new(220, 46)
 	)
 
@@ -356,9 +356,12 @@ function Moments.start()
 			Remotes.get(Remotes.Names.RobuxBuy):FireServer("Dynamite")
 		end
 	end)
+	-- ESCAPE shows in your own tunnel when you can escape (not while lifting); after a tap it
+	-- waits for the server, and comes back if nothing happened
+	local escapeSent = 0
 	escapeBtn.Activated:Connect(function()
 		Remotes.get(Remotes.Names.Escape):FireServer()
-		escapeBtn.Visible = false
+		escapeSent = os.clock()
 	end)
 	decorPanel = Panel.new(
 		"DecorPlacePanel",
@@ -388,23 +391,22 @@ function Moments.start()
 
 	Remotes.get(Remotes.Names.Boom).OnClientEvent:Connect(boom)
 	Remotes.get(Remotes.Names.EscapeReady).OnClientEvent:Connect(function()
-		escapeBtn.Visible = true
 		Sound.play("Zone", 0.6)
 		HUD.toast("🌅 DAYLIGHT! Tap ESCAPE!", "good")
 	end)
-	player:GetAttributeChangedSignal("CanEscape"):Connect(function()
-		escapeBtn.Visible = player:GetAttribute("CanEscape") == true
-	end)
-	escapeBtn.Visible = player:GetAttribute("CanEscape") == true
+	escapeBtn.Visible = false
 	Remotes.get(Remotes.Names.Escaped).OnClientEvent:Connect(function(rebirths, prison)
 		task.spawn(escapeCinematic, rebirths, prison)
 	end)
 
-	-- guard inspection
+	-- guard inspection (the event card shows the countdown)
+	local inspectEnds, inspectTotal = 0, 1
 	local doorLight: Part? = nil
 	Remotes.get(Remotes.Names.Inspect).OnClientEvent
 		:Connect(function(phase: string, seconds: number, snitched: boolean)
 			if phase == "warn" then
+				inspectEnds = os.clock() + seconds
+				inspectTotal = seconds
 				bribeBtn.Visible = snitched
 				HUD.toast(
 					string.format(
@@ -440,6 +442,7 @@ function Moments.start()
 					end)
 				end
 			else
+				inspectEnds = 0
 				bribeBtn.Visible = false
 				if doorLight then
 					doorLight:Destroy()
@@ -626,10 +629,22 @@ function Moments.start()
 		local label = dynamiteBtn:FindFirstChild("Label") :: TextLabel
 		label.Text = if typeof(n) == "number" and n > 0 then "x" .. n else "BUY"
 		decorBtn.Visible = inTunnel
+		escapeBtn.Visible = player:GetAttribute("CanEscape") == true
+			and inTunnel
+			and player:GetAttribute("Lifting") == nil
+			and os.clock() - escapeSent > 5
 		-- event timer
 		local ev = ReplicatedStorage:GetAttribute("Event")
 		local cfg = if typeof(ev) == "string" then Cycle.Events[ev] else nil
-		if cfg then
+		if os.clock() < inspectEnds then
+			local left = inspectEnds - os.clock()
+			eventIcon.Text = "👮"
+			eventName.Text = "GUARD INSPECTION"
+			eventText.Text = "Cover the hole and get in your bed!"
+			eventTime.Text = string.format("%ds", math.ceil(left))
+			eventBar.Size = UDim2.new(math.clamp(left / inspectTotal, 0, 1), -24, 0, 2)
+			eventCard.Visible = true
+		elseif cfg then
 			local ends = ReplicatedStorage:GetAttribute("EventEnds")
 			local left = if typeof(ends) == "number"
 				then math.max(0, ends - workspace:GetServerTimeNow())

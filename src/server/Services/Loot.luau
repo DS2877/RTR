@@ -23,7 +23,7 @@ Loot.magnet = nil :: ((player: Player) -> boolean)?
 -- tutorial / analytics hooks
 Loot.onVacuum = nil :: ((player: Player) -> ())?
 Loot.onDump = nil :: ((player: Player, pay: number) -> ())?
-Loot.onSell = nil :: ((player: Player, total: number) -> ())?
+Loot.onSell = nil :: ((player: Player, total: number, count: number) -> ())?
 
 -- every Noodles multiplier: 2x pass, collection sets, rebirths, group bonus, buffs
 function Loot.multiplier(s: State.PlayerState): number
@@ -188,7 +188,7 @@ function Loot.dumpAnywhere(player: Player): number
 	s.loose = 0
 	s.data.Bag = 0
 	s.data.BagValue = 0
-	local pay = math.floor(value * noodleMult(s) + 0.5)
+	local pay = math.floor(value * noodleMult(s) * Loot.eventMult + 0.5)
 	Loot.addNoodles(player, pay)
 	Loot.sendPiles(player)
 	Net.fire(player, Remotes.Names.Dumped, pay)
@@ -203,13 +203,16 @@ function Loot.sell(player: Player, slot: number): number
 	end
 	local finds = s.data.Finds
 	local total = 0
+	local sold = 0
 	if slot == 0 then
 		for _, id in finds do
 			total += Progression.findValue(id)
 		end
+		sold = #finds
 		s.data.Finds = {}
 	elseif finds[slot] then
 		total = Progression.findValue(finds[slot])
+		sold = 1
 		table.remove(finds, slot)
 	else
 		return 0
@@ -219,7 +222,7 @@ function Loot.sell(player: Player, slot: number): number
 		Loot.addNoodles(player, total)
 		Net.notice(player, "The Fence paid " .. Format.noodles(total), "cash")
 		if Loot.onSell then
-			Loot.onSell(player, total)
+			Loot.onSell(player, total, sold)
 		end
 	end
 	Loot.sendFinds(player)
@@ -228,9 +231,10 @@ end
 
 function Loot.start(w: any)
 	world = w
+	local vacLimit = RateLimit.new(8, 12)
 	Net.on(Remotes.Names.Vacuum, function(player, on)
 		local s = State.get(player)
-		if s and typeof(on) == "boolean" then
+		if s and typeof(on) == "boolean" and vacLimit(player) then
 			s.vacuuming = on
 		end
 	end)

@@ -46,6 +46,7 @@ export type PlayerData = {
 	Placed: { { number } }, -- placed decor { kindIndex, x, y, z }
 	TutorialStep: number, -- 1..5 = current step, 6 = done (analytics funnel only)
 	TourDone: boolean, -- saw the first-join tour (Controllers/Tour)
+	Missions: { Day: number, Progress: { number }, Claimed: { boolean }, Bonus: boolean }, -- WORK DETAIL
 	LastOnline: number,
 	Stats: {
 		Punches: number,
@@ -99,6 +100,7 @@ local TEMPLATE: PlayerData = {
 	Placed = {},
 	TutorialStep = 1,
 	TourDone = false,
+	Missions = { Day = 0, Progress = { 0, 0, 0 }, Claimed = { false, false, false }, Bonus = false },
 	LastOnline = 0,
 	Stats = {
 		Punches = 0,

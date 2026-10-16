@@ -112,6 +112,7 @@ end
 
 -- ===== being hit =====
 
+local stunToken = 0
 local function dizzy(seconds: number, spin: boolean)
 	local c = player.Character
 	local h = c and c:FindFirstChildOfClass("Humanoid")
@@ -120,6 +121,8 @@ local function dizzy(seconds: number, spin: boolean)
 		return
 	end
 	h.PlatformStand = true
+	stunToken += 1
+	local mine = stunToken
 	if spin then
 		r.AssemblyAngularVelocity = Vector3.new(math.random() * 8 - 4, 10, math.random() * 8 - 4)
 	end
@@ -133,7 +136,8 @@ local function dizzy(seconds: number, spin: boolean)
 	stars.Parent = folder
 	task.delay(seconds, function()
 		stars:Destroy()
-		if h.Parent then
+		-- only the latest stun gets you up (a knockout right after a trap keeps you down)
+		if h.Parent and stunToken == mine then
 			h.PlatformStand = false
 			h:ChangeState(Enum.HumanoidStateType.GettingUp)
 		end

@@ -18,6 +18,7 @@ local Cycle = require(Shared.Config.Cycle)
 local World = require(Shared.Config.World)
 local Zones = require(Shared.Config.Zones)
 local Finds = require(Shared.Config.Finds)
+local PvP = require(Shared.Config.PvP)
 local Voxel = require(Shared.Voxel)
 local Progression = require(Shared.Progression)
 local Tunnel = require(Shared.Tunnel)
@@ -111,7 +112,7 @@ local function quake(player: Player, s: State.PlayerState): number
 	end
 	local maxZ = Progression.diggableDepth()
 	local candidates = {}
-	local front = s.data.MaxDepth
+	local front = Voxel.depth(g) -- the tunnel as it is now (MaxDepth survives an escape)
 	for z = math.max(0, front - 3), math.min(front + 1, maxZ - 1) do
 		for y = 0, World.TunnelHeight - 1 do
 			for x = 0, World.TunnelWidth - 1 do
@@ -339,9 +340,14 @@ function Events.onBroken(player: Player, broken: { number })
 		end
 	end
 	if best then
-		table.insert(s.data.Stash, best)
 		s.data.Found[best] = true
-		Net.fire(player, Remotes.Names.Stash, s.data.Stash)
+		if #s.data.Stash < PvP.StashSize then
+			table.insert(s.data.Stash, best)
+			Net.fire(player, Remotes.Names.Stash, s.data.Stash)
+		else
+			-- no room in the Stash: the find's value in Noodles instead
+			Loot.addNoodles(player, Progression.findValue(best))
+		end
 	end
 	Net.announce(
 		string.format("%s won the TREASURE RACE! +%s", player.Name, Format.noodles(amount)),

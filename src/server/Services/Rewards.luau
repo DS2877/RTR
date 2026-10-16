@@ -44,6 +44,9 @@ function Rewards.daily(player: Player, day: number?): number
 	local text = string.format("DAY %d STREAK! +%s", d.Streak, Format.noodles(amount))
 	if d.Streak >= Economy.DailyMaxStreak then
 		s.data.Dynamite += 1
+		if typeof(player) == "Instance" then
+			player:SetAttribute("Dynamite", s.data.Dynamite)
+		end
 		text ..= " + 🧨"
 	end
 	Net.fire(player, Remotes.Names.Reward, "daily", text)

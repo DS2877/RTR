@@ -12,6 +12,7 @@ local suites = {
 	{ name = "Patrol", run = require("./Patrol.spec") },
 	{ name = "ChamberSets", run = require("./ChamberSets.spec") },
 	{ name = "Quality", run = require("./Quality.spec") },
+	{ name = "Missions", run = require("./Missions.spec") },
 }
 
 local failures = 0

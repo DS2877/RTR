@@ -10,6 +10,7 @@ local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage.Shared
 local Cycle = require(Shared.Config.Cycle)
+local Economy = require(Shared.Config.Economy)
 local World = require(Shared.Config.World)
 local Zones = require(Shared.Config.Zones)
 local Tunnel = require(Shared.Tunnel)
@@ -22,6 +23,7 @@ local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Build = require(script.Parent.Parent.Util.Build)
 local Stats = require(script.Parent.Stats)
 local Hideout = require(script.Parent.Hideout)
+local Cells = require(script.Parent.Cells)
 
 local Guards = {}
 
@@ -44,7 +46,7 @@ function Guards.snitchCost(target: State.PlayerState): number
 	return Cycle.SnitchBlocks * zoneValue(target)
 end
 
-local function walkGuard(cell: number)
+local function walkGuard(cell: number, seconds: number)
 	local m = guardModel
 	if not m then
 		return
@@ -59,7 +61,7 @@ local function walkGuard(cell: number)
 	value.Changed:Connect(function(cf)
 		m:PivotTo(cf)
 	end)
-	local t = TweenService:Create(value, TweenInfo.new(Cycle.InspectWarning - 0.5, Enum.EasingStyle.Linear), {
+	local t = TweenService:Create(value, TweenInfo.new(math.max(1, seconds - 0.5), Enum.EasingStyle.Linear), {
 		Value = target,
 	})
 	t:Play()
@@ -74,14 +76,32 @@ function Guards.inspect(player: Player): boolean
 	if not s or not s.cell or active[player] then
 		return false
 	end
-	active[player] = os.clock() + Cycle.InspectWarning
+	-- fair warning: the footsteps give you the base time PLUS the walk back from wherever you
+	-- are in your tunnel (so you can always make it to bed if you hurry)
+	local seconds = Cycle.InspectWarning
+	local pos = State.root(player)
+	local bed = Cells.record(s.cell).model:FindFirstChild("Mattress") :: BasePart?
+	if pos and bed then
+		seconds = math.clamp(
+			Cycle.InspectWarning + (pos - bed.Position).Magnitude / Economy.WalkSpeed * 1.15,
+			Cycle.InspectWarning,
+			Cycle.InspectWarningMax
+		)
+	end
+	seconds = math.ceil(seconds)
+	active[player] = os.clock() + seconds
 	local snitched = s.snitched
-	Net.fire(player, Remotes.Names.Inspect, "warn", Cycle.InspectWarning, snitched)
-	walkGuard(s.cell)
-	task.delay(Cycle.InspectWarning, function()
+	Net.fire(player, Remotes.Names.Inspect, "warn", seconds, snitched)
+	walkGuard(s.cell, seconds)
+	task.delay(seconds, function()
 		active[player] = nil
 		local now = State.get(player)
 		if not now then
+			return
+		end
+		if not Guards.isNight() then
+			-- morning came first: the guard went home
+			Net.fire(player, Remotes.Names.Inspect, "safe", 0, false)
 			return
 		end
 		now.snitched = false
@@ -210,11 +230,24 @@ function Guards.start()
 		while true do
 			task.wait(Cycle.InspectEvery)
 			if Guards.isNight() then
+				-- one guard, one visit at a time: snitched prisoners first
+				local pick: Player? = nil
 				for player, s in State.all() do
-					if s.snitched or math.random() < Cycle.InspectChance then
-						Guards.inspect(player)
-						break -- one guard, one visit at a time
+					if s.snitched then
+						pick = player
+						break
 					end
+				end
+				if not pick then
+					for player in State.all() do
+						if math.random() < Cycle.InspectChance then
+							pick = player
+							break
+						end
+					end
+				end
+				if pick then
+					Guards.inspect(pick)
 				end
 			end
 		end

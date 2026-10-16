@@ -39,6 +39,8 @@ Dig.onBroken = nil :: ((player: Player, broken: { number }) -> ())?
 Dig.onBottom = nil :: ((player: Player) -> ())?
 Dig.speedBoost = nil :: ((player: Player) -> number)?
 Dig.onZone = nil :: ((player: Player, zone: number) -> ())?
+Dig.onCrit = nil :: ((player: Player) -> ())?
+Dig.onDeeper = nil :: ((player: Player, layers: number) -> ())?
 Dig.beforePunch = nil :: ((player: Player, s: State.PlayerState) -> boolean)? -- false = refused (in bed)
 
 -- multiplies punch power for everyone (events like BLACKOUT set it, M4)
@@ -247,9 +249,6 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 	if not Voxel.isOpen(grid, x + n[1], y + n[2], z + n[3]) then
 		return "not exposed"
 	end
-	if Dig.beforePunch and not Dig.beforePunch(player, s) then
-		return "in bed"
-	end
 	local maxZ = Progression.diggableDepth()
 	if z >= maxZ then
 		Net.notice(player, "Too hard for now: new zones open soon!", "info")
@@ -262,6 +261,10 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 	local center = Tunnel.blockCenter(s.frame, x, y, z)
 	if (center - root).Magnitude > World.Reach + World.ReachSlack then
 		return "out of reach"
+	end
+	-- (after every other check: a refused punch must not roll the cover up)
+	if Dig.beforePunch and not Dig.beforePunch(player, s) then
+		return "in bed"
 	end
 	-- a full backpack never stops you: the rubble just stays on the floor (worth nothing until
 	-- you come back with room), and the HUD warns you
@@ -276,6 +279,9 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 	if math.random() < World.CritChance then
 		power *= World.CritMult
 		Net.fire(player, Remotes.Names.Crit, x, y, z)
+		if Dig.onCrit then
+			Dig.onCrit(player)
+		end
 	end
 	local targets = Progression.brushTargets(grid, x, y, z, face, data.Levels.Brushes, function(_, _, tz)
 		return tz < maxZ
@@ -377,6 +383,9 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 			end
 		end
 		if deepest + 1 > data.MaxDepth then
+			if Dig.onDeeper then
+				Dig.onDeeper(player, deepest + 1 - data.MaxDepth)
+			end
 			data.MaxDepth = deepest + 1
 			Cells.updateSign(player)
 		end
@@ -426,6 +435,9 @@ function Dig.dynamite(player: Player, x: any, y: any, z: any): string?
 	end
 	if not Voxel.isExposed(s.grid, x, y, z) then
 		return "not exposed"
+	end
+	if Dig.beforePunch and not Dig.beforePunch(player, s) then
+		return "in bed"
 	end
 	s.data.Dynamite -= 1
 	local r = Products.DynamiteRadius
