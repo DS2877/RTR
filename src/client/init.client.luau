@@ -65,7 +65,9 @@ require(Controllers.Shops).openDecor = function()
 	ExtraShops.open("Decor")
 end
 require(Controllers.Moments).start()
-require(Controllers.Guide).start()
+local Tour = require(Controllers.Tour)
+Tour.start()
+require(Controllers.HUD).replayTour = Tour.play
 require(Controllers.GymController).start()
 require(Controllers.GuardController).start()
 local Music = require(Controllers.Music)

@@ -44,7 +44,8 @@ export type PlayerData = {
 	Fist: string, -- equipped fist trail ("" = none)
 	Decor: { [string]: number }, -- decor items owned (kind -> count)
 	Placed: { { number } }, -- placed decor { kindIndex, x, y, z }
-	TutorialStep: number, -- 1..5 = current step, 6 = done
+	TutorialStep: number, -- 1..5 = current step, 6 = done (analytics funnel only)
+	TourDone: boolean, -- saw the first-join tour (Controllers/Tour)
 	LastOnline: number,
 	Stats: {
 		Punches: number,
@@ -97,6 +98,7 @@ local TEMPLATE: PlayerData = {
 	Decor = {},
 	Placed = {},
 	TutorialStep = 1,
+	TourDone = false,
 	LastOnline = 0,
 	Stats = {
 		Punches = 0,

@@ -61,6 +61,7 @@ TopDog.start(world)
 Product.start()
 Escape.start()
 Rewards.start()
+Tutorial.start()
 Guards.start()
 Patrol.phase = DayNight.phase
 Patrol.start()

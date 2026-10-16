@@ -265,7 +265,8 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 	end
 	-- a full backpack never stops you: the rubble just stays on the floor (worth nothing until
 	-- you come back with room), and the HUD warns you
-	if s.data.Bag >= Stats.capacity(s) then
+	if s.data.Bag >= Stats.capacity(s) and now - s.fullNoticeAt > 20 then
+		s.fullNoticeAt = now
 		Net.fire(player, Remotes.Names.Full, "bag")
 	end
 	s.lastPunch = now

@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local World = require(ReplicatedStorage.Shared.Config.World)
 local Build = require(script.Parent.Build)
 local GymProps = require(script.Parent.GymProps)
+local Interior = require(script.Parent.Interior)
 
 local Dressing = {}
 
@@ -692,6 +693,9 @@ end
 function Dressing.dress(prison: Instance, cells: { any })
 	cellBlock(prison, cells)
 	commonRoom(prison)
+	local common = prison:FindFirstChild("CommonRoom") :: Instance
+	Interior.messHall(common)
+	Interior.commonRoom(common)
 	yard(prison)
 	landscape(prison)
 end

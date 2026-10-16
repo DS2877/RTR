@@ -56,10 +56,10 @@ upgrade -> punch harder -> new zone. The punch and the crumble must feel amazing
   Lune-tested; Strata = cosmetic features inside each zone's rock, Patrol = guard positions), Tunnel, Format, Remotes.
 - `src/server` -> ServerScriptService.Server: State (runtime per player), Net, Services (WorldBuilder,
   Data, Stats, Cells, Dig, Loot, Shop, Gym, Collection, DayNight, Brawl, Raid, TopDog, Product,
-  Escape, Rewards, Guards, Patrol, Events, Market, Admin), Util (Build, RateLimit, GymProps, Dressing), Packages (ProfileStore).
+  Escape, Rewards, Guards, Hideout, Patrol, Events, Market, Tutorial, Admin), Util (Build, RateLimit, GymProps, Dressing, Interior), Packages (ProfileStore).
   Services talk through hooks wired in `init.server.luau` (e.g. `Dig.onFind`, `DayNight.onDay`).
 - `src/client` -> StarterPlayerScripts.Client: Controllers (VoxelRender, DigController, DigFX,
-  CameraController, HUD, Shops, Clock, PvPController, ExtraShops, Moments, GymController, DigAudio, GuardController, Chambers, Quality), Util (UI, Panel,
+  CameraController, HUD, Shops, Clock, PvPController, ExtraShops, Moments, GymController, DigAudio, GuardController, Chambers, Quality, Tour), Util (UI, Panel,
   Sound, Shake, PunchAnim, LootToast).
 - `tools/view/`: renders CI's world dump (artifact "world") + a Lune-generated tunnel with three.js in
   headless Chromium (`render.mjs`, views in `views.json`). Use it to LOOK at changes to the world.

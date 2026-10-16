@@ -303,6 +303,25 @@ function Moments.start()
 	player:GetAttributeChangedSignal("Cell"):Connect(syncHideout)
 	player:GetAttributeChangedSignal("CoverDown"):Connect(syncHideout)
 	player:GetAttributeChangedSignal("Hidden"):Connect(syncHideout)
+	-- ceiling fans (Mess Hall) turn slowly
+	local fans: { { model: Model, base: CFrame, speed: number } } = {}
+	local function addFan(m: Instance)
+		if m:IsA("Model") then
+			table.insert(fans, { model = m, base = m:GetPivot(), speed = 1.6 + (#fans % 3) * 0.25 })
+		end
+	end
+	for _, m in CollectionService:GetTagged("CeilingFan") do
+		addFan(m)
+	end
+	CollectionService:GetInstanceAddedSignal("CeilingFan"):Connect(addFan)
+	RunService.RenderStepped:Connect(function()
+		local t = os.clock()
+		for _, f in fans do
+			if f.model.Parent then
+				f.model:PivotTo(f.base * CFrame.Angles(0, t * f.speed, 0))
+			end
+		end
+	end)
 	-- moving (joystick / jump) gets you out of bed
 	local lastWake = 0
 	RunService.RenderStepped:Connect(function()

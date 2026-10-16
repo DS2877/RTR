@@ -36,6 +36,7 @@ export type PlayerState = {
 	hidden: boolean, -- lying in bed (Services/Hideout)
 	coverDown: boolean, -- the tapestry is rolled down over the tunnel hole
 	bribed: boolean, -- paid off tonight's inspection
+	fullNoticeAt: number, -- os.clock() of the last "backpack full" notice (at most every 20 s)
 	snitched: boolean, -- guaranteed inspection next night
 }
 
@@ -72,6 +73,7 @@ function State.add(player: Player, data: Data.PlayerData): PlayerState
 		hidden = false,
 		coverDown = false,
 		bribed = false,
+		fullNoticeAt = -math.huge,
 		snitched = false,
 	}
 	states[player] = s

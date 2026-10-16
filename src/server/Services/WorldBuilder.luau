@@ -1817,13 +1817,6 @@ local function buildMessHall(parent: Instance, shops: { [string]: BasePart })
 					Color3.fromRGB(120, 90, 60)
 				)
 			end
-			Build.part(
-				parent,
-				"Tray",
-				Vector3.new(2, 0.2, 1.4),
-				CFrame.new(tx - 6, 3.4, tz),
-				Color3.fromRGB(200, 120, 60)
-			)
 		end
 	end
 	for i = 0, 2 do

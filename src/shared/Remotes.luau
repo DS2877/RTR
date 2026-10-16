@@ -25,6 +25,7 @@ Remotes.Names = {
 	Hide = "Hide", -- () hide from the guard's inspection (into bed + cover the hole)
 	Cover = "Cover", -- (down: boolean?) roll your cell's tapestry down / up (nil = toggle)
 	Sleep = "Sleep", -- (on: boolean?) lie down in your bed / get up (nil = toggle)
+	TourDone = "TourDone", -- () finished or skipped the first-join tour
 	Bribe = "Bribe", -- () bribe the guard (snitched players)
 	Snitch = "Snitch", -- (userId: number) pay to tip off the guard
 	BuyItem = "BuyItem", -- (shop: string, id: string) Laundry / Black Market / Mess Hall / Decor

@@ -1,11 +1,14 @@
 --!strict
--- The first minute: PUNCH -> VACUUM -> DUMP -> SELL -> UPGRADE, one step at a time with an arrow
--- (client/Controllers/Guide). Progress lives in the profile (TutorialStep, 6 = done) and in the
--- "Tutorial" attribute. Also logs the onboarding funnel to AnalyticsService.
+-- Onboarding: the first-join TOUR (client/Controllers/Tour: a short camera tour of everything that
+-- matters, TourDone in the profile, "TourDone" attribute) and the onboarding funnel logged to
+-- AnalyticsService (PUNCH -> VACUUM -> DUMP -> SELL -> UPGRADE, TutorialStep in the profile).
+-- Nothing is shown during play: no arrows, no step boxes.
 
 local AnalyticsService = game:GetService("AnalyticsService")
 
 local State = require(script.Parent.Parent.State)
+local Net = require(script.Parent.Parent.Net)
+local Remotes = require(game:GetService("ReplicatedStorage").Shared.Remotes)
 
 local Tutorial = {}
 
@@ -92,9 +95,25 @@ function Tutorial.onJoin(player: Player)
 	local d = s.data :: any
 	d.TutorialStep = d.TutorialStep or 1
 	sync(player, d.TutorialStep)
+	if typeof(player) == "Instance" then
+		player:SetAttribute("TourDone", d.TourDone == true)
+	end
 	if d.TutorialStep == 1 then
 		Tutorial.funnel(player, 1, "Joined")
 	end
+end
+
+function Tutorial.start()
+	Net.on(Remotes.Names.TourDone, function(player)
+		local s = State.get(player)
+		if s and not (s.data :: any).TourDone then
+			(s.data :: any).TourDone = true
+			Tutorial.event(player, "TourDone")
+			if typeof(player) == "Instance" then
+				player:SetAttribute("TourDone", true)
+			end
+		end
+	end)
 end
 
 return Tutorial
