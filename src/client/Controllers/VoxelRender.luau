@@ -56,6 +56,8 @@ VoxelRender.onHit = nil :: ((t: T, puncher: number, z: number) -> ())?
 VoxelRender.onBroken = nil :: ((t: T, broken: { number }, puncher: number) -> ())?
 VoxelRender.onDamaged = nil :: ((t: T, damaged: { number }, puncher: number) -> ())?
 VoxelRender.onChamber = nil :: ((t: T, zone: number) -> ())?
+VoxelRender.onLoaded = nil :: ((t: T) -> ())? -- a tunnel snapshot arrived
+VoxelRender.onDropped = nil :: ((owner: number) -> ())?
 
 -- ===== appearance =====
 
@@ -537,6 +539,9 @@ local function dropTunnel(owner: number)
 		dropChunk(t, id)
 	end
 	tunnels[owner] = nil
+	if VoxelRender.onDropped then
+		VoxelRender.onDropped(owner)
+	end
 	local imp = imposters[t.cell]
 	if imp then
 		imp.Parent = folder
@@ -702,6 +707,9 @@ function VoxelRender.start()
 		end
 		tunnels[owner] = t
 		stream(40)
+		if VoxelRender.onLoaded then
+			VoxelRender.onLoaded(t)
+		end
 	end)
 
 	Remotes.get(Remotes.Names.Delta).OnClientEvent:Connect(function(owner, broken, damaged, puncher)

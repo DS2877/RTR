@@ -10,6 +10,7 @@ local suites = {
 	{ name = "Audio", run = require("./Audio.spec") },
 	{ name = "Strata", run = require("./Strata.spec") },
 	{ name = "Patrol", run = require("./Patrol.spec") },
+	{ name = "ChamberSets", run = require("./ChamberSets.spec") },
 }
 
 local failures = 0

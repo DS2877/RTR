@@ -6,6 +6,7 @@ local Zones = require("../../src/shared/Config/Zones")
 local World = require("../../src/shared/Config/World")
 local Progression = require("../../src/shared/Progression")
 local Strata = require("../../src/shared/Strata")
+local ChamberSets = require("../../src/shared/ChamberSets")
 
 local B = World.BlockSize
 local W, H, D = World.TunnelWidth, World.TunnelHeight, World.TunnelDepth
@@ -88,7 +89,16 @@ end
 
 -- cell 1: a 7 wide x 6 high bore all the way down
 local function dug(x: number, y: number, z: number): boolean
-	return x >= 6 and x <= 12 and y >= 0 and y <= 5 and z >= 0 and z < D
+	if x >= 6 and x <= 12 and y >= 0 and y <= 5 and z >= 0 and z < D then
+		return true
+	end
+	return z >= 0
+		and z < D
+		and x >= 0
+		and x < W
+		and y >= 0
+		and y < H
+		and Progression.chamberAt(x, y, z) ~= nil
 end
 for z = 0, D - 1 do
 	for x = 0, W - 1 do
@@ -149,6 +159,77 @@ for z = 0, D - 1 do
 			out,
 			string.format("L|PointLight|%.2f|%.2f|%.2f|255|190|120|18|1.3", lx, ly + B / 2 - 0.95, lz)
 		)
+	end
+end
+-- chamber set pieces (Controllers/Chambers: base = frame * (cx, 0, -z0 * B))
+for zone = 2, #Zones do
+	local b = Progression.chamberBox(zone)
+	if b then
+		local w, h, d = (b.x1 - b.x0 + 1) * B, (b.y1 - b.y0 + 1) * B, (b.z1 - b.z0 + 1) * B
+		local cxl = ((b.x0 + b.x1) / 2 + 0.5) * B - W * B / 2
+		for _, sp in ChamberSets.specs(zone, w, h, d) or {} do
+			-- cell 1 is row 0: identity rotation, world = (cellX + cxl + x, y, -BACK - z0*B - d)
+			local px, py, pz = cellX(1) + cxl + sp.pos[1], sp.pos[2], -BACK - b.z0 * B - sp.pos[3]
+			local r = sp.rot or { 0, 0, 0 }
+			local rx, ry, rz = math.rad(r[1]), math.rad(r[2]), math.rad(r[3])
+			-- rotation matrix for CFrame.Angles(rx, ry, rz) = Rx * Ry * Rz
+			local cx, sx, cy, sy, cz, sz =
+				math.cos(rx), math.sin(rx), math.cos(ry), math.sin(ry), math.cos(rz), math.sin(rz)
+			local m = {
+				cy * cz,
+				-cy * sz,
+				sy,
+				sx * sy * cz + cx * sz,
+				-sx * sy * sz + cx * cz,
+				-sx * cy,
+				-cx * sy * cz + sx * sz,
+				cx * sy * sz + sx * cz,
+				cx * cy,
+			}
+			table.insert(
+				out,
+				string.format(
+					"P|Chamber|%s|%.2f|%.2f|%.2f|%.4f|%.4f|%.4f|%.4f|%.4f|%.4f|%.4f|%.4f|%.4f|%.2f|%.2f|%.2f|%d|%d|%d|%s|%.2f",
+					sp.shape,
+					px,
+					py,
+					pz,
+					m[1],
+					m[2],
+					m[3],
+					m[4],
+					m[5],
+					m[6],
+					m[7],
+					m[8],
+					m[9],
+					sp.size[1],
+					sp.size[2],
+					sp.size[3],
+					sp.color[1],
+					sp.color[2],
+					sp.color[3],
+					sp.material,
+					sp.transparency or 0
+				)
+			)
+			if sp.light then
+				table.insert(
+					out,
+					string.format(
+						"L|PointLight|%.2f|%.2f|%.2f|%d|%d|%d|%.1f|%.1f",
+						px,
+						py,
+						pz,
+						sp.light.color[1],
+						sp.light.color[2],
+						sp.light.color[3],
+						sp.light.range,
+						sp.light.brightness
+					)
+				)
+			end
+		end
 	end
 end
 print(table.concat(out, "\n"))
