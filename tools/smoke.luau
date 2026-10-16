@@ -474,6 +474,7 @@ do
 	local pay = Loot.flush(fake)
 	check("flush at night", pay > 0 and pay < 100 * 2 and s.data.Bag == 0, pay)
 	Loot.canFlush = oldCan
+	s.data.Noodles = 0
 	check("toilet has a flush prompt", myCell.toilet:FindFirstChild("FlushPrompt") ~= nil)
 end
 
