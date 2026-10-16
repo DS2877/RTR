@@ -187,6 +187,17 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Automatisk kvalitet + butiksbilder
+- **Automatisk kvalitet:** spelet mäter FPS. Under ~45 FPS i 4 sekunder går det ner ett steg
+  (High → Medium → Low), över ~57 FPS i 20 sekunder upp igen. Stegen sänker hur långt tunnlarna
+  ritas (40/32/24 block), antalet riktiga lampor (28/14/6), skuggor från lampor, max antal
+  skräpkuber (150/100/60), partiklar och bloom. ADMIN → Perf visar nivån ("quality High").
+- **Butiksbilder klara att ladda upp:** `marketing/store/icon.png` (512×512) och sex miniatyrer
+  (1920×1080): fången som slår igenom väggen, kristallgrottan, lavasjön, gymmet (fånge lyfter en
+  toalett bredvid en vakt), korridoren på natten med vaktens ficklampa och den gamla flyktporten.
+  Renderade från den riktiga världen med logga "DIG OUT!" och rubriker. Ladda upp i Creator Hub →
+  upplevelsen → Configure → Icon / Thumbnails.
+
 ### AAA-passet: jag kan nu SE spelet
 - **Nytt verktyg (tools/view):** CI exporterar hela den byggda världen och jag renderar den i 3D
   (three.js i en headless-webbläsare) – cell, korridor, Common Room, Yard, tunnlar och kamrar. Det
@@ -299,18 +310,21 @@ köper nästa verktyg – det är tänkt så (som i andra simulatorspel), inte e
     mot väggen. Köp en lampa i Workshop → 💡 DECOR och placera den i tunneln med 💡-knappen.
 13. AAA: gå runt i Common Room, korridoren och Yard (titta på lampor, golv, mur, sökarlampa). ADMIN
     → Zone 2..10 och slå hål in i kammaren i början av zonen – varje kammare är ett eget rum.
-14. Schema/vakter: titta på rutan ovanför knapparna (fas + klocka). ADMIN → 📋 Roll call, stå kvar
+14. Kvalitet: ADMIN → Perf – titta på FPS och "quality". Gå ner djupt med mycket lampor/lava och se
+    att FPS håller sig (nivån kan gå ner till Medium/Low av sig själv).
+15. Schema/vakter: titta på rutan ovanför knapparna (fas + klocka). ADMIN → 📋 Roll call, stå kvar
     i cellen tills YARD TIME → "Counted at roll call!". Gå förbi vakterna med full ryggsäck och läs
     pratbubblorna. Slå på väggen och titta på gubben: den ska göra ett riktigt slag.
-15. Ljud/zoner: ha ljudet på. Slå på väggen (hör sprickorna stiga i ton), krossa flera i rad.
+16. Ljud/zoner: ha ljudet på. Slå på väggen (hör sprickorna stiga i ton), krossa flera i rad.
     ADMIN → Zone 4 (armeringsjärn), Zone 5 (rör), Zone 8 (kristaller), Zone 9 (lava) – gräv en bit
     och titta på väggarna och lyssna på bakgrundsljudet.
-16. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
-17. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
+17. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
+18. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
 
 ## ⏳ Saknas (kommande milstolpar)
 - UI:t (knappar, menyer) har inte kunnat renderas i visaren än – där är jag fortfarande blind.
-- Prestanda med alla nya delar + Future-ljus behöver kollas på en riktig iPhone 11.
+- Prestanda: automatisk kvalitet finns nu, men kolla gärna på riktig iPhone 11 (ADMIN → Perf).
+- Ladda upp ikon + miniatyrer i Creator Hub (görs för hand).
 - Balansen bygger på simulatorn – finjustera med riktiga speldata när spelare kommer in.
 - Ljudnivåerna är satta "på papper" – lyssna på iPhone och säg till om något är för högt/lågt.
 
