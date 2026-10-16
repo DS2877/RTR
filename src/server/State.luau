@@ -33,7 +33,9 @@ export type PlayerState = {
 	groupBonus: boolean,
 	escapeReady: boolean,
 	buffs: { [string]: number }, -- buff id -> os.time() it ends
-	hidden: boolean, -- hid from this inspection
+	hidden: boolean, -- lying in bed (Services/Hideout)
+	coverDown: boolean, -- the tapestry is rolled down over the tunnel hole
+	bribed: boolean, -- paid off tonight's inspection
 	snitched: boolean, -- guaranteed inspection next night
 }
 
@@ -68,6 +70,8 @@ function State.add(player: Player, data: Data.PlayerData): PlayerState
 		escapeReady = false,
 		buffs = {},
 		hidden = false,
+		coverDown = false,
+		bribed = false,
 		snitched = false,
 	}
 	states[player] = s

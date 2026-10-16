@@ -22,7 +22,9 @@ Remotes.Names = {
 	RobuxBuy = "RobuxBuy", -- (key: string) prompt a pass / developer product purchase
 	Dynamite = "Dynamite", -- (x, y, z) light a stick at an exposed block of your tunnel
 	Escape = "Escape", -- () escape (rebirth) once you reached the bottom
-	Hide = "Hide", -- () hide from the guard's inspection
+	Hide = "Hide", -- () hide from the guard's inspection (into bed + cover the hole)
+	Cover = "Cover", -- (down: boolean?) roll your cell's tapestry down / up (nil = toggle)
+	Sleep = "Sleep", -- (on: boolean?) lie down in your bed / get up (nil = toggle)
 	Bribe = "Bribe", -- () bribe the guard (snitched players)
 	Snitch = "Snitch", -- (userId: number) pay to tip off the guard
 	BuyItem = "BuyItem", -- (shop: string, id: string) Laundry / Black Market / Mess Hall / Decor

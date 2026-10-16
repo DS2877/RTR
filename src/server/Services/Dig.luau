@@ -13,6 +13,7 @@ local Progression = require(Shared.Progression)
 local Tunnel = require(Shared.Tunnel)
 local Remotes = require(Shared.Remotes)
 local Products = require(Shared.Config.Products)
+local PvP = require(Shared.Config.PvP)
 
 local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
@@ -37,6 +38,7 @@ Dig.onBroken = nil :: ((player: Player, broken: { number }) -> ())?
 Dig.onBottom = nil :: ((player: Player) -> ())?
 Dig.speedBoost = nil :: ((player: Player) -> number)?
 Dig.onZone = nil :: ((player: Player, zone: number) -> ())?
+Dig.beforePunch = nil :: ((player: Player, s: State.PlayerState) -> boolean)? -- false = refused (in bed)
 
 -- multiplies punch power for everyone (events like BLACKOUT set it, M4)
 Dig.globalBoost = 1
@@ -244,6 +246,9 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 	if not Voxel.isOpen(grid, x + n[1], y + n[2], z + n[3]) then
 		return "not exposed"
 	end
+	if Dig.beforePunch and not Dig.beforePunch(player, s) then
+		return "in bed"
+	end
 	local maxZ = Progression.diggableDepth()
 	if z >= maxZ then
 		Net.notice(player, "Too hard for now: new zones open soon!", "info")
@@ -257,14 +262,10 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 	if (center - root).Magnitude > World.Reach + World.ReachSlack then
 		return "out of reach"
 	end
-	local cap = Stats.capacity(s)
-	if s.data.Bag >= cap then
+	-- a full backpack never stops you: the rubble just stays on the floor (worth nothing until
+	-- you come back with room), and the HUD warns you
+	if s.data.Bag >= Stats.capacity(s) then
 		Net.fire(player, Remotes.Names.Full, "bag")
-		return "bag full"
-	end
-	if s.data.Bag + s.loose >= cap then
-		Net.fire(player, Remotes.Names.Full, "loose")
-		return "vacuum first"
 	end
 	s.lastPunch = now
 	local data = s.data
@@ -296,9 +297,7 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 		if not Voxel.isSolid(grid, tx, ty, tz) then
 			continue
 		end
-		if find and #data.Finds >= slots then
-			slotsFull = true
-		else
+		do
 			local idx = Voxel.index(grid, tx, ty, tz)
 			local maxHp = Progression.blockHp(tz)
 			local hp = (s.damage[idx] or maxHp) - power
@@ -315,6 +314,24 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 					if math.random() < Zones[zone].oreChance * bonus then
 						find = Progression.pickFind(zone, math.random())
 					end
+				end
+				if find and #data.Finds >= slots then
+					-- slots full: it goes to your Stash chest if there's room, else it's lost
+					slotsFull = true
+					if #data.Stash < PvP.StashSize then
+						local firstTime = not data.Found[find]
+						table.insert(data.Stash, find)
+						data.Found[find] = true
+						data.Stats.FindsDug += 1
+						Net.fire(player, Remotes.Names.Stash, data.Stash)
+						Net.notice(player, "Find slots full: sent to your Stash chest 📦", "info")
+						if Dig.onFind then
+							Dig.onFind(player, find, firstTime)
+						end
+					else
+						Net.notice(player, "Find slots AND Stash full: that find crumbled to dust!", "bad")
+					end
+					find = nil
 				end
 				if find then
 					local firstTime = not data.Found[find]

@@ -56,14 +56,14 @@ local Upgrades = {
 	} :: { Brush },
 
 	Backpack = {
-		{ name = "Pockets", emoji = "👖", cost = 0, value = 20 },
-		{ name = "Sock", emoji = "🧦", cost = 60, value = 60 },
-		{ name = "Pillowcase", emoji = "🛏️", cost = 400, value = 130 },
-		{ name = "Laundry Bag", emoji = "🧺", cost = 2200, value = 280 },
-		{ name = "Duffel Bag", emoji = "👜", cost = 12000, value = 600 },
-		{ name = "Mail Cart", emoji = "🛒", cost = 150000, value = 1300 },
-		{ name = "Dumpster", emoji = "🗑️", cost = 1500000, value = 3000 },
-		{ name = "Garbage Truck", emoji = "🚛", cost = 40000000, value = 8000 },
+		{ name = "Pockets", emoji = "👖", cost = 0, value = 60 },
+		{ name = "Sock", emoji = "🧦", cost = 60, value = 180 },
+		{ name = "Pillowcase", emoji = "🛏️", cost = 400, value = 400 },
+		{ name = "Laundry Bag", emoji = "🧺", cost = 2200, value = 900 },
+		{ name = "Duffel Bag", emoji = "👜", cost = 12000, value = 2000 },
+		{ name = "Mail Cart", emoji = "🛒", cost = 150000, value = 4500 },
+		{ name = "Dumpster", emoji = "🗑️", cost = 1500000, value = 10000 },
+		{ name = "Garbage Truck", emoji = "🚛", cost = 40000000, value = 25000 },
 	} :: { Level },
 
 	FindSlots = {

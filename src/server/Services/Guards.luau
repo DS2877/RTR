@@ -1,6 +1,6 @@
 --!strict
 -- Night guard inspections: a guard with a flashlight walks to a cell door. 5 s warning (footsteps,
--- light under the door, the HIDE button). Hidden (poster over the hole, in bed) = fine. Caught =
+-- light under the door, the HIDE button). Safe = in bed AND the hole covered (Hideout). Caught =
 -- you lose this night's unsold finds in your backpack (find slots), never progress or Noodles.
 -- SNITCH: pay Noodles to tip off the guard about someone (guaranteed visit next night); the
 -- target can BRIBE the guard during the warning.
@@ -21,7 +21,7 @@ local Net = require(script.Parent.Parent.Net)
 local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Build = require(script.Parent.Parent.Util.Build)
 local Stats = require(script.Parent.Stats)
-local Cells = require(script.Parent.Cells)
+local Hideout = require(script.Parent.Hideout)
 
 local Guards = {}
 
@@ -75,7 +75,6 @@ function Guards.inspect(player: Player): boolean
 		return false
 	end
 	active[player] = os.clock() + Cycle.InspectWarning
-	s.hidden = false
 	local snitched = s.snitched
 	Net.fire(player, Remotes.Names.Inspect, "warn", Cycle.InspectWarning, snitched)
 	walkGuard(s.cell)
@@ -86,55 +85,41 @@ function Guards.inspect(player: Player): boolean
 			return
 		end
 		now.snitched = false
-		if now.hidden then
+		local bribed = now.bribed
+		now.bribed = false
+		if bribed or Hideout.isSafe(now) then
 			Net.fire(player, Remotes.Names.Inspect, "safe", 0, false)
 			Net.notice(player, "The guard sees a sleeping prisoner. Phew!", "good")
 		else
+			local spotted = now.hidden -- in bed, but the hole was showing
 			local lost = #now.data.Finds
 			now.data.Finds = {}
 			Net.fire(player, Remotes.Names.Finds, now.data.Finds)
 			Net.fire(player, Remotes.Names.Inspect, "caught", 0, false)
 			Net.notice(
 				player,
-				if lost > 0
-					then "CAUGHT! The guard took " .. lost .. " unsold finds."
-					else "CAUGHT! Luckily your pockets were empty.",
+				(if spotted then "The guard spotted the hole in your wall! " else "")
+					.. (
+						if lost > 0
+							then "CAUGHT! The guard took " .. lost .. " unsold finds."
+							else "CAUGHT! Luckily your pockets were empty."
+					),
 				"bad"
 			)
 			Stats.sync(player)
 		end
-		now.hidden = false
 	end)
 	return true
 end
 
+-- The inspection's HIDE button: into bed and the tapestry down, in one tap.
 function Guards.hide(player: Player): boolean
 	local s = State.get(player)
 	if not s or not active[player] or os.clock() > active[player] then
 		return false
 	end
-	s.hidden = true
-	-- into bed, poster over the hole
-	if typeof(player) == "Instance" and player.Character and s.cell then
-		local bed = Cells.record(s.cell).model:FindFirstChild("Mattress") :: BasePart?
-		if bed then
-			player.Character:PivotTo(bed.CFrame * CFrame.new(0, 2.5, 0))
-		end
-		local frame = Tunnel.frame(s.cell)
-		local poster = Build.part(
-			workspace,
-			"HidePoster",
-			Vector3.new(World.TunnelWidth * World.BlockSize, World.TunnelHeight * World.BlockSize, 0.3),
-			frame * CFrame.new(0, World.TunnelHeight, 0.4),
-			Color3.fromRGB(70, 140, 220),
-			{ CanCollide = false }
-		)
-		Build.sign(poster, Enum.NormalId.Back, "🏝️ DREAM BIG 🏝️", Color3.new(1, 1, 1))
-		task.delay(Cycle.InspectWarning + 1, function()
-			poster:Destroy()
-		end)
-	end
-	return true
+	Hideout.setCover(player, true)
+	return Hideout.setHidden(player, true, true)
 end
 
 function Guards.bribe(player: Player): boolean
@@ -148,7 +133,7 @@ function Guards.bribe(player: Player): boolean
 		return false
 	end
 	s.data.Noodles -= cost
-	s.hidden = true
+	s.bribed = true
 	Stats.sync(player)
 	Net.notice(player, "The guard pockets " .. Format.noodles(cost) .. " and walks away.", "info")
 	return true

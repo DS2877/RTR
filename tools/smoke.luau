@@ -67,6 +67,7 @@ local Product = req(Services, "Product")
 local Escape = req(Services, "Escape")
 local Rewards = req(Services, "Rewards")
 local Guards = req(Services, "Guards")
+local Hideout = req(Services, "Hideout")
 local Events = req(Services, "Events")
 local Market = req(Services, "Market")
 
@@ -95,6 +96,10 @@ end
 step("Cells.start", function()
 	Cells.start(world)
 end)
+step("Hideout.start", function()
+	Hideout.start(world)
+end)
+Dig.beforePunch = Hideout.beforePunch
 step("Dig.start", Dig.start)
 step("Loot.start", function()
 	Loot.start(world)
@@ -436,10 +441,11 @@ check("block behind is exposed now", Voxel.isExposed(s.grid, bx, 1, 1))
 fake.Position = s.piles[1].pos
 check("vacuum moves rubble", Loot.vacuum(fake) == 1 and s.data.Bag == 1 and s.loose == 0, s.data.Bag)
 
--- backpack full blocks punches
+-- a full backpack warns but never blocks digging
 s.data.Bag = 9999
 standAt(9, 1, -2)
-check("full backpack rejects", punch(bx + 1, 1, 0, 6) == "bag full")
+local fullBefore = count("Full")
+check("full backpack still digs", punch(bx + 1, 1, 0, 6) == nil and count("Full") > fullBefore)
 s.data.Bag = 1
 s.data.BagValue = 1
 
@@ -773,13 +779,22 @@ check("cellmate digs while away", dug > 0 and s.data.Bag == dug and s.data.Bag <
 check("cellmate capped by the backpack", Rewards.cellmate(fake, 999999) <= Stats.capacity(s))
 -- guard inspection: hide = safe, caught = unsold finds gone
 s.data.Finds = { "OldCoin" }
+check("every cell has a cover", world.cells[1].model:FindFirstChild("Cover") ~= nil)
 check("inspection starts", Guards.inspect(fake))
-check("hide", Guards.hide(fake))
+check("hide = bed + cover", Guards.hide(fake) and s.hidden and s.coverDown)
+check("no punching from bed", Hideout.beforePunch(fake, s) == false)
 task.wait(Cycle.InspectWarning + 0.4)
 check("hidden = finds kept", #s.data.Finds == 1)
+-- in bed but the hole showing: caught
+Hideout.setCover(fake, false)
 Guards.inspect(fake)
 task.wait(Cycle.InspectWarning + 0.4)
-check("caught = unsold finds lost", #s.data.Finds == 0)
+check("hole showing = caught", #s.data.Finds == 0)
+Hideout.setHidden(fake, false)
+s.data.Finds = { "OldCoin" }
+Hideout.setCover(fake, true)
+check("punching rolls the cover up", Hideout.beforePunch(fake, s) == true and not s.coverDown)
+s.data.Finds = {}
 local snitchVictim: any = { UserId = -6262, Name = "SmokeSnitched", Position = Vector3.zero }
 local sv = State.add(snitchVictim, Data.fresh())
 s.data.Noodles = 1e9

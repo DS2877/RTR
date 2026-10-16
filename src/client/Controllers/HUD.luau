@@ -868,7 +868,7 @@ function HUD.start()
 		local kind: string? = nil
 		if bag >= cap then
 			kind = "bag"
-		elseif bag + loose >= cap then
+		elseif bag + loose >= cap and player:GetAttribute("AutoVacuum") ~= true then
 			kind = "loose"
 		elseif fullKind == "slots" then
 			kind = "slots"
@@ -877,12 +877,12 @@ function HUD.start()
 		local locked = phase == "Night" or phase == "LightsOut"
 		if kind == "bag" then
 			fullText.Text = if locked
-				then "BACKPACK FULL → Flush it down your toilet 🚽"
-				else "BACKPACK FULL → Dump in the Yard"
+				then "BACKPACK FULL · rubble stays on the floor → flush it 🚽"
+				else "BACKPACK FULL · rubble stays on the floor → Yard dump"
 		elseif kind == "loose" then
 			fullText.Text = "Hold 🌀 VACUUM to pick up the rubble!"
 		elseif kind == "slots" then
-			fullText.Text = "FIND SLOTS FULL → Sell at The Fence"
+			fullText.Text = "FIND SLOTS FULL · new finds go to your Stash → sell at The Fence"
 		end
 		fullBox.Visible = kind ~= nil
 		setGuide(kind == "bag" and not locked)

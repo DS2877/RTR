@@ -107,7 +107,7 @@ local FACE_IDS = {
 	Enum.NormalId.Back,
 }
 
--- glowing features (crystals, lava, slime) + work lamps with a PointLight, per client
+-- glowing features (crystals, lava, slime) with a PointLight, per client
 -- (Controllers/Quality lowers it on slow devices, together with the stream radius)
 local MAX_LIGHTS = 28
 local streamRadius = World.StreamRadius
@@ -439,7 +439,7 @@ local function buildChunk(t: T, id: number)
 		table.insert(runParts, p)
 	end
 	-- dug floor (y = 0): a thin plate in the zone's material so you never walk on black bedrock
-	-- (one plate per row of dug floor blocks), and a warm work lamp every 10 layers
+	-- (one plate per row of dug floor blocks). (No free lamps: you buy Decor lamps and place them.)
 	local cx, cy, cz = Voxel.chunkCoords(t.grid, id)
 	local x0, z0 = cx * CS, cz * CS
 	if cy == 0 then
@@ -465,54 +465,6 @@ local function buildChunk(t: T, id: number)
 					table.insert(runParts, p)
 					runStart = nil
 				end
-			end
-		end
-	end
-	for z = z0, math.min(z0 + CS - 1, MAX_Z - 1) do
-		if z % 10 == 5 then
-			-- the highest dug block nearest the middle whose ceiling is solid
-			local best: { number }? = nil
-			local bestScore = -math.huge
-			for x = x0, math.min(x0 + CS - 1, W - 1) do
-				for y = cy * CS, math.min(cy * CS + CS - 1, H - 1) do
-					if Voxel.isDug(t.grid, x, y, z) and not Voxel.isDug(t.grid, x, y + 1, z) then
-						local score = y * 10 - math.abs(x - W / 2)
-						if score > bestScore then
-							best, bestScore = { x, y }, score
-						end
-					end
-				end
-			end
-			if best and best[2] >= 2 then
-				local top = t.frame
-					* CFrame.new(Tunnel.localCenter(best[1], best[2], z) + Vector3.new(0, B / 2, 0))
-				local cable = acquire()
-				cable.Size = Vector3.new(0.12, 0.7, 0.12)
-				cable.CFrame = top * CFrame.new(0, -0.35, 0)
-				cable.Material = Enum.Material.SmoothPlastic
-				cable.Color = Color3.fromRGB(25, 25, 28)
-				cable.CanCollide = false
-				cable.Parent = folder
-				local bulb = acquire()
-				bulb.Shape = Enum.PartType.Ball
-				bulb.Size = Vector3.new(0.55, 0.55, 0.55)
-				bulb.CFrame = top * CFrame.new(0, -0.95, 0)
-				bulb.Material = Enum.Material.Neon
-				bulb.Color = Color3.fromRGB(255, 196, 120)
-				bulb.CanCollide = false
-				bulb.Parent = folder
-				if litCount < MAX_LIGHTS then
-					local l = Instance.new("PointLight")
-					l.Color = Color3.fromRGB(255, 190, 120)
-					l.Range = 18
-					l.Brightness = 1.3
-					l.Shadows = true
-					l.Parent = bulb
-					lit[bulb] = true
-					litCount += 1
-				end
-				table.insert(runParts, cable)
-				table.insert(runParts, bulb)
 			end
 		end
 	end
