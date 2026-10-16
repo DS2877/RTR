@@ -187,6 +187,30 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### AAA-passet: jag kan nu SE spelet
+- **Nytt verktyg (tools/view):** CI exporterar hela den byggda världen och jag renderar den i 3D
+  (three.js i en headless-webbläsare) – cell, korridor, Common Room, Yard, tunnlar och kamrar. Det
+  var så jag hittade vad som såg dåligt ut (och det var mycket).
+- **Tunnlarna:** golv i zonens material (inte svart berggrund längre), en varm hängande arbetslampa
+  var 10:e meter (med skuggor), mjukare färgvariation, armeringsjärn som rostiga stänger i betongen,
+  lavaådror som slingrar sig organiskt genom mörk sten, kristallkluster som lyser i mörk grotta,
+  kvartsådror i berget.
+- **Kamrarna (WOW-ögonblicken) är riktiga rum nu:** pannrum med ångande panna, bunker med britsar
+  och "ESCAPE PLAN v1", valv med kassaskåpsdörr och guldtackor, rörkorsning, kloakkanal med båt och
+  gummianka, droppstensgrotta, kristallgrotta med jättekristaller, lavasjö med stenbro och glöd,
+  och sist: porten där skelettet sitter med sin sked – "HE ALMOST MADE IT".
+- **Fängelset:** hängande industrilampor i stället för platta ljusrutor, rör längs taken,
+  övervakningskameror, schackrutigt golv och frostade fönster (mörka på natten) i Common Room,
+  varuautomater, väggklocka, papperskorgar, affischer ("NO DIGGING", "REPORT TUNNELS – REWARD: 5
+  NOODLES"), cellerna med matta, skrivbord med böcker, spegel och streckräkning på väggen.
+- **Yard:** taggtråd på alla staket, basketplan med korgar, bänkar, vattenpölar, en hög yttre
+  fängelsemur med vakttorn och taggtråd, och en sökarlampa som sveper över gården.
+- **Landskap:** en gräsbacke över cellblocket (tunnlarna grävs in i den), slätter och bergskedjor
+  vid horisonten i stället för grå tomhet.
+- **Alla fångar bär orange overall** med sitt cellnummer på ryggen (om man inte valt en annan).
+- **Ljus:** Robloxs "Future"-belysning – riktiga skuggor från lampor, lava och kristaller.
+- **Känsla:** kameran gör en liten "punch" (FOV) när block krossas.
+
 ### Slaganimation, patrullerande vakter och fängelseschemat
 - **Slaganimation (fixad):** den förra animationen vred lederna direkt, vilket nyare Roblox-avatarer
   inte alltid har – därför syntes inget. Nu spelas riktiga animationer via Animator (Robloxs egna
@@ -273,16 +297,20 @@ köper nästa verktyg – det är tänkt så (som i andra simulatorspel), inte e
 12. M4: ADMIN → Bottom→Escape → tryck ESCAPE! (filmsekvens + High Security). ADMIN → 🌙 Night →
     Inspect me → tryck HIDE. ADMIN → 💰 Treasure och följ markeringen. ADMIN → 🧨 x5 och tryck 🧨
     mot väggen. Köp en lampa i Workshop → 💡 DECOR och placera den i tunneln med 💡-knappen.
-13. Schema/vakter: titta på rutan ovanför knapparna (fas + klocka). ADMIN → 📋 Roll call, stå kvar
+13. AAA: gå runt i Common Room, korridoren och Yard (titta på lampor, golv, mur, sökarlampa). ADMIN
+    → Zone 2..10 och slå hål in i kammaren i början av zonen – varje kammare är ett eget rum.
+14. Schema/vakter: titta på rutan ovanför knapparna (fas + klocka). ADMIN → 📋 Roll call, stå kvar
     i cellen tills YARD TIME → "Counted at roll call!". Gå förbi vakterna med full ryggsäck och läs
     pratbubblorna. Slå på väggen och titta på gubben: den ska göra ett riktigt slag.
-14. Ljud/zoner: ha ljudet på. Slå på väggen (hör sprickorna stiga i ton), krossa flera i rad.
+15. Ljud/zoner: ha ljudet på. Slå på väggen (hör sprickorna stiga i ton), krossa flera i rad.
     ADMIN → Zone 4 (armeringsjärn), Zone 5 (rör), Zone 8 (kristaller), Zone 9 (lava) – gräv en bit
     och titta på väggarna och lyssna på bakgrundsljudet.
-15. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
-16. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
+16. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
+17. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
 
 ## ⏳ Saknas (kommande milstolpar)
+- UI:t (knappar, menyer) har inte kunnat renderas i visaren än – där är jag fortfarande blind.
+- Prestanda med alla nya delar + Future-ljus behöver kollas på en riktig iPhone 11.
 - Balansen bygger på simulatorn – finjustera med riktiga speldata när spelare kommer in.
 - Ljudnivåerna är satta "på papper" – lyssna på iPhone och säg till om något är för högt/lågt.
 

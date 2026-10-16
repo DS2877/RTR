@@ -253,6 +253,7 @@ local function onBroken(t: VoxelRender.T, broken: { number }, puncher: number)
 		DigAudio.broken(z, #broken, mine, Tunnel.blockCenter(t.frame, x, y, z))
 	end
 	if mine then
+		Shake.punch(math.min(3.5, 1.2 + #broken * 0.15))
 		Shake.kick(math.min(0.5, 0.22 + #broken * 0.02))
 	end
 end

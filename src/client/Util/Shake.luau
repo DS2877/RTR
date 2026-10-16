@@ -10,6 +10,12 @@ local Shake = {}
 local trauma = 0
 local fovValue = Instance.new("NumberValue")
 fovValue.Value = 0
+local punch = 0 -- a quick FOV punch (decays fast), on top of the eased fov
+
+-- a short field-of-view punch in degrees (block breaks: the world "pops" toward you)
+function Shake.punch(degrees: number)
+	punch = math.min(6, punch + degrees)
+end
 
 -- amount 0..1: 0.3 = bump, 0.7 = big hit
 function Shake.kick(amount: number)
@@ -30,7 +36,8 @@ function Shake.start()
 			return
 		end
 		t += dt
-		camera.FieldOfView = baseFov + fovValue.Value
+		camera.FieldOfView = baseFov + fovValue.Value - punch
+		punch = math.max(0, punch - dt * punch * 10 - dt)
 		if trauma > 0 then
 			local s = trauma * trauma
 			local rx = math.noise(t * 25, 1) * s * 0.06

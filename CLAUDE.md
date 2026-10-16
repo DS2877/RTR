@@ -52,15 +52,17 @@ upgrade -> punch harder -> new zone. The punch and the crumble must feel amazing
 
 ## Layout
 - `src/shared` -> ReplicatedStorage.Shared: Config (World, Zones, Finds, Rarity, Upgrades, Economy,
-  Cycle, PvP, Extras, Products, Assets, Audio, Patrol, Admin), Voxel, Shell, Progression + Strata + Patrol (pure,
+  Cycle, PvP, Extras, Products, Assets, Audio, Patrol, Admin), Voxel, Shell, Progression + Strata + Patrol + ChamberSets (pure,
   Lune-tested; Strata = cosmetic features inside each zone's rock, Patrol = guard positions), Tunnel, Format, Remotes.
 - `src/server` -> ServerScriptService.Server: State (runtime per player), Net, Services (WorldBuilder,
   Data, Stats, Cells, Dig, Loot, Shop, Gym, Collection, DayNight, Brawl, Raid, TopDog, Product,
-  Escape, Rewards, Guards, Patrol, Events, Market, Admin), Util (Build, RateLimit, GymProps), Packages (ProfileStore).
+  Escape, Rewards, Guards, Patrol, Events, Market, Admin), Util (Build, RateLimit, GymProps, Dressing), Packages (ProfileStore).
   Services talk through hooks wired in `init.server.luau` (e.g. `Dig.onFind`, `DayNight.onDay`).
 - `src/client` -> StarterPlayerScripts.Client: Controllers (VoxelRender, DigController, DigFX,
-  CameraController, HUD, Shops, Clock, PvPController, ExtraShops, Moments, GymController, DigAudio, GuardController), Util (UI, Panel,
+  CameraController, HUD, Shops, Clock, PvPController, ExtraShops, Moments, GymController, DigAudio, GuardController, Chambers), Util (UI, Panel,
   Sound, Shake, PunchAnim, LootToast).
+- `tools/view/`: renders CI's world dump (artifact "world") + a Lune-generated tunnel with three.js in
+  headless Chromium (`render.mjs`, views in `views.json`). Use it to LOOK at changes to the world.
 - `tests/` Lune specs, `tools/simulate.luau` balance sim, `tools/smoke.luau` headless smoke test run by
   CI inside the real place (`tools/ci/smoke.py`).
 
