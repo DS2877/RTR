@@ -187,6 +187,45 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Kritikergenomgången (hela spelet)
+Jag gick igenom hela spelet: kod, världen (renderad) och balansen. En separat granskning letade
+buggar. Åtgärdat:
+- **CRIT-slag:** 8 % av slagen är kritiska och slår 3× hårdare (servern slumpar). Blocket blixtrar
+  varmt, kameran sparkar, "CRIT!" poppar ut ur väggen med eget ljud. Balansen är omräknad
+  (`tools/tune write`): flykt 2:03 för gratisspelare, alla zoner ≤ 15 slag/block.
+- **Tydligt mål hela tiden:** under "Record" finns en tunn mätare mot nästa zon ("8m to BRICK")
+  i nästa zons färg. Den studsar när du kommer in i en ny zon.
+- **"Uppgradering redo":** första gången du har råd med nästa verktyg, pensel eller ryggsäck glider
+  ett grönt kort in ("Pickaxe is ready · Tool Crib · 🍜 60"). Ett i taget, aldrig tjat.
+- **WORK DETAIL – dagliga jobb:** ny ruta 📋 Jobs uppe till vänster (där Event-rutan satt;
+  händelser syns redan i kortet högst upp). Tre jobb per dag – lätt, medel, svårt – t.ex. "Break
+  300 blocks", "Land 20 CRIT punches", "Dig 10m deeper", "Hit 20 PERFECT lifts", "Sell 5 finds".
+  Färdiga jobb ger ett kort och en grön siffra på rutan. Hämta belöningen i panelen; alla tre ger en
+  bonus. Belöningarna är kända Noodles-belopp efter din zon och byts kl 02:00 svensk tid.
+- **Yard med liv:** picknickbord, en tunna med eld och bänkar runt (varmt ljus på natten),
+  fängelseodling ("PRISON GARDEN – DO NOT DIG HERE"), tvättlina med fångdräkter, telefonkiosk
+  ("COLLECT CALLS ONLY"), däckstapel, koner, målad "RUBBLE DUMP ▼"-markering och grästuvor.
+- **Buggar som fixats (18 st):**
+  - Efter ESCAPE kunde du fastna i sten. Nu flyttas du till cellen.
+  - "Reset" medan du bar ett stulet fynd gav dig fyndet direkt. Nu går det tillbaka.
+  - Inspektion när du är djupt i tunneln: du får nu 15 s **plus gångtiden** tillbaka (max 75 s),
+    och händelsekortet visar en nedräkning "GUARD INSPECTION · 23s".
+  - Vakten "såg ett hål" efter en flykt fast väggen var hel. Fixat.
+  - Jordbävningen gjorde inget efter en flykt. Fixat.
+  - Gymmet tog bort tjuvens långsamhet. Nu kan du inte lyfta när du bär ett stulet fynd eller
+    ligger i sängen.
+  - Dynamiten från daglig streak syntes som "BUY". Fixat.
+  - "Instant Backpack Empty" kunde köpas med tom ryggsäck. Nu nekas det, och PAYDAY räknas med.
+  - BRIBE låg exakt ovanpå ESCAPE. ESCAPE syns nu bara i din tunnel och inte när du lyfter, och
+    den kommer tillbaka om servern inte svarade.
+  - "Sleep" fungerade från hela tunneln (en gratis teleport). Nu bara vid sängen.
+  - Ett nekat slag kunde rulla upp tapeten, och dynamit fungerade från sängen. Fixat.
+  - Skattens pris kunde göra Stash för full. Nu ges Noodles om den är full.
+  - Angivna (snitchade) fångar får nu alltid besöket först. Inget beslut tas efter natten.
+  - Gränser för hur ofta GymStop, Vacuum och TourDone kan anropas.
+  - Ett andra slag i rad kortades av för tidigt (det gällde när du blev slagen). Fixat.
+  - Toaletterna tog inte grus under RIOT men prompten syntes. Nu stängs den.
+
 ### Rundtur för nya spelare, inga pilar, lugnare varningar, levande Mess Hall
 - **Ingen pil eller stegruta under spelet längre:** guidepilen till dumpen och den gamla
   steg-för-steg-rutan är borta.
@@ -416,7 +455,10 @@ köper nästa verktyg – det är tänkt så (som i andra simulatorspel), inte e
 16. Ljud/zoner: ha ljudet på. Slå på väggen (hör sprickorna stiga i ton), krossa flera i rad.
     ADMIN → Zone 4 (armeringsjärn), Zone 5 (rör), Zone 8 (kristaller), Zone 9 (lava) – gräv en bit
     och titta på väggarna och lyssna på bakgrundsljudet.
-17. Nytt konto/ADMIN → 🎬 Tour: följ rundturen (Next/Skip). Gå in i Mess Hall och titta runt.
+17. Kritikergenomgången: slå på väggen tills du ser "CRIT!". Titta på mätaren under Record.
+    Tryck 📋 Jobs och gör ett jobb, hämta belöningen. Spara ihop till nästa verktyg och se kortet
+    "… is ready". Gå runt i Yard. ADMIN → 👮 Inspect me när du är djupt nere: nedräkningen visas.
+    Nytt konto/ADMIN → 🎬 Tour: följ rundturen (Next/Skip). Gå in i Mess Hall och titta runt.
     Gräv med full ryggsäck: chipet syns en kort stund, inte vid varje slag.
     Gräv med full ryggsäck (fortsätter, gruset blir liggande). I cellen: håll "Cover the
     hole" vid väggen och "Sleep" vid sängen – rör joysticken för att kliva upp. ADMIN → 👮 Inspect
