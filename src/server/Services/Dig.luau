@@ -21,6 +21,7 @@ local Net = require(script.Parent.Parent.Net)
 local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Stats = require(script.Parent.Stats)
 local Cells = require(script.Parent.Cells)
+local Loot = require(script.Parent.Loot)
 
 local Dig = {}
 
@@ -43,10 +44,8 @@ Dig.onZone = nil :: ((player: Player, zone: number) -> ())?
 Dig.onCrit = nil :: ((player: Player) -> ())?
 Dig.onDeeper = nil :: ((player: Player, layers: number) -> ())?
 Dig.beforePunch = nil :: ((player: Player, s: State.PlayerState) -> boolean)? -- false = refused (in bed)
--- gold / jackpot broke: pay `value` (rubble value) as Noodles now, return what was paid
-Dig.onGold = nil :: ((player: Player, kind: string, value: number) -> number)?
--- every Noodles multiplier of a player (shows the combo bonus in real Noodles)
-Dig.valueMult = nil :: ((s: State.PlayerState) -> number)?
+-- gold / jackpot broke (already paid out): missions
+Dig.onGold = nil :: ((player: Player, kind: string, paid: number) -> ())?
 Dig.onCombo = nil :: ((player: Player, hits: number) -> ())?
 Dig.onCaveIn = nil :: ((player: Player, blocks: number) -> ())?
 
@@ -262,7 +261,7 @@ end
 
 local function sendCombo(player: Player, s: State.PlayerState)
 	local tier = Progression.comboTier(s.comboHits)
-	local bonus = s.comboBonus * (if Dig.valueMult then Dig.valueMult(s) else 1)
+	local bonus = s.comboBonus * Loot.multiplier(s)
 	Net.fire(player, Remotes.Names.Combo, s.comboHits, tier, math.floor(bonus + 0.5))
 end
 
@@ -511,7 +510,11 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 		for _, g in golds do
 			local gx, gy, gz, kind = g[1], g[2], g[3], g[4]
 			local worth = Progression.goldBlocks(kind) * Zones[Progression.zoneAt(gz)].rubble
-			local paid = if Dig.onGold then Dig.onGold(player, kind, worth) else 0
+			local paid = math.floor(worth * Loot.multiplier(s) + 0.5)
+			Loot.addNoodles(player, paid)
+			if Dig.onGold then
+				Dig.onGold(player, kind, paid)
+			end
 			if kind == "jackpot" then
 				data.Stats.Jackpots += 1
 				Net.announce(
