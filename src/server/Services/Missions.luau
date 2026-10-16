@@ -130,6 +130,8 @@ function Missions.reach(player: Player, stat: string, value: number)
 	end
 end
 
+Missions.onClaim = nil :: ((player: Player, index: number) -> ())? -- 4 = the all-done bonus
+
 function Missions.claim(player: Player, index: number): number
 	local s = State.get(player)
 	if not s then
@@ -162,6 +164,9 @@ function Missions.claim(player: Player, index: number): number
 	Loot.addNoodles(player, pay)
 	Net.notice(player, "Work detail paid " .. Format.noodles(pay), "cash")
 	Missions.sync(player)
+	if Missions.onClaim then
+		Missions.onClaim(player, index)
+	end
 	return pay
 end
 

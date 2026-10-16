@@ -50,6 +50,14 @@ export type PlayerData = {
 	LastOnline: number,
 	Pets: { Owned: { [string]: number }, Equipped: { string } }, -- CELLMATES: id -> XP, equipped ids
 	Week: { Id: number, Blocks: number }, -- the weekly race (Services/TopDog): blocks since Monday
+	-- PRISON PASS: this season's XP, premium, claimed tiers ("1".."30" -> true)
+	Pass: {
+		Season: number,
+		Xp: number,
+		Premium: boolean,
+		Free: { [string]: boolean },
+		Paid: { [string]: boolean },
+	},
 	Stats: {
 		Punches: number,
 		Blocks: number,
@@ -112,6 +120,7 @@ local TEMPLATE: PlayerData = {
 	LastOnline = 0,
 	Pets = { Owned = {}, Equipped = {} },
 	Week = { Id = 0, Blocks = 0 },
+	Pass = { Season = 0, Xp = 0, Premium = false, Free = {}, Paid = {} },
 	Stats = {
 		Punches = 0,
 		Blocks = 0,

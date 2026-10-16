@@ -40,6 +40,7 @@ HUD.hotbar = nil :: Frame?
 HUD.buttons = nil :: Frame?
 HUD.crewTile = nil :: GuiButton? -- Controllers/Crew wires it
 HUD.petsTile = nil :: GuiButton? -- Controllers/Pets wires it
+HUD.passTile = nil :: GuiButton? -- Controllers/PassUI wires it
 HUD.right = nil :: Frame?
 HUD.replayTour = nil :: (() -> ())? -- (admin) the first-join tour again (Controllers/Tour)
 
@@ -558,7 +559,7 @@ function HUD.start()
 		Name = "Left",
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 12, 0.4, 0),
-		Size = UDim2.fromOffset(160, 190),
+		Size = UDim2.fromOffset(210, 190),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, { UI.new("UIListLayout", { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder }) })
@@ -586,6 +587,11 @@ function HUD.start()
 	local jobsTile =
 		UI.tile(row1, "Jobs", "📋", "Jobs", Color3.fromRGB(255, 190, 70), Color3.fromRGB(240, 100, 40))
 	jobsTile.LayoutOrder = 2
+	-- PRISON PASS (Controllers/PassUI)
+	local passTile =
+		UI.tile(row1, "Pass", "🎫", "Pass", Color3.fromRGB(255, 230, 120), Color3.fromRGB(220, 130, 30))
+	passTile.LayoutOrder = 3
+	HUD.passTile = passTile
 	local jobsPanel = buildJobs()
 	local function jobsBadge()
 		local n = claimable(readJobs())
@@ -630,7 +636,7 @@ function HUD.start()
 		UI.tile(row3, "Pets", "🐀", "Pets", Color3.fromRGB(255, 200, 120), Color3.fromRGB(190, 110, 40))
 	petsTile.LayoutOrder = 2
 	HUD.petsTile = petsTile
-	left.Size = UDim2.fromOffset(160, 264)
+	left.Size = UDim2.fromOffset(210, 264)
 	UI.toggle(left, 4, "Music", true, function(on)
 		Music.setEnabled(on)
 	end)

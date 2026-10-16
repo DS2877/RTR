@@ -18,6 +18,7 @@ export type Pet = {
 	perLevel: number,
 	zone: number,
 	blocks: number,
+	exclusive: boolean?, -- PRISON PASS reward: never sold
 }
 
 local Pets = {
@@ -117,6 +118,18 @@ local Pets = {
 			perLevel = 0.02,
 			zone = 8,
 			blocks = 1000,
+		},
+		{
+			id = "Jailbird",
+			name = "Jailbird",
+			emoji = "🐦",
+			desc = "Prison Pass exclusive. Did time, knows the good spots.",
+			perk = "value",
+			base = 0.12,
+			perLevel = 0.02,
+			zone = 1,
+			blocks = 0,
+			exclusive = true,
 		},
 	} :: { Pet },
 }

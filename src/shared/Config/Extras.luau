@@ -10,6 +10,7 @@ export type Item = {
 	desc: string,
 	cost: number?, -- fixed price
 	blocks: number?, -- or: price in blocks of your zone's rubble
+	pass: boolean?, -- PRISON PASS exclusive: never sold, only earned on the pass
 	color: { number }?,
 	buff: string?, -- buff id it gives
 	seconds: number?, -- buff length (nil = until the next morning)
@@ -74,6 +75,15 @@ local Extras = {
 			cost = 25000000,
 			color = { 255, 200, 40 },
 		},
+		{
+			id = "Riot",
+			name = "Riot Gear",
+			emoji = "🪖",
+			desc = "Prison Pass exclusive. Black and hazard yellow.",
+			cost = 0,
+			color = { 40, 40, 44 },
+			pass = true,
+		},
 	} :: { Item },
 	Fists = {
 		{
@@ -107,6 +117,24 @@ local Extras = {
 			desc = "Purple and gold.",
 			cost = 5000000,
 			color = { 190, 90, 255 },
+		},
+		{
+			id = "Spark",
+			name = "Spark Fists",
+			emoji = "✨",
+			desc = "Prison Pass exclusive (free track). Crackling sparks.",
+			cost = 0,
+			color = { 255, 230, 140 },
+			pass = true,
+		},
+		{
+			id = "Lightning",
+			name = "Lightning Fists",
+			emoji = "⚡",
+			desc = "Prison Pass exclusive (premium). Pure electricity.",
+			cost = 0,
+			color = { 140, 200, 255 },
+			pass = true,
 		},
 	} :: { Item },
 

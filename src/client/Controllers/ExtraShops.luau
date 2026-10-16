@@ -190,6 +190,7 @@ function ExtraShops.start()
 			local text = if current == it.id
 				then "WEARING"
 				elseif have then "WEAR"
+				elseif it.pass then "🎫 PASS"
 				else Format.noodles(Progression.itemPrice(it, zone()))
 			row(body, order, it.emoji .. " " .. it.name, it.desc, text, current ~= it.id, function()
 				if have then
@@ -205,6 +206,7 @@ function ExtraShops.start()
 			local text = if fist == it.id
 				then "TAKE OFF"
 				elseif have then "EQUIP"
+				elseif it.pass then "🎫 PASS"
 				else Format.noodles(Progression.itemPrice(it, zone()))
 			row(body, order, it.emoji .. " " .. it.name, it.desc, text, true, function()
 				if have then

@@ -72,6 +72,10 @@ function Pets.buy(player: any, id: any): string?
 	if p.Owned[id] then
 		return "owned"
 	end
+	if pet.exclusive then
+		Net.notice(player, "🎫 " .. pet.name .. " comes from the Prison Pass!", "info")
+		return "pass only"
+	end
 	if recordZone(s) < pet.zone then
 		Net.notice(player, string.format("Reach zone %d to get the %s!", pet.zone, pet.name), "info")
 		return "locked"

@@ -534,6 +534,10 @@ function Market.buy(player: Player, shop: string, id: string): string?
 		Market.equip(player, id)
 		return nil
 	end
+	if item.pass then
+		Net.notice(player, "🎫 Earn it on the Prison Pass!", "info")
+		return "pass only"
+	end
 	local price = Progression.itemPrice(item, s.data.Zone)
 	if s.data.Noodles < price then
 		Net.notice(player, "Not enough Noodles 🍜", "bad")

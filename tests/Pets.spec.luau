@@ -20,8 +20,10 @@ return function()
 		assert(not seen[p.id], "unique pet id " .. p.id)
 		seen[p.id] = true
 		assert(Pets.perk(p.id, Config.MaxLevel) > Pets.perk(p.id, 1), "perk grows: " .. p.id)
-		assert(Pets.price(p.id) > lastPrice, "pets get pricier down the list: " .. p.id)
-		lastPrice = Pets.price(p.id)
+		if not p.exclusive then
+			assert(Pets.price(p.id) > lastPrice, "pets get pricier down the list: " .. p.id)
+			lastPrice = Pets.price(p.id)
+		end
 		assert(Pets.perkText(p.id, 1) ~= "", "perk text: " .. p.id)
 		if p.perk ~= "dig" and p.perk ~= "gold" then
 			assert(Pets.perk(p.id, Config.MaxLevel) <= 0.5, "no runaway perks: " .. p.id)

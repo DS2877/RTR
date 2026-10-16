@@ -26,6 +26,8 @@ function Rewards.today(): number
 	return os.time() // 86400
 end
 
+Rewards.onDaily = nil :: ((player: Player, streak: number) -> ())?
+
 -- Returns the Noodles given (0 = already claimed today).
 function Rewards.daily(player: Player, day: number?): number
 	local s = State.get(player)
@@ -50,6 +52,9 @@ function Rewards.daily(player: Player, day: number?): number
 		text ..= " + 🧨"
 	end
 	Net.fire(player, Remotes.Names.Reward, "daily", text)
+	if Rewards.onDaily then
+		Rewards.onDaily(player, d.Streak)
+	end
 	return amount
 end
 

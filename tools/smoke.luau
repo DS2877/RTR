@@ -74,6 +74,7 @@ local Events = req(Services, "Events")
 local Market = req(Services, "Market")
 local Crew = req(Services, "Crew")
 local PetService = req(Services, "Pets")
+local PassService = req(Services, "Pass")
 
 local sent: { { name: string, args: { any } } } = {}
 Net.sink = function(_player: any, name: string, args: { any })
@@ -137,6 +138,7 @@ step("Market.start", function()
 end)
 step("Crew.start", Crew.start)
 step("Pets.start", PetService.start)
+step("Pass.start", PassService.start)
 DayNight.riot = Events.riot
 Events.onRiot = DayNight.setRiot
 Events.phase = DayNight.phase
@@ -656,6 +658,54 @@ do
 	s.data.Pets = { Owned = {}, Equipped = {} }
 	s.data.Zone, s.data.Noodles = 1, 0
 	s.lastHit = nil
+end
+
+-- ===== PRISON PASS =====
+do
+	local PassConfig = req(Config, "Pass")
+	check("pass: exclusive pet not for sale", PetService.buy(fake, "Jailbird") ~= nil)
+	s.data.Pass = nil
+	check("pass: tier 1 locked at 0 XP", PassService.claim(fake, 1, false) == "locked")
+	local tiers = count("PassTier")
+	PassService.addXp(fake, PassConfig.TierXp * 2)
+	check("pass: tier up", count("PassTier") > tiers and s.data.Pass.Xp >= PassConfig.TierXp * 2, s.data.Pass)
+	s.data.Noodles = 0
+	check(
+		"pass: claim tier 1",
+		PassService.claim(fake, 1, false) == nil and s.data.Noodles > 0,
+		s.data.Noodles
+	)
+	check("pass: claim twice", PassService.claim(fake, 1, false) == "claimed")
+	check("pass: premium locked", PassService.claim(fake, 1, true) == "not premium")
+	check(
+		"pass: bad args",
+		PassService.claim(fake, 1.5, false) ~= nil and PassService.claim(fake, "1", false) ~= nil
+	)
+	PassService.grantPremium(fake)
+	local dyn = s.data.Dynamite
+	check("pass: premium claim", PassService.claim(fake, 2, true) == nil and s.data.Dynamite > dyn)
+	-- blocks give XP
+	local xp = s.data.Pass.Xp
+	PassService.countBlocks(fake, PassConfig.Xp.BlocksPerXp * 3)
+	check("pass: blocks give XP", s.data.Pass.Xp > xp, s.data.Pass.Xp - xp)
+	-- the last tier's exclusives
+	s.data.Pass.Xp = PassConfig.TierXp * #PassConfig.Tiers
+	check(
+		"pass: free fist",
+		PassService.claim(fake, #PassConfig.Tiers, false) == nil and s.data.Uniforms.Spark == true
+	)
+	check(
+		"pass: jailbird",
+		PassService.claim(fake, #PassConfig.Tiers, true) == nil and s.data.Pets.Owned.Jailbird ~= nil
+	)
+	check(
+		"pass: pass item not for sale",
+		Market.buy(fake, "Laundry", "Riot") ~= nil and not s.data.Uniforms.Riot
+	)
+	s.data.Pass = nil
+	s.data.Pets = { Owned = {}, Equipped = {} }
+	s.data.Uniforms = {}
+	s.data.Noodles, s.data.Dynamite = 0, 0
 end
 
 -- ===== CREW: a guest digs in the host's tunnel =====

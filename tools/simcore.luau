@@ -196,7 +196,8 @@ local function run(passes: boolean): Result
 				if not bestTrack or bestCost > noodles then
 					for _, p in PetConfig.List do
 						local zoneOk = reached[p.zone] ~= nil
-						local useful = p.perk == "power" or p.perk == "dig" or p.perk == "value"
+						local useful = (p.perk == "power" or p.perk == "dig" or p.perk == "value")
+							and not p.exclusive
 						if zoneOk and useful and petXp[p.id] == nil and Pets.price(p.id) <= noodles * 0.5 then
 							noodles -= Pets.price(p.id)
 							petXp[p.id] = 0

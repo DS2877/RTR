@@ -17,6 +17,7 @@ local Net = require(script.Parent.Parent.Net)
 local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Stats = require(script.Parent.Stats)
 local Loot = require(script.Parent.Loot)
+local Pass = require(script.Parent.Pass)
 
 local Product = {}
 
@@ -75,6 +76,8 @@ function Product.grant(player: Player, key: string): boolean
 	elseif key == "InstantEmpty" then
 		local pay = Loot.dumpAnywhere(player)
 		Net.notice(player, "💨 Backpack emptied: +" .. Format.noodles(pay), "cash")
+	elseif key == "PrisonPass" then
+		Pass.grantPremium(player)
 	else
 		return false
 	end

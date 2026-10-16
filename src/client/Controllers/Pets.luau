@@ -233,6 +233,36 @@ BUILD.Parrot = function(m, r)
 	)
 	return true
 end
+-- the Prison Pass bird: black-and-white stripes, a tiny ball and chain
+BUILD.Jailbird = function(m, r)
+	bird(
+		m,
+		r,
+		Color3.fromRGB(240, 240, 236),
+		Color3.fromRGB(30, 30, 34),
+		Color3.fromRGB(250, 170, 40),
+		Color3.fromRGB(30, 30, 34)
+	)
+	for _, y in { -0.12, 0.12 } do
+		blob(m, r, Vector3.new(0.74, 0.1, 1.02), CFrame.new(0, y, 0), Color3.fromRGB(30, 30, 34))
+	end
+	blob(
+		m,
+		r,
+		Vector3.new(0.26, 0.26, 0.26),
+		CFrame.new(0.3, -0.62, 0.35),
+		Color3.fromRGB(60, 60, 66),
+		Enum.Material.Metal
+	)
+	stick(
+		m,
+		r,
+		Vector3.new(0.05, 0.4, 0.05),
+		CFrame.new(0.2, -0.4, 0.2) * CFrame.Angles(0.4, 0, 0.5),
+		Color3.fromRGB(150, 150, 160)
+	)
+	return true
+end
 BUILD.Badger = function(m, r)
 	local fur = Color3.fromRGB(46, 46, 50)
 	blob(m, r, Vector3.new(0.95, 0.62, 1.45), CFrame.new(0, 0.38, 0), fur)
@@ -513,6 +543,10 @@ local function buildPanel(): Panel.Panel
 				action = function()
 					equip:FireServer(pet.id, not isOut)
 				end
+			elseif pet.exclusive then
+				text = "🎫 PASS"
+				color = Color3.fromRGB(128, 128, 128)
+				action = nil
 			elseif (d.zone or 1) < pet.zone then
 				text = "🔒 Zone " .. pet.zone
 				color = Color3.fromRGB(128, 128, 128)

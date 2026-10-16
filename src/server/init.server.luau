@@ -39,6 +39,7 @@ local Tutorial = require(Services.Tutorial)
 local Breakout = require(Services.Breakout)
 local Crew = require(Services.Crew)
 local Pets = require(Services.Pets)
+local Pass = require(Services.Pass)
 
 Remotes.setup()
 
@@ -68,6 +69,34 @@ Escape.start()
 Breakout.start()
 Crew.start()
 Pets.start()
+Pass.start()
+-- PRISON PASS XP from everything you do
+Missions.onClaim = function(player, index)
+	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
+	Pass.addXp(player, if index == 4 then PassCfg.Xp.MissionBonus else PassCfg.Xp.Mission)
+end
+Rewards.onDaily = function(player)
+	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
+	Pass.addXp(player, PassCfg.Xp.Daily)
+end
+Dig.onBoss = function(player)
+	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
+	Pass.addXp(player, PassCfg.Xp.Vault)
+end
+Breakout.onFinish = function(player, medal)
+	if medal ~= "" then
+		local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
+		Pass.addXp(player, PassCfg.Xp.Breakout)
+	end
+end
+-- exclusive rewards show up right away (uniform / fists re-render, a new cellmate)
+Pass.onReward = function(player, kind)
+	if kind == "uniform" or kind == "fist" then
+		Market.sync(player)
+	elseif kind == "pet" then
+		Pets.sync(player)
+	end
+end
 Crew.canVisit = function()
 	local phase = DayNight.phase()
 	return phase == "Day" or phase == "RollCall"
@@ -149,6 +178,7 @@ Dig.onBroken = function(player, broken)
 	Tutorial.did(player, "Punch")
 	Missions.count(player, "Blocks", #broken)
 	TopDog.countBlocks(player, #broken)
+	Pass.countBlocks(player, #broken)
 end
 Dig.onCrit = function(player)
 	Missions.count(player, "Crits", 1)
@@ -156,8 +186,10 @@ end
 Dig.onDeeper = function(player, layers)
 	Missions.count(player, "Depth", layers)
 end
-Dig.onGold = function(player)
+Dig.onGold = function(player, kind)
 	Missions.count(player, "Gold", 1)
+	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
+	Pass.addXp(player, PassCfg.Xp.Gold * (if kind == "jackpot" then 10 else 1))
 end
 Dig.onCombo = function(player, hits)
 	if hits % 5 == 0 then -- the goals are multiples of 5: no mission sync on every punch
@@ -243,6 +275,7 @@ local function onPlayerAdded(player: Player)
 	Tutorial.onJoin(player)
 	Missions.sync(player)
 	Pets.sync(player)
+	Pass.sync(player)
 	player:SetAttribute("JoinedAt", os.time())
 	Market.renderDecor(player)
 	Market.sync(player)
@@ -275,6 +308,7 @@ local function leave(player: Player)
 	Gym.onLeaving(player)
 	Breakout.leaving(player)
 	Crew.onLeaving(player)
+	Pass.onLeaving(player)
 	TopDog.onLeaving(player)
 	Events.onLeaving(player)
 	Market.clearRender(player)
