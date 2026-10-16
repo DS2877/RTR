@@ -696,6 +696,7 @@ function Dressing.dress(prison: Instance, cells: { any })
 	local common = prison:FindFirstChild("CommonRoom") :: Instance
 	Interior.messHall(common)
 	Interior.commonRoom(common)
+	Interior.yard(prison)
 	yard(prison)
 	landscape(prison)
 end

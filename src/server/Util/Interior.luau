@@ -759,4 +759,372 @@ function Interior.commonRoom(common: Instance)
 	mopBucket(d, Vector3.new(cr.x - 14, 0.04, z1 - 4))
 end
 
+-- ===== Yard =====
+
+local function picnicTable(parent: Instance, at: Vector3)
+	local wood = Color3.fromRGB(122, 92, 62)
+	p(
+		parent,
+		"PicnicTop",
+		Vector3.new(8, 0.4, 3),
+		CFrame.new(at + Vector3.new(0, 3, 0)),
+		wood,
+		Enum.Material.WoodPlanks
+	)
+	for _, dz in { -2.4, 2.4 } do
+		p(
+			parent,
+			"PicnicBench",
+			Vector3.new(8, 0.3, 1.1),
+			CFrame.new(at + Vector3.new(0, 1.8, dz)),
+			wood,
+			Enum.Material.WoodPlanks
+		)
+	end
+	for _, dx in { -3.2, 3.2 } do
+		p(
+			parent,
+			"PicnicLeg",
+			Vector3.new(0.4, 2.8, 5.4),
+			CFrame.new(at + Vector3.new(dx, 1.4, 0)),
+			STEEL,
+			Enum.Material.Metal
+		)
+	end
+end
+
+local function patch(parent: Instance, at: Vector3, size: Vector3, yaw: number)
+	p(
+		parent,
+		"Weeds",
+		size,
+		CFrame.new(at) * CFrame.Angles(0, yaw, 0),
+		Color3.fromRGB(78, 104, 58),
+		Enum.Material.Grass,
+		{
+			CanCollide = false,
+		}
+	)
+end
+
+function Interior.yard(prison: Instance)
+	local yardFolder = prison:FindFirstChild("Yard") or prison
+	local d = Instance.new("Folder")
+	d.Name = "YardDetails"
+	d.Parent = yardFolder
+	local y = World.Yard
+	local x0, x1 = y.x - y.sx / 2, y.x + y.sx / 2
+	local z0, z1 = y.z - y.sz / 2, y.z + y.sz / 2
+	-- picnic area between the court and the gym
+	for i, x in { x0 + 16, x0 + 32, x0 + 48 } do
+		picnicTable(d, Vector3.new(x, 0, 27 + (i % 2) * 4))
+	end
+	-- the burn barrel with benches around it (a warm light at night)
+	local bx, bz = x0 + 58, z0 + 16
+	can(d, "BurnBarrel", Vector3.new(bx, 0, bz), 3.2, 2.4, Color3.fromRGB(70, 50, 40))
+	local fireHolder = p(
+		d,
+		"BurnFire",
+		Vector3.new(1.6, 0.2, 1.6),
+		CFrame.new(bx, 3.3, bz),
+		Color3.fromRGB(40, 30, 25),
+		Enum.Material.Slate,
+		{
+			CanCollide = false,
+		}
+	)
+	local fire = Instance.new("Fire")
+	fire.Size = 4
+	fire.Heat = 7
+	fire.Color = Color3.fromRGB(255, 140, 40)
+	fire.SecondaryColor = Color3.fromRGB(255, 220, 120)
+	fire.Parent = fireHolder
+	local glow = Instance.new("PointLight")
+	glow.Color = Color3.fromRGB(255, 150, 70)
+	glow.Range = 22
+	glow.Brightness = 1.4
+	glow.Shadows = true
+	glow.Parent = fireHolder
+	for k = 0, 2 do
+		local a = k / 3 * math.pi * 2 + 0.4
+		local cf = CFrame.new(bx + math.cos(a) * 6, 0, bz + math.sin(a) * 6)
+			* CFrame.Angles(0, -a + math.pi / 2, 0)
+		p(
+			d,
+			"BenchSeat",
+			Vector3.new(5, 0.4, 1.6),
+			cf * CFrame.new(0, 1.8, 0),
+			Color3.fromRGB(110, 84, 58),
+			Enum.Material.WoodPlanks
+		)
+		for _, dx in { -1.8, 1.8 } do
+			p(
+				d,
+				"BenchLeg",
+				Vector3.new(0.4, 1.6, 1.2),
+				cf * CFrame.new(dx, 0.8, 0),
+				STEEL,
+				Enum.Material.Metal
+			)
+		end
+	end
+	-- the prison garden (raised bed, dirt, plants, a sign)
+	local gx, gz = x1 - 46, z0 + 14
+	local border = Color3.fromRGB(110, 80, 52)
+	box(
+		d,
+		"GardenEdge",
+		Vector3.new(gx - 9, 0, gz - 6),
+		Vector3.new(gx + 9, 1, gz - 5.4),
+		border,
+		Enum.Material.Wood
+	)
+	box(
+		d,
+		"GardenEdge",
+		Vector3.new(gx - 9, 0, gz + 5.4),
+		Vector3.new(gx + 9, 1, gz + 6),
+		border,
+		Enum.Material.Wood
+	)
+	box(
+		d,
+		"GardenEdge",
+		Vector3.new(gx - 9, 0, gz - 5.4),
+		Vector3.new(gx - 8.4, 1, gz + 5.4),
+		border,
+		Enum.Material.Wood
+	)
+	box(
+		d,
+		"GardenEdge",
+		Vector3.new(gx + 8.4, 0, gz - 5.4),
+		Vector3.new(gx + 9, 1, gz + 5.4),
+		border,
+		Enum.Material.Wood
+	)
+	box(
+		d,
+		"GardenDirt",
+		Vector3.new(gx - 8.4, 0, gz - 5.4),
+		Vector3.new(gx + 8.4, 0.8, gz + 5.4),
+		Color3.fromRGB(78, 56, 40),
+		Enum.Material.Ground
+	)
+	for ix = 0, 5 do
+		for iz = 0, 2 do
+			local px, pz = gx - 6.5 + ix * 2.6, gz - 3.4 + iz * 3.4
+			p(
+				d,
+				"Plant",
+				Vector3.new(1.4, 1.4, 1.4),
+				CFrame.new(px, 1.5, pz),
+				Color3.fromRGB(60, 130, 50),
+				Enum.Material.Grass,
+				{
+					Shape = Enum.PartType.Ball,
+					CanCollide = false,
+				}
+			)
+			if (ix + iz) % 2 == 0 then
+				p(
+					d,
+					"Tomato",
+					Vector3.new(0.4, 0.4, 0.4),
+					CFrame.new(px + 0.45, 1.7, pz - 0.5),
+					Color3.fromRGB(210, 40, 30),
+					Enum.Material.SmoothPlastic,
+					{
+						Shape = Enum.PartType.Ball,
+						CanCollide = false,
+					}
+				)
+			end
+		end
+	end
+	local gardenSign = p(
+		d,
+		"GardenSign",
+		Vector3.new(6, 2, 0.2),
+		CFrame.new(gx, 2.6, gz - 6.8),
+		Color3.fromRGB(230, 222, 196),
+		Enum.Material.Wood
+	)
+	Build.sign(
+		gardenSign,
+		Enum.NormalId.Front,
+		"PRISON GARDEN\nDO NOT DIG HERE",
+		Color3.fromRGB(60, 40, 30),
+		Color3.fromRGB(230, 222, 196)
+	)
+	p(
+		d,
+		"GardenSignPost",
+		Vector3.new(0.3, 2, 0.3),
+		CFrame.new(gx, 0.8, gz - 6.8),
+		border,
+		Enum.Material.Wood
+	)
+	can(d, "WateringCan", Vector3.new(gx + 10.5, 0, gz - 3), 1, 1, Color3.fromRGB(70, 140, 90))
+	-- laundry line with orange jumpsuits drying
+	local lx0, lx1, lz = x0 + 20, x0 + 44, z0 + 8
+	for _, x in { lx0, lx1 } do
+		p(d, "LinePole", Vector3.new(0.4, 8, 0.4), CFrame.new(x, 4, lz), STEEL, Enum.Material.Metal)
+	end
+	p(
+		d,
+		"Line",
+		Vector3.new(lx1 - lx0, 0.08, 0.08),
+		CFrame.new((lx0 + lx1) / 2, 7.6, lz),
+		Color3.fromRGB(220, 220, 214),
+		Enum.Material.Fabric,
+		{
+			CanCollide = false,
+		}
+	)
+	for k = 0, 4 do
+		local x = lx0 + 3.5 + k * 4.2
+		local c = if k == 2 then Color3.fromRGB(70, 90, 130) else Color3.fromRGB(214, 104, 34)
+		p(
+			d,
+			"Jumpsuit",
+			Vector3.new(2.2, 2.2, 0.1),
+			CFrame.new(x, 6.5, lz),
+			c,
+			Enum.Material.Fabric,
+			{ CanCollide = false }
+		)
+		for _, dx in { -0.55, 0.55 } do
+			p(
+				d,
+				"JumpsuitLeg",
+				Vector3.new(0.9, 1.8, 0.1),
+				CFrame.new(x + dx, 4.5, lz),
+				c,
+				Enum.Material.Fabric,
+				{ CanCollide = false }
+			)
+		end
+	end
+	-- a payphone on the west fence
+	local phone = CFrame.new(x0 + 3, 0, 34) * CFrame.Angles(0, -math.pi / 2, 0)
+	p(
+		d,
+		"PhoneBooth",
+		Vector3.new(3, 7, 0.3),
+		phone * CFrame.new(0, 3.5, 0),
+		Color3.fromRGB(60, 64, 70),
+		Enum.Material.Metal
+	)
+	p(
+		d,
+		"PhoneHood",
+		Vector3.new(3.2, 0.3, 1.6),
+		phone * CFrame.new(0, 7, -0.7),
+		Color3.fromRGB(60, 64, 70),
+		Enum.Material.Metal
+	)
+	p(
+		d,
+		"Phone",
+		Vector3.new(1, 1.6, 0.5),
+		phone * CFrame.new(0, 4.4, -0.35),
+		Color3.fromRGB(30, 30, 34),
+		Enum.Material.SmoothPlastic
+	)
+	local phoneSign = p(
+		d,
+		"PhoneSign",
+		Vector3.new(2.6, 0.8, 0.05),
+		phone * CFrame.new(0, 6.2, -0.2),
+		Color3.fromRGB(40, 90, 160)
+	)
+	Build.sign(
+		phoneSign,
+		Enum.NormalId.Front,
+		"COLLECT CALLS ONLY",
+		Color3.new(1, 1, 1),
+		Color3.fromRGB(40, 90, 160)
+	)
+	-- tires and cones by the court
+	for k = 0, 2 do
+		can(
+			d,
+			"Tire",
+			Vector3.new(x0 + 15, k * 0.9, -30),
+			0.9,
+			2.6,
+			Color3.fromRGB(30, 30, 32),
+			Enum.Material.Rubber
+		)
+	end
+	can(
+		d,
+		"Tire",
+		Vector3.new(x0 + 18.5, 0, -27.5),
+		0.9,
+		2.6,
+		Color3.fromRGB(30, 30, 32),
+		Enum.Material.Rubber
+	)
+	for k = 0, 4 do
+		local cx = x0 + 40 + k * 6
+		p(
+			d,
+			"Cone",
+			Vector3.new(0.9, 1.6, 0.9),
+			CFrame.new(cx, 0.8, -22),
+			Color3.fromRGB(240, 120, 30),
+			Enum.Material.SmoothPlastic,
+			{
+				CanCollide = false,
+			}
+		)
+		p(
+			d,
+			"ConeStripe",
+			Vector3.new(0.95, 0.25, 0.95),
+			CFrame.new(cx, 1.05, -22),
+			Color3.fromRGB(240, 240, 240),
+			Enum.Material.SmoothPlastic,
+			{
+				CanCollide = false,
+			}
+		)
+	end
+	-- the painted "RUBBLE DUMP" box on the ground
+	local mark = p(
+		d,
+		"DumpMark",
+		Vector3.new(14, 0.04, 4),
+		CFrame.new(x1 - 22, 0.03, -20),
+		Color3.fromRGB(70, 70, 74),
+		Enum.Material.Pavement,
+		{
+			CanCollide = false,
+		}
+	)
+	Build.sign(
+		mark,
+		Enum.NormalId.Top,
+		"RUBBLE DUMP ▼",
+		Color3.fromRGB(235, 200, 60),
+		Color3.fromRGB(70, 70, 74)
+	)
+	-- weeds along the edges
+	local spots = {
+		{ x0 + 4, z0 + 4, 10, 4, 0.3 },
+		{ x0 + 30, z0 + 3, 14, 3, -0.1 },
+		{ x0 + 80, z0 + 3, 9, 3, 0.2 },
+		{ x0 + 3, -50, 4, 12, 0 },
+		{ x0 + 3, 60, 4, 10, 0.1 },
+		{ x1 - 60, z1 - 4, 12, 4, -0.2 },
+		{ x0 + 70, 20, 6, 4, 0.6 },
+		{ x0 + 110, -60, 8, 5, -0.4 },
+	}
+	for _, sp in spots do
+		patch(d, Vector3.new(sp[1], 0.03, sp[2]), Vector3.new(sp[3], 0.06, sp[4]), sp[5])
+	end
+end
+
 return Interior

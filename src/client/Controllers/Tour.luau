@@ -118,7 +118,7 @@ local STOPS: { Stop } = {
 	},
 	{
 		title = "🏃 Escape",
-		body = "Dig down through 10 zones to the very bottom and ESCAPE. Good luck, inmate!",
+		body = "Dig through 10 zones to the bottom and ESCAPE. Tap 📋 Jobs for daily work that pays extra. Good luck!",
 		view = cellView(Vector3.new(0, 7, 12), Vector3.new(0, 4, -6)),
 	},
 }
