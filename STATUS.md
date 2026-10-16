@@ -187,6 +187,24 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Rundtur för nya spelare, inga pilar, lugnare varningar, levande Mess Hall
+- **Ingen pil eller stegruta under spelet längre:** guidepilen till dumpen och den gamla
+  steg-för-steg-rutan är borta.
+- **Rundtur första gången du spelar:** kameran åker runt och visar det viktiga – din vägg
+  (gräva), Rubble Dump, The Fence, Tool Crib, Commissary, gymmet, Mess Hall, natten/vakterna
+  och flykten – med ett smalt kort längst ner (titel, en mening, prickar, "Next ›" / "Skip").
+  Visas en gång (sparas i profilen). ADMIN → 🎬 Tour spelar den igen.
+- **Full ryggsäck tjatar inte:** varningen är ett litet mörkt chip med röd prick ("Backpack full
+  · dump it in the Yard") som syns i 5 s när läget ändras, inte vid varje slag. Servern skickar
+  varningen högst var 20:e sekund. Den stora röda remsan är borta.
+- **Mess Hall:** röd/kräm kakelgolv, målade nedre väggar med guldlist, sju fönster med galler och
+  dagsljus (dimmas på natten), takfläktar som snurrar, rör, brickor med gröt/mugg/bröd på alla
+  bord, brickställ, kök med kyl, spis och hyllor med burkar, ånga från grytorna, soptunnor,
+  hink + "CAUTION WET FLOOR", golvbrunnar, affischer ("NO SECONDS", "MYSTERY MEAT MONDAY" …),
+  klocka, ventiler, brandsläckare och en vakt vid dörren.
+- **Common Room:** anslagstavla med lappar ("LOST: SPOON", "MISSING: 1 WALL" …),
+  vattenfontän, brandsläckare, ventiler, golvbrunnar och städhink vid Mess Hall-dörren.
+
 ### Inspektion, säng, Mess Hall-dörren, banner, vaktbubbla, VIP
 - **Mer tid vid inspektion:** 15 sekunder (förut 5) från fotstegen till att vakten står vid dörren.
 - **Gömma sig är inte längre en skärmknapp:** gå fram till sängen och **håll** "Sleep" (1,2 s) för
@@ -398,7 +416,9 @@ köper nästa verktyg – det är tänkt så (som i andra simulatorspel), inte e
 16. Ljud/zoner: ha ljudet på. Slå på väggen (hör sprickorna stiga i ton), krossa flera i rad.
     ADMIN → Zone 4 (armeringsjärn), Zone 5 (rör), Zone 8 (kristaller), Zone 9 (lava) – gräv en bit
     och titta på väggarna och lyssna på bakgrundsljudet.
-17. Nytt: gräv med full ryggsäck (fortsätter, gruset blir liggande). I cellen: håll "Cover the
+17. Nytt konto/ADMIN → 🎬 Tour: följ rundturen (Next/Skip). Gå in i Mess Hall och titta runt.
+    Gräv med full ryggsäck: chipet syns en kort stund, inte vid varje slag.
+    Gräv med full ryggsäck (fortsätter, gruset blir liggande). I cellen: håll "Cover the
     hole" vid väggen och "Sleep" vid sängen – rör joysticken för att kliva upp. ADMIN → 👮 Inspect
     me: du har 15 s att täcka hålet och lägga dig. Gå in i Mess Hall. Titta på VIP-loungen. ADMIN → 💎 Gold rush / 🍜 Payday /
     🌋 Quake / 📦 Supply (gå ut i Yard och ta lådan).
