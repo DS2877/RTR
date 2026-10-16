@@ -430,8 +430,9 @@ local function punch(x: number, y: number, z: number, face: number): string?
 end
 
 -- crits are random: switch them off so hit counts are exact (restored after the dig tests)
-local critChance = World.CritChance;
-(World :: any).CritChance = 0
+local worldAny: any = World
+local critChance = worldAny.CritChance
+worldAny.CritChance = 0
 -- in front of the back wall (z = -2 is inside the cell)
 standAt(9, 1, -2)
 check("bad args rejected", punch(9.5, 1, 0, 6) == "bad args")
