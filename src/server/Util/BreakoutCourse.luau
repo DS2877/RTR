@@ -134,7 +134,7 @@ local function sewer(m: Model)
 	ladder.CFrame = at(95, 8, 0)
 	ladder.Color = RUST
 	ladder.Material = Enum.Material.CorrodedMetal
-	ladder.Style = Enum.Style.AlternateSupports
+	ladder.Style = Enum.Style.AlternatingSupports
 	ladder.Parent = m
 	local up =
 		Build.part(m, "UpSign", Vector3.new(0.2, 1.6, 4), at(95.85 - 1, 3, -4), Color3.fromRGB(230, 180, 40))
@@ -345,7 +345,7 @@ local function wall(m: Model)
 	ladder.CFrame = at(215, Y + 12, 0)
 	ladder.Color = RUST
 	ladder.Material = Enum.Material.CorrodedMetal
-	ladder.Style = Enum.Style.AlternateSupports
+	ladder.Style = Enum.Style.AlternatingSupports
 	ladder.Parent = m
 	-- razor wire on the outer edge: rings of wire
 	for z = -HW + 1, HW - 1, 2 do
