@@ -169,10 +169,17 @@ local builders: { [string]: (m: Model) -> () } = {
 				)
 			end
 		end
-		p(m, "Glass", Vector3.new(2.7, 5, 0.1), CFrame.new(-0.4, 3.7, -1.52), Color3.fromRGB(190, 220, 240), {
-			Material = Enum.Material.Glass,
-			Transparency = 0.55,
-		})
+		p(
+			m,
+			"Glass",
+			Vector3.new(2.7, 4.6, 0.1),
+			CFrame.new(-0.4, 3.5, -1.52),
+			Color3.fromRGB(190, 220, 240),
+			{
+				Material = Enum.Material.Glass,
+				Transparency = 0.55,
+			}
+		)
 		p(m, "Keypad", Vector3.new(0.8, 1.8, 0.12), CFrame.new(1.45, 4.3, -1.53), Color3.fromRGB(30, 30, 35))
 		for k = 0, 5 do
 			p(
