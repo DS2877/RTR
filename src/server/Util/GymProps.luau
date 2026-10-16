@@ -15,36 +15,58 @@ end
 
 local builders: { [string]: (m: Model) -> () } = {
 	Toilet = function(m)
+		-- a proper porcelain toilet: pedestal, bowl, seat with the lid up, tank, lid, handle
+		local function cyl(name: string, d: number, h: number, y: number, z: number, color: Color3)
+			return p(
+				m,
+				name,
+				Vector3.new(h, d, d),
+				CFrame.new(0, y, z) * CFrame.Angles(0, 0, math.pi / 2),
+				color,
+				{
+					Shape = Enum.PartType.Cylinder,
+					Material = Enum.Material.Marble,
+				}
+			)
+		end
+		cyl("Base", 1.2, 0.2, 0.1, 0.3, WHITE)
+		cyl("Pedestal", 1.05, 1.0, 0.7, 0.25, WHITE)
+		cyl("Bowl", 2.0, 0.75, 1.55, 0, WHITE)
+		cyl("BowlInside", 1.5, 0.06, 1.9, 0, Color3.fromRGB(150, 190, 210))
+		cyl("Seat", 2.12, 0.14, 2.0, 0, Color3.fromRGB(246, 246, 242))
 		p(
 			m,
-			"Base",
-			Vector3.new(1.4, 1.4, 1.8),
-			CFrame.new(0, 0.7, 0.2),
-			WHITE,
-			{ Material = Enum.Material.Marble }
+			"LidUp",
+			Vector3.new(1.9, 1.9, 0.14),
+			CFrame.new(0, 2.95, 0.95) * CFrame.Angles(math.rad(-12), 0, 0),
+			Color3.fromRGB(246, 246, 242),
+			{
+				Material = Enum.Material.SmoothPlastic,
+			}
 		)
-		p(
-			m,
-			"Bowl",
-			Vector3.new(2, 0.6, 2.4),
-			CFrame.new(0, 1.7, 0),
-			WHITE,
-			{ Material = Enum.Material.Marble }
-		)
-		p(m, "Seat", Vector3.new(2.1, 0.15, 2.5), CFrame.new(0, 2.08, 0), Color3.fromRGB(240, 240, 235))
 		p(
 			m,
 			"Tank",
-			Vector3.new(2.2, 2, 0.9),
-			CFrame.new(0, 2.6, 1.3),
+			Vector3.new(2.2, 1.9, 0.9),
+			CFrame.new(0, 2.85, 1.45),
 			WHITE,
 			{ Material = Enum.Material.Marble }
+		)
+		p(
+			m,
+			"TankLid",
+			Vector3.new(2.32, 0.16, 1.0),
+			CFrame.new(0, 3.88, 1.45),
+			Color3.fromRGB(240, 240, 238),
+			{
+				Material = Enum.Material.Marble,
+			}
 		)
 		p(
 			m,
 			"Handle",
-			Vector3.new(0.5, 0.15, 0.15),
-			CFrame.new(-0.9, 3.3, 0.8),
+			Vector3.new(0.5, 0.12, 0.12),
+			CFrame.new(-0.85, 3.4, 0.98),
 			STEEL,
 			{ Material = Enum.Material.Metal }
 		)
@@ -77,33 +99,99 @@ local builders: { [string]: (m: Model) -> () } = {
 		)
 	end,
 	Vending = function(m)
-		p(
-			m,
-			"Body",
-			Vector3.new(4, 7, 3),
-			CFrame.new(0, 3.5, 0),
-			Color3.fromRGB(170, 40, 40),
-			{ Material = Enum.Material.Metal }
-		)
-		p(m, "Glass", Vector3.new(2.6, 5, 0.2), CFrame.new(-0.4, 4, -1.5), Color3.fromRGB(180, 220, 240), {
-			Material = Enum.Material.Glass,
-			Transparency = 0.4,
+		-- a glowing snack machine: lit glass front with rows of snacks, a header, coin panel, tray
+		p(m, "Body", Vector3.new(4, 7, 3), CFrame.new(0, 3.5, 0), Color3.fromRGB(170, 40, 40), {
+			Material = Enum.Material.Metal,
 		})
+		p(m, "Trim", Vector3.new(4.1, 0.3, 3.1), CFrame.new(0, 7.0, 0), Color3.fromRGB(40, 40, 44), {
+			Material = Enum.Material.Metal,
+		})
+		local header = p(
+			m,
+			"Header",
+			Vector3.new(3.6, 0.9, 0.1),
+			CFrame.new(0, 6.35, -1.52),
+			Color3.fromRGB(255, 220, 90)
+		)
+		local hg = Instance.new("SurfaceGui")
+		hg.Face = Enum.NormalId.Front
+		hg.LightInfluence = 0
+		hg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		hg.PixelsPerStud = 40
+		hg.Parent = header
+		local ht = Instance.new("TextLabel")
+		ht.Size = UDim2.fromScale(1, 1)
+		ht.BackgroundColor3 = Color3.fromRGB(255, 210, 70)
+		ht.Text = "SNAX"
+		ht.Font = Enum.Font.GothamBlack
+		ht.TextScaled = true
+		ht.TextColor3 = Color3.fromRGB(150, 20, 20)
+		ht.Parent = hg
+		local back = p(
+			m,
+			"Inside",
+			Vector3.new(2.6, 4.8, 0.1),
+			CFrame.new(-0.4, 3.7, -1.1),
+			Color3.fromRGB(235, 235, 240)
+		)
+		local light = Instance.new("SurfaceLight")
+		light.Face = Enum.NormalId.Front
+		light.Range = 8
+		light.Brightness = 0.8
+		light.Color = Color3.fromRGB(230, 240, 255)
+		light.Parent = back
+		local colors = {
+			Color3.fromRGB(240, 190, 40),
+			Color3.fromRGB(60, 150, 220),
+			Color3.fromRGB(220, 60, 60),
+			Color3.fromRGB(90, 190, 90),
+			Color3.fromRGB(240, 120, 40),
+			Color3.fromRGB(160, 90, 200),
+		}
 		for row = 0, 3 do
-			for col = 0, 2 do
+			p(
+				m,
+				"Shelf",
+				Vector3.new(2.6, 0.08, 0.5),
+				CFrame.new(-0.4, 1.75 + row * 1.2, -1.25),
+				Color3.fromRGB(150, 150, 156),
+				{
+					Material = Enum.Material.Metal,
+				}
+			)
+			for col = 0, 3 do
 				p(
 					m,
 					"Snack",
-					Vector3.new(0.6, 0.8, 0.5),
-					CFrame.new(-1.3 + col * 0.9, 2.2 + row * 1.2, -1.2),
-					if (row + col) % 2 == 0
-						then Color3.fromRGB(240, 190, 40)
-						else Color3.fromRGB(60, 150, 220)
+					Vector3.new(0.5, 0.75, 0.35),
+					CFrame.new(-1.35 + col * 0.64, 2.17 + row * 1.2, -1.22),
+					colors[(row * 4 + col) % #colors + 1]
 				)
 			end
 		end
-		p(m, "Keypad", Vector3.new(0.8, 1.6, 0.2), CFrame.new(1.4, 4.4, -1.55), Color3.fromRGB(30, 30, 35))
-		p(m, "Slot", Vector3.new(2.6, 0.7, 0.2), CFrame.new(-0.4, 0.8, -1.55), Color3.fromRGB(20, 20, 22))
+		p(m, "Glass", Vector3.new(2.7, 5, 0.1), CFrame.new(-0.4, 3.7, -1.52), Color3.fromRGB(190, 220, 240), {
+			Material = Enum.Material.Glass,
+			Transparency = 0.55,
+		})
+		p(m, "Keypad", Vector3.new(0.8, 1.8, 0.12), CFrame.new(1.45, 4.3, -1.53), Color3.fromRGB(30, 30, 35))
+		for k = 0, 5 do
+			p(
+				m,
+				"Key",
+				Vector3.new(0.2, 0.2, 0.06),
+				CFrame.new(1.3 + (k % 2) * 0.3, 4.75 - math.floor(k / 2) * 0.32, -1.6),
+				Color3.fromRGB(200, 200, 204)
+			)
+		end
+		p(
+			m,
+			"CoinSlot",
+			Vector3.new(0.3, 0.12, 0.06),
+			CFrame.new(1.45, 3.7, -1.6),
+			Color3.fromRGB(230, 190, 60),
+			{ Material = Enum.Material.Metal }
+		)
+		p(m, "Slot", Vector3.new(2.6, 0.7, 0.12), CFrame.new(-0.4, 0.75, -1.53), Color3.fromRGB(20, 20, 22))
 	end,
 	Guard = function(m)
 		-- a guard asleep on a stretcher, snoring
