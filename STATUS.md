@@ -187,6 +187,29 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Kvalitetslyftet: riktiga figurer och detaljerade föremål överallt
+- **Riktiga avatarer för alla NPC:er:** vakter, kock, försäljare, besökare och medfångar är nu
+  riktiga R15-figurer med kläder från katalogen (vaktuniform med keps och bälte, kockrock och
+  kockmössa, orange fångdräkt med olika frisyrer och hudtoner). De har tomgångsanimation. De
+  patrullerande vakterna går med gånganimation och har en ficklampa i handen.
+- **Spelarna bär riktiga fångkläder** (skjorta + INMATE-byxor) över sin egen hudfärg och sina
+  accessoarer, i stället för orangemålade kroppsdelar.
+- **Cellen:** ny säng (stålram, madrass med kant, vikt filt, kudde), porslinstoalett med cistern
+  och spolknapp, ett riktigt handfat.
+- **Common Room:** runda fängelsebord i stål med fastsvetsade pallar (schack och kortspel), en
+  TV-hörna (tjock-TV på vagn med PRISON NEWS och nyhetsrad, VCR, antenner, två slitna soffor och
+  en matta).
+- **Affischer i papper** överallt: färgtoning, ram, lätt sned och fasttejpade.
+- **Smuts och skuggor** i alla rum: mörka band vid golv och tak, mörkare golvkanter.
+- **Yard:** buskar och träd i planteringar i stället för gröna bollar.
+- **Gymmet:** porslinstoalett att lyfta och en upplyst snacksautomat (SNAX, hyllor med snacks
+  bakom glas, knappsats och myntinkast). Samma automat står i Common Room.
+- **Testa på iPhone:** titta på vakterna (de ska gå och svänga med armarna) och på din egen
+  gubbe (orange skjorta och INMATE-byxor). Gå till TV-hörnan och borden i Common Room, och kolla
+  sängen och toaletten i cellen.
+- **Saknas:** flera gym-föremål (tvättmaskin, buss, skrivbord) och borden i Mess Hall är kvar i
+  den enklare stilen.
+
 ### Kritikergenomgången (hela spelet)
 Jag gick igenom hela spelet: kod, världen (renderad) och balansen. En separat granskning letade
 buggar. Åtgärdat:
