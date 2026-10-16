@@ -25,7 +25,6 @@ type Guard = {
 	light: SpotLight,
 	bubble: BillboardGui,
 	box: Frame,
-	tail: Frame,
 	text: TextLabel,
 	scale: UIScale,
 	shownAt: number,
@@ -83,55 +82,37 @@ local function build(i: number, parent: Instance): Guard
 	light.Shadows = true
 	light.Enabled = false
 	light.Parent = parts.Flashlight
-	-- speech bubble: a small translucent pill above the head (the world stays the focus)
+	-- speech bubble: a small translucent sign floating over the head, sized in studs (it shrinks
+	-- with distance like the guard does, so it never covers the screen)
 	local bubble = Instance.new("BillboardGui")
-	bubble.Size = UDim2.fromOffset(210, 60)
-	bubble.StudsOffset = Vector3.new(0, 2.6, 0)
-	bubble.MaxDistance = 55
+	bubble.Size = UDim2.new(9, 0, 1.9, 0)
+	bubble.StudsOffset = Vector3.new(0, 2.2, 0)
+	bubble.MaxDistance = 45
 	bubble.LightInfluence = 0
 	bubble.Enabled = false
 	bubble.Parent = parts.Head
 	local box = Instance.new("Frame")
-	box.AnchorPoint = Vector2.new(0.5, 1)
-	box.Position = UDim2.new(0.5, 0, 1, -5)
-	box.Size = UDim2.fromOffset(196, 0)
-	box.AutomaticSize = Enum.AutomaticSize.Y
+	box.Size = UDim2.fromScale(1, 1)
 	box.BackgroundColor3 = Color3.fromRGB(16, 17, 22)
-	box.BackgroundTransparency = 0.35
+	box.BackgroundTransparency = 0.4
+	box.BorderSizePixel = 0
 	box.Parent = bubble
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 9)
+	corner.CornerRadius = UDim.new(0.3, 0)
 	corner.Parent = box
-	local pad = Instance.new("UIPadding")
-	pad.PaddingTop = UDim.new(0, 5)
-	pad.PaddingBottom = UDim.new(0, 6)
-	pad.PaddingLeft = UDim.new(0, 9)
-	pad.PaddingRight = UDim.new(0, 9)
-	pad.Parent = box
 	local scale = Instance.new("UIScale")
 	scale.Parent = box
-	-- a little tail under the pill
-	local tail = Instance.new("Frame")
-	tail.AnchorPoint = Vector2.new(0.5, 0.5)
-	tail.Position = UDim2.new(0.5, 0, 1, -5)
-	tail.Size = UDim2.fromOffset(8, 8)
-	tail.Rotation = 45
-	tail.BorderSizePixel = 0
-	tail.BackgroundColor3 = box.BackgroundColor3
-	tail.BackgroundTransparency = box.BackgroundTransparency
-	tail.Parent = bubble
 	local short = string.match(spec.name, "(%S+)$") or spec.name
 	local text = Instance.new("TextLabel")
 	text.BackgroundTransparency = 1
-	text.Size = UDim2.new(1, 0, 0, 0)
-	text.AutomaticSize = Enum.AutomaticSize.Y
+	text.AnchorPoint = Vector2.new(0.5, 0.5)
+	text.Position = UDim2.fromScale(0.5, 0.5)
+	text.Size = UDim2.fromScale(0.92, 0.78)
 	text.Font = Enum.Font.GothamMedium
-	text.TextSize = 12
+	text.TextScaled = true
 	text.TextWrapped = true
 	text.RichText = true
 	text.TextColor3 = Color3.fromRGB(236, 238, 244)
-	text.TextXAlignment = Enum.TextXAlignment.Left
-	text.TextYAlignment = Enum.TextYAlignment.Top
 	text.Text = ""
 	text:SetAttribute("Who", short)
 	text.Parent = box
@@ -143,7 +124,6 @@ local function build(i: number, parent: Instance): Guard
 		light = light,
 		bubble = bubble,
 		box = box,
-		tail = tail,
 		text = text,
 		scale = scale,
 		shownAt = 0,
@@ -170,22 +150,13 @@ function GuardController.start()
 		end
 		local who = tostring(g.text:GetAttribute("Who") or "")
 		local safe = string.gsub(string.gsub(string.gsub(text, "&", "&amp;"), "<", "&lt;"), ">", "&gt;")
-		g.text.Text = '<font color="#8FB4FF" weight="bold">' .. who .. "</font>  " .. safe
+		g.text.Text = '<font color="#8FB4FF"><b>' .. who .. ":</b></font> " .. safe
 		g.text.TextTransparency = 0
-		g.box.BackgroundTransparency = 0.35
-		g.tail.BackgroundTransparency = 0.35
+		g.box.BackgroundTransparency = 0.4
 		g.bubble.Enabled = true
 		g.shownAt = os.clock()
-		g.scale.Scale = 0.85
+		g.scale.Scale = 0.9
 		TweenService:Create(g.scale, TweenInfo.new(0.2, Enum.EasingStyle.Quint), { Scale = 1 }):Play()
-		-- typed out, like they're making it up on the spot
-		g.text.MaxVisibleGraphemes = utf8.len(who) or 0
-		local total = (utf8.len(who) or 0) + 2 + (utf8.len(text) or #text)
-		TweenService:Create(
-			g.text,
-			TweenInfo.new(math.min(1.2, total * 0.022), Enum.EasingStyle.Linear),
-			{ MaxVisibleGraphemes = total }
-		):Play()
 	end
 	if said then
 		for i in Config.Guards do
@@ -247,8 +218,7 @@ function GuardController.start()
 					-- fade out
 					local k = (age - Config.BubbleSeconds) / 0.4
 					g.text.TextTransparency = k
-					g.box.BackgroundTransparency = 0.35 + 0.65 * k
-					g.tail.BackgroundTransparency = g.box.BackgroundTransparency
+					g.box.BackgroundTransparency = 0.4 + 0.6 * k
 				end
 			end
 		end

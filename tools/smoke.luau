@@ -292,6 +292,26 @@ do
 	check("no z-fighting faces", #hits == 0, hits[1])
 end
 
+-- doorways stay walkable: floor under them, nothing solid in them
+do
+	local cr = World.CommonRoom
+	local doors = {
+		{ "mess hall door", Vector3.new(cr.x, 0, cr.z + cr.sz / 2 + 2), Vector3.new(10, 10, 6) },
+		{ "yard door", Vector3.new(cr.x - cr.sx / 2 - 2, 0, 0), Vector3.new(6, 10, 20) },
+	}
+	for _, d in doors do
+		local hit = workspace:Raycast(d[2] + Vector3.new(0, 5, 0), Vector3.new(0, -8, 0))
+		check(d[1] .. " has a floor", hit ~= nil and math.abs(hit.Position.Y) < 0.6, hit and hit.Position)
+		local blockers = {}
+		for _, p in workspace:GetPartBoundsInBox(CFrame.new(d[2] + Vector3.new(0, 6, 0)), d[3]) do
+			if p.CanCollide and p.Transparency < 1 then
+				table.insert(blockers, p:GetFullName())
+			end
+		end
+		check(d[1] .. " is clear", #blockers == 0, blockers[1])
+	end
+end
+
 -- ===== world dump (CI uploads it as an artifact; tools/view renders it so we can SEE the prison) =====
 local worldDump = ""
 do

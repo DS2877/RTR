@@ -264,35 +264,43 @@ function Moments.start()
 	local decorBtn = UI.slot(hotbar, "Decor", "💡", "Decor", 58)
 	decorBtn.LayoutOrder = 2
 	decorBtn.Visible = false
-	-- your cell as a hideout (Services/Hideout): roll the tapestry over the hole, sleep in bed
-	local coverBtn = UI.slot(hotbar, "Cover", "🖼️", "Cover", 58)
-	coverBtn.LayoutOrder = 3
-	coverBtn.Visible = false
-	local sleepBtn = UI.slot(hotbar, "Sleep", "🛏️", "Sleep", 58)
-	sleepBtn.LayoutOrder = 4
-	sleepBtn.Visible = false
-	coverBtn.Activated:Connect(function()
-		Sound.play("Click")
-		Remotes.get(Remotes.Names.Cover):FireServer()
-	end)
-	sleepBtn.Activated:Connect(function()
-		Sound.play("Click")
-		Remotes.get(Remotes.Names.Sleep):FireServer()
-	end)
+	-- your cell as a hideout (Services/Hideout): the bed and the tapestry have hold-prompts; only
+	-- your own cell's are shown, labeled for what they'd do now
+	local function ownPrompts(): { ProximityPrompt }
+		local list = {}
+		local cells = workspace:FindFirstChild("Prison") and workspace.Prison:FindFirstChild("Cells")
+		if not cells then
+			return list
+		end
+		for _, d in cells:GetDescendants() do
+			if d:IsA("ProximityPrompt") and (d.Name == "SleepPrompt" or d.Name == "CoverPrompt") then
+				local model = d:FindFirstAncestorWhichIsA("Model")
+				while model and model:GetAttribute("Owner") == nil and model.Parent ~= cells do
+					model = model.Parent and model.Parent:FindFirstAncestorWhichIsA("Model")
+				end
+				d.Enabled = model ~= nil and model:GetAttribute("Owner") == player.UserId
+				table.insert(list, d)
+			end
+		end
+		return list
+	end
 	local function syncHideout()
 		local down = player:GetAttribute("CoverDown") == true
 		local hidden = player:GetAttribute("Hidden") == true
-		local coverLabel = coverBtn:FindFirstChild("Label") :: TextLabel
-		local sleepLabel = sleepBtn:FindFirstChild("Label") :: TextLabel
-		local sleepIcon = sleepBtn:FindFirstChild("Icon") :: TextLabel
-		coverLabel.Text = if down then "Uncover" else "Cover"
-		sleepLabel.Text = if hidden then "Get up" else "Sleep"
-		sleepIcon.Text = if hidden then "🚶" else "🛏️"
+		for _, pr in ownPrompts() do
+			if pr.Name == "SleepPrompt" then
+				pr.ActionText = if hidden then "Get up" else "Sleep"
+			else
+				pr.ActionText = if down then "Uncover the hole" else "Cover the hole"
+			end
+		end
 		if HUD.buttons then
 			-- no PUNCH from bed
 			HUD.buttons.Visible = not hidden and player:GetAttribute("Lifting") == nil
 		end
 	end
+	task.delay(3, syncHideout)
+	player:GetAttributeChangedSignal("Cell"):Connect(syncHideout)
 	player:GetAttributeChangedSignal("CoverDown"):Connect(syncHideout)
 	player:GetAttributeChangedSignal("Hidden"):Connect(syncHideout)
 	-- moving (joystick / jump) gets you out of bed
@@ -307,13 +315,6 @@ function Moments.start()
 			Remotes.get(Remotes.Names.Sleep):FireServer(false)
 		end
 	end)
-	local hideBtn = bigButton(
-		"Hide",
-		"🛏️ HIDE!",
-		Color3.fromRGB(120, 160, 255),
-		UDim2.new(0.5, 110, 1, -140),
-		Vector2.new(220, 58)
-	)
 	local bribeBtn = bigButton(
 		"Bribe",
 		"💰 BRIBE",
@@ -361,15 +362,8 @@ function Moments.start()
 	decorBtn.Activated:Connect(function()
 		decorPanel.toggle()
 	end)
-	hideBtn.Activated:Connect(function()
-		Remotes.get(Remotes.Names.Hide):FireServer()
-		hideBtn.Visible = false
-		bribeBtn.Visible = false
-		Sound.play("Click")
-	end)
 	bribeBtn.Activated:Connect(function()
 		Remotes.get(Remotes.Names.Bribe):FireServer()
-		hideBtn.Visible = false
 		bribeBtn.Visible = false
 	end)
 
@@ -392,9 +386,14 @@ function Moments.start()
 	Remotes.get(Remotes.Names.Inspect).OnClientEvent
 		:Connect(function(phase: string, seconds: number, snitched: boolean)
 			if phase == "warn" then
-				hideBtn.Visible = true
 				bribeBtn.Visible = snitched
-				HUD.toast("👮 FOOTSTEPS... a guard is coming! Get in bed + cover the hole: HIDE!", "bad")
+				HUD.toast(
+					string.format(
+						"👮 FOOTSTEPS... a guard is coming in %ds! Cover the hole and get in bed!",
+						seconds
+					),
+					"bad"
+				)
 				Sound.play("Full", 0.4, 0.6)
 				local cell = player:GetAttribute("Cell")
 				if typeof(cell) == "number" and cell > 0 then
@@ -422,7 +421,6 @@ function Moments.start()
 					end)
 				end
 			else
-				hideBtn.Visible = false
 				bribeBtn.Visible = false
 				if doorLight then
 					doorLight:Destroy()
@@ -574,6 +572,10 @@ function Moments.start()
 		for _, d in CollectionService:GetTagged("VIPDoor") do
 			(d :: BasePart).CanCollide = not vip
 		end
+		-- VIPs see the velvet rope unhooked
+		for _, d in CollectionService:GetTagged("VIPRope") do
+			(d :: BasePart).Transparency = if vip then 1 else 0
+		end
 	end
 	player:GetAttributeChangedSignal("VIP"):Connect(vipDoors)
 	vipDoors()
@@ -605,8 +607,6 @@ function Moments.start()
 		local label = dynamiteBtn:FindFirstChild("Label") :: TextLabel
 		label.Text = if typeof(n) == "number" and n > 0 then "x" .. n else "BUY"
 		decorBtn.Visible = inTunnel
-		coverBtn.Visible = mine
-		sleepBtn.Visible = mine and not inTunnel or player:GetAttribute("Hidden") == true
 		-- event timer
 		local ev = ReplicatedStorage:GetAttribute("Event")
 		local cfg = if typeof(ev) == "string" then Cycle.Events[ev] else nil

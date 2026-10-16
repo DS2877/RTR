@@ -54,7 +54,9 @@ local Cycle = {
 	-- guard inspections at night: every InspectEvery seconds a prisoner may get a visit
 	InspectEvery = 40,
 	InspectChance = 0.3, -- per check, per prisoner (snitched prisoners: always)
-	InspectWarning = 5, -- seconds to tap HIDE
+	InspectWarning = 15, -- seconds from the footsteps to the guard at your door: get in bed + cover up
+	SleepHold = 1.2, -- seconds to hold the bed prompt (getting under the blanket takes a moment)
+	CoverHold = 0.8, -- seconds to hold the tapestry prompt
 	BribeBlocks = 150, -- bribe = this many blocks of rubble from your deepest zone
 	SnitchBlocks = 300, -- snitching costs this many blocks of rubble from the TARGET's zone
 

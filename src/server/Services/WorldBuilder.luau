@@ -1078,6 +1078,15 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 	Build.box(parent, "Wall", Vector3.new(x0, 0, z1), Vector3.new(cr.x - mess, h, z1 + 4), C.wall)
 	Build.box(parent, "Wall", Vector3.new(cr.x + mess, 0, z1), Vector3.new(x1, h, z1 + 4), C.wall)
 	Build.box(parent, "Wall", Vector3.new(cr.x - mess, 13, z1), Vector3.new(cr.x + mess, h, z1 + 4), C.wall)
+	-- floor through the doorway (the wall is 4 studs thick: there was a hole here)
+	Build.box(
+		parent,
+		"Threshold",
+		Vector3.new(cr.x - mess, -4, z1),
+		Vector3.new(cr.x + mess, 0, z1 + 4),
+		Color3.fromRGB(96, 98, 100),
+		{ Material = Enum.Material.Concrete }
+	)
 	local messSign =
 		Build.part(parent, "MessSign", Vector3.new(14, 3, 0.4), CFrame.new(cr.x, 15, z1 - 0.3), C.orange)
 	Build.sign(messSign, Enum.NormalId.Front, "🍲 MESS HALL", Color3.new(1, 1, 1))
@@ -1104,10 +1113,19 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 		C.wallLow,
 		{ CanCollide = false }
 	)
+	-- (the south band stops at the Mess Hall door)
 	Build.box(
 		parent,
 		"Paint",
 		Vector3.new(x0, 0, z1 - 0.1),
+		Vector3.new(cr.x - mess, 6, z1),
+		C.wallLow,
+		{ CanCollide = false }
+	)
+	Build.box(
+		parent,
+		"Paint",
+		Vector3.new(cr.x + mess, 0, z1 - 0.1),
 		Vector3.new(x1 - 2, 6, z1),
 		C.wallLow,
 		{ CanCollide = false }
@@ -1235,87 +1253,439 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 		CFrame.new(x0 + 10, 0, 24) * CFrame.Angles(0, -math.pi / 2, 0),
 		"Visitation"
 	)
-	-- VIP corner: glass wall + gold door (only VIPs pass; the client opens it for them)
+	-- VIP LOUNGE (south-east corner): dark wood half walls with smoked glass and gold trim, a red
+	-- carpet from a velvet rope, leather couches, a minibar, plants and a chandelier. The rope's
+	-- invisible blocker (tag VIPDoor) only lets VIPs through (the client opens it for them).
 	local vx0, vz0 = x1 - 28, z1 - 26
+	local vx1, vz1 = x1 - 2, z1 - 0.1
+	local doorX0, doorX1 = x1 - 14, x1 - 2
+	local GOLD = Color3.fromRGB(212, 172, 64)
+	local WOOD = Color3.fromRGB(58, 36, 26)
+	local gold = { Material = Enum.Material.Metal, Reflectance = 0.15 }
 	Build.box(
 		parent,
 		"VIPFloor",
 		Vector3.new(vx0, 0, vz0),
-		Vector3.new(x1 - 2, 0.15, z1 - 0.1),
-		Color3.fromRGB(150, 30, 40),
+		Vector3.new(vx1, 0.16, vz1),
+		Color3.fromRGB(74, 46, 32),
+		{
+			Material = Enum.Material.WoodPlanks,
+		}
+	)
+	-- red carpet from the rope to the couches, with gold edges
+	local cx = (doorX0 + doorX1) / 2
+	Build.box(
+		parent,
+		"VIPCarpet",
+		Vector3.new(cx - 3, 0.16, vz0),
+		Vector3.new(cx + 3, 0.2, vz1 - 6),
+		Color3.fromRGB(128, 18, 30),
 		{
 			Material = Enum.Material.Fabric,
 			CanCollide = false,
 		}
 	)
+	for _, ex in { cx - 3.3, cx + 3 } do
+		Build.box(
+			parent,
+			"VIPCarpetEdge",
+			Vector3.new(ex, 0.16, vz0),
+			Vector3.new(ex + 0.3, 0.22, vz1 - 6),
+			GOLD,
+			{
+				Material = Enum.Material.Metal,
+				CanCollide = false,
+			}
+		)
+	end
+	-- half walls (west + north up to the entrance), smoked glass above, gold rails and posts
+	Build.box(parent, "VIPWall", Vector3.new(vx0 - 0.6, 0, vz0), Vector3.new(vx0, 3.5, vz1), WOOD, {
+		Material = Enum.Material.Wood,
+	})
+	Build.box(parent, "VIPWall", Vector3.new(vx0 - 0.6, 0, vz0 - 0.6), Vector3.new(doorX0, 3.5, vz0), WOOD, {
+		Material = Enum.Material.Wood,
+	})
+	local smoked = { Material = Enum.Material.Glass, Transparency = 0.55 }
 	Build.box(
 		parent,
 		"VIPGlass",
-		Vector3.new(vx0 - 0.5, 0, vz0),
-		Vector3.new(vx0, 10, z1 - 0.1),
-		Color3.fromRGB(255, 215, 120),
-		{
-			Transparency = 0.6,
-			Material = Enum.Material.Glass,
-		}
+		Vector3.new(vx0 - 0.4, 3.5, vz0),
+		Vector3.new(vx0 - 0.2, 10, vz1),
+		Color3.fromRGB(40, 34, 30),
+		smoked
 	)
 	Build.box(
 		parent,
 		"VIPGlass",
-		Vector3.new(vx0, 0, vz0 - 0.5),
-		Vector3.new(x1 - 14, 10, vz0),
-		Color3.fromRGB(255, 215, 120),
-		{
-			Transparency = 0.6,
-			Material = Enum.Material.Glass,
-		}
+		Vector3.new(vx0 - 0.4, 3.5, vz0 - 0.4),
+		Vector3.new(doorX0, 10, vz0 - 0.2),
+		Color3.fromRGB(40, 34, 30),
+		smoked
 	)
-	local vipDoor = Build.box(
+	Build.box(
 		parent,
-		"VIPDoor",
-		Vector3.new(x1 - 14, 0, vz0 - 0.5),
-		Vector3.new(x1 - 2, 10, vz0),
-		Color3.fromRGB(255, 200, 40),
-		{
-			Transparency = 0.3,
-			Material = Enum.Material.Neon,
-		}
+		"VIPRail",
+		Vector3.new(vx0 - 0.7, 3.5, vz0 + 0.1),
+		Vector3.new(vx0 + 0.1, 3.75, vz1),
+		GOLD,
+		gold
 	)
-	CollectionService:AddTag(vipDoor, "VIPDoor")
-	Build.sign(vipDoor, Enum.NormalId.Front, "⭐ VIP ONLY", Color3.fromRGB(80, 40, 0), Color3.new(1, 1, 1))
-	for i = 0, 1 do
-		local cx = vx0 + 7 + i * 12
+	Build.box(
+		parent,
+		"VIPRail",
+		Vector3.new(vx0 - 0.7, 3.5, vz0 - 0.7),
+		Vector3.new(doorX0, 3.75, vz0 + 0.1),
+		GOLD,
+		gold
+	)
+	Build.box(
+		parent,
+		"VIPCap",
+		Vector3.new(vx0 - 0.5, 10, vz0 + 0.1),
+		Vector3.new(vx0 - 0.1, 10.25, vz1),
+		GOLD,
+		gold
+	)
+	Build.box(
+		parent,
+		"VIPCap",
+		Vector3.new(vx0 - 0.5, 10, vz0 - 0.5),
+		Vector3.new(doorX0, 10.25, vz0 + 0.1),
+		GOLD,
+		gold
+	)
+	for z = vz0 + 6, vz1 - 4, 8 do
+		Build.part(parent, "VIPPost", Vector3.new(0.5, 10.4, 0.5), CFrame.new(vx0 - 0.3, 5.2, z), GOLD, gold)
+	end
+	for x = vx0 + 6, doorX0 - 4, 8 do
+		Build.part(parent, "VIPPost", Vector3.new(0.5, 10.4, 0.5), CFrame.new(x, 5.2, vz0 - 0.3), GOLD, gold)
+	end
+	Build.part(
+		parent,
+		"VIPPost",
+		Vector3.new(0.7, 10.6, 0.7),
+		CFrame.new(vx0 - 0.3, 5.3, vz0 - 0.3),
+		GOLD,
+		gold
+	)
+	Build.part(
+		parent,
+		"VIPPost",
+		Vector3.new(0.7, 10.6, 0.7),
+		CFrame.new(doorX0 + 0.15, 5.3, vz0 - 0.3),
+		GOLD,
+		gold
+	)
+	-- the entrance: two gold stanchions with a velvet rope (VIPs see it unhooked)
+	for _, sx in { cx - 3.5, cx + 3.5 } do
 		Build.part(
 			parent,
-			"Couch",
-			Vector3.new(9, 2, 3.5),
-			CFrame.new(cx, 1, z1 - 3),
-			Color3.fromRGB(120, 20, 40),
+			"VIPStanchion",
+			Vector3.new(0.35, 3.2, 0.35),
+			CFrame.new(sx, 1.6, vz0 - 1.4),
+			GOLD,
+			gold
+		)
+		Build.part(
+			parent,
+			"VIPStanchionTop",
+			Vector3.new(0.6, 0.6, 0.6),
+			CFrame.new(sx, 3.4, vz0 - 1.4),
+			GOLD,
 			{
-				Material = Enum.Material.Fabric,
+				Material = Enum.Material.Metal,
+				Reflectance = 0.15,
+				Shape = Enum.PartType.Ball,
 			}
 		)
 		Build.part(
 			parent,
-			"CouchBack",
-			Vector3.new(9.2, 3.2, 1),
-			CFrame.new(cx, 2.6, z1 - 1.2),
-			Color3.fromRGB(120, 20, 40),
+			"VIPStanchionBase",
+			Vector3.new(0.2, 1.2, 1.2),
+			CFrame.new(sx, 0.1, vz0 - 1.4) * CFrame.Angles(0, 0, math.pi / 2),
+			GOLD,
+			{
+				Material = Enum.Material.Metal,
+				Shape = Enum.PartType.Cylinder,
+			}
+		)
+	end
+	local rope = Build.part(
+		parent,
+		"VIPRope",
+		Vector3.new(7, 0.3, 0.3),
+		CFrame.new(cx, 2.9, vz0 - 1.4),
+		Color3.fromRGB(150, 20, 36),
+		{
+			Material = Enum.Material.Fabric,
+			Shape = Enum.PartType.Cylinder,
+			CanCollide = false,
+		}
+	)
+	CollectionService:AddTag(rope, "VIPRope")
+	local vipDoor = Build.box(
+		parent,
+		"VIPDoor",
+		Vector3.new(doorX0, 0, vz0 - 2),
+		Vector3.new(doorX1, 10, vz0 - 0.8),
+		Color3.new(),
+		{
+			Transparency = 1,
+		}
+	)
+	CollectionService:AddTag(vipDoor, "VIPDoor")
+	-- the sign over the entrance: gold letters on black
+	local vipSign = Build.part(
+		parent,
+		"VIPSign",
+		Vector3.new(11, 2.4, 0.3),
+		CFrame.new(cx, 11.8, vz0 - 0.4),
+		Color3.fromRGB(18, 16, 16),
+		{
+			Material = Enum.Material.SmoothPlastic,
+		}
+	)
+	Build.sign(
+		vipSign,
+		Enum.NormalId.Front,
+		"★ VIP LOUNGE ★",
+		Color3.fromRGB(255, 214, 110),
+		Color3.fromRGB(70, 46, 10)
+	)
+	Build.box(
+		parent,
+		"VIPSignTrim",
+		Vector3.new(cx - 5.6, 10.5, vz0 - 0.6),
+		Vector3.new(cx + 5.6, 10.6, vz0 - 0.2),
+		GOLD,
+		gold
+	)
+	Build.box(
+		parent,
+		"VIPSignTrim",
+		Vector3.new(cx - 5.6, 13, vz0 - 0.6),
+		Vector3.new(cx + 5.6, 13.1, vz0 - 0.2),
+		GOLD,
+		gold
+	)
+	-- leather couches along the back wall
+	for i = 0, 1 do
+		local ccx = vx0 + 7 + i * 12
+		local leather = Color3.fromRGB(70, 38, 28)
+		Build.part(parent, "Couch", Vector3.new(9, 1.4, 3.4), CFrame.new(ccx, 0.86, z1 - 3), leather, {
+			Material = Enum.Material.Leather,
+		})
+		Build.part(parent, "CouchBack", Vector3.new(9.2, 3, 1), CFrame.new(ccx, 2.06, z1 - 1.3), leather, {
+			Material = Enum.Material.Leather,
+		})
+		for _, side in { -1, 1 } do
+			Build.part(
+				parent,
+				"CouchArm",
+				Vector3.new(0.9, 2.2, 3.4),
+				CFrame.new(ccx + side * 4.95, 1.26, z1 - 3),
+				leather,
+				{
+					Material = Enum.Material.Leather,
+				}
+			)
+		end
+		Build.part(
+			parent,
+			"Cushion",
+			Vector3.new(1.6, 1.4, 0.5),
+			CFrame.new(ccx + 2.6, 2.1, z1 - 2.2) * CFrame.Angles(-0.25, 0.2, 0),
+			Color3.fromRGB(212, 172, 64),
 			{
 				Material = Enum.Material.Fabric,
 			}
 		)
 	end
+	-- coffee table: marble top on gold legs
+	local tz = z1 - 9
 	Build.part(
 		parent,
-		"VIPTable",
-		Vector3.new(4, 2, 4),
-		CFrame.new(vx0 + 13, 1, z1 - 10),
-		Color3.fromRGB(255, 200, 40),
+		"VIPTableTop",
+		Vector3.new(6, 0.3, 3),
+		CFrame.new(vx0 + 13, 1.75, tz),
+		Color3.fromRGB(236, 234, 228),
 		{
-			Material = Enum.Material.Neon,
+			Material = Enum.Material.Marble,
 		}
 	)
+	for _, lx in { -2.6, 2.6 } do
+		for _, lz in { -1.1, 1.1 } do
+			Build.part(
+				parent,
+				"VIPTableLeg",
+				Vector3.new(0.25, 1.44, 0.25),
+				CFrame.new(vx0 + 13 + lx, 0.88, tz + lz),
+				GOLD,
+				gold
+			)
+		end
+	end
+	Build.part(
+		parent,
+		"Champagne",
+		Vector3.new(1.2, 0.5, 0.5),
+		CFrame.new(vx0 + 12, 2.5, tz) * CFrame.Angles(0, 0, math.pi / 2),
+		Color3.fromRGB(30, 70, 40),
+		{
+			Shape = Enum.PartType.Cylinder,
+			Material = Enum.Material.Glass,
+		}
+	)
+	Build.part(
+		parent,
+		"Bucket",
+		Vector3.new(0.9, 1, 1),
+		CFrame.new(vx0 + 14.5, 2.4, tz) * CFrame.Angles(0, 0, math.pi / 2),
+		Color3.fromRGB(190, 192, 196),
+		{
+			Shape = Enum.PartType.Cylinder,
+			Material = Enum.Material.Metal,
+		}
+	)
+	-- minibar along the west wall with bottles
+	Build.part(parent, "Minibar", Vector3.new(2.6, 3.4, 8), CFrame.new(vx0 + 1.6, 1.86, vz0 + 9), WOOD, {
+		Material = Enum.Material.Wood,
+	})
+	Build.part(
+		parent,
+		"MinibarTop",
+		Vector3.new(2.8, 0.2, 8.2),
+		CFrame.new(vx0 + 1.6, 3.66, vz0 + 9),
+		GOLD,
+		gold
+	)
+	for k, c in
+		{
+			Color3.fromRGB(120, 60, 20),
+			Color3.fromRGB(30, 90, 50),
+			Color3.fromRGB(150, 30, 40),
+			Color3.fromRGB(200, 200, 210),
+			Color3.fromRGB(90, 40, 120),
+		}
+	do
+		Build.part(
+			parent,
+			"Bottle",
+			Vector3.new(1.1, 0.4, 0.4),
+			CFrame.new(vx0 + 1.6, 4.32, vz0 + 6 + k * 1.1) * CFrame.Angles(0, 0, math.pi / 2),
+			c,
+			{
+				Shape = Enum.PartType.Cylinder,
+				Material = Enum.Material.Glass,
+				Transparency = 0.15,
+			}
+		)
+	end
+	-- potted plants in the corners
+	for _, pos in { Vector3.new(vx0 + 1.6, 0, vz0 + 2.2), Vector3.new(vx1 - 1.6, 0, z1 - 8) } do
+		Build.part(
+			parent,
+			"Pot",
+			Vector3.new(1.8, 1.6, 1.6),
+			CFrame.new(pos + Vector3.new(0, 1.06, 0)) * CFrame.Angles(0, 0, math.pi / 2),
+			Color3.fromRGB(26, 24, 24),
+			{
+				Shape = Enum.PartType.Cylinder,
+				Material = Enum.Material.Marble,
+			}
+		)
+		Build.part(
+			parent,
+			"Leaves",
+			Vector3.new(3, 3.4, 3),
+			CFrame.new(pos + Vector3.new(0, 3.3, 0)),
+			Color3.fromRGB(52, 110, 50),
+			{
+				Shape = Enum.PartType.Ball,
+				Material = Enum.Material.Grass,
+			}
+		)
+	end
+	-- a painting on the back wall
+	local painting = Build.part(
+		parent,
+		"Painting",
+		Vector3.new(6, 4, 0.2),
+		CFrame.new(vx0 + 13, 7.4, z1 - 0.3),
+		GOLD,
+		gold
+	)
+	local art = Build.sign(
+		painting,
+		Enum.NormalId.Front,
+		"THE GREAT ESCAPE",
+		Color3.fromRGB(255, 236, 200),
+		Color3.fromRGB(40, 20, 10)
+	)
+	local canvas = art.Parent :: SurfaceGui
+	local bg = Instance.new("Frame")
+	bg.Size = UDim2.fromScale(1, 1)
+	bg.ZIndex = 0
+	bg.BorderSizePixel = 0
+	bg.BackgroundColor3 = Color3.new(1, 1, 1)
+	bg.Parent = canvas
+	local grad = Instance.new("UIGradient")
+	grad.Rotation = 90
+	grad.Color = ColorSequence.new(Color3.fromRGB(40, 60, 110), Color3.fromRGB(150, 70, 60))
+	grad.Parent = bg
+	local frameStroke = Instance.new("UIStroke")
+	frameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	frameStroke.Color = GOLD
+	frameStroke.Thickness = 8
+	frameStroke.Parent = bg
+	art.ZIndex = 2
+	-- chandelier + warm light
+	local chx, chz = vx0 + 13, (vz0 + vz1) / 2
+	Build.part(
+		parent,
+		"ChandelierChain",
+		Vector3.new(0.15, h - 13, 0.15),
+		CFrame.new(chx, (h + 13) / 2, chz),
+		GOLD,
+		gold
+	)
+	Build.part(
+		parent,
+		"Chandelier",
+		Vector3.new(0.3, 4, 4),
+		CFrame.new(chx, 12.8, chz) * CFrame.Angles(0, 0, math.pi / 2),
+		GOLD,
+		{
+			Material = Enum.Material.Metal,
+			Reflectance = 0.15,
+			Shape = Enum.PartType.Cylinder,
+		}
+	)
+	for k = 0, 5 do
+		local a = k / 6 * math.pi * 2
+		Build.part(
+			parent,
+			"Bulb",
+			Vector3.new(0.5, 0.5, 0.5),
+			CFrame.new(chx + math.cos(a) * 1.8, 13.3, chz + math.sin(a) * 1.8),
+			Color3.fromRGB(255, 232, 190),
+			{
+				Shape = Enum.PartType.Ball,
+			}
+		)
+	end
+	local glow = Build.part(
+		parent,
+		"ChandelierLight",
+		Vector3.new(0.4, 0.4, 0.4),
+		CFrame.new(chx, 12.2, chz),
+		Color3.new(),
+		{
+			Transparency = 1,
+			CanCollide = false,
+		}
+	)
+	Build.light(glow, Color3.fromRGB(255, 196, 130), 30, 1.6)
 	shops.Fence = station(parent, "Fence", "THE FENCE", CFrame.new(cr.x - 30, 0, z1 - 10), "Fence")
 	return shops
 end

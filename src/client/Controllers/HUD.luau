@@ -165,6 +165,12 @@ local function showBanner(title: string, sub: string, color: Color3)
 			UI.tween(banner, 0.5, { GroupTransparency = 1 })
 		end
 	end)
+	-- and really gone afterwards (a transparent CanvasGroup can stay drawn on some phones)
+	task.delay(3.6, function()
+		if bannerToken == mine then
+			banner.Visible = false
+		end
+	end)
 end
 
 -- ===== find popup =====

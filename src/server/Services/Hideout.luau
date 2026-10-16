@@ -1,16 +1,17 @@
 --!strict
--- Your cell as a hideout:
---   COVER  a big beach tapestry on a wooden roller over the back wall (the tunnel hole). Roll it
---          down / up whenever you want (everyone sees it). Punching the wall rolls it up.
---   SLEEP  lie down in your bed whenever you want (moving or tapping again gets you up).
+-- Your cell as a hideout (no screen buttons: you walk up to things and hold their prompt):
+--   COVER  a big beach tapestry on a wooden roller over the back wall (the tunnel hole). Hold the
+--          prompt by the wall to roll it down / up (everyone sees it). Punching the wall rolls it up.
+--   SLEEP  hold the prompt at your bed to lie down (moving or the prompt again gets you up).
 -- A night inspection only passes when you're in bed AND the hole is covered (or you have no hole
--- yet). The inspection's HIDE button does both at once (Guards.hide).
+-- yet). Only the cell's owner can use its prompts (the client hides the others' prompts).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
+local Cycle = require(Shared.Config.Cycle)
 local Tunnel = require(Shared.Tunnel)
 local Remotes = require(Shared.Remotes)
 
@@ -362,6 +363,43 @@ function Hideout.start(w: any)
 	world = w
 	for i, cell in world.cells do
 		covers[i] = build(cell)
+	end
+	-- the prompts: by the wall (cover) and on the bed (sleep)
+	for i, cell in world.cells do
+		local frame: CFrame = cell.frame
+		local spot = Build.part(
+			cell.model,
+			"CoverSpot",
+			Vector3.new(4, 4, 0.2),
+			frame * CFrame.new(0, 4, 2),
+			Color3.new(),
+			{
+				Transparency = 1,
+				CanCollide = false,
+				CanQuery = false,
+			}
+		)
+		local cp = Build.prompt(spot, "Cover the hole", "Tapestry", 10)
+		cp.Name = "CoverPrompt"
+		cp.HoldDuration = Cycle.CoverHold
+		cp.Triggered:Connect(function(player)
+			local s = State.get(player)
+			if s and s.cell == i then
+				Hideout.setCover(player, not s.coverDown)
+			end
+		end)
+		local bed = cell.model:FindFirstChild("Mattress")
+		if bed and bed:IsA("BasePart") then
+			local sp = Build.prompt(bed, "Sleep", "Bed", 8)
+			sp.Name = "SleepPrompt"
+			sp.HoldDuration = Cycle.SleepHold
+			sp.Triggered:Connect(function(player)
+				local s = State.get(player)
+				if s and s.cell == i then
+					Hideout.setHidden(player, not s.hidden)
+				end
+			end)
+		end
 	end
 	local limit = RateLimit.new(2, 4)
 	Net.on(Remotes.Names.Cover, function(player, down)
