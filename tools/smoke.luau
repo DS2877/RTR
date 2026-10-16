@@ -1009,6 +1009,12 @@ do
 	)
 	check("npc avatar has skin colour", skinOk, bc and bc.HeadColor3)
 	check("npc avatar has a face", face ~= nil)
+	local hum = probe:FindFirstChildOfClass("Humanoid")
+	local anim = hum and hum:FindFirstChildOfClass("Animator")
+	local idleN = if anim then #anim:GetPlayingAnimationTracks() else -1
+	Characters.setWalking(probe, true, 8)
+	local walkN = if anim then #anim:GetPlayingAnimationTracks() else -1
+	print("avatar anims playing: idle", idleN, "with walk", walkN)
 	probe:Destroy()
 end
 

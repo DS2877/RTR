@@ -108,12 +108,14 @@ local Assets = {
 	},
 	-- free Roblox faces (Smile, Chill, Check It, Skeptic, Freckles, Hmmm...)
 	Faces = { 144075659, 7074764, 7074786, 31117267, 12145366, 7076076 },
+	-- warm, natural skin tones (the bright fluorescent prison light washes pale tones out to white)
 	Skin = {
-		{ 234, 184, 146 },
 		{ 204, 142, 105 },
-		{ 160, 102, 70 },
-		{ 110, 70, 48 },
-		{ 245, 205, 170 },
+		{ 168, 112, 80 },
+		{ 222, 166, 126 },
+		{ 124, 82, 58 },
+		{ 186, 128, 92 },
+		{ 92, 60, 44 },
 	},
 }
 

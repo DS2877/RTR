@@ -114,6 +114,46 @@ local function idle(humanoid: Humanoid)
 	end
 end
 
+-- Walk / idle for a moving avatar NPC (the inspection guard): plays the walk while on = true.
+-- speed = studs per second (scales the walk so the feet don't slide).
+local walks: { [Model]: { walk: AnimationTrack?, idle: AnimationTrack? } } = {}
+function Characters.setWalking(m: Model, on: boolean, speed: number?)
+	local humanoid = m:FindFirstChildOfClass("Humanoid")
+	local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+	if not animator then
+		return
+	end
+	local entry = walks[m]
+	if not entry then
+		local function load(id: string): AnimationTrack?
+			local ok, track = pcall(function()
+				local a = Instance.new("Animation")
+				a.AnimationId = id
+				return (animator :: Animator):LoadAnimation(a)
+			end)
+			if ok and track then
+				track.Looped = true
+				return track
+			end
+			return nil
+		end
+		entry = { walk = load(Assets.Animations.WalkR15), idle = nil }
+		walks[m] = entry
+		m.Destroying:Connect(function()
+			walks[m] = nil
+		end)
+	end
+	local walk = entry.walk
+	if not walk then
+		return
+	end
+	if on then
+		walk:Play(0.25, 1, math.clamp((speed or 8) / 9, 0.4, 1.6))
+	else
+		walk:Stop(0.3)
+	end
+end
+
 -- Replaces one stand-in's parts with an avatar (keeps the Model, its name and its tags).
 function Characters.upgrade(m: Model)
 	local role = m:GetAttribute("Role")

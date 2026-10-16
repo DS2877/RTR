@@ -187,6 +187,17 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Vakterna går på riktigt + naturligare hudtoner
+- **Patrullvakterna gled fram utan att röra armar och ben.** Animationerna laddades innan figuren
+  lagts in i världen, och då misslyckas de tyst. Nu läggs vakten in först, och gång- och
+  stå-animationerna spelas var för sig. Gångtakten följer gånghastigheten.
+- **Inspektionsvakten** som går fram till din cell på natten har nu också gånganimation, och
+  takten matchar hur fort den går.
+- **Hudtonerna** var för ljusa och blev nästan vita i lysrörsljuset. Nu finns 6 varmare, naturliga
+  toner, och varje patrullvakt har sin egen.
+- **Testa på iPhone:** titta på en patrullvakt som går (benen och armarna ska röra sig), vänta
+  på en inspektion på natten och kolla hudfärgerna på kocken, fångarna och vakterna.
+
 ### Fixar: NPC-kroppar, fläktar, musiken och klockans plats
 - **NPC:erna var kolsvarta och klossiga:** en tom avatarbeskrivning är svart, saknar ansikte och
   har den gamla klossiga kroppen. Nu får alla NPC:er Robloxs gratis "Man"-kropp, ett ansikte

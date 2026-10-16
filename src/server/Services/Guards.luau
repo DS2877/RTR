@@ -21,6 +21,7 @@ local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
 local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Build = require(script.Parent.Parent.Util.Build)
+local Characters = require(script.Parent.Parent.Util.Characters)
 local Stats = require(script.Parent.Stats)
 local Hideout = require(script.Parent.Hideout)
 local Cells = require(script.Parent.Cells)
@@ -61,12 +62,19 @@ local function walkGuard(cell: number, seconds: number)
 	value.Changed:Connect(function(cf)
 		m:PivotTo(cf)
 	end)
-	local t = TweenService:Create(value, TweenInfo.new(math.max(1, seconds - 0.5), Enum.EasingStyle.Linear), {
+	local duration = math.max(1, seconds - 0.5)
+	local t = TweenService:Create(value, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
 		Value = target,
 	})
+	-- legs and arms move while it walks (the idle takes over again when it arrives)
+	local dist = (target.Position - start.Position).Magnitude
+	if dist > 1 then
+		Characters.setWalking(m, true, dist / duration)
+	end
 	t:Play()
 	t.Completed:Connect(function()
 		value:Destroy()
+		Characters.setWalking(m, false)
 	end)
 end
 

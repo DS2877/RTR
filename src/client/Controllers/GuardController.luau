@@ -35,7 +35,7 @@ type Guard = {
 local Assets = require(Shared.Config.Assets)
 
 -- Swaps a blocky guard for the avatar template: same bubble + flashlight, walk/idle animations.
-local function toAvatar(g: Guard, template: Model, parent: Instance)
+local function toAvatar(g: Guard, template: Model, parent: Instance, index: number)
 	local rig = template:Clone()
 	rig.Name = g.model.Name
 	local hrp = rig:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -74,6 +74,20 @@ local function toAvatar(g: Guard, template: Model, parent: Instance)
 		g.light.Parent = torch
 	end
 	g.bubble.Parent = head
+	-- each guard its own skin tone (the template is built with the first one)
+	local bc = rig:FindFirstChildOfClass("BodyColors")
+	if bc then
+		local c = Assets.Skin[(index * 2 - 1) % #Assets.Skin + 1]
+		local tone = Color3.fromRGB(c[1], c[2], c[3])
+		bc.HeadColor3, bc.TorsoColor3 = tone, tone
+		bc.LeftArmColor3, bc.RightArmColor3 = tone, tone
+		bc.LeftLegColor3, bc.RightLegColor3 = tone, tone
+	end
+	-- into the world FIRST: LoadAnimation fails (silently, in the pcall) on a rig that isn't in
+	-- the DataModel yet, which left the guards gliding along without moving a limb
+	g.model:Destroy()
+	g.model = rig
+	rig.Parent = parent
 	local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator")
 	animator.Parent = humanoid
 	local function load(id: string): AnimationTrack?
@@ -95,9 +109,6 @@ local function toAvatar(g: Guard, template: Model, parent: Instance)
 		walk = load(Assets.Animations.WalkR15),
 		idle = load(Assets.Animations.IdleR15),
 	}
-	g.model:Destroy()
-	g.model = rig
-	rig.Parent = parent
 end
 
 local function part(m: Model, name: string, size: Vector3, color: Color3, mat: Enum.Material?): Part
@@ -213,8 +224,11 @@ function GuardController.start()
 		local templates = ReplicatedStorage:WaitForChild("NPCTemplates", 60)
 		local t = templates and templates:WaitForChild("Guard", 60)
 		if t and t:IsA("Model") then
-			for _, g in guards do
-				pcall(toAvatar, g, t, folder)
+			for i, g in guards do
+				local ok, err = pcall(toAvatar, g, t, folder, i)
+				if not ok then
+					warn("[GuardController] avatar failed", err)
+				end
 			end
 		end
 	end)
@@ -265,14 +279,12 @@ function GuardController.start()
 					* CFrame.new(0, av.off, 0)
 					* CFrame.Angles(0, if pose.walking then 0 else look * 0.6, 0)
 				local walkT, idleT = av.walk, av.idle
-				if walkT and idleT then
-					if pose.walking and not walkT.IsPlaying then
-						idleT:Stop(0.25)
-						walkT:Play(0.25, 1, Config.Speed / 9)
-					elseif not pose.walking and not idleT.IsPlaying then
-						walkT:Stop(0.25)
-						idleT:Play(0.25)
-					end
+				local on, off = if pose.walking then walkT else idleT, if pose.walking then idleT else walkT
+				if on and not on.IsPlaying then
+					on:Play(0.25, 1, if pose.walking then Config.Speed / 9 else 1)
+				end
+				if off and off.IsPlaying then
+					off:Stop(0.25)
 				end
 				g.light.Enabled = dark
 			end
