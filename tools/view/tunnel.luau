@@ -78,8 +78,8 @@ local function part(
 	)
 end
 
--- intact back walls (one slab each) for cells 2..12
-for cell = 2, World.CellCount do
+-- intact back walls (one slab each) for cells 3..12 (cell 2 = the hero shot's short bore)
+for cell = 3, World.CellCount do
 	local x0, y0, z0 = world(cell, 0, 0, 0)
 	local x1, _, _ = world(cell, W - 1, 0, 0)
 	local c = Zones[1].palette[1]
@@ -100,43 +100,83 @@ local function dug(x: number, y: number, z: number): boolean
 		and y < H
 		and Progression.chamberAt(x, y, z) ~= nil
 end
-for z = 0, D - 1 do
-	for x = 0, W - 1 do
-		for y = 0, H - 1 do
-			if not dug(x, y, z) then
-				local exposed = (z == 0) -- the back wall faces the cell
-				for _, n in
-					{ { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
-				do
-					if dug(x + n[1], y + n[2], z + n[3]) then
-						exposed = true
+-- the visible shell of a dug tunnel (solid blocks touching dug air + the back wall)
+local function shell(cell: number, dugFn: (number, number, number) -> boolean, depth: number)
+	for z = 0, depth - 1 do
+		for x = 0, W - 1 do
+			for y = 0, H - 1 do
+				if not dugFn(x, y, z) then
+					local exposed = (z == 0) -- the back wall faces the cell
+					for _, n in
+						{ { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
+					do
+						if dugFn(x + n[1], y + n[2], z + n[3]) then
+							exposed = true
+						end
 					end
-				end
-				if exposed then
-					local px, py, pz = world(1, x, y, z)
-					local r, g, b, mat = color(x, y, z)
-					part(px, py, pz, B, B, B, r, g, b, mat)
-					local f = Strata.featureAt(x, y, z)
-					local look = f and Strata.Looks[f]
-					if look and look.glow then
-						table.insert(
-							out,
-							string.format(
-								"L|PointLight|%.2f|%.2f|%.2f|%d|%d|%d|9|0.9",
-								px,
-								py,
-								pz,
-								look.glow[1],
-								look.glow[2],
-								look.glow[3]
+					if exposed then
+						local px, py, pz = world(cell, x, y, z)
+						local r, g, b, mat = color(x, y, z)
+						part(px, py, pz, B, B, B, r, g, b, mat)
+						local f = Strata.featureAt(x, y, z)
+						local look = f and Strata.Looks[f]
+						if look and look.glow then
+							table.insert(
+								out,
+								string.format(
+									"L|PointLight|%.2f|%.2f|%.2f|%d|%d|%d|9|0.9",
+									px,
+									py,
+									pz,
+									look.glow[1],
+									look.glow[2],
+									look.glow[3]
+								)
 							)
-						)
+						end
 					end
 				end
 			end
 		end
 	end
 end
+shell(1, dug, D)
+
+-- cell 2: a short bore ending in a fresh plaster face with a crater being punched out (hero shot)
+local function heroDug(x: number, y: number, z: number): boolean
+	if x < 0 or x >= W or y < 0 or y >= H or z < 0 then
+		return false
+	end
+	if x >= 6 and x <= 12 and y <= 5 and z <= 17 then
+		return true
+	end
+	-- the crater in the face at z = 18
+	return z == 18 and ((x == 9 and y >= 1 and y <= 3) or (y == 2 and x >= 8 and x <= 10))
+end
+shell(2, heroDug, 24)
+for z = 0, 17 do
+	local c = Zones[1].palette[1]
+	local ax, _, az = world(2, 6, 0, z)
+	local bx = world(2, 12, 0, z)
+	part((ax + bx) / 2, 0.1, az, 7 * B, 0.2, B, c[1] * 0.82, c[2] * 0.82, c[3] * 0.82, Zones[1].material)
+	if z % 10 == 5 then
+		local lx, ly, lz = world(2, 9, 5, z)
+		table.insert(
+			out,
+			string.format(
+				"P|Bulb|Ball|%.2f|%.2f|%.2f|1|0|0|0|1|0|0|0|1|0.55|0.55|0.55|255|196|120|Neon|0",
+				lx,
+				ly + B / 2 - 0.95,
+				lz
+			)
+		)
+		table.insert(
+			out,
+			string.format("L|PointLight|%.2f|%.2f|%.2f|255|190|120|18|1.3", lx, ly + B / 2 - 0.95, lz)
+		)
+	end
+end
+
 -- floor plates (VoxelRender: dug y = 0 rows) and the work lamps every 10 layers
 for z = 0, D - 1 do
 	local zone = Zones[Progression.zoneAt(z)]
