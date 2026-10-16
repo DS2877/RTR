@@ -207,8 +207,8 @@ data blandas aldrig in.
 - **Testa på iPhone:** titta på vakterna (de ska gå och svänga med armarna) och på din egen
   gubbe (orange skjorta och INMATE-byxor). Gå till TV-hörnan och borden i Common Room, och kolla
   sängen och toaletten i cellen.
-- **Saknas:** flera gym-föremål (tvättmaskin, buss, skrivbord) och borden i Mess Hall är kvar i
-  den enklare stilen.
+- **Mess Hall:** långa matsalsbord i rostfritt stål på pelarben, med fastsvetsade bänkar.
+- **Saknas:** några gym-föremål (tvättmaskin, buss, skrivbord) är kvar i den enklare stilen.
 
 ### Kritikergenomgången (hela spelet)
 Jag gick igenom hela spelet: kod, världen (renderad) och balansen. En separat granskning letade

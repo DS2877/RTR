@@ -246,6 +246,36 @@ end
 
 -- The classic prison table: a round steel top on a pedestal with four stools welded to it.
 -- extra = "chess" | "cards" | nil: something left on the table.
+--- A long cafeteria table (along X): stainless top with a rolled edge on pedestal legs, two benches
+--- welded on to crossbars. at = floor center; the top is at y 3.3 so trays sit at at.Y + 3.3.
+function Props.messTable(parent: Instance, at: Vector3, len: number)
+	local m = Instance.new("Model")
+	m.Name = "MessTable"
+	local c = CFrame.new(at)
+	local metal = { Material = Enum.Material.Metal }
+	part(m, "Top", Vector3.new(len, 0.3, 4.4), c * CFrame.new(0, 3.15, 0), STAINLESS, metal)
+	for _, s in { -1, 1 } do
+		alongX(m, "Edge", 0.24, len + 0.1, c * CFrame.new(0, 3.15, s * 2.22), STAINLESS, metal)
+	end
+	local legs = math.max(2, math.floor(len / 10) + 1)
+	for i = 0, legs - 1 do
+		local dx = -len / 2 + 1.5 + i * (len - 3) / (legs - 1)
+		post(m, "Pedestal", 0.5, 2.9, c * CFrame.new(dx, 1.5, 0), STEEL)
+		part(m, "Foot", Vector3.new(1.6, 0.12, 1.6), c * CFrame.new(dx, 0.06, 0), STEEL, {
+			Material = Enum.Material.DiamondPlate,
+		})
+		part(m, "Crossbar", Vector3.new(0.3, 0.25, 8.2), c * CFrame.new(dx, 1.35, 0), STEEL, metal)
+		for _, s in { -1, 1 } do
+			post(m, "BenchPost", 0.25, 0.5, c * CFrame.new(dx, 1.56, s * 3.6), STEEL)
+		end
+	end
+	for _, s in { -1, 1 } do
+		part(m, "Bench", Vector3.new(len - 0.4, 0.3, 1.5), c * CFrame.new(0, 1.92, s * 3.6), STAINLESS, metal)
+	end
+	m.Parent = parent
+	return m
+end
+
 function Props.prisonTable(parent: Instance, at: Vector3, yaw: number, extra: string?)
 	local steel = Color3.fromRGB(128, 132, 138)
 	local dark = Color3.fromRGB(82, 86, 92)

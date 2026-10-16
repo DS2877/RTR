@@ -1723,28 +1723,7 @@ local function buildMessHall(parent: Instance, shops: { [string]: BasePart })
 		for col = 0, 1 do
 			local tx = cr.x - 24 + col * 48
 			local tz = z0 + 10 + row * 12
-			Build.part(
-				parent,
-				"Table",
-				Vector3.new(30, 0.6, 4.5),
-				CFrame.new(tx, 3, tz),
-				Color3.fromRGB(150, 110, 70),
-				{
-					Material = Enum.Material.WoodPlanks,
-				}
-			)
-			for _, dx in { -12, 0, 12 } do
-				Build.part(parent, "Leg", Vector3.new(0.8, 2.7, 0.8), CFrame.new(tx + dx, 1.35, tz), C.bars)
-			end
-			for _, dz in { -3.6, 3.6 } do
-				Build.part(
-					parent,
-					"Bench",
-					Vector3.new(30, 0.5, 1.6),
-					CFrame.new(tx, 1.8, tz + dz),
-					Color3.fromRGB(120, 90, 60)
-				)
-			end
+			Props.messTable(parent, Vector3.new(tx, 0, tz), 30)
 		end
 	end
 	for i = 0, 2 do
