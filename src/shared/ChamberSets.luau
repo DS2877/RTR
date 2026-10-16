@@ -44,7 +44,7 @@ local GOLD = { 230, 180, 60 }
 -- width/height/depth in studs; returns the specs for a zone's chamber
 local builders: { [number]: (w: number, h: number, d: number) -> { Spec } } = {
 	-- 2: OLD BOILER ROOM
-	[2] = function(w, h, d)
+	[2] = function(_w, h, d)
 		local out = {
 			S("Block", { 12, 2, 7 }, { 0, 1, d * 0.55 }, { 120, 60, 44 }, "Brick"),
 			S(
@@ -138,7 +138,7 @@ local builders: { [number]: (w: number, h: number, d: number) -> { Spec } } = {
 		return out
 	end,
 	-- 4: REBAR VAULT
-	[4] = function(w, h, d)
+	[4] = function(_w, h, d)
 		local out = {
 			S(
 				"Cylinder",
@@ -217,7 +217,7 @@ local builders: { [number]: (w: number, h: number, d: number) -> { Spec } } = {
 		return out
 	end,
 	-- 6: OLD SEWER CANAL
-	[6] = function(w, h, d)
+	[6] = function(_w, h, d)
 		local out = {
 			S(
 				"Block",
@@ -290,7 +290,7 @@ local builders: { [number]: (w: number, h: number, d: number) -> { Spec } } = {
 		return out
 	end,
 	-- 8: CRYSTAL GROTTO
-	[8] = function(w, h, d)
+	[8] = function(w, _h, d)
 		local out = {}
 		local colors = { { 190, 110, 255 }, { 110, 220, 255 }, { 255, 120, 220 } }
 		for k = 0, 7 do
@@ -323,7 +323,7 @@ local builders: { [number]: (w: number, h: number, d: number) -> { Spec } } = {
 		return out
 	end,
 	-- 9: LAVA LAKE
-	[9] = function(w, h, d)
+	[9] = function(w, _h, d)
 		local out = {
 			S("Block", { w - 4, 0.4, d - 4 }, { 0, 0.2, d / 2 }, { 255, 110, 30 }, "Neon", {
 				light = { color = { 255, 120, 40 }, range = 34, brightness = 2.4, flicker = true },
