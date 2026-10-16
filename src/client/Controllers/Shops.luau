@@ -24,7 +24,6 @@ local Shops = {}
 Shops.openDecor = nil :: (() -> ())?
 
 local player = Players.LocalPlayer
-local DARK = Color3.fromRGB(40, 30, 20)
 
 local TRACK_INFO: { [string]: { title: string, unit: (v: any) -> string } } = {
 	Tools = {
@@ -87,17 +86,10 @@ local function clear(body: Instance)
 	end
 end
 
-local function row(body: Instance, order: number, height: number?): Frame
-	return UI.new("Frame", {
-		LayoutOrder = order,
-		Size = UDim2.new(1, -8, 0, height or 70),
-		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-		Parent = body,
-	}, { UI.corner(10), UI.stroke(Color3.fromRGB(205, 205, 215), 1) })
-end
+local row = Panel.row
 
 local function upgradePanel(shop: string, title: string, color: Color3, dark: Color3)
-	local panel = Panel.new(shop .. "Panel", title, color, dark, Vector2.new(580, 320))
+	local panel = Panel.new(shop .. "Panel", title, color, dark, Vector2.new(540, 300))
 	UI.new(
 		"UIListLayout",
 		{ Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = panel.body }
@@ -113,32 +105,39 @@ local function upgradePanel(shop: string, title: string, color: Color3, dark: Co
 			local cur = list[level]
 			local nxt = list[level + 1]
 			local cost = Progression.nextCost(track, level)
-			local r = row(panel.body, i, 78)
-			UI.label({
-				Position = UDim2.fromOffset(10, 6),
-				Size = UDim2.new(0.55, -10, 0, 22),
-				Text = info.title .. "  " .. cur.emoji .. " " .. cur.name,
-				TextColor3 = DARK,
-				TextXAlignment = Enum.TextXAlignment.Left,
+			local r = row(panel.body, i, 60)
+			Panel.text("note", info.title .. " · LV " .. level, {
+				Position = UDim2.fromOffset(12, 7),
+				Size = UDim2.new(0.64, -12, 0, 13),
+				TextSize = 11,
+				TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.35),
 				Parent = r,
 			})
-			UI.label({
-				Position = UDim2.fromOffset(10, 32),
-				Size = UDim2.new(0.6, -10, 0, 36),
-				Text = if nxt
-					then string.format("NEXT %s %s: %s", nxt.emoji, nxt.name, info.unit(nxt))
-					else "MAXED: " .. info.unit(cur),
-				TextColor3 = Color3.fromRGB(110, 90, 70),
-				TextXAlignment = Enum.TextXAlignment.Left,
+			Panel.text("title", cur.emoji .. " " .. cur.name, {
+				Position = UDim2.fromOffset(12, 20),
+				Size = UDim2.new(0.64, -12, 0, 18),
 				Parent = r,
 			})
+			Panel.text(
+				"desc",
+				if nxt
+					then string.format("Next: %s %s · %s", nxt.emoji, nxt.name, info.unit(nxt))
+					else "Maxed · " .. info.unit(cur),
+				{
+					Position = UDim2.fromOffset(12, 38),
+					Size = UDim2.new(0.64, -12, 0, 16),
+					TextTruncate = Enum.TextTruncate.AtEnd,
+					TextWrapped = false,
+					Parent = r,
+				}
+			)
 			local afford = cost ~= nil and (player:GetAttribute("Noodles") or 0) >= cost
 			local text = if cost then Format.noodles(cost) elseif nxt then "SOON" else "MAX"
 			local b = Panel.button(
 				{
 					AnchorPoint = Vector2.new(1, 0.5),
-					Position = UDim2.new(1, -8, 0.5, 0),
-					Size = UDim2.new(0.36, 0, 0, 58),
+					Position = UDim2.new(1, -10, 0.5, 0),
+					Size = UDim2.new(0.3, 0, 0, 38),
 				},
 				if afford then Color3.fromRGB(90, 220, 110) else Color3.fromRGB(190, 190, 190),
 				Color3.fromRGB(30, 80, 40),
@@ -153,7 +152,7 @@ local function upgradePanel(shop: string, title: string, color: Color3, dark: Co
 			end)
 		end
 		if shop == "Workshop" then
-			local r = row(panel.body, 100, 64)
+			local r = row(panel.body, 100, 50)
 			local decor = Panel.button({
 				Position = UDim2.fromOffset(6, 6),
 				Size = UDim2.new(1, -12, 1, -12),
@@ -189,7 +188,7 @@ local function fencePanel()
 		"💰 THE FENCE",
 		Color3.fromRGB(170, 100, 230),
 		Color3.fromRGB(60, 20, 90),
-		Vector2.new(580, 320)
+		Vector2.new(540, 300)
 	)
 	UI.new(
 		"UIListLayout",
@@ -203,7 +202,7 @@ local function fencePanel()
 			total += Progression.findValue(id)
 		end
 		panel.subtitle.Text = #finds .. " finds"
-		local top = row(panel.body, 0, 66)
+		local top = row(panel.body, 0, 50)
 		local all = Panel.button(
 			{
 				Position = UDim2.fromOffset(6, 6),
@@ -226,19 +225,25 @@ local function fencePanel()
 			local f = Finds.ById[id]
 			if f then
 				local tier = Rarity.Tiers[f.rarity]
-				local r = row(panel.body, i, 58)
-				UI.label({
-					Position = UDim2.fromOffset(10, 6),
-					Size = UDim2.new(0.62, -10, 1, -12),
-					Text = f.emoji .. " " .. f.name .. "  ·  " .. f.rarity,
-					TextColor3 = UI.rgb(tier.color):Lerp(Color3.new(0, 0, 0), 0.35),
-					TextXAlignment = Enum.TextXAlignment.Left,
+				local r = row(panel.body, i, 46)
+				Panel.text("title", f.emoji .. " " .. f.name, {
+					Position = UDim2.fromOffset(12, 0),
+					Size = UDim2.new(0.66, -12, 1, 0),
+					Parent = r,
+				})
+				Panel.text("note", string.upper(f.rarity), {
+					AnchorPoint = Vector2.new(1, 0.5),
+					Position = UDim2.new(0.7, -8, 0.5, 0),
+					Size = UDim2.fromOffset(90, 14),
+					TextSize = 11,
+					TextXAlignment = Enum.TextXAlignment.Right,
+					TextColor3 = UI.rgb(tier.color):Lerp(Color3.new(1, 1, 1), 0.2),
 					Parent = r,
 				})
 				local b = Panel.button({
 					AnchorPoint = Vector2.new(1, 0.5),
-					Position = UDim2.new(1, -6, 0.5, 0),
-					Size = UDim2.new(0.34, 0, 0, 46),
+					Position = UDim2.new(1, -8, 0.5, 0),
+					Size = UDim2.new(0.28, 0, 0, 32),
 				}, Color3.fromRGB(90, 220, 110), Color3.fromRGB(30, 80, 40), Format.noodles(f.value))
 				b.Parent = r
 				b.Activated:Connect(function()

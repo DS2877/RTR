@@ -213,7 +213,7 @@ local function renderDecorPlace()
 		if n > 0 then
 			any = true
 			local b = Panel.button(
-				{ Size = UDim2.fromOffset(170, 56) },
+				{ Size = UDim2.fromOffset(168, 40) },
 				Color3.fromRGB(255, 220, 140),
 				Color3.fromRGB(110, 60, 0),
 				string.format("%s %s x%d", it.emoji, it.name, n)
@@ -226,7 +226,7 @@ local function renderDecorPlace()
 		end
 	end
 	local clearB = Panel.button(
-		{ Size = UDim2.fromOffset(170, 56) },
+		{ Size = UDim2.fromOffset(168, 40) },
 		Color3.fromRGB(255, 150, 150),
 		Color3.fromRGB(110, 20, 20),
 		"Pick all up"
@@ -305,7 +305,7 @@ function Moments.start()
 		Vector2.new(580, 300)
 	)
 	UI.new("UIGridLayout", {
-		CellSize = UDim2.fromOffset(170, 56),
+		CellSize = UDim2.fromOffset(168, 40),
 		CellPadding = UDim2.fromOffset(8, 8),
 		Parent = decorPanel.body,
 	})

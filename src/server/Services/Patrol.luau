@@ -21,22 +21,38 @@ Patrol.phase = function(): string
 end
 
 local folder: Folder? = nil
-local recent: { [string]: number } = {} -- line -> when it was last said (avoid repeats)
+local decks: { [string]: { string } } = {} -- per list: lines not said yet (a shuffled deck)
+local lastSaid: { [string]: string } = {}
 
-local function pick(kind: string, name: string?): string
-	local list = Config.Lines[kind] or Config.Lines.Day
-	local best, bestAge = list[1], -1
-	local now = os.clock()
-	-- a few random tries, prefer the line not heard for the longest time
-	for _ = 1, 4 do
-		local line = list[math.random(1, #list)]
-		local age = now - (recent[line] or -1e9)
-		if age > bestAge then
-			best, bestAge = line, age
+-- Draws the next line from a list's deck: every line is said once before any repeats.
+local function draw(key: string, list: { string }): string
+	local deck = decks[key]
+	if not deck or #deck == 0 then
+		deck = table.clone(list)
+		for i = #deck, 2, -1 do
+			local j = math.random(1, i)
+			deck[i], deck[j] = deck[j], deck[i]
 		end
+		-- never the same line twice in a row across a reshuffle
+		if #deck > 1 and deck[#deck] == lastSaid[key] then
+			deck[1], deck[#deck] = deck[#deck], deck[1]
+		end
+		decks[key] = deck
 	end
-	recent[best] = now
-	return (string.gsub(best, "{name}", name or "inmate"))
+	local line = table.remove(deck) :: string
+	lastSaid[key] = line
+	return line
+end
+
+local function pick(kind: string, name: string?, guard: number?): string
+	local list = Config.Lines[kind] or Config.Lines.Day
+	local key = kind
+	local spec = guard and Config.Guards[guard]
+	-- idle moments: sometimes the guard's own quirks instead
+	if name == nil and spec and spec.quirks and math.random() < Config.QuirkChance then
+		list, key = spec.quirks, "quirk" .. guard
+	end
+	return (string.gsub(draw(key, list), "{name}", name or "inmate"))
 end
 
 -- What this guard should talk about right now, and about whom.
@@ -47,7 +63,7 @@ function Patrol.situation(pos: Vector3, phase: string): (string, string?)
 	local best: string? = nil
 	local bestRank = 0
 	local who: string? = nil
-	local rank = { Stolen = 6, Fight = 5, Digging = 4, Bag = 3, Lifting = 2 }
+	local rank = { Stolen = 6, Fight = 5, Digging = 4, Bag = 3, Lifting = 2, TopDog = 1 }
 	for player, s in State.all() do
 		local root = State.root(player)
 		if root then
@@ -79,6 +95,9 @@ function Patrol.situation(pos: Vector3, phase: string): (string, string?)
 			end
 			if attr("Lifting") ~= nil then
 				consider("Lifting", Config.HearRange)
+			end
+			if attr("TopDog") == true and math.random() < 0.5 then
+				consider("TopDog", Config.HearRange)
 			end
 			if d < nearestDist then
 				nearest, nearestDist = player, d
@@ -114,7 +133,7 @@ function Patrol.start()
 				local phase = Patrol.phase()
 				local pose = PatrolMath.guard(i, phase, workspace:GetServerTimeNow())
 				local kind, name = Patrol.situation(Vector3.new(pose.x, 3, pose.z), phase)
-				say(i, pick(kind, name))
+				say(i, pick(kind, name, i))
 				task.wait(math.random(Config.SayEvery[1] * 10, Config.SayEvery[2] * 10) / 10)
 			end
 		end)

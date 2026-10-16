@@ -23,10 +23,18 @@ local Gym = {}
 
 local world: any = nil
 
-export type Lifting = { station: number, start: number, combo: number, weld: Weld?, held: Model? }
+export type Lifting = {
+	station: number,
+	start: number,
+	combo: number,
+	reps: number, -- counted reps this set (moves the green zone: Progression.liftCenter)
+	clean: number, -- reps in a row without a miss (every LiftSetReps = a SET bonus)
+	weld: Weld?,
+	held: Model?,
+}
 local lifting: { [any]: Lifting } = {}
 
-local HELD_SIZE = 7 -- studs: even the bus gets squeezed to this (it's funnier that way)
+local HELD_SIZE = 4.6 -- studs: even the bus gets squeezed to this (it's funnier that way)
 
 local function now(): number
 	return workspace:GetServerTimeNow()
@@ -74,7 +82,7 @@ function Gym.begin(player: Player, station: number): string?
 		)
 		return "weak"
 	end
-	local l: Lifting = { station = station, start = now(), combo = 0 }
+	local l: Lifting = { station = station, start = now(), combo = 0, reps = 0, clean = 0 }
 	lifting[player] = l
 	-- the prop over your head (welded to the root part, bobbed by the server so everyone sees it)
 	local character = typeof(player) == "Instance" and player.Character or nil
@@ -86,7 +94,7 @@ function Gym.begin(player: Player, station: number): string?
 		local weld = Instance.new("Weld")
 		weld.Part0 = hrp
 		weld.Part1 = rootPart
-		weld.C0 = CFrame.new(0, 3.2 + size.Y / 2, 0)
+		weld.C0 = CFrame.new(0, 3.5 + size.Y / 2, 0)
 		weld.Parent = rootPart
 		held.Name = "Lifting"
 		held.Parent = character
@@ -129,10 +137,11 @@ local function quality(player: Player, l: Lifting, at: number): string
 		ping = if ok then math.clamp(p, 0, 0.4) else 0.15
 	end
 	local rank = { miss = 0, good = 1, perfect = 2 }
+	local center = Progression.liftCenter(l.station, l.reps)
 	local best = "miss"
 	for i = 0, 6 do
 		local t = at - (ping + 0.06) * i / 6
-		local q = Progression.liftQuality(Progression.meterPos(t - l.start, st.meter), l.station)
+		local q = Progression.liftQuality(Progression.meterPos(t - l.start, st.meter), l.station, center)
 		if rank[q] > rank[best] then
 			best = q
 		end
@@ -169,6 +178,7 @@ function Gym.lift(player: Player, at: number?): (number, string)
 	end
 	s.lastLift = clock
 	local q = quality(player, l, at or now())
+	l.reps += 1
 	if q == "perfect" then
 		l.combo += 1
 	elseif q == "miss" then
@@ -176,13 +186,24 @@ function Gym.lift(player: Player, at: number?): (number, string)
 	end
 	local mult = if s.passes.DoubleStrength then Economy.PassEffects.DoubleStrength else 1
 	local gain = Progression.liftReward(l.station, q, math.max(0, l.combo - 1), s.data.Rebirths, mult)
+	-- a SET: LiftSetReps reps in a row without a miss pays a bonus
+	local bonus = 0
+	if q == "miss" then
+		l.clean = 0
+	else
+		l.clean += 1
+		if l.clean % Economy.LiftSetReps == 0 then
+			bonus = Progression.liftGain(l.station, s.data.Rebirths, mult) * Economy.LiftSetBonus
+			gain += bonus
+		end
+	end
 	if gain > 0 then
 		s.data.Strength += gain
 		s.data.Stats.Lifts += 1
 		Stats.sync(player)
 	end
 	bob(l, gain > 0)
-	Net.fire(player, Remotes.Names.Lifted, gain, q, l.combo)
+	Net.fire(player, Remotes.Names.Lifted, gain, q, l.combo, l.reps, l.clean, bonus)
 	return gain, q
 end
 

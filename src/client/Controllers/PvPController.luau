@@ -248,7 +248,7 @@ local function renderStash()
 	stashPanel.subtitle.Text = string.format("%d/%d", #stash, PvP.StashSize)
 	local buttons = UI.new("Frame", {
 		LayoutOrder = 0,
-		Size = UDim2.new(1, -8, 0, 62),
+		Size = UDim2.new(1, -6, 0, 42),
 		BackgroundTransparency = 1,
 		Parent = stashPanel.body,
 	})
@@ -275,24 +275,29 @@ local function renderStash()
 		Sound.play("Click")
 		cmd:FireServer("take")
 	end)
-	UI.label({
+	Panel.text("note", "By day raiders can steal ONE find from here. Sell finds to keep them safe!", {
 		LayoutOrder = 1,
-		Size = UDim2.new(1, -8, 0, 26),
-		Text = "By day raiders can steal ONE find from here. Sell finds to keep them safe!",
-		TextColor3 = Color3.fromRGB(150, 80, 60),
+		Size = UDim2.new(1, -6, 0, 26),
 		Parent = stashPanel.body,
 	})
 	for i, id in stash do
 		local f = Finds.ById[id]
 		if f then
 			local tier = Rarity.Tiers[f.rarity]
-			UI.label({
-				LayoutOrder = 1 + i,
-				Size = UDim2.new(1, -8, 0, 30),
-				Text = string.format("%s %s · %s · %s", f.emoji, f.name, f.rarity, Format.noodles(f.value)),
-				TextColor3 = UI.rgb(tier.color):Lerp(Color3.new(0, 0, 0), 0.4),
-				TextXAlignment = Enum.TextXAlignment.Left,
-				Parent = stashPanel.body,
+			local r = Panel.row(stashPanel.body, 1 + i, 36)
+			Panel.text("title", f.emoji .. " " .. f.name, {
+				Position = UDim2.fromOffset(12, 0),
+				Size = UDim2.new(0.6, -12, 1, 0),
+				TextSize = 14,
+				Parent = r,
+			})
+			Panel.text("note", string.upper(f.rarity) .. " · " .. Format.noodles(f.value), {
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, -12, 0, 0),
+				Size = UDim2.new(0.4, 0, 1, 0),
+				TextXAlignment = Enum.TextXAlignment.Right,
+				TextColor3 = UI.rgb(tier.color):Lerp(Color3.new(1, 1, 1), 0.2),
+				Parent = r,
 			})
 		end
 	end

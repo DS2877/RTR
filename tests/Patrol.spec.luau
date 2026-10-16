@@ -28,8 +28,41 @@ return function()
 	end
 	-- every situation has lines
 	for _, kind in
-		{ "Stolen", "Fight", "Digging", "Bag", "Lifting", "Near", "RollCall", "Day", "LightsOut", "Night" }
+		{
+			"Stolen",
+			"Fight",
+			"Digging",
+			"Bag",
+			"Lifting",
+			"Near",
+			"RollCall",
+			"Day",
+			"LightsOut",
+			"Night",
+			"TopDog",
+		}
 	do
-		assert(Config.Lines[kind] and #Config.Lines[kind] > 0, "no lines for " .. kind)
+		assert(Config.Lines[kind] and #Config.Lines[kind] >= 4, "too few lines for " .. kind)
+	end
+	-- every guard has their own quirks, and no line is listed twice
+	local seen: { [string]: boolean } = {}
+	for _, list in Config.Lines do
+		for _, line in list do
+			assert(not seen[line], "duplicate line: " .. line)
+			seen[line] = true
+		end
+	end
+	for _, g in Config.Guards do
+		assert(#g.quirks >= 6, g.name .. " needs quirks")
+		for _, line in g.quirks do
+			assert(not seen[line], "duplicate line: " .. line)
+			seen[line] = true
+			assert(#line <= 90, "line too long for the bubble: " .. line)
+		end
+	end
+	for _, list in Config.Lines do
+		for _, line in list do
+			assert(#line <= 90, "line too long for the bubble: " .. line)
+		end
 	end
 end

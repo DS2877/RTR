@@ -19,6 +19,15 @@ local Economy = {
 	LiftPerfect = 2, -- gain multiplier for a perfect rep
 	LiftComboStep = 0.1, -- +10% per perfect in a row...
 	LiftComboMax = 2, -- ...up to x2 on top
+	LiftShift = 0.2, -- the green zone jumps up to this far from the middle after every rep
+	LiftSetReps = 10, -- reps in a row without a miss = a SET...
+	LiftSetBonus = 5, -- ...worth this many base reps on top
+	LiftTiers = { -- perfect-combo milestones (names shown on the meter)
+		{ combo = 3, name = "WARMING UP", color = { 255, 214, 90 } },
+		{ combo = 6, name = "ON FIRE 🔥", color = { 255, 150, 60 } },
+		{ combo = 10, name = "BEAST MODE", color = { 255, 80, 80 } },
+		{ combo = 16, name = "YARD LEGEND", color = { 200, 120, 255 } },
+	},
 	Gym = {
 		{
 			id = "Toilet",

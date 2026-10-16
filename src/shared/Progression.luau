@@ -348,10 +348,21 @@ function Progression.meterPos(elapsed: number, speed: number): number
 	return if t < 1 then t else 2 - t
 end
 
+-- Where the green zone sits for rep number `rep` (0 = the first rep: dead center). Deterministic,
+-- so the server and the client agree without sending it.
+function Progression.liftCenter(station: number, rep: number): number
+	if rep <= 0 then
+		return 0.5
+	end
+	local h = math.sin(station * 12.9898 + rep * 78.233) * 43758.5453
+	local r = h - math.floor(h) -- 0..1
+	return 0.5 + (r * 2 - 1) * Economy.LiftShift
+end
+
 -- "perfect" (gold center), "good" (green zone) or "miss" for a needle position.
-function Progression.liftQuality(pos: number, station: number): string
+function Progression.liftQuality(pos: number, station: number, center: number?): string
 	local st = Economy.Gym[station] or Economy.Gym[1]
-	local d = math.abs(pos - 0.5)
+	local d = math.abs(pos - (center or 0.5))
 	if d <= st.perfect / 2 then
 		return "perfect"
 	elseif d <= st.zone / 2 then
@@ -377,6 +388,17 @@ function Progression.liftReward(
 	end
 	local comboMult = 1 + math.min(combo * Economy.LiftComboStep, Economy.LiftComboMax - 1)
 	return math.floor(base * Economy.LiftPerfect * comboMult)
+end
+
+-- The combo milestone reached at `combo` perfects in a row (nil below the first one).
+function Progression.liftTier(combo: number): (number, any)
+	local found, tier = 0, nil
+	for i, t in Economy.LiftTiers do
+		if combo >= t.combo then
+			found, tier = i, t
+		end
+	end
+	return found, tier
 end
 
 function Progression.liftGain(station: number, rebirths: number, multiplier: number?): number

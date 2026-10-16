@@ -20,7 +20,7 @@ local depthStore: OrderedDataStore? = nil
 local allTime: { { name: string, depth: number } } = {}
 local lastSaved: { [number]: number } = {}
 
-local GOLD = Color3.fromRGB(255, 200, 40)
+local GOLD = Color3.fromRGB(232, 178, 52)
 
 local function chain(character: Model)
 	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
@@ -34,8 +34,10 @@ local function chain(character: Model)
 		local a = i / links * math.pi * 2
 		local link = Instance.new("Part")
 		link.Name = "Link"
-		link.Size = Vector3.new(0.32, 0.32, 0.32)
-		link.Material = Enum.Material.Neon
+		link.Size = Vector3.new(0.24, 0.24, 0.24)
+		-- polished gold (Neon + bloom made the chain a glowing blob)
+		link.Material = Enum.Material.SmoothPlastic
+		link.Reflectance = 0.2
 		link.Color = GOLD
 		link.CanCollide = false
 		link.CanQuery = false
@@ -54,8 +56,9 @@ local function chain(character: Model)
 	local medal = Instance.new("Part")
 	medal.Name = "Medal"
 	medal.Shape = Enum.PartType.Cylinder
-	medal.Size = Vector3.new(0.15, 0.8, 0.8)
-	medal.Material = Enum.Material.Neon
+	medal.Size = Vector3.new(0.12, 0.6, 0.6)
+	medal.Material = Enum.Material.SmoothPlastic
+	medal.Reflectance = 0.25
 	medal.Color = GOLD
 	medal.CanCollide = false
 	medal.CanQuery = false

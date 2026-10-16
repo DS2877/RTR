@@ -22,7 +22,6 @@ local Sound = require(Client.Util.Sound)
 local ExtraShops = {}
 
 local player = Players.LocalPlayer
-local DARK = Color3.fromRGB(40, 30, 20)
 
 local function clear(body: Instance)
 	for _, c in body:GetChildren() do
@@ -52,33 +51,24 @@ local function row(
 	good: boolean,
 	onTap: () -> ()
 )
-	local r = UI.new("Frame", {
-		LayoutOrder = order,
-		Size = UDim2.new(1, -8, 0, 70),
-		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-		Parent = body,
-	}, { UI.corner(10), UI.stroke(Color3.fromRGB(205, 205, 215), 1) })
-	UI.label({
-		Position = UDim2.fromOffset(10, 6),
-		Size = UDim2.new(0.6, -10, 0, 26),
-		Text = title,
-		TextColor3 = DARK,
-		TextXAlignment = Enum.TextXAlignment.Left,
+	local r = Panel.row(body, order, 60)
+	Panel.text("title", title, {
+		Position = UDim2.fromOffset(12, 8),
+		Size = UDim2.new(0.66, -12, 0, 18),
 		Parent = r,
 	})
-	UI.label({
-		Position = UDim2.fromOffset(10, 34),
-		Size = UDim2.new(0.62, -10, 0, 28),
-		Text = desc,
-		TextColor3 = Color3.fromRGB(110, 90, 70),
-		TextXAlignment = Enum.TextXAlignment.Left,
+	Panel.text("desc", desc, {
+		Position = UDim2.fromOffset(12, 27),
+		Size = UDim2.new(0.66, -12, 0, 28),
+		TextSize = 12,
+		TextYAlignment = Enum.TextYAlignment.Top,
 		Parent = r,
 	})
 	local b = Panel.button(
 		{
 			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -8, 0.5, 0),
-			Size = UDim2.new(0.34, 0, 0, 54),
+			Position = UDim2.new(1, -10, 0.5, 0),
+			Size = UDim2.new(0.28, 0, 0, 38),
 		},
 		if good then Color3.fromRGB(90, 220, 110) else Color3.fromRGB(190, 190, 190),
 		Color3.fromRGB(30, 80, 40),
@@ -93,7 +83,7 @@ local function row(
 end
 
 local function listPanel(name: string, title: string, color: Color3, dark: Color3): Panel.Panel
-	local p = Panel.new(name, title, color, dark, Vector2.new(600, 330))
+	local p = Panel.new(name, title, color, dark, Vector2.new(560, 310))
 	UI.new(
 		"UIListLayout",
 		{ Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = p.body }
@@ -288,11 +278,9 @@ function ExtraShops.start()
 			end
 		end
 		order += 1
-		UI.label({
+		Panel.text("note", "🤫 SNITCH: tip off the guard (they get a visit tonight)", {
 			LayoutOrder = order,
-			Size = UDim2.new(1, -8, 0, 30),
-			Text = "🤫 SNITCH: tip off the guard (they get a visit tonight)",
-			TextColor3 = Color3.fromRGB(90, 40, 120),
+			Size = UDim2.new(1, -6, 0, 26),
 			Parent = body,
 		})
 		for _, other in Players:GetPlayers() do

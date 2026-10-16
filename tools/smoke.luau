@@ -471,6 +471,10 @@ check("rep rate limited", select(2, Gym.lift(fake, l.start + 0.5 / speed)) == ""
 s.lastLift = 0
 local g2, q2 = Gym.lift(fake, l.start + 0.001) -- needle at the edge
 check("missed rep", q2 == "miss" and g2 == 0, q2)
+s.lastLift = 0
+local center = Progression.liftCenter(1, l.reps)
+local g3, q3 = Gym.lift(fake, l.start + center / speed) -- the green zone moved: hit it there
+check("perfect at the moved zone", q3 == "perfect" and g3 > 0, { q3, center })
 Gym.stop(fake)
 check("put it down", Gym.lifting(fake) == nil)
 fake.Position = world.stations[3].Position
@@ -842,7 +846,13 @@ for name, id in allSounds do
 	end
 end
 
-for _, list in { Assets.Animations.PunchR15, Assets.Animations.PunchR6 } do
+for _, list in
+	{
+		Assets.Animations.PunchR15,
+		Assets.Animations.PunchR6,
+		{ Assets.Animations.LiftR15, Assets.Animations.LiftR6 },
+	}
+do
 	for _, id in list do
 		local num = tonumber(string.match(id, "%d+"))
 		local ok, info = pcall(function()

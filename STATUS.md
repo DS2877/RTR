@@ -1,6 +1,6 @@
 # STATUS – Dig Out! (fängelseflykt-grävspel)
 
-Senast uppdaterad: 2026-10-15 · Milstolpe: **M5 POLISH** (M1–M4 publicerade)
+Senast uppdaterad: 2026-10-16 · Milstolpe: **M5 POLISH** (M1–M4 publicerade)
 
 Det gamla spelet (Rob the Rich!) är raderat från koden och arkiverat i git-taggen
 `archive/rob-the-rich` (sista commit `374cd1d`). Ny spelardata sparas i `DigOut_v1`, så gammal
@@ -187,6 +187,25 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Gubben, smala menyer, roligare gym, pratigare vakter
+- **Glödande händer/bröst fixat:** VIP-guldnävarna och TOP DOG-kedjan var gjorda av Neon, som
+  bloom gjorde till lysande klumpar. Nu är de polerat guld. 3D-kläder från avataren (t.ex. röda
+  byxor eller tröjor) tas av så att fångdräkten syns ordentligt.
+- **Smala menyer:** alla menyer (Visitation, Tool Crib, Commissary, The Fence, Laundry, Mess Hall,
+  Black Market, Decor, Index, Stash, Admin) har samma stil som fynd-korten: mörkt halvgenomskinligt
+  glas, liten titel med färgad linje, tunna rader och smala knappar. "Ej tillgänglig"/OWNED är en
+  diskret kontur i stället för en stor grå knapp.
+- **Gymmet är ett spel nu:** det gröna fältet hoppar till ett nytt ställe efter varje lyft (servern
+  räknar ut samma plats), PERFECT i rad bygger combo med nivåer (WARMING UP → ON FIRE 🔥 → BEAST
+  MODE → YARD LEGEND) och tonen stiger, 10 lyft i rad utan miss = **SET** med bonusstyrka, siffror
+  flyger upp, och en rad under mätaren visar nästa sak du kan lyfta ("NEXT 🛏️ MATTRESS STACK ·
+  63 / 100 💪"). Armarna åker upp på riktigt (animation som alla ser), saken är mindre och sitter
+  ovanför huvudet, och den stora "Lift"-prompten döljs medan du lyfter.
+- **Vakterna:** ~100 repliker (från ~40) + egna personligheter (Dave = mat, Brenda = skvaller,
+  Sgt. Lumpy = ser ingenting) + repliker om TOP DOG. En "kortlek" per situation gör att ingen
+  replik upprepas förrän alla är sagda. Pratbubblan är ett litet halvgenomskinligt piller med
+  namnet i blått, skrivs ut bokstav för bokstav och tonar ut.
+
 ### Automatisk kvalitet + butiksbilder
 - **Automatisk kvalitet:** spelet mäter FPS. Under ~45 FPS i 4 sekunder går det ner ett steg
   (High → Medium → Low), över ~57 FPS i 20 sekunder upp igen. Stegen sänker hur långt tunnlarna
@@ -318,8 +337,11 @@ köper nästa verktyg – det är tänkt så (som i andra simulatorspel), inte e
 16. Ljud/zoner: ha ljudet på. Slå på väggen (hör sprickorna stiga i ton), krossa flera i rad.
     ADMIN → Zone 4 (armeringsjärn), Zone 5 (rör), Zone 8 (kristaller), Zone 9 (lava) – gräv en bit
     och titta på väggarna och lyssna på bakgrundsljudet.
-17. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
-18. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
+17. Nytt: titta på gubben (VIP/TOP DOG) – inga lysande klumpar på händer/bröst. Öppna Visitation
+    och Tool Crib – smala mörka menyer. Gå till gymmet: lyft toaletten, följ det gröna fältet som
+    hoppar, gör 10 i rad (SET!) och bygg combo. Gå förbi vakterna och läs de nya replikerna.
+18. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
+19. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
 
 ## ⏳ Saknas (kommande milstolpar)
 - UI:t (knappar, menyer) har inte kunnat renderas i visaren än – där är jag fortfarande blind.

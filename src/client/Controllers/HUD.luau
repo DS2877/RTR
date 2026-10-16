@@ -244,7 +244,7 @@ local function buildIndex(): Panel.Panel
 		"📖 INDEX",
 		Color3.fromRGB(110, 200, 255),
 		Color3.fromRGB(20, 60, 140),
-		Vector2.new(600, 330)
+		Vector2.new(580, 310)
 	)
 	UI.new(
 		"UIListLayout",
@@ -263,24 +263,17 @@ local function buildIndex(): Panel.Panel
 		local have, total = 0, 0
 		for zone, z in Zones do
 			local list = Finds.ByZone[zone] or {}
-			local row = UI.new("Frame", {
-				LayoutOrder = zone,
-				Size = UDim2.new(1, -8, 0, 44),
-				BackgroundColor3 = Color3.new(1, 1, 1),
-				Parent = panel.body,
-			}, { UI.corner(10), UI.stroke(Color3.fromRGB(205, 205, 215), 1) })
+			local row = Panel.row(panel.body, zone, 44)
 			local complete = #list > 0
 			for _, f in list do
 				if not found[f.id] then
 					complete = false
 				end
 			end
-			UI.label({
-				Position = UDim2.fromOffset(8, 4),
-				Size = UDim2.new(0.3, -8, 1, -8),
-				Text = z.name .. (if complete then " ✅" else ""),
-				TextColor3 = Color3.fromRGB(40, 40, 55),
-				TextXAlignment = Enum.TextXAlignment.Left,
+			Panel.text("title", z.name .. (if complete then " ✅" else ""), {
+				Position = UDim2.fromOffset(12, 0),
+				Size = UDim2.new(0.3, -12, 1, 0),
+				TextSize = 14,
 				Parent = row,
 			})
 			for i, f in list do
@@ -291,14 +284,14 @@ local function buildIndex(): Panel.Panel
 				end
 				local tier = Rarity.Tiers[f.rarity]
 				UI.new("TextLabel", {
-					Position = UDim2.new(0.3, (i - 1) * 40, 0, 4),
-					Size = UDim2.fromOffset(36, 36),
-					BackgroundColor3 = if got then rgb(tier.color) else Color3.fromRGB(60, 60, 70),
-					BackgroundTransparency = if got then 0.35 else 0,
+					Position = UDim2.new(0.3, (i - 1) * 38, 0, 5),
+					Size = UDim2.fromOffset(34, 34),
+					BackgroundColor3 = if got then rgb(tier.color) else Color3.new(1, 1, 1),
+					BackgroundTransparency = if got then 0.45 else 0.92,
 					Text = if got then f.emoji else "?",
-					TextScaled = true,
-					Font = Enum.Font.FredokaOne,
-					TextColor3 = Color3.fromRGB(200, 200, 210),
+					TextSize = 18,
+					Font = Enum.Font.GothamBold,
+					TextColor3 = Color3.fromRGB(150, 154, 168),
 					Parent = row,
 				}, { UI.corner(8) })
 			end
@@ -323,7 +316,7 @@ local function buildAdmin(parent: Instance)
 		Vector2.new(560, 320)
 	)
 	local grid = UI.new("UIGridLayout", {
-		CellSize = UDim2.fromOffset(126, 54),
+		CellSize = UDim2.fromOffset(122, 40),
 		CellPadding = UDim2.fromOffset(8, 8),
 		Parent = panel.body,
 	})
@@ -370,8 +363,8 @@ local function buildAdmin(parent: Instance)
 	UI.textStroke(DARK, 2).Parent = perf
 	for _, c in cmds do
 		local b = Panel.button(
-			{ Size = UDim2.fromOffset(126, 54) },
-			Color3.fromRGB(255, 200, 200),
+			{ Size = UDim2.fromOffset(122, 40) },
+			Color3.fromRGB(255, 120, 120),
 			Color3.fromRGB(120, 20, 30),
 			c[1] :: string
 		)

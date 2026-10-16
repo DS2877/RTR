@@ -180,6 +180,24 @@ return function()
 	check(Progression.liftReward(1, "good", 0, 0) == 1, "good = base")
 	check(Progression.liftReward(1, "perfect", 0, 0) == 2, "perfect = x2")
 	check(Progression.liftReward(3, "perfect", 100, 0) == 10 * 2 * Economy.LiftComboMax, "combo capped")
+	check(Progression.liftCenter(1, 0) == 0.5, "first rep centered")
+	local moved = false
+	for station = 1, #Economy.Gym do
+		for rep = 1, 200 do
+			local c = Progression.liftCenter(station, rep)
+			check(c >= 0.5 - Economy.LiftShift and c <= 0.5 + Economy.LiftShift, "center in range")
+			check(
+				c - Economy.Gym[station].zone / 2 > 0.02 and c + Economy.Gym[station].zone / 2 < 0.98,
+				"zone on the bar"
+			)
+			moved = moved or math.abs(c - 0.5) > 0.1
+		end
+	end
+	check(moved, "the zone moves")
+	check(Progression.liftQuality(0.7, 1, 0.7) == "perfect", "moved center = perfect")
+	check(Progression.liftQuality(0.5, 1, 0.75) == "miss", "old center misses")
+	check(select(1, Progression.liftTier(0)) == 0, "no tier at 0")
+	check(select(1, Progression.liftTier(Economy.LiftTiers[2].combo)) == 2, "tier 2")
 	for i = 2, #Economy.Gym do
 		check(Economy.Gym[i].zone < Economy.Gym[i - 1].zone, "heavier = harder")
 	end

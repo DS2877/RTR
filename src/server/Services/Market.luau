@@ -108,6 +108,18 @@ end
 
 -- ===== looks =====
 
+local LAYERED: { [Enum.AccessoryType]: boolean } = {
+	[Enum.AccessoryType.TShirt] = true,
+	[Enum.AccessoryType.Shirt] = true,
+	[Enum.AccessoryType.Pants] = true,
+	[Enum.AccessoryType.Jacket] = true,
+	[Enum.AccessoryType.Sweater] = true,
+	[Enum.AccessoryType.Shorts] = true,
+	[Enum.AccessoryType.DressSkirt] = true,
+	[Enum.AccessoryType.LeftShoe] = true,
+	[Enum.AccessoryType.RightShoe] = true,
+}
+
 local function applyLooks(player: Player)
 	local s = State.get(player)
 	local character = typeof(player) == "Instance" and player.Character or nil
@@ -119,6 +131,9 @@ local function applyLooks(player: Player)
 	if uniform and uniform.color then
 		for _, c in character:GetChildren() do
 			if c:IsA("Shirt") or c:IsA("Pants") or c:IsA("ShirtGraphic") then
+				c:Destroy()
+			elseif c:IsA("Accessory") and LAYERED[c.AccessoryType] then
+				-- 3D (layered) clothing would sit on top of the jumpsuit (red pants, a glowing top...)
 				c:Destroy()
 			end
 		end
@@ -174,8 +189,10 @@ local function applyLooks(player: Player)
 		local hand = character:FindFirstChild(side .. "Hand") or character:FindFirstChild(side .. " Arm")
 		if hand and hand:IsA("BasePart") then
 			if gold then
-				hand.Color = Color3.fromRGB(255, 200, 40)
-				hand.Material = Enum.Material.Neon
+				-- polished gold, not Neon: Neon + bloom turned the fists into glowing blobs
+				hand.Color = Color3.fromRGB(232, 178, 52)
+				hand.Material = Enum.Material.SmoothPlastic
+				hand.Reflectance = 0.18
 			end
 			local old = hand:FindFirstChild("FistTrail")
 			if old then

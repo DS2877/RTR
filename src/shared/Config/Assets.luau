@@ -44,6 +44,8 @@ local Assets = {
 		PunchR15 = { "rbxassetid://522638767", "rbxassetid://522635514" }, -- toollunge, toolslash
 		PunchR6 = { "rbxassetid://129967478", "rbxassetid://129967390" }, -- toollunge, toolslash
 		PunchSpeed = 1.7,
+		LiftR15 = "rbxassetid://507770677", -- cheer: both arms up (held still = hoisting the prop)
+		LiftR6 = "rbxassetid://129423030",
 	},
 }
 
