@@ -589,35 +589,35 @@ function Interior.messHall(common: Instance)
 	-- posters, a clock, vents
 	poster(
 		d,
-		CFrame.new(cx - 34, 9, z0 + 0.18) * CFrame.Angles(0, math.pi, 0),
+		CFrame.new(cx - 34, 9.6, z0 + 0.18) * CFrame.Angles(0, math.pi, 0),
 		"NO SECONDS",
 		Color3.fromRGB(190, 40, 40),
 		Color3.new(1, 1, 1)
 	)
 	poster(
 		d,
-		CFrame.new(cx + 34, 9, z0 + 0.18) * CFrame.Angles(0, math.pi, 0),
+		CFrame.new(cx + 34, 9.6, z0 + 0.18) * CFrame.Angles(0, math.pi, 0),
 		"TRAYS GO BACK ON THE RACK",
 		Color3.fromRGB(40, 70, 130),
 		Color3.new(1, 1, 1)
 	)
 	poster(
 		d,
-		CFrame.new(x0 + 0.18, 9, z0 + 40) * CFrame.Angles(0, -math.pi / 2, 0),
+		CFrame.new(x0 + 0.18, 9.6, z0 + 40) * CFrame.Angles(0, -math.pi / 2, 0),
 		"MYSTERY MEAT MONDAY",
 		Color3.fromRGB(230, 200, 60),
 		Color3.fromRGB(30, 30, 30)
 	)
 	poster(
 		d,
-		CFrame.new(x1 - 0.18, 9, z0 + 17) * CFrame.Angles(0, math.pi / 2, 0),
+		CFrame.new(x1 - 0.18, 9.6, z0 + 17) * CFrame.Angles(0, math.pi / 2, 0),
 		"WASH YOUR HANDS (PLEASE)",
 		Color3.fromRGB(60, 130, 90),
 		Color3.new(1, 1, 1)
 	)
 	poster(
 		d,
-		CFrame.new(x1 - 0.18, 9, z0 + 31) * CFrame.Angles(0, math.pi / 2, 0),
+		CFrame.new(x1 - 0.18, 9.6, z0 + 31) * CFrame.Angles(0, math.pi / 2, 0),
 		"TODAY: GRAY",
 		Color3.fromRGB(110, 110, 116),
 		Color3.new(1, 1, 1)
