@@ -458,7 +458,8 @@ check(
 )
 check("punch accepted", punch(bx, 1, 0, 6) == nil)
 check("block broken after " .. hits .. " hits", Voxel.isDug(s.grid, bx, 1, 0))
-check("delta sent", count("Delta") >= hits, count("Delta"))(World :: any).CritChance = critChance
+check("delta sent", count("Delta") >= hits, count("Delta"))
+worldAny.CritChance = critChance
 check("rubble pile", s.loose == 1 and #s.piles == 1, s.loose)
 check("block behind is exposed now", Voxel.isExposed(s.grid, bx, 1, 1))
 
