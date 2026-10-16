@@ -384,14 +384,14 @@ local function commonRoom(prison: Instance)
 	-- posters with fair warnings
 	poster(
 		d,
-		CFrame.new(x0 + 40, 8, z0 + 0.18) * CFrame.Angles(0, math.pi, 0),
+		CFrame.new(x0 + 8, 8, z0 + 0.18) * CFrame.Angles(0, math.pi, 0),
 		"NO DIGGING",
 		Color3.fromRGB(190, 40, 40),
 		Color3.new(1, 1, 1)
 	)
 	poster(
 		d,
-		CFrame.new(x0 + 18, 8, z0 + 0.18) * CFrame.Angles(0, math.pi, 0),
+		CFrame.new(x0 + 20, 8, z0 + 0.18) * CFrame.Angles(0, math.pi, 0),
 		"SMILE! YOU'RE ON CAMERA",
 		Color3.fromRGB(230, 200, 60),
 		Color3.fromRGB(30, 30, 30)
@@ -458,7 +458,7 @@ local function yard(prison: Instance)
 		local len = (b - a).Magnitude
 		lines += 1
 		-- each line a little higher than the last: their crossings never fight
-		local y = 0.12 + (lines % 3) * 0.035
+		local y = 0.12 + (lines % 7) * 0.035
 		p(
 			d,
 			"CourtLine",
@@ -585,8 +585,8 @@ local function yard(prison: Instance)
 		)
 	end
 	wall(Vector3.new(wx0, 0, wz0), Vector3.new(wx0, 0, wz1))
-	wall(Vector3.new(wx0 + 2, 0, wz0), Vector3.new(wallEnd, 0, wz0))
-	wall(Vector3.new(wx0 + 2, 0, wz1), Vector3.new(wallEnd, 0, wz1))
+	wall(Vector3.new(wx0 + 2.5, 0, wz0), Vector3.new(wallEnd, 0, wz0))
+	wall(Vector3.new(wx0 + 2.5, 0, wz1), Vector3.new(wallEnd, 0, wz1))
 	for _, c in { Vector3.new(wx0, 0, wz0), Vector3.new(wx0, 0, wz1) } do
 		p(
 			d,
