@@ -15,6 +15,7 @@ local Voxel = require(Shared.Voxel)
 local Progression = require(Shared.Progression)
 local Tunnel = require(Shared.Tunnel)
 local Remotes = require(Shared.Remotes)
+local Format = require(Shared.Format)
 
 local Client = script.Parent.Parent
 local VoxelRender = require(script.Parent.VoxelRender)
@@ -405,6 +406,10 @@ function DigFX.setVacuum(on: boolean)
 	vacuumOn = on
 end
 
+function DigFX.isVacuuming(): boolean
+	return vacuumOn
+end
+
 local function buildNozzle(): Model
 	local m = Instance.new("Model")
 	m.Name = "VacuumNozzle"
@@ -615,6 +620,8 @@ function DigFX.start()
 	end
 	Remotes.get(Remotes.Names.Piles).OnClientEvent:Connect(setPiles)
 	RunService.Heartbeat:Connect(updateVacuum)
+	Remotes.get(Remotes.Names.Gold).OnClientEvent:Connect(onGold)
+	Remotes.get(Remotes.Names.CaveIn).OnClientEvent:Connect(onCaveIn)
 	-- CRIT: a hot flash, a bigger kick and a "CRIT!" that pops off the block
 	Remotes.get(Remotes.Names.Crit).OnClientEvent:Connect(function(x: number, y: number, z: number)
 		local t = VoxelRender.own()
@@ -673,6 +680,159 @@ function DigFX.start()
 			holder:Destroy()
 		end)
 	end)
+end
+
+-- ===== gold, jackpots, cave-ins =====
+
+-- Text that pops off a spot in the world and floats up (CRIT!, +1.2K, CAVE-IN!).
+local function popText(at: Vector3, text: string, color: Color3, size: number, life: number)
+	local holder = Instance.new("Part")
+	holder.Anchored = true
+	holder.CanCollide = false
+	holder.CanQuery = false
+	holder.CanTouch = false
+	holder.Transparency = 1
+	holder.Size = Vector3.one
+	holder.Position = at
+	holder.Parent = folder
+	local gui = Instance.new("BillboardGui")
+	gui.Size = UDim2.new(size, 0, size * 0.32, 0)
+	gui.StudsOffset = Vector3.new(0, 0.6, 0)
+	gui.AlwaysOnTop = true
+	gui.LightInfluence = 0
+	gui.Parent = holder
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.fromScale(1, 1)
+	label.Text = text
+	label.Font = Enum.Font.GothamBlack
+	label.TextScaled = true
+	label.TextColor3 = color
+	label.Rotation = math.random(-6, 6)
+	label.Parent = gui
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color:Lerp(Color3.new(0, 0, 0), 0.75)
+	stroke.Thickness = 2
+	stroke.Parent = label
+	local scale = Instance.new("UIScale")
+	scale.Scale = 0.3
+	scale.Parent = label
+	TweenService:Create(scale, TweenInfo.new(0.22, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	TweenService
+		:Create(gui, TweenInfo.new(life, Enum.EasingStyle.Quad), { StudsOffset = Vector3.new(0, 3, 0) })
+		:Play()
+	task.delay(life * 0.55, function()
+		TweenService:Create(label, TweenInfo.new(life * 0.45), { TextTransparency = 1 }):Play()
+		TweenService:Create(stroke, TweenInfo.new(life * 0.45), { Transparency = 1 }):Play()
+	end)
+	task.delay(life + 0.05, function()
+		holder:Destroy()
+	end)
+end
+DigFX.popText = popText
+
+local GOLD = Color3.fromRGB(255, 200, 60)
+local JACKPOT = Color3.fromRGB(120, 230, 255)
+
+-- Coins burst out of the block, hang for a beat, then fly into you.
+local function coinFountain(from: Vector3, count: number, color: Color3)
+	local r = root()
+	for i = 1, count do
+		local c = Instance.new("Part")
+		c.Shape = Enum.PartType.Cylinder
+		c.Size = Vector3.new(0.12, 0.55, 0.55)
+		c.Color = color
+		c.Material = Enum.Material.Neon
+		c.CanCollide = false
+		c.CanQuery = false
+		c.CanTouch = false
+		c.CastShadow = false
+		c.Anchored = true
+		c.CFrame = CFrame.new(from) * CFrame.Angles(math.random() * 6, math.random() * 6, 0)
+		c.Parent = folder
+		local out = from
+			+ Vector3.new((math.random() - 0.5) * 6, 1.5 + math.random() * 3.5, (math.random() - 0.5) * 6)
+		local up = TweenService:Create(
+			c,
+			TweenInfo.new(0.28 + math.random() * 0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ CFrame = CFrame.new(out) * CFrame.Angles(math.random() * 6, math.random() * 6, 0) }
+		)
+		up:Play()
+		task.delay(0.35 + i * 0.025, function()
+			local target = if r and r.Parent then r.Position + Vector3.new(0, 1, 0) else out
+			local fly = TweenService:Create(
+				c,
+				TweenInfo.new(0.32, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+				{ CFrame = CFrame.new(target), Size = Vector3.new(0.05, 0.2, 0.2) }
+			)
+			fly:Play()
+			fly.Completed:Connect(function()
+				c:Destroy()
+				if i % 3 == 0 then
+					Sound.play("Coin", 0.35, 1.2 + math.random() * 0.3)
+				end
+			end)
+		end)
+	end
+end
+
+local function onGold(owner: number, x: number, y: number, z: number, kind: string, paid: number)
+	local t = VoxelRender.get(owner)
+	if not t or typeof(x) ~= "number" then
+		return
+	end
+	local pos = Tunnel.blockCenter(t.frame, x, y, z)
+	local jackpot = kind == "jackpot"
+	local color = if jackpot then JACKPOT else GOLD
+	if owner ~= player.UserId then
+		-- someone else's gold: a glitter + a clink where it broke
+		puff(pos, color, 10, 1)
+		Sound.at("Chime", pos, 0.5, 1.3)
+		return
+	end
+	puff(pos, color, if jackpot then 40 else 16, if jackpot then 1.6 else 1.1)
+	coinFountain(pos, if jackpot then 34 else 12, color)
+	popText(
+		pos,
+		"+" .. Format.number(paid) .. " 🍜",
+		color,
+		if jackpot then 7 else 4.5,
+		if jackpot then 1.6 else 1.1
+	)
+	Sound.play("Dump", if jackpot then 0.9 else 0.55, if jackpot then 1 else 1.15)
+	Sound.play("Chime", 0.6, if jackpot then 0.8 else 1.4)
+	if jackpot then
+		Sound.play("Rare", 0.9)
+		popText(pos + Vector3.new(0, 2, 0), "JACKPOT!", JACKPOT, 9, 1.8)
+		DigFX.confetti(pos)
+		Shake.kick(1)
+		Shake.punch(5)
+	else
+		Shake.kick(0.35)
+	end
+end
+
+local function onCaveIn(owner: number, x: number, y: number, z: number, blocks: number)
+	local t = VoxelRender.get(owner)
+	if not t or typeof(x) ~= "number" then
+		return
+	end
+	local pos = Tunnel.blockCenter(t.frame, x, y, z)
+	local dust = VoxelRender.blockColor(x, y, z):Lerp(Color3.new(1, 1, 1), 0.3)
+	for _ = 1, 5 do
+		local off =
+			Vector3.new((math.random() - 0.5) * 6, (math.random() - 0.5) * 4, (math.random() - 0.5) * 6)
+		puff(pos + off, dust, 14, 1.5)
+	end
+	if owner ~= player.UserId then
+		Sound.at("BigBreak", pos, 0.8, 0.85, 120)
+		return
+	end
+	Sound.play("BigBreak", 0.9, 0.85)
+	Sound.play("Boom", 0.35, 1.3)
+	popText(pos + Vector3.new(0, 1.5, 0), "CAVE-IN! x" .. blocks, Color3.fromRGB(255, 170, 90), 6, 1.3)
+	Shake.kick(0.9)
+	Shake.punch(4)
 end
 
 -- hit sparks at the aimed block (called by the HUD wiring when a punch lands)

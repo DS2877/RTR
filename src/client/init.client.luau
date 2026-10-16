@@ -56,6 +56,7 @@ do
 	end
 end
 require(Controllers.HUD).start()
+require(Controllers.Combo).start()
 require(Controllers.Shops).start()
 require(Controllers.Clock).start()
 require(Controllers.PvPController).start()

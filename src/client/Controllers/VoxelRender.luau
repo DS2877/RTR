@@ -309,6 +309,11 @@ local function tierTint(owner: number): Color3?
 	return Color3.fromRGB(tier.tint[1], tier.tint[2], tier.tint[3])
 end
 
+local GOLD_ROCK = Color3.fromRGB(214, 160, 52)
+local GOLD_GLOW = Color3.fromRGB(255, 214, 90)
+local JACKPOT_ROCK = Color3.fromRGB(70, 150, 190)
+local JACKPOT_GLOW = Color3.fromRGB(150, 245, 255)
+
 local function styleBlock(t: T, idx: number, p: Part)
 	local x, y, z = Voxel.unindex(t.grid, idx)
 	local zone = Progression.zoneAt(z)
@@ -317,11 +322,16 @@ local function styleBlock(t: T, idx: number, p: Part)
 	p.Material = if z >= MAX_Z then Enum.Material.Basalt else zoneMaterial(zone)
 	local color = VoxelRender.blockColor(x, y, z)
 	local find = if z < MAX_Z then Progression.findAt(t.seed, x, y, z) else nil
+	-- gold / jackpot blocks: the rock is shot through with metal (it pays the moment it breaks)
+	local gold = if find == nil and z < MAX_Z then Progression.goldAt(t.seed, x, y, z) else nil
 	if find then
 		color = color:Lerp(Color3.new(0, 0, 0), 0.45)
 	end
 	unlight(p)
-	if not find and z < MAX_Z then
+	if gold then
+		color = if gold == "jackpot" then JACKPOT_ROCK else GOLD_ROCK
+		p.Material = Enum.Material.Foil
+	elseif not find and z < MAX_Z then
 		color = applyFeature(t, x, y, z, p) or color
 	end
 	local stage = t.damage[idx]
@@ -338,9 +348,9 @@ local function styleBlock(t: T, idx: number, p: Part)
 		color = color:Lerp(tint, 0.3)
 	end
 	p.Color = color
-	-- ore: a glowing vein through the block, the color of the find's rarity
+	-- ore: a glowing vein through the block, the color of the find's rarity (gold: a gold vein)
 	local glint = t.glints[idx]
-	if find and not glint then
+	if (find or gold) and not glint then
 		local g = table.remove(glintPool)
 		if not g then
 			g = Instance.new("Part")
@@ -353,14 +363,19 @@ local function styleBlock(t: T, idx: number, p: Part)
 			g.Name = "Glint"
 		end
 		assert(g, "glint")
-		local tier = Rarity.Tiers[Finds.ById[find].rarity]
-		g.Color = Color3.fromRGB(tier.color[1], tier.color[2], tier.color[3])
-		g.Size = Vector3.new(B * 1.04, 0.32, 0.32)
+		if find then
+			local tier = Rarity.Tiers[Finds.ById[find].rarity]
+			g.Color = Color3.fromRGB(tier.color[1], tier.color[2], tier.color[3])
+			g.Size = Vector3.new(B * 1.04, 0.32, 0.32)
+		else
+			g.Color = if gold == "jackpot" then JACKPOT_GLOW else GOLD_GLOW
+			g.Size = Vector3.new(B * 1.04, 0.42, 0.42)
+		end
 		local spin = Progression.hash01(t.seed, x, y, z, 5) * math.pi
 		g.CFrame = p.CFrame * CFrame.Angles(spin, 0, math.pi / 4)
 		g.Parent = folder
 		t.glints[idx] = g
-	elseif not find and glint then
+	elseif not (find or gold) and glint then
 		glint.Parent = nil
 		table.insert(glintPool, glint)
 		t.glints[idx] = nil
@@ -396,7 +411,9 @@ end
 local function buildChunk(t: T, id: number)
 	local special = function(x: number, y: number, z: number): boolean
 		local idx = Voxel.index(t.grid, x, y, z)
-		return t.damage[idx] ~= nil or Progression.findAt(t.seed, x, y, z) ~= nil
+		return t.damage[idx] ~= nil
+			or Progression.findAt(t.seed, x, y, z) ~= nil
+			or Progression.goldAt(t.seed, x, y, z) ~= nil
 	end
 	local blocks, runs = Shell.chunk(t.grid, id, special)
 	local keep: { [number]: boolean } = {}

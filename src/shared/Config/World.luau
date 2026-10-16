@@ -35,6 +35,30 @@ local World = {
 	CritMult = 3, -- ...hitting this many times harder
 	BrushDepth = 2, -- a brush cell that hits air digs up to this many layers deeper
 
+	-- COMBO: punches that land with less than ComboWindow seconds between them build a chain
+	-- (holding VACUUM pauses the clock). The tier multiplies the Noodles the broken rubble is worth.
+	ComboWindow = 1.6,
+	ComboTiers = {
+		{ hits = 0, mult = 1, name = "" },
+		{ hits = 12, mult = 1.25, name = "ON A ROLL" },
+		{ hits = 35, mult = 1.5, name = "ON FIRE" },
+		{ hits = 75, mult = 2, name = "UNSTOPPABLE" },
+		{ hits = 140, mult = 3, name = "PRISON BREAK" },
+	},
+	-- GOLD: rare glittering blocks (fixed per tunnel by its seed, visible as soon as they're
+	-- exposed) pay their worth in Noodles the moment they break: GoldBlocks / JackpotBlocks blocks
+	-- of that zone's rubble, with every Noodles multiplier. A JACKPOT is announced to the server.
+	GoldChance = 1 / 220,
+	GoldBlocks = 14,
+	JackpotChance = 1 / 2600,
+	JackpotBlocks = 220,
+	-- CAVE-IN: each broken block may bring down the exposed rock around it (within CaveInRadius
+	-- blocks, at most CaveInMax blocks); CaveInExpected = the average extra blocks (balance sim)
+	CaveInChance = 0.012,
+	CaveInRadius = 2,
+	CaveInMax = 14,
+	CaveInExpected = 7,
+
 	-- client rendering budget (iPhone 11)
 	StreamRadius = 40, -- blocks around the camera
 	MaxVoxelParts = 3000,

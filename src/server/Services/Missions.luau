@@ -107,6 +107,29 @@ function Missions.count(player: Player, stat: string, n: number?)
 end
 
 -- index 1..3 = a job, 4 = the all-three bonus. Returns the Noodles paid (0 = refused).
+-- A "best today" job (Combo): progress = the highest value reached, not a running count.
+function Missions.reach(player: Player, stat: string, value: number)
+	local s = State.get(player)
+	if not s then
+		return
+	end
+	local m = ensure(s)
+	local changed = false
+	for i, job in Missions.list(s) do
+		local p = m.Progress[i] or 0
+		if job.stat == stat and value > p and p < job.goal then
+			m.Progress[i] = math.min(job.goal, value)
+			changed = true
+			if m.Progress[i] >= job.goal then
+				Net.fire(player, Remotes.Names.MissionDone, i)
+			end
+		end
+	end
+	if changed then
+		Missions.sync(player)
+	end
+end
+
 function Missions.claim(player: Player, index: number): number
 	local s = State.get(player)
 	if not s then

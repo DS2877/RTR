@@ -202,4 +202,54 @@ return function()
 		check(Economy.Gym[i].zone < Economy.Gym[i - 1].zone, "heavier = harder")
 	end
 	check(Progression.bestStation(0) == 1 and Progression.bestStation(1e9) == #Economy.Gym, "gym stations")
+
+	-- combo tiers: start at x1, climb in order, never drop while the chain grows
+	check(Progression.comboMult(0) == 1, "no combo = x1")
+	local lastMult = 0
+	for hits = 0, 400 do
+		local m = Progression.comboMult(hits)
+		check(m >= lastMult, "combo multiplier never drops as the chain grows")
+		lastMult = m
+	end
+	for i = 2, #World.ComboTiers do
+		local t = World.ComboTiers[i]
+		check(t.hits > World.ComboTiers[i - 1].hits, "combo tiers in order")
+		check(Progression.comboTier(t.hits) == i, "tier " .. i .. " starts at its hit count")
+		check(Progression.comboTier(t.hits - 1) == i - 1, "tier " .. i .. " not before it")
+	end
+
+	-- gold: deterministic, about the configured rate, never in a find or a chamber
+	local gold, jackpots, n = 0, 0, 0
+	for z = 0, 299 do
+		for y = 0, World.TunnelHeight - 1 do
+			for x = 0, World.TunnelWidth - 1 do
+				local g = Progression.goldAt(4242, x, y, z)
+				check(g == Progression.goldAt(4242, x, y, z), "goldAt is deterministic")
+				if g then
+					check(Progression.findAt(4242, x, y, z) == nil, "gold is never a find block")
+					check(Progression.chamberAt(x, y, z) == nil, "gold is never in a chamber")
+				end
+				gold += if g == "gold" then 1 else 0
+				jackpots += if g == "jackpot" then 1 else 0
+				n += 1
+			end
+		end
+	end
+	local rate = gold / n
+	check(
+		rate > World.GoldChance * 0.6 and rate < World.GoldChance * 1.3,
+		"gold rate near GoldChance: " .. rate
+	)
+	check(
+		jackpots > 0 and jackpots < n * World.JackpotChance * 2.5,
+		"some jackpots, not too many: " .. jackpots
+	)
+	check(Progression.goldBlocks("jackpot") > Progression.goldBlocks("gold"), "a jackpot beats gold")
+	check(Progression.goldFactor() > 0 and Progression.goldFactor() < 0.5, "gold adds a modest share")
+
+	-- cave-ins
+	check(Progression.caveInChance(0) == 0, "nothing broken = no cave-in")
+	check(Progression.caveInChance(9) > Progression.caveInChance(1), "more broken = likelier")
+	check(Progression.caveInChance(9) < 0.5, "cave-ins stay rare")
+	check(Progression.caveInFactor() > 1 and Progression.caveInFactor() < 1.3, "cave-ins: a modest speedup")
 end

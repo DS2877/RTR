@@ -66,7 +66,7 @@ local STOPS: { Stop } = {
 	},
 	{
 		title = "👊 Punch & dig",
-		body = "Hold PUNCH to break blocks. Your vacuum pulls the rubble into your backpack. Glowing blocks hide finds.",
+		body = "Hold PUNCH to break blocks: keep going for a COMBO. Glowing veins hide finds, gold blocks pay on the spot.",
 		view = cellView(Vector3.new(-3, 6, 8), Vector3.new(2, 4, -2)),
 	},
 	{

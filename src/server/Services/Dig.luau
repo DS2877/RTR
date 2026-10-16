@@ -14,6 +14,7 @@ local Tunnel = require(Shared.Tunnel)
 local Remotes = require(Shared.Remotes)
 local Products = require(Shared.Config.Products)
 local PvP = require(Shared.Config.PvP)
+local Format = require(Shared.Format)
 
 local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
@@ -42,6 +43,12 @@ Dig.onZone = nil :: ((player: Player, zone: number) -> ())?
 Dig.onCrit = nil :: ((player: Player) -> ())?
 Dig.onDeeper = nil :: ((player: Player, layers: number) -> ())?
 Dig.beforePunch = nil :: ((player: Player, s: State.PlayerState) -> boolean)? -- false = refused (in bed)
+-- gold / jackpot broke: pay `value` (rubble value) as Noodles now, return what was paid
+Dig.onGold = nil :: ((player: Player, kind: string, value: number) -> number)?
+-- every Noodles multiplier of a player (shows the combo bonus in real Noodles)
+Dig.valueMult = nil :: ((s: State.PlayerState) -> number)?
+Dig.onCombo = nil :: ((player: Player, hits: number) -> ())?
+Dig.onCaveIn = nil :: ((player: Player, blocks: number) -> ())?
 
 -- multiplies punch power for everyone (events like BLACKOUT set it, M4)
 Dig.globalBoost = 1
@@ -223,6 +230,42 @@ local function openChamber(player: Player, s: State.PlayerState, zone: number)
 	reachZone(player, s, zone)
 end
 
+-- ===== combo =====
+
+-- The chain's multiplier right now (1 once it ran out: vacuuming pauses the clock).
+local function comboAlive(s: State.PlayerState, now: number): boolean
+	return s.vacuuming or now - s.comboLast <= World.ComboWindow
+end
+
+local function comboMult(s: State.PlayerState): number
+	if not comboAlive(s, os.clock()) then
+		return 1
+	end
+	return Progression.comboMult(s.comboHits)
+end
+
+-- One more punch in the chain (a new chain if the last one ran out).
+local function comboHit(player: Player, s: State.PlayerState, now: number)
+	if not comboAlive(s, now) then
+		s.comboHits, s.comboBonus = 0, 0
+	end
+	s.comboHits += 1
+	s.comboLast = now
+	local stats = s.data.Stats
+	if s.comboHits > stats.BestCombo then
+		stats.BestCombo = s.comboHits
+	end
+	if Dig.onCombo then
+		Dig.onCombo(player, s.comboHits)
+	end
+end
+
+local function sendCombo(player: Player, s: State.PlayerState)
+	local tier = Progression.comboTier(s.comboHits)
+	local bonus = s.comboBonus * (if Dig.valueMult then Dig.valueMult(s) else 1)
+	Net.fire(player, Remotes.Names.Combo, s.comboHits, tier, math.floor(bonus + 0.5))
+end
+
 -- ===== punching =====
 
 local punchLimit = RateLimit.new(1 / World.AttackInterval * 1.6, 6)
@@ -273,6 +316,7 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 		Net.fire(player, Remotes.Names.Full, "bag")
 	end
 	s.lastPunch = now
+	comboHit(player, s, now)
 	local data = s.data
 	local power = Stats.power(s) * Dig.globalBoost * (if Dig.powerBoost then Dig.powerBoost(player) else 1)
 	-- CRIT: a lucky punch hits much harder (the client pops "CRIT!" on the block)
@@ -287,8 +331,58 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 		return tz < maxZ
 	end)
 	data.Stats.Punches += 1
-	Dig.applyHits(player, s, targets, power)
+	local broken = Dig.applyHits(player, s, targets, power)
+	sendCombo(player, s)
+	-- CAVE-IN: sometimes the rock around the hole gives way too
+	if broken > 0 and math.random() < Progression.caveInChance(broken) then
+		Dig.caveIn(player, s, x, y, z)
+	end
 	return nil
+end
+
+-- CAVE-IN: the exposed rock within CaveInRadius of (x, y, z) comes down at once (at most
+-- CaveInMax blocks, nearest first; never chambers or locked zones). Returns blocks broken.
+function Dig.caveIn(player: Player, s: State.PlayerState, x: number, y: number, z: number): number
+	local grid = s.grid
+	local r = World.CaveInRadius
+	local maxZ = Progression.diggableDepth()
+	local list: { { number } } = {}
+	for dz = -r, r do
+		for dy = -r, r do
+			for dx = -r, r do
+				local d2 = dx * dx + dy * dy + dz * dz
+				local tx, ty, tz = x + dx, y + dy, z + dz
+				if
+					d2 > 0
+					and d2 <= r * r + 1
+					and Voxel.inBounds(grid, tx, ty, tz)
+					and tz < maxZ
+					and not Progression.chamberAt(tx, ty, tz)
+					and Voxel.isExposed(grid, tx, ty, tz)
+				then
+					table.insert(list, { tx, ty, tz, d2 })
+				end
+			end
+		end
+	end
+	if #list < 3 then
+		return 0 -- a pebble, not a cave-in
+	end
+	table.sort(list, function(a, b)
+		return a[4] < b[4]
+	end)
+	while #list > World.CaveInMax do
+		table.remove(list)
+	end
+	for _, viewer in watchersOf(player) do
+		Net.fire(viewer, Remotes.Names.CaveIn, player.UserId, x, y, z, #list)
+	end
+	local n = Dig.applyHits(player, s, list, math.huge)
+	s.data.Stats.CaveIns += 1
+	if Dig.onCaveIn then
+		Dig.onCaveIn(player, n)
+	end
+	return n
 end
 
 -- Damages / breaks a list of blocks ({x, y, z}) of the player's own tunnel: rubble piles, finds,
@@ -304,6 +398,7 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 	local rubble, value = 0, 0
 	local slotsFull = false
 	local deepest = -1
+	local golds: { { any } } = {}
 	for _, t in targets do
 		local tx, ty, tz = t[1], t[2], t[3]
 		local find = Progression.findAt(data.Seed, tx, ty, tz)
@@ -322,7 +417,11 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 				rubble += 1
 				value += Zones[Progression.zoneAt(tz)].rubble
 				deepest = math.max(deepest, tz)
-				if not find and bonus > 0 and #data.Finds < slots then
+				local gold = if find then nil else Progression.goldAt(data.Seed, tx, ty, tz)
+				if gold then
+					table.insert(golds, { tx, ty, tz, gold })
+				end
+				if not find and not gold and bonus > 0 and #data.Finds < slots then
 					local zone = Progression.zoneAt(tz)
 					if math.random() < Zones[zone].oreChance * bonus then
 						find = Progression.pickFind(zone, math.random())
@@ -369,7 +468,10 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 	if #broken > 0 then
 		data.Stats.Blocks += #broken
 		s.tunnelDirty = true
-		addPile(s, sum / #broken, rubble, value)
+		-- the combo multiplies what this rubble is worth (the extra shows in the combo counter)
+		local mult = comboMult(s)
+		s.comboBonus += value * (mult - 1)
+		addPile(s, sum / #broken, rubble, value * mult)
 		-- chambers: breaking a block next to a sealed chamber opens the whole room
 		local opened: { [number]: boolean } = {}
 		for _, idx in broken do
@@ -404,6 +506,25 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 		end
 		if deepest >= D - 1 and Dig.onBottom then
 			Dig.onBottom(player)
+		end
+		-- GOLD: paid on the spot (after the delta, so the block is gone when the coins fly)
+		for _, g in golds do
+			local gx, gy, gz, kind = g[1], g[2], g[3], g[4]
+			local worth = Progression.goldBlocks(kind) * Zones[Progression.zoneAt(gz)].rubble
+			local paid = if Dig.onGold then Dig.onGold(player, kind, worth) else 0
+			if kind == "jackpot" then
+				data.Stats.Jackpots += 1
+				Net.announce(
+					string.format("💎 %s hit a JACKPOT VEIN! +%s Noodles", player.Name, Format.number(paid)),
+					{ 120, 230, 255 },
+					"Rare"
+				)
+			else
+				data.Stats.Gold += 1
+			end
+			for _, viewer in watchersOf(player) do
+				Net.fire(viewer, Remotes.Names.Gold, player.UserId, gx, gy, gz, kind, paid)
+			end
 		end
 	elseif #damaged > 0 then
 		for _, viewer in watchersOf(player) do

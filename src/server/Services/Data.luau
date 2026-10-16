@@ -57,6 +57,10 @@ export type PlayerData = {
 		Steals: number,
 		Robbed: number,
 		Knockouts: number,
+		BestCombo: number,
+		Gold: number, -- gold blocks broken
+		Jackpots: number,
+		CaveIns: number,
 	},
 }
 
@@ -111,6 +115,10 @@ local TEMPLATE: PlayerData = {
 		Steals = 0,
 		Robbed = 0,
 		Knockouts = 0,
+		BestCombo = 0,
+		Gold = 0,
+		Jackpots = 0,
+		CaveIns = 0,
 	},
 }
 

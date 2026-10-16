@@ -187,6 +187,28 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Kombo, guldblock och ras: grävandet blir en jakt på jackpotten
+- **KOMBO:** varje slag som landar inom 1,6 s från det förra bygger en kedja. Räknaren ovanför
+  PUNCH-knappen visar x12, x35 och så vidare, med en mätare som töms. Nivåerna är ON A ROLL ×1,25
+  (12 slag), ON FIRE ×1,5 (35), UNSTOPPABLE ×2 (75) och PRISON BREAK ×3 (140). Nivån multiplicerar
+  vad gruset är värt. Ett mjukt pling stiger i tonhöjd var 5:e slag, och en ny nivå ger en stor
+  pop och nivåns namn ovanför huvudet. Håller du VACUUM pausas klockan, så dammsugning bryter
+  inte kedjan. När kedjan tar slut visas "COMBO 87 · +1.2K 🍜 bonus".
+- **GULDBLOCK:** ungefär 1 av 220 block är guldådrade och syns så fort de blottas. De betalar
+  direkt när de går sönder (14 blocks värde, med alla Noodles-bonusar). Mynten sprutar ut och
+  flyger in i dig, med kassaljud och "+1.2K 🍜" i luften.
+- **JACKPOT:** ungefär 1 av 2 600 block är ett isblått jackpottblock värt 220 block. Det ger
+  konfetti, en stor skakning, "JACKPOT!" och ett meddelande till hela servern.
+- **RAS:** varje block som går sönder har en liten chans att dra med sig den blottade stenen runt
+  omkring (upp till 14 block) med mullrande ljud, damm, skakning och "CAVE-IN! x9".
+- **Nya dagsjobb:** "Reach a 60-hit combo" och "Break 5 gold blocks".
+- **Balans:** allt är inräknat i simulatorn. Rymningen tar 2:05 för en gratisspelare (mål 2:30),
+  och alla zoner ligger på högst 15 slag per block. Rundturen nämner kombo och guld.
+- **Testa på iPhone:** håll PUNCH mot väggen och se räknaren växa. Släpp i 2 sekunder, så tar
+  kedjan slut och summeringen visas. Håll VACUUM en stund under en kedja (den ska överleva). Leta
+  efter guldglittrande block i väggen. Ett ras kan du inte framkalla, men det kommer när du gräver
+  länge.
+
 ### Vakterna går på riktigt + naturligare hudtoner
 - **Patrullvakterna gled fram utan att röra armar och ben.** Animationerna laddades innan figuren
   lagts in i världen, och då misslyckas de tyst. Nu läggs vakten in först, och gång- och

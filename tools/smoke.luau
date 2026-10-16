@@ -43,6 +43,7 @@ local Voxel = req(Shared, "Voxel")
 local Tunnel = req(Shared, "Tunnel")
 local Progression = req(Shared, "Progression")
 local World = req(Config, "World")
+local Zones = req(Config, "Zones")
 local Economy = req(Config, "Economy")
 local Assets = req(Config, "Assets")
 local Cycle = req(Config, "Cycle")
@@ -429,10 +430,13 @@ local function punch(x: number, y: number, z: number, face: number): string?
 	return Dig.punch(fake, x, y, z, face)
 end
 
--- crits are random: switch them off so hit counts are exact (restored after the dig tests)
+-- crits are random: switch them off so hit counts are exact (restored after the dig tests);
+-- gold blocks and cave-ins stay off for the whole run except in their own tests below
 local worldAny: any = World
 local critChance = worldAny.CritChance
 worldAny.CritChance = 0
+local goldOdds = { worldAny.GoldChance, worldAny.JackpotChance, worldAny.CaveInChance }
+worldAny.GoldChance, worldAny.JackpotChance, worldAny.CaveInChance = 0, 0, 0
 -- in front of the back wall (z = -2 is inside the cell)
 standAt(9, 1, -2)
 check("bad args rejected", punch(9.5, 1, 0, 6) == "bad args")
@@ -479,6 +483,99 @@ s.data.BagValue = 1
 fake.Position = world.dump.Position
 local pay = Loot.dump(fake)
 check("dump pays noodles", pay == 1 and s.data.Noodles == 1 and s.data.Bag == 0, pay)
+
+-- ===== COMBO / GOLD / CAVE-IN =====
+do
+	standAt(9, 1, -2)
+	-- a solid block of the back wall (every z = 0 block faces the cell), no find inside
+	local function wallBlock(): (number?, number?)
+		for y = 2, 4 do
+			for x = 3, 15 do
+				if Voxel.isSolid(s.grid, x, y, 0) and not Progression.findAt(s.data.Seed, x, y, 0) then
+					return x, y
+				end
+			end
+		end
+		return nil, nil
+	end
+	local function landPunch(): boolean
+		local x, y = wallBlock()
+		return x ~= nil and punch(x :: number, y :: number, 0, 6) == nil
+	end
+	local function pileValue(): number
+		local v = 0
+		for _, p in s.piles do
+			v += p.value
+		end
+		return v
+	end
+	s.comboHits, s.comboLast, s.comboBonus = 0, -math.huge, 0
+	local combos = count("Combo")
+	for _ = 1, 6 do
+		landPunch()
+	end
+	check("combo builds with every punch", s.comboHits == 6, s.comboHits)
+	check("combo sent to the client", count("Combo") >= combos + 6, count("Combo") - combos)
+	task.wait(World.ComboWindow + 0.25)
+	landPunch()
+	check("combo resets after a pause", s.comboHits == 1, s.comboHits)
+	s.vacuuming = true
+	task.wait(World.ComboWindow + 0.25)
+	landPunch()
+	s.vacuuming = false
+	check("vacuuming holds the combo", s.comboHits == 2, s.comboHits)
+	-- a tier multiplies the rubble's worth
+	local tier = World.ComboTiers[3]
+	s.comboHits, s.comboLast = tier.hits, os.clock()
+	local x, y = wallBlock()
+	local before = pileValue()
+	Dig.applyHits(fake, s, { { x :: number, y :: number, 0 } }, math.huge)
+	check(
+		"combo multiplies rubble value",
+		math.abs(pileValue() - before - Zones[1].rubble * tier.mult) < 1e-6,
+		pileValue() - before
+	)
+	check("combo bonus tracked", s.comboBonus > 0, s.comboBonus)
+	check("best combo saved", s.data.Stats.BestCombo >= 6, s.data.Stats.BestCombo)
+
+	-- gold pays on the spot; a jackpot is announced
+	worldAny.GoldChance = 1
+	local n0, golds = s.data.Noodles, count("Gold")
+	x, y = wallBlock()
+	Dig.applyHits(fake, s, { { x :: number, y :: number, 0 } }, math.huge)
+	local goldPay = s.data.Noodles - n0
+	check("gold pays noodles on the spot", goldPay > 0, goldPay)
+	check("gold FX sent", count("Gold") > golds)
+	check("gold counted", s.data.Stats.Gold >= 1, s.data.Stats.Gold)
+	worldAny.GoldChance, worldAny.JackpotChance = 0, 1
+	local n1 = s.data.Noodles
+	x, y = wallBlock()
+	Dig.applyHits(fake, s, { { x :: number, y :: number, 0 } }, math.huge)
+	check("jackpot pays more than gold", s.data.Noodles - n1 > goldPay, s.data.Noodles - n1)
+	check("jackpot counted", s.data.Stats.Jackpots >= 1)
+	worldAny.JackpotChance = 0
+
+	-- cave-in: the exposed rock around a spot comes down
+	local caves = count("CaveIn")
+	local blocksBefore = s.data.Stats.Blocks
+	local broken = Dig.caveIn(fake, s, 9, 3, 0)
+	check("cave-in brings blocks down", broken >= 3 and s.data.Stats.Blocks - blocksBefore == broken, broken)
+	check("cave-in FX sent", count("CaveIn") > caves)
+	check("cave-ins never exceed the cap", broken <= World.CaveInMax, broken)
+	-- and a breaking punch can set one off
+	worldAny.CaveInChance = 1
+	x, y = wallBlock()
+	if x then
+		s.damage[Voxel.index(s.grid, x, y :: number, 0)] = 1e-9
+		local c1 = count("CaveIn")
+		punch(x, y :: number, 0, 6)
+		check("a breaking punch can set off a cave-in", count("CaveIn") > c1)
+	end
+	worldAny.CaveInChance = 0
+	s.data.Noodles, s.data.Bag, s.data.BagValue = 0, 0, 0
+	s.piles, s.loose = {}, 0
+	s.comboHits, s.comboLast, s.comboBonus = 0, -math.huge, 0
+end
 
 -- shop
 s.data.Noodles = 1000
@@ -1018,5 +1115,6 @@ do
 	probe:Destroy()
 end
 
+worldAny.GoldChance, worldAny.JackpotChance, worldAny.CaveInChance = goldOdds[1], goldOdds[2], goldOdds[3]
 print(string.format("smoke: %d passed, %d failed", passed, #failures))
 return { passed = passed, failed = #failures, failures = failures, world = worldDump }

@@ -81,6 +81,22 @@ local Missions = {
 			reward = 130,
 			emoji = "💰",
 		},
+		{
+			id = "Combo",
+			text = "Reach a %d-hit combo",
+			stat = "Combo", -- the best chain today (Services/Missions.reach)
+			goals = { 25, 60, 120 },
+			reward = 130,
+			emoji = "🔥",
+		},
+		{
+			id = "Gold",
+			text = "Break %d gold blocks",
+			stat = "Gold",
+			goals = { 2, 5, 10 },
+			reward = 150,
+			emoji = "🪙",
+		},
 	} :: { Job },
 }
 

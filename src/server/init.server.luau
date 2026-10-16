@@ -142,6 +142,23 @@ end
 Dig.onDeeper = function(player, layers)
 	Missions.count(player, "Depth", layers)
 end
+-- gold pays out right away, with every Noodles multiplier
+Dig.valueMult = Loot.multiplier
+Dig.onGold = function(player, kind, value)
+	local s = State.get(player)
+	if not s then
+		return 0
+	end
+	local pay = math.floor(value * Loot.multiplier(s) + 0.5)
+	Loot.addNoodles(player, pay)
+	Missions.count(player, "Gold", 1)
+	return pay
+end
+Dig.onCombo = function(player, hits)
+	if hits % 5 == 0 then -- the goals are multiples of 5: no mission sync on every punch
+		Missions.reach(player, "Combo", hits)
+	end
+end
 Gym.onLift = function(player, q)
 	if q == "good" or q == "perfect" then
 		Missions.count(player, "Lifts", 1)

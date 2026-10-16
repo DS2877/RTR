@@ -38,6 +38,10 @@ export type PlayerState = {
 	bribed: boolean, -- paid off tonight's inspection
 	fullNoticeAt: number, -- os.clock() of the last "backpack full" notice (at most every 20 s)
 	snitched: boolean, -- guaranteed inspection next night
+	-- COMBO chain (Services/Dig): punches in a row, the last one (os.clock), the bonus value earned
+	comboHits: number,
+	comboLast: number,
+	comboBonus: number,
 }
 
 local State = {}
@@ -75,6 +79,9 @@ function State.add(player: Player, data: Data.PlayerData): PlayerState
 		bribed = false,
 		fullNoticeAt = -math.huge,
 		snitched = false,
+		comboHits = 0,
+		comboLast = -math.huge,
+		comboBonus = 0,
 	}
 	states[player] = s
 	return s

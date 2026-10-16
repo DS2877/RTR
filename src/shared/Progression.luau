@@ -53,33 +53,6 @@ end
 
 -- Layers deeper than this can't be dug yet (zones open with the milestones).
 function Progression.diggableDepth(): number
-	-- ===== extras (Laundry / Mess Hall / Black Market / Decor) =====
-
-	-- Noodles price of an Extras item for someone whose deepest zone is `zone`.
-	function Progression.itemPrice(item: any, zone: number): number
-		if item.cost then
-			return item.cost
-		end
-		local z = Zones[math.clamp(zone, 1, #Zones)]
-		return (item.blocks or 0) * z.rubble
-	end
-
-	-- The Black Market's stock on a given day (days since 1970): MarketSlots different item ids.
-	function Progression.marketStock(day: number): { string }
-		local pool = {}
-		for i, item in Extras.Market do
-			table.insert(pool, { id = item.id, roll = Progression.hash01(day, i, 0, 0, 77) })
-		end
-		table.sort(pool, function(a, b)
-			return a.roll < b.roll
-		end)
-		local out = {}
-		for i = 1, math.min(Extras.MarketSlots, #pool) do
-			table.insert(out, pool[i].id)
-		end
-		return out
-	end
-
 	return Progression.zoneStart(Economy.OpenZones + 1)
 end
 
@@ -201,33 +174,6 @@ function Progression.findAt(seed: number, x: number, y: number, z: number): stri
 	if not Finds.ByZone[zoneIndex] or Progression.hash01(seed, x, y, z, 1) >= zone.oreChance then
 		return nil
 	end
-	-- ===== extras (Laundry / Mess Hall / Black Market / Decor) =====
-
-	-- Noodles price of an Extras item for someone whose deepest zone is `zone`.
-	function Progression.itemPrice(item: any, zone: number): number
-		if item.cost then
-			return item.cost
-		end
-		local z = Zones[math.clamp(zone, 1, #Zones)]
-		return (item.blocks or 0) * z.rubble
-	end
-
-	-- The Black Market's stock on a given day (days since 1970): MarketSlots different item ids.
-	function Progression.marketStock(day: number): { string }
-		local pool = {}
-		for i, item in Extras.Market do
-			table.insert(pool, { id = item.id, roll = Progression.hash01(day, i, 0, 0, 77) })
-		end
-		table.sort(pool, function(a, b)
-			return a.roll < b.roll
-		end)
-		local out = {}
-		for i = 1, math.min(Extras.MarketSlots, #pool) do
-			table.insert(out, pool[i].id)
-		end
-		return out
-	end
-
 	return Progression.pickFind(zoneIndex, Progression.hash01(seed, x, y, z, 2))
 end
 
@@ -388,6 +334,60 @@ function Progression.liftReward(
 	end
 	local comboMult = 1 + math.min(combo * Economy.LiftComboStep, Economy.LiftComboMax - 1)
 	return math.floor(base * Economy.LiftPerfect * comboMult)
+end
+
+-- ===== combo / gold / cave-ins =====
+
+-- The combo tier reached after `hits` punches in a row: (index, { hits, mult, name }).
+function Progression.comboTier(hits: number): (number, any)
+	local found, tier = 1, World.ComboTiers[1]
+	for i, t in World.ComboTiers do
+		if hits >= t.hits then
+			found, tier = i, t
+		end
+	end
+	return found, tier
+end
+
+function Progression.comboMult(hits: number): number
+	local _, tier = Progression.comboTier(hits)
+	return tier.mult
+end
+
+-- "gold", "jackpot" or nil for block (x, y, z) of a tunnel with this seed. Deterministic, never in
+-- a chamber and never a find block (those already glow).
+function Progression.goldAt(seed: number, x: number, y: number, z: number): string?
+	local r = Progression.hash01(seed, x, y, z, 11)
+	if r >= World.JackpotChance + World.GoldChance then
+		return nil
+	end
+	if Progression.chamberAt(x, y, z) or Progression.findAt(seed, x, y, z) then
+		return nil
+	end
+	return if r < World.JackpotChance then "jackpot" else "gold"
+end
+
+-- Rubble blocks a gold / jackpot block is worth.
+function Progression.goldBlocks(kind: string): number
+	return if kind == "jackpot" then World.JackpotBlocks else World.GoldBlocks
+end
+
+-- Average extra rubble value per broken block from gold and jackpots, in blocks (balance sim).
+function Progression.goldFactor(): number
+	return World.GoldChance * World.GoldBlocks + World.JackpotChance * World.JackpotBlocks
+end
+
+-- Average blocks per broken block once cave-ins are counted (balance sim).
+function Progression.caveInFactor(): number
+	return 1 + World.CaveInChance * World.CaveInExpected
+end
+
+-- Chance that a punch breaking `broken` blocks sets off a cave-in.
+function Progression.caveInChance(broken: number): number
+	if broken <= 0 then
+		return 0
+	end
+	return 1 - (1 - World.CaveInChance) ^ broken
 end
 
 -- Average damage multiplier from CRITs (the balance sim uses it).

@@ -18,6 +18,9 @@ local SHOP_TIME = 8 -- seconds per trip at the counters
 -- nobody keeps punching one block 40 times: past this many hits a player farms a shallower zone
 -- for Noodles (and upgrades) instead of pushing deeper
 local MAX_HITS = 15
+-- combos: real chains break (aiming, walking along the face), so a chain counts this share of the
+-- punches since the last trip
+local COMBO_EFF = 0.6
 
 export type Result = {
 	reached: { [number]: number }, -- zone -> seconds when first reached
@@ -67,6 +70,7 @@ local function run(passes: boolean): Result
 	local buys: { string } = {}
 	local firstBuy: number? = nil
 	local lastTrip = 0
+	local comboPunches = 0 -- punches since the last trip (the combo chain)
 	local hitStats: { [number]: { sum: number, n: number } } = {}
 	local farmed: { [number]: number } = {}
 
@@ -109,7 +113,8 @@ local function run(passes: boolean): Result
 		local brush = #Upgrades.Brushes[lv.Brushes].cells
 		-- players dig as wide as their brush (more rubble per layer, see layerLeft), 80 % efficient
 		local perPunch = brush * (if brush > 1 then 0.8 else 1)
-		local perBlock = hits * World.AttackInterval / perPunch
+		-- cave-ins bring extra blocks down for free
+		local perBlock = hits * World.AttackInterval / perPunch / Progression.caveInFactor()
 		-- vacuuming by hand costs time; a bigger vacuum range wastes less of it
 		local vacuumCost = if passes then 0 else 0.35 / Progression.vacuumRange(lv.Vacuum) * 10
 		perBlock *= 1 + vacuumCost
@@ -118,7 +123,10 @@ local function run(passes: boolean): Result
 		-- dig one block
 		t += perBlock
 		bag += 1
-		bagValue += Zones[zone].rubble
+		comboPunches += hits / perPunch / Progression.caveInFactor()
+		bagValue += Zones[zone].rubble * Progression.comboMult(comboPunches * COMBO_EFF)
+		-- gold and jackpot blocks pay out on the spot
+		noodles += Zones[zone].rubble * Progression.goldFactor() * noodleMult
 		if findCount < Progression.findSlots(lv.FindSlots) then
 			local chance = Zones[zone].oreChance
 			findValue += chance * expectedFind(zone)
@@ -154,6 +162,7 @@ local function run(passes: boolean): Result
 			lastTrip = t
 			noodles += bagValue * noodleMult + findValue * noodleMult
 			bag, bagValue, findValue, findCount = 0, 0, 0, 0
+			comboPunches = 0
 			local station = Progression.bestStation(strength)
 			strength += Progression.liftGain(station, 0, strengthMult) * math.floor(
 				gym / Economy.LiftInterval

@@ -235,6 +235,10 @@ function Loot.start(w: any)
 	Net.on(Remotes.Names.Vacuum, function(player, on)
 		local s = State.get(player)
 		if s and typeof(on) == "boolean" and vacLimit(player) then
+			if s.vacuuming and not on then
+				-- vacuuming pauses the combo chain: its clock restarts when you let go
+				s.comboLast = os.clock()
+			end
 			s.vacuuming = on
 		end
 	end)
