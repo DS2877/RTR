@@ -931,7 +931,7 @@ function Interior.yard(prison: Instance)
 					d,
 					"Tomato",
 					Vector3.new(0.4, 0.4, 0.4),
-					CFrame.new(px + 0.45, 1.7, pz - 0.5),
+					CFrame.new(px + 0.5, 1.75, pz + 0.55),
 					Color3.fromRGB(210, 40, 30),
 					Enum.Material.SmoothPlastic,
 					{
@@ -952,7 +952,7 @@ function Interior.yard(prison: Instance)
 	)
 	Build.sign(
 		gardenSign,
-		Enum.NormalId.Front,
+		Enum.NormalId.Back,
 		"PRISON GARDEN\nDO NOT DIG HERE",
 		Color3.fromRGB(60, 40, 30),
 		Color3.fromRGB(230, 222, 196)
