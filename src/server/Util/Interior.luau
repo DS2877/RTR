@@ -120,8 +120,8 @@ local function window(parent: Instance, cf: CFrame, w: number, h: number)
 	p(
 		parent,
 		"WindowSill",
-		Vector3.new(w + 1.2, 0.35, 0.9),
-		cf * CFrame.new(0, -h / 2 - 0.18, -0.45),
+		Vector3.new(w + 1.2, 0.35, 0.8),
+		cf * CFrame.new(0, -h / 2 - 0.18, -0.52), -- (off the wall: the frame's back face is there)
 		STEEL,
 		Enum.Material.Concrete
 	)
