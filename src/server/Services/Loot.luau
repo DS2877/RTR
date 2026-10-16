@@ -25,14 +25,19 @@ Loot.onVacuum = nil :: ((player: Player) -> ())?
 Loot.onDump = nil :: ((player: Player, pay: number) -> ())?
 Loot.onSell = nil :: ((player: Player, total: number, count: number) -> ())?
 
--- every Noodles multiplier: 2x pass, collection sets, rebirths, group bonus, buffs
+-- CREW bonus share (Services/Crew sets it): 0 when solo
+Loot.crewBonus = nil :: ((s: State.PlayerState) -> number)?
+
+-- every Noodles multiplier: 2x pass, collection sets, rebirths, group bonus, crew, buffs
 function Loot.multiplier(s: State.PlayerState): number
 	local pass = if s.passes.DoubleNoodles then Economy.PassEffects.DoubleNoodles else 1
 	local group = if s.groupBonus then 1 + Economy.GroupBonus else 1
+	local crew = 1 + (if Loot.crewBonus then Loot.crewBonus(s) else 0)
 	return pass
 		* Progression.collectionMultiplier(s.data.Found)
 		* Progression.rebirthMultiplier(s.data.Rebirths)
 		* group
+		* crew
 end
 local noodleMult = Loot.multiplier
 Loot.eventMult = 1 -- PAYDAY (Services/Events): dump + flush

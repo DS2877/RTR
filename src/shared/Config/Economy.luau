@@ -9,6 +9,13 @@ local Economy = {
 
 	StartingNoodles = 0,
 	StartingStrength = 10,
+	-- CREW: dig in a friend's tunnel. Everyone in a crew earns +CrewBonus Noodles per other member
+	-- (+CrewFriendBonus more for each Roblox friend among them), at most CrewBonusMax.
+	CrewMaxGuests = 3,
+	CrewBonus = 0.15,
+	CrewFriendBonus = 0.1,
+	CrewBonusMax = 0.75,
+	CrewInviteSeconds = 30,
 	WalkSpeed = 20,
 
 	-- PRISON GYM in the Yard: tap a station to hoist the thing over your head, then tap LIFT when the

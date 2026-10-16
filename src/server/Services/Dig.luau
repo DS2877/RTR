@@ -47,6 +47,8 @@ Dig.beforePunch = nil :: ((player: Player, s: State.PlayerState) -> boolean)? --
 -- gold / jackpot broke (already paid out): missions
 Dig.onGold = nil :: ((player: Player, kind: string, paid: number) -> ())?
 Dig.onCombo = nil :: ((player: Player, hits: number) -> ())?
+-- CREW (Services/Crew): the host whose tunnel `guest` may dig in (nil = not allowed)
+Dig.crewHost = nil :: ((guest: Player, ownerId: number) -> Player?)?
 Dig.onCaveIn = nil :: ((player: Player, blocks: number) -> ())?
 
 -- multiplies punch power for everyone (events like BLACKOUT set it, M4)
@@ -270,20 +272,39 @@ end
 local punchLimit = RateLimit.new(1 / World.AttackInterval * 1.6, 6)
 
 -- Returns a reason string when the punch is rejected (also used by the smoke test).
-function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
+-- ownerId = whose tunnel (nil / your own UserId = yours; a CREW host's when you dig with them).
+-- The tunnel (grid, depth, chambers) is the owner's; the punch, rubble, finds, gold and combo are
+-- yours.
+function Dig.punch(player: Player, x: any, y: any, z: any, face: any, ownerId: any): string?
 	local s = State.get(player)
-	if not s or not s.grid or not s.frame then
+	if not s then
 		return "no tunnel"
 	end
 	if not (isInt(x, 0, W - 1) and isInt(y, 0, H - 1) and isInt(z, 0, D - 1) and isInt(face, 1, 6)) then
 		return "bad args"
+	end
+	local host: Player? = nil
+	local ts = s
+	if ownerId ~= nil and ownerId ~= player.UserId then
+		if typeof(ownerId) ~= "number" or ownerId ~= ownerId then
+			return "bad args"
+		end
+		host = if Dig.crewHost then Dig.crewHost(player, ownerId) else nil
+		local hs = host and State.get(host)
+		if not hs then
+			return "not your crew"
+		end
+		ts = hs
+	end
+	if not ts.grid or not ts.frame then
+		return "no tunnel"
 	end
 	local now = os.clock()
 	local speed = if Dig.speedBoost then Dig.speedBoost(player) else 0
 	if now - s.lastPunch < World.AttackInterval * (1 - speed) * 0.8 or not punchLimit(player) then
 		return "too fast"
 	end
-	local grid = s.grid
+	local grid = ts.grid
 	if not Voxel.isSolid(grid, x, y, z) then
 		return "not solid"
 	end
@@ -300,7 +321,7 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 	if not root then
 		return "no character"
 	end
-	local center = Tunnel.blockCenter(s.frame, x, y, z)
+	local center = Tunnel.blockCenter(ts.frame, x, y, z)
 	if (center - root).Magnitude > World.Reach + World.ReachSlack then
 		return "out of reach"
 	end
@@ -321,7 +342,7 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 	-- CRIT: a lucky punch hits much harder (the client pops "CRIT!" on the block)
 	if math.random() < World.CritChance then
 		power *= World.CritMult
-		Net.fire(player, Remotes.Names.Crit, x, y, z)
+		Net.fire(player, Remotes.Names.Crit, x, y, z, (host or player).UserId)
 		if Dig.onCrit then
 			Dig.onCrit(player)
 		end
@@ -330,19 +351,31 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 		return tz < maxZ
 	end)
 	data.Stats.Punches += 1
-	local broken = Dig.applyHits(player, s, targets, power)
+	local broken = Dig.applyHits(player, s, targets, power, host)
 	sendCombo(player, s)
 	-- CAVE-IN: sometimes the rock around the hole gives way too
 	if broken > 0 and math.random() < Progression.caveInChance(broken) then
-		Dig.caveIn(player, s, x, y, z)
+		Dig.caveIn(player, s, x, y, z, host)
 	end
 	return nil
 end
 
 -- CAVE-IN: the exposed rock within CaveInRadius of (x, y, z) comes down at once (at most
 -- CaveInMax blocks, nearest first; never chambers or locked zones). Returns blocks broken.
-function Dig.caveIn(player: Player, s: State.PlayerState, x: number, y: number, z: number): number
-	local grid = s.grid
+function Dig.caveIn(
+	player: Player,
+	s: State.PlayerState,
+	x: number,
+	y: number,
+	z: number,
+	host: Player?
+): number
+	local owner = host or player
+	local ts = if host then State.get(host) else s
+	if not ts or not ts.grid then
+		return 0
+	end
+	local grid = ts.grid
 	local r = World.CaveInRadius
 	local maxZ = Progression.diggableDepth()
 	local list: { { number } } = {}
@@ -373,10 +406,10 @@ function Dig.caveIn(player: Player, s: State.PlayerState, x: number, y: number, 
 	while #list > World.CaveInMax do
 		table.remove(list)
 	end
-	for _, viewer in watchersOf(player) do
-		Net.fire(viewer, Remotes.Names.CaveIn, player.UserId, x, y, z, #list)
+	for _, viewer in watchersOf(owner) do
+		Net.fire(viewer, Remotes.Names.CaveIn, owner.UserId, x, y, z, #list, player.UserId)
 	end
-	local n = Dig.applyHits(player, s, list, math.huge)
+	local n = Dig.applyHits(player, s, list, math.huge, host)
 	s.data.Stats.CaveIns += 1
 	if Dig.onCaveIn then
 		Dig.onCaveIn(player, n)
@@ -384,11 +417,25 @@ function Dig.caveIn(player: Player, s: State.PlayerState, x: number, y: number, 
 	return n
 end
 
--- Damages / breaks a list of blocks ({x, y, z}) of the player's own tunnel: rubble piles, finds,
--- chambers, zones, deltas. power = math.huge breaks everything (dynamite). Returns blocks broken.
-function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number } }, power: number): number
-	local grid = s.grid
+-- Damages / breaks a list of blocks ({x, y, z}) of a tunnel: the player's own, or a CREW host's
+-- (`host`). The tunnel side (grid, depth, zone, chambers, deltas) is the owner's; rubble piles,
+-- finds, gold and the combo are the puncher's. power = math.huge breaks everything (dynamite).
+-- Returns blocks broken.
+function Dig.applyHits(
+	player: Player,
+	s: State.PlayerState,
+	targets: { { number } },
+	power: number,
+	host: Player?
+): number
+	local owner = host or player
+	local ts = if host then State.get(host) else s
+	if not ts or not ts.grid then
+		return 0
+	end
+	local grid = ts.grid
 	local data = s.data
+	local seed = ts.data.Seed
 	local slots = Progression.findSlots(data.Levels.FindSlots)
 	local bonus = Dig.nightBonus + Dig.eventBonus + (if Dig.findBoost then Dig.findBoost(player) else 0)
 	local broken: { number } = {}
@@ -400,23 +447,23 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 	local golds: { { any } } = {}
 	for _, t in targets do
 		local tx, ty, tz = t[1], t[2], t[3]
-		local find = Progression.findAt(data.Seed, tx, ty, tz)
+		local find = Progression.findAt(seed, tx, ty, tz)
 		if not Voxel.isSolid(grid, tx, ty, tz) then
 			continue
 		end
 		do
 			local idx = Voxel.index(grid, tx, ty, tz)
 			local maxHp = Progression.blockHp(tz)
-			local hp = (s.damage[idx] or maxHp) - power
+			local hp = (ts.damage[idx] or maxHp) - power
 			if hp <= 0 then
 				Voxel.dig(grid, tx, ty, tz)
-				s.damage[idx] = nil
+				ts.damage[idx] = nil
 				table.insert(broken, idx)
-				sum += Tunnel.blockCenter(s.frame, tx, ty, tz)
+				sum += Tunnel.blockCenter(ts.frame, tx, ty, tz)
 				rubble += 1
 				value += Zones[Progression.zoneAt(tz)].rubble
 				deepest = math.max(deepest, tz)
-				local gold = if find then nil else Progression.goldAt(data.Seed, tx, ty, tz)
+				local gold = if find then nil else Progression.goldAt(seed, tx, ty, tz)
 				if gold then
 					table.insert(golds, { tx, ty, tz, gold })
 				end
@@ -455,7 +502,7 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 					end
 				end
 			else
-				s.damage[idx] = hp
+				ts.damage[idx] = hp
 				table.insert(damaged, idx)
 				table.insert(damaged, Progression.crackStage(hp, maxHp))
 			end
@@ -466,7 +513,7 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 	end
 	if #broken > 0 then
 		data.Stats.Blocks += #broken
-		s.tunnelDirty = true
+		ts.tunnelDirty = true
 		-- the combo multiplies what this rubble is worth (the extra shows in the combo counter)
 		local mult = comboMult(s)
 		s.comboBonus += value * (mult - 1)
@@ -483,19 +530,20 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 				end
 			end
 		end
-		if deepest + 1 > data.MaxDepth then
+		local td = ts.data
+		if deepest + 1 > td.MaxDepth then
 			if Dig.onDeeper then
-				Dig.onDeeper(player, deepest + 1 - data.MaxDepth)
+				Dig.onDeeper(owner, deepest + 1 - td.MaxDepth)
 			end
-			data.MaxDepth = deepest + 1
-			Cells.updateSign(player)
+			td.MaxDepth = deepest + 1
+			Cells.updateSign(owner)
 		end
-		reachZone(player, s, Progression.zoneAt(deepest))
-		for _, viewer in watchersOf(player) do
-			Net.fire(viewer, Remotes.Names.Delta, player.UserId, broken, damaged, player.UserId)
+		reachZone(owner, ts, Progression.zoneAt(deepest))
+		for _, viewer in watchersOf(owner) do
+			Net.fire(viewer, Remotes.Names.Delta, owner.UserId, broken, damaged, player.UserId)
 		end
 		for zone in opened do
-			openChamber(player, s, zone)
+			openChamber(owner, ts, zone)
 		end
 		if Dig.onPiles then
 			Dig.onPiles(player)
@@ -504,7 +552,7 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 			Dig.onBroken(player, broken)
 		end
 		if deepest >= D - 1 and Dig.onBottom then
-			Dig.onBottom(player)
+			Dig.onBottom(owner)
 		end
 		-- GOLD: paid on the spot (after the delta, so the block is gone when the coins fly)
 		for _, g in golds do
@@ -525,13 +573,13 @@ function Dig.applyHits(player: Player, s: State.PlayerState, targets: { { number
 			else
 				data.Stats.Gold += 1
 			end
-			for _, viewer in watchersOf(player) do
-				Net.fire(viewer, Remotes.Names.Gold, player.UserId, gx, gy, gz, kind, paid)
+			for _, viewer in watchersOf(owner) do
+				Net.fire(viewer, Remotes.Names.Gold, owner.UserId, gx, gy, gz, kind, paid, player.UserId)
 			end
 		end
 	elseif #damaged > 0 then
-		for _, viewer in watchersOf(player) do
-			Net.fire(viewer, Remotes.Names.Delta, player.UserId, broken, damaged, player.UserId)
+		for _, viewer in watchersOf(owner) do
+			Net.fire(viewer, Remotes.Names.Delta, owner.UserId, broken, damaged, player.UserId)
 		end
 	end
 	Stats.sync(player)
@@ -635,8 +683,8 @@ function Dig.resetTunnel(player: Player)
 end
 
 function Dig.start()
-	Net.on(Remotes.Names.Punch, function(player, x, y, z, face)
-		Dig.punch(player, x, y, z, face)
+	Net.on(Remotes.Names.Punch, function(player, x, y, z, face, ownerId)
+		Dig.punch(player, x, y, z, face, ownerId)
 	end)
 	local boomLimit = RateLimit.new(0.5, 2)
 	Net.on(Remotes.Names.Dynamite, function(player, x, y, z)

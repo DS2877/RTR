@@ -10,7 +10,10 @@ local Remotes = {}
 Remotes.Names = {
 	-- client -> server
 	Ready = "Ready", -- () the client can receive tunnel snapshots
-	Punch = "Punch", -- (x, y, z, face) punch the aimed block of your own tunnel
+	Punch = "Punch", -- (x, y, z, face, ownerId?) punch a block of your tunnel (or your CREW host's)
+	CrewInvite = "CrewInvite", -- (userId: number) invite a player to dig in your tunnel
+	CrewAnswer = "CrewAnswer", -- (hostId: number, accept: boolean) answer an invite
+	CrewLeave = "CrewLeave", -- (kickUserId: number?) leave your crew (host: nil = disband, id = kick)
 	Vacuum = "Vacuum", -- (on: boolean) holding the VACUUM button
 	Lift = "Lift", -- () one rep while you hold a gym station's thing over your head
 	GymStop = "GymStop", -- () put it down
@@ -58,13 +61,14 @@ Remotes.Names = {
 	OpenStash = "OpenStash", -- () your Stash prompt was used
 	Raid = "Raid", -- (kind: "alarm" | "stolen" | "carry" | "home" | "dropped", text, userId?)
 	Boom = "Boom", -- (owner: number, x, y, z) dynamite went off
-	Crit = "Crit", -- (x, y, z) your punch was a CRIT
+	Crit = "Crit", -- (x, y, z, owner) your punch was a CRIT (owner = whose tunnel)
+	CrewInvited = "CrewInvited", -- (hostId: number, hostName: string, friend: boolean) an invite
 	Combo = "Combo", -- (hits: number, tier: number, bonus: number) your combo chain after a punch
-	Gold = "Gold", -- (owner: number, x, y, z, kind: "gold" | "jackpot", paid: number) gold broke
+	Gold = "Gold", -- (owner, x, y, z, kind: "gold" | "jackpot", paid: number, puncher) gold broke
 	-- THE BREAKOUT: ("start", serverTime, practice) | ("reset", reason, checkpoint, spotted)
 	-- | ("checkpoint", n) | ("finish", seconds, medal, cash, rebirths, prison, spotted, practice)
 	Breakout = "Breakout",
-	CaveIn = "CaveIn", -- (owner: number, x, y, z, blocks: number) the rock came down
+	CaveIn = "CaveIn", -- (owner, x, y, z, blocks: number, puncher) the rock came down
 	MissionDone = "MissionDone", -- (index) a WORK DETAIL job just got finished
 	EscapeReady = "EscapeReady", -- () you reached the bottom: the ESCAPE button appears
 	Escaped = "Escaped", -- (rebirths: number, tierName: string) play the escape cinematic

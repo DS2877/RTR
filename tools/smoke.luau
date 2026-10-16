@@ -491,6 +491,7 @@ check("dump pays noodles", pay == 1 and s.data.Noodles == 1 and s.data.Bag == 0,
 
 -- ===== COMBO / GOLD / CAVE-IN =====
 do
+	local mark = #sent
 	standAt(9, 1, -2)
 	-- a solid block of the back wall (every z = 0 block faces the cell), no find inside
 	local function wallBlock(): (number?, number?)
@@ -577,6 +578,14 @@ do
 		check("a breaking punch can set off a cave-in", count("CaveIn") > c1)
 	end
 	worldAny.CaveInChance = 0
+	-- a cave-in may have brought a find block down: the find tests below start clean
+	s.data.Finds, s.data.Stash = {}, {}
+	for i = #sent, mark + 1, -1 do
+		local name = sent[i].name
+		if name == "Found" or name == "Stash" then
+			table.remove(sent, i)
+		end
+	end
 	s.data.Noodles, s.data.Bag, s.data.BagValue = 0, 0, 0
 	s.piles, s.loose = {}, 0
 	s.comboHits, s.comboLast, s.comboBonus = 0, -math.huge, 0
