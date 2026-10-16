@@ -130,10 +130,13 @@ local function applyLooks(player: Player)
 	local uniform = find(Extras.Uniforms, if s.data.Uniform ~= "" then s.data.Uniform else "Orange")
 	if uniform and uniform.color then
 		for _, c in character:GetChildren() do
-			if c:IsA("Shirt") or c:IsA("Pants") or c:IsA("ShirtGraphic") then
-				c:Destroy()
-			elseif c:IsA("Accessory") and LAYERED[c.AccessoryType] then
-				-- 3D (layered) clothing would sit on top of the jumpsuit (red pants, a glowing top...)
+			-- (3D layered clothing would sit on top of the jumpsuit: red pants, a glowing top...)
+			if
+				c:IsA("Shirt")
+				or c:IsA("Pants")
+				or c:IsA("ShirtGraphic")
+				or (c:IsA("Accessory") and LAYERED[c.AccessoryType])
+			then
 				c:Destroy()
 			end
 		end

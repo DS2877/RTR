@@ -187,6 +187,17 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Nytt slag + diskret väg till dumpen
+- **Slaget är omgjort från grunden:** ingen frysning längre. Det är nu en egen boxningsanimation
+  som läggs ovanpå gå/stå-animationen: nävarna åker upp i gard när du börjar slå, varje slag har
+  laddning (näven dras bak, överkroppen vrids bort) → snärt (rak arm, vridning in, lutning och ett
+  litet kliv framåt) → kort stopp → tillbaka till garden. Höger/vänster växlar och vart 4:e slag är
+  en tyngre overhand. Håller du PUNCH blir det en flytande kombination; släpper du sänks armarna
+  mjukt. Funkar med alla avatarer (gamla och nya leder), och du ser andra spelares slag också.
+- **Ryggsäck full:** den stora gula ljusstrålen är borta. I stället en liten pulserande pil på
+  golvet framför dig som pekar mot dumpen, och en liten etikett "🗑️ DUMP · 42m" över dumpen
+  (syns genom väggar). Pilen försvinner när du är framme.
+
 ### Gubben, smala menyer, roligare gym, pratigare vakter
 - **Glödande händer/bröst fixat:** VIP-guldnävarna och TOP DOG-kedjan var gjorda av Neon, som
   bloom gjorde till lysande klumpar. Nu är de polerat guld. 3D-kläder från avataren (t.ex. röda

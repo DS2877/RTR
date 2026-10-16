@@ -43,8 +43,11 @@ do
 	local DigAudio = require(Controllers.DigAudio)
 	VoxelRender.onHit = function(_t, puncher, z)
 		if puncher ~= player.UserId then
-			-- (their punch animation replicates by itself: it plays on their own Animator)
+			-- the punch is procedural (not replicated): animate their character here too
 			local p = game:GetService("Players"):GetPlayerByUserId(puncher)
+			if p and p.Character then
+				PunchAnim.play(p.Character)
+			end
 			local r = p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
 			if r and r:IsA("BasePart") then
 				DigAudio.remoteHit(z, r.Position + r.CFrame.LookVector * 3)

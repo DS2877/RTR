@@ -2,7 +2,7 @@
 -- Heads-up display in the slim simulator style: icon tiles with tiny labels on the left (Store,
 -- Event, Index, Gift + a Music switch), stat lines without boxes in the lower left, a hotbar in the
 -- bottom middle, translucent round PUNCH / VACUUM / LIFT buttons next to the jump button, the zone
--- + depth on top, toasts, banners, the BACKPACK FULL pill with a guide beam, find popups, ADMIN.
+-- + depth on top, toasts, banners, the BACKPACK FULL pill with a subtle guide (floor arrow + dump marker), find popups, ADMIN.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -188,52 +188,105 @@ local function showFind(id: string)
 	end
 end
 
--- ===== guide beam (BACKPACK FULL -> dump) =====
+-- ===== guide (BACKPACK FULL -> dump) =====
+-- Subtle on purpose: a small arrow on the floor at your feet pointing at the dump, and a small
+-- marker over the dump itself (visible through walls) with the distance.
 
-local beam: Beam? = nil
-local beamTarget: Attachment? = nil
+local guideOn = false
+local arrow: Part? = nil
+local arrowText: TextLabel? = nil
+local marker: BillboardGui? = nil
+local markerText: TextLabel? = nil
+
+local function buildGuide(dump: BasePart)
+	local a = Instance.new("Part")
+	a.Name = "GuideArrow"
+	a.Anchored = true
+	a.CanCollide = false
+	a.CanQuery = false
+	a.CanTouch = false
+	a.CastShadow = false
+	a.Transparency = 1
+	a.Size = Vector3.new(3, 0.05, 3)
+	a.Parent = workspace
+	local sg = Instance.new("SurfaceGui")
+	sg.Face = Enum.NormalId.Top
+	sg.LightInfluence = 0
+	sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	sg.PixelsPerStud = 40
+	sg.Parent = a
+	local t = Instance.new("TextLabel")
+	t.BackgroundTransparency = 1
+	t.Size = UDim2.fromScale(1, 1)
+	t.Text = "➜"
+	t.Font = Enum.Font.GothamBlack
+	t.TextScaled = true
+	t.TextColor3 = Color3.fromRGB(255, 214, 90)
+	t.TextTransparency = 0.35
+	t.Parent = sg
+	arrow, arrowText = a, t
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "DumpMarker"
+	bb.AlwaysOnTop = true
+	bb.Size = UDim2.fromOffset(120, 26)
+	bb.StudsOffset = Vector3.new(0, 6, 0)
+	bb.LightInfluence = 0
+	bb.Adornee = dump
+	bb.Parent = player:WaitForChild("PlayerGui")
+	local pill = Instance.new("TextLabel")
+	pill.Size = UDim2.fromScale(1, 1)
+	pill.BackgroundColor3 = Color3.fromRGB(16, 17, 22)
+	pill.BackgroundTransparency = 0.3
+	pill.Font = Enum.Font.GothamBold
+	pill.TextSize = 12
+	pill.TextColor3 = Color3.fromRGB(255, 214, 90)
+	pill.Text = "DUMP"
+	pill.Parent = bb
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(1, 0)
+	c.Parent = pill
+	marker, markerText = bb, pill
+end
+
 local function setGuide(on: boolean)
-	local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	guideOn = on
 	local dump = CollectionService:GetTagged("Dump")[1]
-	if not on or not r or not dump then
-		if beam then
-			beam.Enabled = false
-		end
+	if on and dump and dump:IsA("BasePart") and not arrow then
+		buildGuide(dump)
+	end
+	if marker then
+		marker.Enabled = on
+	end
+	if arrow then
+		arrow.Parent = if on then workspace else nil
+	end
+end
+
+RunService.RenderStepped:Connect(function()
+	if not guideOn or not arrow or not arrowText then
 		return
 	end
-	if not beam or not beam.Parent then
-		local a0 = Instance.new("Attachment")
-		a0.Name = "GuideA"
-		a0.Parent = r
-		local holder = Instance.new("Part")
-		holder.Anchored = true
-		holder.CanCollide = false
-		holder.CanQuery = false
-		holder.Transparency = 1
-		holder.Size = Vector3.one
-		holder.Parent = workspace
-		local a1 = Instance.new("Attachment")
-		a1.Parent = holder
-		beamTarget = a1
-		local b = Instance.new("Beam")
-		b.Attachment0 = a0
-		b.Attachment1 = a1
-		b.Width0 = 1.2
-		b.Width1 = 1.2
-		b.FaceCamera = true
-		b.LightEmission = 1
-		b.Color = ColorSequence.new(Color3.fromRGB(255, 220, 60))
-		b.Transparency = NumberSequence.new(0.2)
-		b.TextureSpeed = 2
-		b.Segments = 20
-		b.Parent = r
-		beam = b
+	local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local dump = CollectionService:GetTagged("Dump")[1]
+	if not r or not r:IsA("BasePart") or not dump or not dump:IsA("BasePart") then
+		return
 	end
-	if beamTarget then
-		(beamTarget.Parent :: BasePart).Position = (dump :: BasePart).Position + Vector3.new(0, 4, 0)
+	local flat = Vector3.new(dump.Position.X - r.Position.X, 0, dump.Position.Z - r.Position.Z)
+	local dist = flat.Magnitude
+	if markerText then
+		markerText.Text = string.format("🗑️ DUMP · %dm", math.floor(dist / 3.5))
 	end
-	(beam :: Beam).Enabled = true
-end
+	-- the arrow sits a few studs ahead of you towards the dump, pulsing softly; gone when close
+	if dist < 14 then
+		arrowText.TextTransparency = 1
+		return
+	end
+	local dir = flat.Unit
+	local feet = r.Position - Vector3.new(0, 2.9, 0) + dir * 4.5
+	-- the "➜" glyph points along +X of the surface: turn +X to the dump direction
+	arrow.CFrame = CFrame.lookAt(feet, feet + dir) * CFrame.Angles(0, math.pi / 2, 0)
+	arrowText.TextTransparency = 0.35 + 0.25 * (0.5 + 0.5 * math.sin(os.clock() * 5))
+end)
 
 -- ===== admin =====
 
