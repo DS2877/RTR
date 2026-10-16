@@ -4,7 +4,6 @@
 -- bottom middle, translucent round PUNCH / VACUUM / LIFT buttons next to the jump button, the zone
 -- + depth on top, toasts, banners, a small FULL chip, find popups, ADMIN.
 
-local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
