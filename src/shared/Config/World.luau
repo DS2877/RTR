@@ -31,6 +31,8 @@ local World = {
 	Reach = 11, -- studs from HumanoidRootPart to the target block's center (client aims inside this)
 	ReachSlack = 6, -- extra studs the server allows for latency
 	AttackInterval = 0.32, -- seconds between punches (hold = auto-punch at this rate)
+	CritChance = 0.08, -- share of punches that are CRITs (server rolls it)...
+	CritMult = 3, -- ...hitting this many times harder
 	BrushDepth = 2, -- a brush cell that hits air digs up to this many layers deeper
 
 	-- client rendering budget (iPhone 11)

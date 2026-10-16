@@ -272,6 +272,11 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any): string?
 	s.lastPunch = now
 	local data = s.data
 	local power = Stats.power(s) * Dig.globalBoost * (if Dig.powerBoost then Dig.powerBoost(player) else 1)
+	-- CRIT: a lucky punch hits much harder (the client pops "CRIT!" on the block)
+	if math.random() < World.CritChance then
+		power *= World.CritMult
+		Net.fire(player, Remotes.Names.Crit, x, y, z)
+	end
 	local targets = Progression.brushTargets(grid, x, y, z, face, data.Levels.Brushes, function(_, _, tz)
 		return tz < maxZ
 	end)

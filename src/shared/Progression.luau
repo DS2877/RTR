@@ -390,6 +390,11 @@ function Progression.liftReward(
 	return math.floor(base * Economy.LiftPerfect * comboMult)
 end
 
+-- Average damage multiplier from CRITs (the balance sim uses it).
+function Progression.critFactor(): number
+	return 1 + World.CritChance * (World.CritMult - 1)
+end
+
 -- The combo milestone reached at `combo` perfects in a row (nil below the first one).
 function Progression.liftTier(combo: number): (number, any)
 	local found, tier = 0, nil

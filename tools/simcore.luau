@@ -87,7 +87,7 @@ local function run(passes: boolean): Result
 
 	while t < LIMIT and depth < maxDepth do
 		local frontier = Progression.zoneAt(depth)
-		local power = Progression.punchPower(strength, lv.Tools, 0)
+		local power = Progression.punchPower(strength, lv.Tools, 0) * Progression.critFactor()
 		-- too tough to push on: farm wider in the deepest zone that still breaks comfortably
 		local zone = frontier
 		while zone > 1 and Progression.hitsToBreak(Zones[zone].hp, power) > MAX_HITS do

@@ -15,6 +15,9 @@ local Cycle = require(Shared.Config.Cycle)
 local Zones = require(Shared.Config.Zones)
 local Finds = require(Shared.Config.Finds)
 local Rarity = require(Shared.Config.Rarity)
+local World = require(Shared.Config.World)
+local Upgrades = require(Shared.Config.Upgrades)
+local Progression = require(Shared.Progression)
 local Remotes = require(Shared.Remotes)
 local Format = require(Shared.Format)
 
@@ -500,6 +503,67 @@ function HUD.start()
 		Parent = gui,
 	}, UI.INK, 1.6)
 	UI.scaleObject(zoneText)
+	-- the goal: a thin bar to the next zone ("8m to BRICK"), always in view
+	local goal = UI.new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 34),
+		Size = UDim2.fromOffset(220, 18),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	})
+	UI.scaleObject(goal)
+	local goalBar = UI.new("Frame", {
+		Size = UDim2.new(1, 0, 0, 4),
+		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
+		BackgroundTransparency = 0.35,
+		Parent = goal,
+	}, { UI.corner(2) })
+	local goalFill = UI.new("Frame", {
+		Size = UDim2.fromScale(0, 1),
+		BackgroundColor3 = Color3.fromRGB(255, 200, 90),
+		Parent = goalBar,
+	}, { UI.corner(2) })
+	local goalText: TextLabel = UI.new("TextLabel", {
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 5),
+		Size = UDim2.new(1, 0, 0, 13),
+		Text = "",
+		Font = Enum.Font.GothamBold,
+		TextSize = 11,
+		TextColor3 = Color3.fromRGB(236, 238, 244),
+		Parent = goal,
+	}, { UI.textStroke(UI.INK, 1) })
+	local lastGoalZone = 0
+	local function updateGoal()
+		local depth = attr("MaxDepth", 0)
+		local zi = Progression.zoneAt(depth)
+		local nextZone = Zones[zi + 1]
+		local from = Progression.zoneStart(zi)
+		local to = if nextZone then Progression.zoneStart(zi + 1) else World.TunnelDepth
+		if nextZone and to > Progression.diggableDepth() then
+			goalText.Text = "NEW ZONES SOON"
+			goalFill.Size = UDim2.fromScale(1, 1)
+			return
+		end
+		local k = math.clamp((depth - from) / math.max(1, to - from), 0, 1)
+		UI.tween(goalFill, 0.3, { Size = UDim2.fromScale(k, 1) })
+		local c = if nextZone then nextZone.palette[1] else { 255, 200, 90 }
+		goalFill.BackgroundColor3 =
+			Color3.fromRGB(math.min(255, c[1] + 70), math.min(255, c[2] + 70), math.min(255, c[3] + 70))
+		goalText.Text = string.format(
+			"%dm to %s",
+			math.max(0, to - depth),
+			if nextZone then nextZone.name else "THE ESCAPE"
+		)
+		if zi ~= lastGoalZone then
+			if lastGoalZone ~= 0 then
+				UI.bump(goal, 0.2)
+			end
+			lastGoalZone = zi
+		end
+	end
+	player:GetAttributeChangedSignal("MaxDepth"):Connect(updateGoal)
+	task.defer(updateGoal)
 
 	toastHolder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
@@ -572,7 +636,7 @@ function HUD.start()
 	local fullBox = UI.new("Frame", {
 		Name = "Full",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 40),
+		Position = UDim2.new(0.5, 0, 0, 58),
 		Size = UDim2.fromOffset(0, 28),
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
@@ -777,6 +841,32 @@ function HUD.start()
 	player:GetAttributeChangedSignal("Noodles"):Connect(function()
 		UI.bump(noodles.Parent :: GuiObject, 0.08)
 	end)
+	-- UPGRADE READY: a card the first time you can afford the next tool / brush / backpack
+	local told: { [string]: boolean } = {}
+	local SHOP_OF = { Tools = "Tool Crib", Brushes = "Tool Crib", Backpack = "Commissary" }
+	local function checkUpgrades()
+		local money = attr("Noodles", 0)
+		for _, track in { "Tools", "Brushes", "Backpack" } do
+			local level = attr(track, 1)
+			local cost = Progression.nextCost(track, level)
+			local key = track .. level
+			if cost and money >= cost and not told[key] then
+				told[key] = true
+				local nxt = (Upgrades :: any)[track][level + 1]
+				LootToast.show({
+					icon = nxt.emoji,
+					title = nxt.name .. " is ready",
+					tag = "Upgrade · " .. SHOP_OF[track],
+					value = Format.noodles(cost),
+					color = Color3.fromRGB(90, 220, 130),
+					seconds = 3.6,
+				})
+				Sound.play("Upgrade", 0.45, 1.25)
+				break -- one at a time
+			end
+		end
+	end
+	player:GetAttributeChangedSignal("Noodles"):Connect(checkUpgrades)
 	eventTile.Activated:Connect(function()
 		local ev = ReplicatedStorage:GetAttribute("Event")
 		local cfg = if typeof(ev) == "string" then Cycle.Events[ev] else nil

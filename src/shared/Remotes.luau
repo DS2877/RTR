@@ -57,6 +57,7 @@ Remotes.Names = {
 	OpenStash = "OpenStash", -- () your Stash prompt was used
 	Raid = "Raid", -- (kind: "alarm" | "stolen" | "carry" | "home" | "dropped", text, userId?)
 	Boom = "Boom", -- (owner: number, x, y, z) dynamite went off
+	Crit = "Crit", -- (x, y, z) your punch was a CRIT
 	EscapeReady = "EscapeReady", -- () you reached the bottom: the ESCAPE button appears
 	Escaped = "Escaped", -- (rebirths: number, tierName: string) play the escape cinematic
 	Inspect = "Inspect", -- (phase: "warn" | "caught" | "safe", seconds: number, snitched: boolean)
