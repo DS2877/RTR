@@ -1547,17 +1547,7 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 				Material = Enum.Material.Marble,
 			}
 		)
-		Build.part(
-			parent,
-			"Leaves",
-			Vector3.new(3, 3.4, 3),
-			CFrame.new(pos + Vector3.new(0, 3.3, 0)),
-			Color3.fromRGB(52, 110, 50),
-			{
-				Shape = Enum.PartType.Ball,
-				Material = Enum.Material.Grass,
-			}
-		)
+		Props.bush(parent, pos + Vector3.new(0, 3.1, 0), 2.6)
 	end
 	-- a painting on the back wall
 	local painting = Build.part(

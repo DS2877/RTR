@@ -697,6 +697,7 @@ function Dressing.dress(prison: Instance, cells: { any })
 	Interior.messHall(common)
 	Interior.commonRoom(common)
 	Interior.yard(prison)
+	Interior.grime(prison)
 	yard(prison)
 	landscape(prison)
 end

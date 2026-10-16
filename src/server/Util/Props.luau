@@ -244,4 +244,105 @@ function Props.sink(model: Instance, at: At, x: number, y: number, d: number): B
 	return basin
 end
 
+-- A leafy bush: overlapping balls in a few greens (reads far better than one green ball).
+function Props.bush(parent: Instance, at: Vector3, size: number, seed: number?)
+	local greens = {
+		Color3.fromRGB(58, 112, 52),
+		Color3.fromRGB(74, 132, 60),
+		Color3.fromRGB(46, 96, 46),
+		Color3.fromRGB(88, 142, 70),
+	}
+	local r = Random.new(seed or math.floor(at.X * 13 + at.Z * 7))
+	for k = 1, 5 do
+		local s = size * (0.55 + r:NextNumber() * 0.35)
+		local off = Vector3.new(
+			(r:NextNumber() - 0.5) * size * 0.7,
+			(r:NextNumber() - 0.2) * size * 0.45,
+			(r:NextNumber() - 0.5) * size * 0.7
+		)
+		part(
+			parent,
+			"Leaves",
+			Vector3.new(s, s, s),
+			CFrame.new(at + off),
+			greens[(k + r:NextInteger(0, 3)) % #greens + 1],
+			{
+				Shape = Enum.PartType.Ball,
+				Material = Enum.Material.Grass,
+				CanCollide = false,
+				CastShadow = true,
+			}
+		)
+	end
+end
+
+-- A tree in a concrete planter: tapered trunk, branch stubs, a clustered canopy.
+function Props.tree(parent: Instance, at: Vector3, height: number, seed: number?)
+	local bark = Color3.fromRGB(92, 68, 48)
+	post(
+		parent,
+		"Planter",
+		4.4,
+		1.4,
+		CFrame.new(at + Vector3.new(0, 0.7, 0)),
+		Color3.fromRGB(130, 132, 134),
+		{
+			Material = Enum.Material.Concrete,
+		}
+	)
+	post(
+		parent,
+		"PlanterSoil",
+		3.8,
+		0.1,
+		CFrame.new(at + Vector3.new(0, 1.42, 0)),
+		Color3.fromRGB(70, 52, 38),
+		{
+			Material = Enum.Material.Ground,
+			CanCollide = false,
+		}
+	)
+	post(
+		parent,
+		"Trunk",
+		1.1,
+		height * 0.55,
+		CFrame.new(at + Vector3.new(0, 1.4 + height * 0.275, 0)),
+		bark,
+		{
+			Material = Enum.Material.Wood,
+		}
+	)
+	post(
+		parent,
+		"Trunk",
+		0.75,
+		height * 0.35,
+		CFrame.new(at + Vector3.new(0.15, 1.4 + height * 0.7, 0)),
+		bark,
+		{
+			Material = Enum.Material.Wood,
+			CanCollide = false,
+		}
+	)
+	for k = 0, 2 do
+		local a = k * 2.1 + (seed or 0)
+		part(
+			parent,
+			"Branch",
+			Vector3.new(0.35, 0.35, 2.4),
+			CFrame.new(at + Vector3.new(math.cos(a) * 0.9, 1.4 + height * 0.62, math.sin(a) * 0.9))
+				* CFrame.Angles(0.6, a, 0),
+			bark,
+			{
+				Material = Enum.Material.Wood,
+				CanCollide = false,
+			}
+		)
+	end
+	local top = at + Vector3.new(0, 1.4 + height * 0.85, 0)
+	Props.bush(parent, top, height * 0.55, seed)
+	Props.bush(parent, top + Vector3.new(0, height * 0.22, 0), height * 0.4, (seed or 0) + 7)
+end
+
 return Props

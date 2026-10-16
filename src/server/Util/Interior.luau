@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local World = require(ReplicatedStorage.Shared.Config.World)
 local Build = require(script.Parent.Build)
+local Props = require(script.Parent.Props)
 
 local Interior = {}
 
@@ -759,6 +760,106 @@ function Interior.commonRoom(common: Instance)
 	mopBucket(d, Vector3.new(cr.x - 14, 0.04, z1 - 4))
 end
 
+-- ===== grime: soft dark bands where walls meet the floor and the ceiling, and darker floor edges
+-- (a cheap ambient-occlusion look that gives every room depth) =====
+
+local function band(parent: Instance, fromTop: boolean, height: number, alpha: number)
+	local f = Instance.new("Frame")
+	f.BorderSizePixel = 0
+	f.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
+	f.AnchorPoint = Vector2.new(0, if fromTop then 0 else 1)
+	f.Position = UDim2.fromScale(0, if fromTop then 0 else 1)
+	f.Size = UDim2.fromScale(1, height)
+	f.Parent = parent
+	local g = Instance.new("UIGradient")
+	g.Rotation = 90
+	g.Transparency = if fromTop
+		then NumberSequence.new({ NumberSequenceKeypoint.new(0, alpha), NumberSequenceKeypoint.new(1, 1) })
+		else NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(1, alpha),
+		})
+	g.Parent = f
+end
+
+local function wallGrime(wall: BasePart)
+	local size = wall.Size
+	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right } do
+		local width = if face == Enum.NormalId.Front or face == Enum.NormalId.Back then size.X else size.Z
+		if width >= 3 then
+			local gui = Instance.new("SurfaceGui")
+			gui.Name = "Grime"
+			gui.Face = face
+			gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+			gui.PixelsPerStud = 6
+			gui.LightInfluence = 1
+			gui.Parent = wall
+			band(gui, false, math.min(0.4, 3.5 / size.Y), 0.45) -- floor line
+			band(gui, true, math.min(0.3, 2.5 / size.Y), 0.55) -- ceiling line
+		end
+	end
+end
+
+local function floorGrime(parent: Instance, floor: BasePart)
+	local overlay = Instance.new("Part")
+	overlay.Name = "FloorShade"
+	overlay.Anchored = true
+	overlay.CanCollide = false
+	overlay.CanQuery = false
+	overlay.CanTouch = false
+	overlay.CastShadow = false
+	overlay.Transparency = 1
+	overlay.Size = Vector3.new(floor.Size.X, 0.02, floor.Size.Z)
+	overlay.CFrame = floor.CFrame * CFrame.new(0, floor.Size.Y / 2 + 0.07, 0)
+	overlay.Parent = parent
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Top
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 4
+	gui.LightInfluence = 1
+	gui.Parent = overlay
+	local function edge(rotation: number, w: number, horizontal: boolean, pos: UDim2, anchor: Vector2)
+		local f = Instance.new("Frame")
+		f.BorderSizePixel = 0
+		f.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
+		f.AnchorPoint = anchor
+		f.Position = pos
+		f.Size = if horizontal then UDim2.new(1, 0, w, 0) else UDim2.new(w, 0, 1, 0)
+		f.Parent = gui
+		local g = Instance.new("UIGradient")
+		g.Rotation = rotation
+		g.Transparency =
+			NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 1) })
+		g.Parent = f
+	end
+	local fx = math.min(0.3, 3 / floor.Size.X)
+	local fz = math.min(0.3, 3 / floor.Size.Z)
+	edge(0, fx, false, UDim2.fromScale(0, 0), Vector2.new(0, 0))
+	edge(180, fx, false, UDim2.fromScale(1, 0), Vector2.new(1, 0))
+	edge(90, fz, true, UDim2.fromScale(0, 0), Vector2.new(0, 0))
+	edge(270, fz, true, UDim2.fromScale(0, 1), Vector2.new(0, 1))
+end
+
+function Interior.grime(prison: Instance)
+	local folder = Instance.new("Folder")
+	folder.Name = "Grime"
+	folder.Parent = prison
+	for _, d in prison:GetDescendants() do
+		if d:IsA("BasePart") and d.Transparency < 0.5 then
+			if (d.Name == "Wall" or d.Name == "CellWall") and d.Size.Y >= 8 then
+				wallGrime(d)
+			elseif
+				d.Name == "CommonFloor"
+				or d.Name == "MessFloor"
+				or d.Name == "CorridorFloor"
+				or d.Name == "CellFloor"
+			then
+				floorGrime(folder, d)
+			end
+		end
+	end
+end
+
 -- ===== Yard =====
 
 local function picnicTable(parent: Instance, at: Vector3)
@@ -914,18 +1015,7 @@ function Interior.yard(prison: Instance)
 	for ix = 0, 5 do
 		for iz = 0, 2 do
 			local px, pz = gx - 6.5 + ix * 2.6, gz - 3.4 + iz * 3.4
-			p(
-				d,
-				"Plant",
-				Vector3.new(1.4, 1.4, 1.4),
-				CFrame.new(px, 1.5, pz),
-				Color3.fromRGB(60, 130, 50),
-				Enum.Material.Grass,
-				{
-					Shape = Enum.PartType.Ball,
-					CanCollide = false,
-				}
-			)
+			Props.bush(d, Vector3.new(px, 1.4, pz), 1.5)
 			if (ix + iz) % 2 == 0 then
 				p(
 					d,
@@ -1111,6 +1201,18 @@ function Interior.yard(prison: Instance)
 		Color3.fromRGB(235, 200, 60),
 		Color3.fromRGB(70, 70, 74)
 	)
+	-- trees in planters along the fences
+	for k, pos in
+		{
+			Vector3.new(x0 + 8, 0, z0 + 56),
+			Vector3.new(x0 + 8, 0, 4),
+			Vector3.new(x0 + 70, 0, z0 + 4),
+			Vector3.new(x0 + 104, 0, z0 + 4),
+			Vector3.new(x1 - 14, 0, z0 + 30),
+		}
+	do
+		Props.tree(d, pos, 13 + (k % 3) * 2, k)
+	end
 	-- weeds along the edges
 	local spots = {
 		{ x0 + 4, z0 + 4, 10, 4, 0.3 },
