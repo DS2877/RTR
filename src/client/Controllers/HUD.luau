@@ -413,8 +413,9 @@ local function buildAdmin(parent: Instance)
 		local now = os.clock()
 		if perfOn and now - last >= 0.5 then
 			perf.Text = string.format(
-				"FPS %d · voxel parts %d · debris %d · heaps %d",
+				"FPS %d · quality %s · voxel parts %d · debris %d · heaps %d",
 				math.floor(frames / (now - last)),
+				select(2, require(script.Parent.Quality).level()),
 				VoxelRender.partCount(),
 				DigFX.debrisCount(),
 				DigFX.heapCount()

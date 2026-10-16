@@ -16,6 +16,7 @@ require(Controllers.CameraController).start()
 require(Controllers.VoxelRender).start()
 require(Controllers.DigFX).start()
 require(Controllers.Chambers).start()
+require(Controllers.Quality).start()
 local DigController = require(Controllers.DigController)
 DigController.start()
 -- every punch lands instantly (before the server's answer): shock ring, dust, the block jolts;

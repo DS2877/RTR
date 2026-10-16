@@ -107,7 +107,10 @@ local FACE_IDS = {
 	Enum.NormalId.Back,
 }
 
-local MAX_LIGHTS = 28 -- glowing features (crystals, lava, slime) with a PointLight, per client
+-- glowing features (crystals, lava, slime) + work lamps with a PointLight, per client
+-- (Controllers/Quality lowers it on slow devices, together with the stream radius)
+local MAX_LIGHTS = 28
+local streamRadius = World.StreamRadius
 local lit: { [Part]: boolean } = {}
 local litCount = 0
 local function unlight(p: Part)
@@ -563,7 +566,7 @@ local function stream(budget: number)
 		local g = t.grid
 		local bx, by, bz = Tunnel.toBlock(t.frame, pos)
 		local inside = Tunnel.inside(t.frame, pos, 1)
-		local R = World.StreamRadius
+		local R = streamRadius
 		local zMax = if inside then D - 1 else math.min(D - 1, World.OutsideRenderDepth - 1)
 		local czLo = math.max(0, (math.max(0, bz - R)) // CS)
 		local czHi = math.min(g.ncz - 1, math.max(0, math.min(zMax, bz + R)) // CS)
@@ -645,6 +648,12 @@ function VoxelRender.jolt(t: T, x: number, y: number, z: number)
 	if p then
 		jolt(p, 1)
 	end
+end
+
+-- Quality level: how far tunnels are drawn (blocks) and how many glowing parts get a real light.
+function VoxelRender.setBudget(radius: number, lights: number)
+	streamRadius = radius
+	MAX_LIGHTS = lights
 end
 
 function VoxelRender.get(owner: number): T?

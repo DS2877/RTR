@@ -38,6 +38,7 @@ type Debris = {
 	vy: number, -- last vertical speed (a sudden stop = it hit the floor: tap)
 }
 local debris: { Debris } = {}
+local maxDebris = World.MaxDebris -- Controllers/Quality lowers it on slow devices
 local free: { Part } = {}
 
 -- the server's loose piles (truth for vacuuming): id -> { pos, n }
@@ -58,6 +59,10 @@ end
 
 local function vacuumRange(): number
 	return Progression.vacuumRange(player:GetAttribute("Vacuum") or 1)
+end
+
+function DigFX.setMaxDebris(n: number)
+	maxDebris = n
 end
 
 function DigFX.debrisCount(): number
@@ -95,7 +100,7 @@ end
 
 -- oldest chips go first, then the oldest resting chunks
 local function makeRoom()
-	if #debris < World.MaxDebris then
+	if #debris < maxDebris then
 		return
 	end
 	for i, d in debris do
