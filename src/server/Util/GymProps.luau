@@ -100,9 +100,14 @@ local builders: { [string]: (m: Model) -> () } = {
 	end,
 	Vending = function(m)
 		-- a glowing snack machine: lit glass front with rows of snacks, a header, coin panel, tray
-		p(m, "Body", Vector3.new(4, 7, 3), CFrame.new(0, 3.5, 0), Color3.fromRGB(170, 40, 40), {
-			Material = Enum.Material.Metal,
-		})
+		-- a hollow cabinet: the back block plus a frame around a recessed, lit window
+		local red = Color3.fromRGB(170, 40, 40)
+		local metal = { Material = Enum.Material.Metal }
+		p(m, "Body", Vector3.new(4, 7, 1.9), CFrame.new(0, 3.5, 0.55), red, metal)
+		p(m, "Frame", Vector3.new(0.3, 7, 1.1), CFrame.new(-1.85, 3.5, -0.95), red, metal)
+		p(m, "Frame", Vector3.new(1.1, 7, 1.1), CFrame.new(1.45, 3.5, -0.95), red, metal)
+		p(m, "Frame", Vector3.new(2.6, 1.3, 1.1), CFrame.new(-0.4, 0.65, -0.95), red, metal)
+		p(m, "Frame", Vector3.new(2.6, 0.9, 1.1), CFrame.new(-0.4, 6.55, -0.95), red, metal)
 		p(m, "Trim", Vector3.new(4.1, 0.3, 3.1), CFrame.new(0, 7.0, 0), Color3.fromRGB(40, 40, 44), {
 			Material = Enum.Material.Metal,
 		})
@@ -130,8 +135,8 @@ local builders: { [string]: (m: Model) -> () } = {
 		local back = p(
 			m,
 			"Inside",
-			Vector3.new(2.6, 4.8, 0.1),
-			CFrame.new(-0.4, 3.7, -1.1),
+			Vector3.new(2.56, 4.76, 0.1),
+			CFrame.new(-0.4, 3.7, -0.46),
 			Color3.fromRGB(235, 235, 240)
 		)
 		local light = Instance.new("SurfaceLight")
@@ -152,8 +157,8 @@ local builders: { [string]: (m: Model) -> () } = {
 			p(
 				m,
 				"Shelf",
-				Vector3.new(2.6, 0.08, 0.5),
-				CFrame.new(-0.4, 1.75 + row * 1.2, -1.25),
+				Vector3.new(2.56, 0.08, 0.8),
+				CFrame.new(-0.4, 1.75 + row * 1.2, -0.95),
 				Color3.fromRGB(150, 150, 156),
 				{
 					Material = Enum.Material.Metal,
@@ -164,7 +169,7 @@ local builders: { [string]: (m: Model) -> () } = {
 					m,
 					"Snack",
 					Vector3.new(0.5, 0.75, 0.35),
-					CFrame.new(-1.35 + col * 0.64, 2.17 + row * 1.2, -1.22),
+					CFrame.new(-1.35 + col * 0.64, 2.17 + row * 1.2, -0.78),
 					colors[(row * 4 + col) % #colors + 1]
 				)
 			end
