@@ -17,6 +17,7 @@ local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
 local Cells = require(script.Parent.Cells)
 local Dig = require(script.Parent.Dig)
+local Breakout = require(script.Parent.Breakout)
 
 local DayNight = {}
 
@@ -62,7 +63,7 @@ end
 local function sendEveryoneHome()
 	for player, s in State.all() do
 		local pos = State.root(player)
-		if pos and not DayNight.inOwnCell(s, pos) then
+		if pos and not DayNight.inOwnCell(s, pos) and not Breakout.running(player) then
 			Cells.toCell(player)
 			Net.notice(player, "The guards walked you back to your cell.", "info")
 		end

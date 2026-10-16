@@ -187,6 +187,30 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### THE BREAKOUT: rymningen är nu en riktig, spelbar final
+- När du har grävt dig till botten och trycker ESCAPE görs rebirth-bokföringen direkt, så att du
+  aldrig förlorar den om du lämnar. Sedan börjar **THE BREAKOUT**, en jakt som tar 1–3 minuter:
+  1. **Kloaken:** spring längs gångbryggor och hoppa över vattnet (ramlar du i börjar du om från
+     början av kloaken), med rör, gröna lampor och dropp. Klättra upp på stegen genom brunnen.
+  2. **Gården:** tre vakttorn med strålkastare som sveper över gräset. Kliv in i ljuset så blir du
+     SPOTTED! och skickas tillbaka till brunnen. Två vakter springer din egen väg 4,5 s bakom dig:
+     står du stilla för länge tar de dig. Skärmkanten pulserar rött när de är nära.
+  3. **Muren:** klättra uppför stegen. Ett torn sveper längs muren, och överst finns taggtråd.
+  4. **Flyktbilen:** spring till den röda bilen med motorn igång.
+- **Slutscen:** bilen sladdar iväg och "YOU'RE FREE!" visas tillsammans med medaljen, tiden och
+  hur många gånger du skickades tillbaka. Därefter kommer "...ROADBLOCK!" och "WELCOME TO
+  <nytt fängelse>", och du hamnar i din nya cell.
+- **Medaljer:** 🥇 GULD (under 80 s, aldrig upptäckt) ger 3 000 🍜, 🥈 SILVER (under 130 s, högst
+  2 gånger) ger 1 500 🍜 och 🥉 BRONS ger 600 🍜. Noodles smugglas med in i nästa fängelse,
+  vilket ger en flygande start. Medaljen meddelas till hela servern, och snabbaste tiden sparas.
+- Servern kontrollerar alla regler 10 gånger per sekund. Den kräver checkpoints i ordning, en
+  minsta tid och ett maxtak på 4 minuter (efter det blir du fri ändå, men utan medalj). Vakternas
+  inspektioner och "alla in i cellerna" hoppar över den som är ute på rymning. Jaktmusiken spelar
+  under hela rundan.
+- **ADMIN → 🏃 Breakout:** en övningsrunda utan rebirth och utan belöning, så att du kan testa.
+- **Testa på iPhone:** ADMIN → 🏃 Breakout. Testa att hoppa över vattnet, smyga förbi ljusen på
+  gården och stå still en stund (vakterna tar dig), och klättra över muren till bilen.
+
 ### Kombo, guldblock och ras: grävandet blir en jakt på jackpotten
 - **KOMBO:** varje slag som landar inom 1,6 s från det förra bygger en kedja. Räknaren ovanför
   PUNCH-knappen visar x12, x35 och så vidare, med en mätare som töms. Nivåerna är ON A ROLL ×1,25

@@ -36,6 +36,7 @@ local Patrol = require(Services.Patrol)
 local Events = require(Services.Events)
 local Market = require(Services.Market)
 local Tutorial = require(Services.Tutorial)
+local Breakout = require(Services.Breakout)
 
 Remotes.setup()
 
@@ -62,6 +63,7 @@ Raid.start(world)
 TopDog.start(world)
 Product.start()
 Escape.start()
+Breakout.start()
 Rewards.start()
 Tutorial.start()
 Missions.start()
@@ -198,6 +200,8 @@ local function onCharacter(player: Player, character: Model)
 	Hideout.onCharacter(player)
 	task.wait(0.1)
 	Cells.toCell(player)
+	-- mid-BREAKOUT respawns go back to the last checkpoint, not the cell
+	Breakout.onCharacter(player)
 	task.spawn(Market.onCharacter, player)
 end
 
@@ -256,6 +260,7 @@ local function leave(player: Player)
 	end
 	Raid.onLeaving(player)
 	Gym.onLeaving(player)
+	Breakout.leaving(player)
 	TopDog.onLeaving(player)
 	Events.onLeaving(player)
 	Market.clearRender(player)

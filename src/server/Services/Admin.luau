@@ -26,6 +26,7 @@ local DayNight = require(script.Parent.DayNight)
 local Events = require(script.Parent.Events)
 local Guards = require(script.Parent.Guards)
 local Escape = require(script.Parent.Escape)
+local Breakout = require(script.Parent.Breakout)
 local Market = require(script.Parent.Market)
 
 local Admin = {}
@@ -112,6 +113,9 @@ function Admin.run(player: Player, cmd: string, arg: number?): boolean
 	elseif cmd == "dynamite" then
 		s.data.Dynamite += math.floor(arg or 5)
 		player:SetAttribute("Dynamite", s.data.Dynamite)
+	elseif cmd == "breakout" then
+		-- practice THE BREAKOUT (no rebirth, no reward)
+		Breakout.begin(player, true)
 	elseif cmd == "bottom" then
 		-- a 3x3 path to the very last layer, then the ESCAPE button
 		local mid = World.TunnelWidth // 2

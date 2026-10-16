@@ -185,6 +185,11 @@ do
 	check("bedrock floor under the tunnel end", hit ~= nil)
 end
 
+-- THE BREAKOUT course is built on the first escape; build it now so it gets scanned too
+step("breakout course", function()
+	req(Server:WaitForChild("Util"), "BreakoutCourse").build()
+end)
+
 -- ===== z-fighting: visible faces of two parts lying in the same plane, facing the same way =====
 do
 	type Face = {
@@ -1011,6 +1016,100 @@ check("escape keeps the collection", next(s.data.Found) ~= nil)
 check("escape resets tools", s.data.Levels.Tools == 1 and s.data.Noodles == 0)
 check("decor back in the box", #s.data.Placed == 0 and s.data.Decor.Lamp == 1)
 check("rebirth multiplier", Progression.punchPower(10, 1, 1) > Progression.punchPower(10, 1, 0))
+
+-- ===== THE BREAKOUT (escaping sends you on the run) =====
+do
+	local Breakout = req(Services, "Breakout")
+	local Rules = req(Shared, "Breakout")
+	local BCfg = req(Config, "Breakout")
+	local O = Vector3.new(BCfg.Origin.x, BCfg.Origin.y, BCfg.Origin.z)
+	local Y = Rules.YardY
+	local function at(x: number, y: number, z: number)
+		fake.Position = O + Vector3.new(x, y, z)
+	end
+	check("escape starts THE BREAKOUT", Breakout.running(fake))
+	check("breakout course built", workspace:FindFirstChild("Breakout") ~= nil)
+	local run = Breakout._run(fake)
+	check("run starts at the sewer", run ~= nil and run.checkpoint == 1)
+	local sp1 = Rules.Spawns[1]
+	check(
+		"placed at the sewer start",
+		(fake.Position - (O + Vector3.new(sp1.x, sp1.y, sp1.z))).Magnitude < 1,
+		fake.Position - O
+	)
+	-- the water sends you back even during the grace time
+	at(25, -4, 0)
+	Breakout.check(fake, 0)
+	check(
+		"fell in the water = back to the start",
+		run.spotted == 1 and (fake.Position - O).X < 10,
+		run.spotted
+	)
+	run.grace = 0
+	-- out of the manhole: checkpoint 2
+	at(100, Y + 3, 0)
+	Breakout.check(fake, 1000.3)
+	check("checkpoint 2 out of the manhole", run.checkpoint == 2, run.checkpoint)
+	-- a searchlight
+	run.grace = 0
+	local lx, lz = Rules.light(1, 12.5)
+	at(lx, Y + 3, lz)
+	Breakout.check(fake, 12.5)
+	check("a searchlight sends you back", run.spotted == 2 and (fake.Position - O).X < 110, run.spotted)
+	-- the guards on your heels: standing still too long
+	run.grace = 0
+	local tq = 0
+	for t = 0, 60, 0.5 do
+		if not Rules.spotted(150, Y + 3, 33, t) then
+			tq = t
+			break
+		end
+	end
+	at(150, Y + 3, 33)
+	run.trail = { { t = os.clock() - 30, p = fake.Position } }
+	Breakout.check(fake, tq)
+	check("the guards catch you if you stop", run.spotted == 3, run.spotted)
+	-- the wall top: checkpoint 3
+	run.grace = 0
+	local tw = 0
+	for t = 0, 60, 0.5 do
+		if not Rules.spotted(218, Rules.WallTopY + 3, 0, t) then
+			tw = t
+			break
+		end
+	end
+	at(218, Rules.WallTopY + 3, 0)
+	Breakout.check(fake, tw)
+	check("checkpoint 3 on the wall", run.checkpoint == 3, run.checkpoint)
+	-- the car: not believed too fast, then FREE with a medal and smuggled Noodles
+	run.grace = os.clock() + 100
+	at(Rules.Car.x, Y + 3, Rules.Car.z)
+	Breakout.check(fake, 0)
+	check("a too-fast finish is not believed", not run.done)
+	local noodles = s.data.Noodles
+	local finishes = count("Breakout")
+	run.t0 = os.clock() - 60
+	Breakout.check(fake, 0)
+	check("reaching the car finishes the run", run.done and count("Breakout") > finishes)
+	local medal = Rules.medal(60, 3)
+	check("the medal pays its Noodles", s.data.Noodles - noodles == medal.cash, s.data.Noodles - noodles)
+	check(
+		"breakout counted",
+		s.data.Stats.Breakouts == 1 and s.data.Stats.BestEscape > 0,
+		s.data.Stats.BestEscape
+	)
+	task.wait(0.2)
+	check("the run ends", not Breakout.running(fake))
+	-- practice (admin): no reward
+	check("practice run", Breakout.begin(fake, true))
+	local p = Breakout._run(fake)
+	p.checkpoint, p.grace, p.t0 = 3, os.clock() + 100, os.clock() - 60
+	local n2 = s.data.Noodles
+	at(Rules.Car.x, Y + 3, Rules.Car.z)
+	Breakout.check(fake, 0)
+	check("practice pays nothing", p.done and s.data.Noodles == n2)
+	task.wait(0.2)
+end
 
 Cells.release(fake)
 State.remove(fake)

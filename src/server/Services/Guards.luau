@@ -22,6 +22,7 @@ local Net = require(script.Parent.Parent.Net)
 local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Build = require(script.Parent.Parent.Util.Build)
 local Characters = require(script.Parent.Parent.Util.Characters)
+local Breakout = require(script.Parent.Breakout)
 local Stats = require(script.Parent.Stats)
 local Hideout = require(script.Parent.Hideout)
 local Cells = require(script.Parent.Cells)
@@ -81,7 +82,7 @@ end
 -- Starts an inspection of this player (warning first). Returns false if not possible.
 function Guards.inspect(player: Player): boolean
 	local s = State.get(player)
-	if not s or not s.cell or active[player] then
+	if not s or not s.cell or active[player] or Breakout.running(player) then
 		return false
 	end
 	-- fair warning: the footsteps give you the base time PLUS the walk back from wherever you

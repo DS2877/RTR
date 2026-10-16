@@ -444,6 +444,7 @@ local function buildAdmin(parent: Instance)
 		{ "📋 Roll call", "rollcall", nil },
 		{ "Zone 10", "zone", 10 },
 		{ "Bottom→Escape", "bottom", nil },
+		{ "🏃 Breakout", "breakout", nil },
 		{ "👮 Inspect me", "inspect", nil },
 		{ "⚡ Blackout", "blackout", nil },
 		{ "🔓 Riot", "riot", nil },

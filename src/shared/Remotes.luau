@@ -61,6 +61,9 @@ Remotes.Names = {
 	Crit = "Crit", -- (x, y, z) your punch was a CRIT
 	Combo = "Combo", -- (hits: number, tier: number, bonus: number) your combo chain after a punch
 	Gold = "Gold", -- (owner: number, x, y, z, kind: "gold" | "jackpot", paid: number) gold broke
+	-- THE BREAKOUT: ("start", serverTime, practice) | ("reset", reason, checkpoint, spotted)
+	-- | ("checkpoint", n) | ("finish", seconds, medal, cash, rebirths, prison, spotted, practice)
+	Breakout = "Breakout",
 	CaveIn = "CaveIn", -- (owner: number, x, y, z, blocks: number) the rock came down
 	MissionDone = "MissionDone", -- (index) a WORK DETAIL job just got finished
 	EscapeReady = "EscapeReady", -- () you reached the bottom: the ESCAPE button appears

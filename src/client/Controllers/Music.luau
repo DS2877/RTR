@@ -168,10 +168,13 @@ function Music.start()
 	reshuffle()
 	nextTrack()
 	refresh()
-	player:GetAttributeChangedSignal("Carrying"):Connect(function()
-		chasing = player:GetAttribute("Carrying") == true
+	-- the chase track: carrying a stolen find, or on THE BREAKOUT
+	local function chase()
+		chasing = player:GetAttribute("Carrying") == true or player:GetAttribute("Breakout") == true
 		refresh()
-	end)
+	end
+	player:GetAttributeChangedSignal("Carrying"):Connect(chase)
+	player:GetAttributeChangedSignal("Breakout"):Connect(chase)
 end
 
 -- Quieter while you're in a tunnel (the zone ambience takes over): 1 = full volume.

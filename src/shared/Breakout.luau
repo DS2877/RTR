@@ -43,6 +43,12 @@ Breakout.Checkpoints = {
 	[3] = { x0 = 215, y0 = 38.5, z0 = -36, x1 = 221, y1 = 50, z1 = 36 },
 } :: { [number]: Box }
 
+-- guard towers (one per yard searchlight, in order) and the one on the wall; the lamp sits
+-- TowerHeadY above the tower's base
+Breakout.Towers = { { x = 132, z = -41 }, { x = 158, z = 41 }, { x = 184, z = -41 } }
+Breakout.WallTower = { x = 218, z = 33 }
+Breakout.TowerHeadY = 23.4
+
 -- the getaway car's door
 Breakout.Finish = { x0 = 272, y0 = 14, z0 = -7, x1 = 290, y1 = 26, z1 = 7 } :: Box
 Breakout.Car = { x = 281, z = 0 }

@@ -61,6 +61,8 @@ export type PlayerData = {
 		Gold: number, -- gold blocks broken
 		Jackpots: number,
 		CaveIns: number,
+		Breakouts: number, -- finished escape runs (with a medal)
+		BestEscape: number, -- fastest escape run in seconds (0 = none yet)
 	},
 }
 
@@ -119,6 +121,8 @@ local TEMPLATE: PlayerData = {
 		Gold = 0,
 		Jackpots = 0,
 		CaveIns = 0,
+		Breakouts = 0,
+		BestEscape = 0,
 	},
 }
 

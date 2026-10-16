@@ -19,6 +19,7 @@ local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Stats = require(script.Parent.Stats)
 local Dig = require(script.Parent.Dig)
 local Cells = require(script.Parent.Cells)
+local Breakout = require(script.Parent.Breakout)
 
 local Escape = {}
 
@@ -76,16 +77,17 @@ function Escape.escape(player: Player): string?
 		player:SetAttribute("Rebirths", d.Rebirths)
 	end
 	Dig.resetTunnel(player)
-	-- the old tunnel is solid rock again: put the character back in the cell (not inside it)
-	if typeof(player) == "Instance" then
-		task.spawn(Cells.toCell, player)
-	end
+	-- the rebirth is done (leaving mid-run never loses it): now run for it. THE BREAKOUT ends at
+	-- the getaway car and brings you to your new cell (Services/Breakout).
 	local name = Escape.prisonName(d.Rebirths)
-	Net.fire(player, Remotes.Names.Escaped, d.Rebirths, name)
+	if not Breakout.begin(player, false, d.Rebirths, name) and typeof(player) == "Instance" then
+		task.spawn(Cells.toCell, player)
+		Net.fire(player, Remotes.Names.Escaped, d.Rebirths, name)
+	end
 	Net.announce(
-		string.format("%s ESCAPED! ...and got caught. Welcome to %s!", player.Name, name),
-		{ 255, 215, 60 },
-		"Zone"
+		string.format("🚨 %s broke through! THE BREAKOUT is on!", player.Name),
+		{ 255, 120, 80 },
+		"Announce"
 	)
 	Cells.updateSign(player)
 	Stats.sync(player)
