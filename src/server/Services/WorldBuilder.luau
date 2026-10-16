@@ -31,6 +31,7 @@ export type CellRecord = {
 	doorBlock: BasePart,
 	shelf: Frame, -- collection slots (Services/Collection fills it)
 	stash: BasePart,
+	toilet: BasePart, -- FlushPrompt: the night dump (Loot.flush)
 }
 
 export type WorldRecord = {
@@ -298,7 +299,7 @@ local function buildCell(parent: Instance, index: number): CellRecord
 		Color3.fromRGB(250, 250, 245)
 	)
 	-- toilet + sink
-	Build.part(
+	local toilet = Build.part(
 		model,
 		"Toilet",
 		Vector3.new(2.4, 2.2, 2.6),
@@ -308,6 +309,15 @@ local function buildCell(parent: Instance, index: number): CellRecord
 			Material = Enum.Material.Marble,
 		}
 	)
+	-- at night the toilet is your rubble dump (Loot.flush)
+	local flush = Build.prompt(
+		toilet,
+		"Flush rubble",
+		"Toilet · " .. math.floor(Economy.FlushRate * 100) .. "%",
+		Economy.FlushRange
+	)
+	flush.Name = "FlushPrompt"
+	flush.Enabled = false
 	Build.part(
 		model,
 		"Tank",
@@ -413,6 +423,7 @@ local function buildCell(parent: Instance, index: number): CellRecord
 		doorBlock = doorBlock,
 		shelf = shelf,
 		stash = stash,
+		toilet = toilet,
 	}
 end
 

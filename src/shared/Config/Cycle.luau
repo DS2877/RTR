@@ -3,8 +3,8 @@
 -- bonus finds. Day: doors open, shops open, free movement (PvP from M3).
 
 local Cycle = {
-	NightSeconds = 270,
-	DaySeconds = 160,
+	NightSeconds = 180, -- (was 270: a full backpack left nothing to do; see FlushRate)
+	DaySeconds = 200,
 	RollCallSeconds = 25,
 	LightsOutWarning = 10, -- "LIGHTS OUT!" countdown before the doors lock
 	RollCallBlocks = 25, -- in your cell when roll call ends: this many blocks of rubble (deepest zone)

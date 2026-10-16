@@ -458,6 +458,25 @@ check("buy backpack", Shop.buy(fake, "Backpack") == 2)
 s.data.Noodles = 0
 check("too poor", select(2, Shop.buy(fake, "Backpack")) == "poor")
 
+-- night: flush the backpack down your own toilet for less
+do
+	local myCell = world.cells[s.cell]
+	fake.Position = myCell.toilet.Position
+	s.data.Bag, s.data.BagValue = 5, 100
+	local oldCan = Loot.canFlush
+	Loot.canFlush = function()
+		return false
+	end
+	check("no flushing by day", Loot.flush(fake) == 0 and s.data.Bag == 5)
+	Loot.canFlush = function()
+		return true
+	end
+	local pay = Loot.flush(fake)
+	check("flush at night", pay > 0 and pay < 100 * 2 and s.data.Bag == 0, pay)
+	Loot.canFlush = oldCan
+	check("toilet has a flush prompt", myCell.toilet:FindFirstChild("FlushPrompt") ~= nil)
+end
+
 -- gym: hoist the toilet, rep with the needle in the gold center / at the edge
 fake.Position = world.stations[1].Position
 local before = s.data.Strength

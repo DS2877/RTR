@@ -195,7 +195,8 @@ function Guards.start()
 		CFrame.new(0, 0, 0),
 		Color3.fromRGB(40, 60, 110),
 		Color3.fromRGB(20, 30, 60)
-	)
+	); -- pivot at the feet (the default pivot is the middle of the body: it walked into the floor)
+	(guardModel :: Model).WorldPivot = CFrame.new(0, 0, 0)
 	local head = (guardModel :: Model):FindFirstChild("Head") :: BasePart
 	local torch = Instance.new("SpotLight")
 	torch.Range = 40

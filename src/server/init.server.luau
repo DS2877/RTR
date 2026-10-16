@@ -79,6 +79,14 @@ DayNight.onDay = function()
 	Market.morning()
 end
 DayNight.riot = Events.riot
+-- night: the doors are locked, so the cell toilet takes your rubble (for less)
+Loot.canFlush = function(): boolean
+	local p = DayNight.phase()
+	return (p == "Night" or p == "LightsOut") and not Events.riot()
+end
+DayNight.onPhase = function(p)
+	Loot.setFlush(p == "Night" or p == "LightsOut")
+end
 Events.onRiot = DayNight.setRiot
 Events.phase = DayNight.phase
 Guards.isNight = function(): boolean

@@ -133,6 +133,46 @@ function Loot.dump(player: Player): number
 	return pay
 end
 
+-- Night: flush the backpack down your own cell toilet (doors are locked, the Yard is out of reach)
+-- for Economy.FlushRate of its value.
+Loot.canFlush = function(): boolean
+	return false
+end
+
+function Loot.flush(player: Player): number
+	local s = State.get(player)
+	local cell = s and s.cell and world.cells[s.cell]
+	if not s or not cell or not cell.toilet or not Loot.canFlush() then
+		return 0
+	end
+	if not near(player, cell.toilet, Economy.FlushRange + 4) then
+		return 0
+	end
+	if s.data.Bag <= 0 then
+		Net.notice(player, "Nothing to flush. Go dig!", "info")
+		return 0
+	end
+	local pay = math.floor(s.data.BagValue * Economy.FlushRate * noodleMult(s) + 0.5)
+	s.data.Bag = 0
+	s.data.BagValue = 0
+	Loot.addNoodles(player, pay)
+	Net.fire(player, Remotes.Names.Dumped, pay, "flush")
+	if Loot.onDump then
+		Loot.onDump(player, pay)
+	end
+	return pay
+end
+
+-- DayNight hook: toilets take rubble only while the doors are locked.
+function Loot.setFlush(on: boolean)
+	for _, cell in world.cells do
+		local prompt = cell.toilet and cell.toilet:FindFirstChild("FlushPrompt")
+		if prompt and prompt:IsA("ProximityPrompt") then
+			prompt.Enabled = on
+		end
+	end
+end
+
 -- Instant Backpack Empty (developer product): pays the backpack and every loose pile, anywhere.
 function Loot.dumpAnywhere(player: Player): number
 	local s = State.get(player)
@@ -203,6 +243,14 @@ function Loot.start(w: any)
 	dumpPrompt.Triggered:Connect(function(player)
 		Loot.dump(player)
 	end)
+	for _, cell in world.cells do
+		local prompt = cell.toilet and cell.toilet:FindFirstChild("FlushPrompt")
+		if prompt and prompt:IsA("ProximityPrompt") then
+			prompt.Triggered:Connect(function(player)
+				Loot.flush(player)
+			end)
+		end
+	end
 	-- vacuum tick
 	task.spawn(function()
 		while true do

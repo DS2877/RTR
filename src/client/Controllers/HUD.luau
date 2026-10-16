@@ -873,15 +873,19 @@ function HUD.start()
 		elseif fullKind == "slots" then
 			kind = "slots"
 		end
+		local phase = ReplicatedStorage:GetAttribute("Phase")
+		local locked = phase == "Night" or phase == "LightsOut"
 		if kind == "bag" then
-			fullText.Text = "BACKPACK FULL → Dump in the Yard"
+			fullText.Text = if locked
+				then "BACKPACK FULL → Flush it down your toilet 🚽"
+				else "BACKPACK FULL → Dump in the Yard"
 		elseif kind == "loose" then
 			fullText.Text = "Hold 🌀 VACUUM to pick up the rubble!"
 		elseif kind == "slots" then
 			fullText.Text = "FIND SLOTS FULL → Sell at The Fence"
 		end
 		fullBox.Visible = kind ~= nil
-		setGuide(kind == "bag")
+		setGuide(kind == "bag" and not locked)
 	end)
 
 	-- events
@@ -926,14 +930,10 @@ function HUD.start()
 			end)
 		end
 	end)
-	Remotes.get(Remotes.Names.Dumped).OnClientEvent:Connect(function(n)
-		toast("+" .. Format.noodles(n), "cash")
-		Sound.play("Dump", 0.7)
+	Remotes.get(Remotes.Names.Dumped).OnClientEvent:Connect(function(n, how)
+		toast("+" .. Format.noodles(n) .. (if how == "flush" then "  🚽 flushed" else ""), "cash")
+		Sound.play(if how == "flush" then "Splat" else "Dump", 0.7)
 		fullKind = nil
-	end)
-	Remotes.get(Remotes.Names.Lifted).OnClientEvent:Connect(function(gain)
-		toast("+" .. gain .. " 💪", "good")
-		Sound.play("Click", 0.4, 0.8 + math.random() * 0.3)
 	end)
 	player:GetAttributeChangedSignal("SlotsUsed"):Connect(function()
 		if attr("SlotsUsed", 0) < attr("Slots", 3) and fullKind == "slots" then

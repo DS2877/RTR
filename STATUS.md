@@ -187,6 +187,15 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### Natten: kortare + något att göra med full ryggsäck
+- **Natten är kortare:** LOCKDOWN 3:00 (var 4:30), YARD TIME 3:20 (var 2:40).
+- **Spola ner gruset:** på natten (LIGHTS OUT + LOCKDOWN) får toaletten i din cell en prompt
+  "Flush rubble · 60%": töm ryggsäcken där för 60 % av värdet och fortsätt gräva. På dagen
+  betalar Yard-dumpen fullt. Rutan säger "BACKPACK FULL → Flush it down your toilet 🚽" på natten.
+- **Vakten i golvet fixad:** inspektionsvakten placerades med kroppens mitt i golvhöjd och sjönk
+  ner till midjan. Nu står han på fötterna.
+- Dubbla "+N 💪"-notiser i gymmet borttagna (mätaren visar redan siffrorna).
+
 ### Nytt slag + diskret väg till dumpen
 - **Slaget är omgjort från grunden:** ingen frysning längre. Det är nu en egen boxningsanimation
   som läggs ovanpå gå/stå-animationen: nävarna åker upp i gard när du börjar slå, varje slag har
@@ -348,7 +357,10 @@ köper nästa verktyg – det är tänkt så (som i andra simulatorspel), inte e
 16. Ljud/zoner: ha ljudet på. Slå på väggen (hör sprickorna stiga i ton), krossa flera i rad.
     ADMIN → Zone 4 (armeringsjärn), Zone 5 (rör), Zone 8 (kristaller), Zone 9 (lava) – gräv en bit
     och titta på väggarna och lyssna på bakgrundsljudet.
-17. Nytt: titta på gubben (VIP/TOP DOG) – inga lysande klumpar på händer/bröst. Öppna Visitation
+17. Natt: ADMIN → 🌙 Night, gräv tills ryggsäcken är full, gå till toaletten i cellen → "Flush
+    rubble". Kolla att inspektionsvakten står på golvet. Slå några slag i rad: garden, växling
+    höger/vänster, vart 4:e tyngre. Full ryggsäck på dagen: liten pil på golvet + "DUMP"-etikett.
+    Titta också på gubben (VIP/TOP DOG) – inga lysande klumpar på händer/bröst. Öppna Visitation
     och Tool Crib – smala mörka menyer. Gå till gymmet: lyft toaletten, följ det gröna fältet som
     hoppar, gör 10 i rad (SET!) och bygg combo. Gå förbi vakterna och läs de nya replikerna.
 18. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.

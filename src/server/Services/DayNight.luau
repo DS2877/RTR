@@ -26,6 +26,7 @@ local endsAt = 0
 local forced: string? = nil
 
 DayNight.onDay = nil :: (() -> ())?
+DayNight.onPhase = nil :: ((phase: string) -> ())?
 DayNight.onCounted = nil :: ((player: Player) -> ())? -- in your cell when roll call ended
 DayNight.riot = function(): boolean
 	return false
@@ -100,6 +101,9 @@ local function setPhase(p: string, seconds: number?)
 	ReplicatedStorage:SetAttribute("PhaseStart", t)
 	ReplicatedStorage:SetAttribute("PhaseEnds", endsAt)
 	Dig.nightBonus = if p == "Night" then Cycle.NightFindBonus else 0
+	if DayNight.onPhase then
+		DayNight.onPhase(p)
+	end
 	if p == "LightsOut" then
 		Net.announce(
 			"LIGHTS OUT in " .. Cycle.LightsOutWarning .. " seconds! Back to your cells!",

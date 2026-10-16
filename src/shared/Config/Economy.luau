@@ -142,6 +142,8 @@ local Economy = {
 	CellmateValue = 0.5,
 
 	DumpRange = 14, -- studs from the Yard dump
+	FlushRate = 0.6, -- at night (doors locked) your cell toilet takes rubble for this share of its value
+	FlushRange = 8,
 	ShopRange = 14, -- studs from a shop counter
 }
 
