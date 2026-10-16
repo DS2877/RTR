@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Extras = require(Shared.Config.Extras)
+local Assets = require(Shared.Config.Assets)
 local Finds = require(Shared.Config.Finds)
 local World = require(Shared.Config.World)
 local Voxel = require(Shared.Voxel)
@@ -140,8 +141,28 @@ local function applyLooks(player: Player)
 				c:Destroy()
 			end
 		end
+		-- Classic Orange = the real prison shirt + INMATE pants from the catalog, on top of your
+		-- own skin and accessories (layered clothing filtered out); other uniforms recolor the body
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local dressed = false
+		if uniform.id == "Orange" and humanoid then
+			dressed = pcall(function()
+				local desc = humanoid:GetAppliedDescription()
+				local keep = {}
+				for _, acc in desc:GetAccessories(true) do
+					if not acc.IsLayered then
+						table.insert(keep, acc)
+					end
+				end
+				desc:SetAccessories(keep, true)
+				desc.Shirt = Assets.Outfits.inmate.Shirt
+				desc.Pants = Assets.Outfits.inmate.Pants
+				desc.GraphicTShirt = 0
+				humanoid:ApplyDescription(desc)
+			end)
+		end
 		local color = Build.rgb(uniform.color)
-		local bc = character:FindFirstChildOfClass("BodyColors")
+		local bc = if dressed then nil else character:FindFirstChildOfClass("BodyColors")
 		if bc then
 			bc.TorsoColor3 = color
 			bc.LeftLegColor3 = color
@@ -149,7 +170,7 @@ local function applyLooks(player: Player)
 			bc.LeftArmColor3 = color
 			bc.RightArmColor3 = color
 		end
-		for _, part in character:GetChildren() do
+		for _, part in if dressed then {} else character:GetChildren() do
 			if
 				part:IsA("BasePart")
 				and not string.find(part.Name, "Hand")
