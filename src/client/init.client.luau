@@ -30,7 +30,7 @@ do
 	local PunchAnim = require(script.Util.PunchAnim)
 	PunchAnim.start()
 	DigController.onPunch = function(a)
-		local t = VoxelRender.own()
+		local t = DigController.tunnel()
 		if t then
 			DigFX.impact(
 				Tunnel.blockCenter(t.frame, a.x, a.y, a.z),
@@ -58,6 +58,7 @@ end
 require(Controllers.HUD).start()
 require(Controllers.Combo).start()
 require(Controllers.Breakout).start()
+require(Controllers.Crew).start()
 require(Controllers.Shops).start()
 require(Controllers.Clock).start()
 require(Controllers.PvPController).start()

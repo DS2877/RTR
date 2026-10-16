@@ -72,6 +72,7 @@ local Hideout = req(Services, "Hideout")
 local Missions = req(Services, "Missions")
 local Events = req(Services, "Events")
 local Market = req(Services, "Market")
+local Crew = req(Services, "Crew")
 
 local sent: { { name: string, args: { any } } } = {}
 Net.sink = function(_player: any, name: string, args: { any })
@@ -133,6 +134,7 @@ step("Events.startService", Events.startService)
 step("Market.start", function()
 	Market.start(world)
 end)
+step("Crew.start", Crew.start)
 DayNight.riot = Events.riot
 Events.onRiot = DayNight.setRiot
 Events.phase = DayNight.phase
@@ -589,6 +591,50 @@ do
 	s.data.Noodles, s.data.Bag, s.data.BagValue = 0, 0, 0
 	s.piles, s.loose = {}, 0
 	s.comboHits, s.comboLast, s.comboBonus = 0, -math.huge, 0
+end
+
+-- ===== CREW: a guest digs in the host's tunnel =====
+do
+	local guest: any = { UserId = -4343, Name = "SmokeGuest", Position = Vector3.zero }
+	local gs = State.add(guest, Data.fresh())
+	Cells.assign(guest)
+	Dig.loadTunnel(guest)
+	gs.data.Strength = 1e6
+	local x, y = nil, nil
+	for yy = 2, 4 do
+		for xx = 3, 15 do
+			if
+				not x
+				and Voxel.isSolid(s.grid, xx, yy, 0)
+				and not Progression.findAt(s.data.Seed, xx, yy, 0)
+			then
+				x, y = xx, yy
+			end
+		end
+	end
+	guest.Position = Tunnel.blockCenter(s.frame, 9, 1, -2)
+	gs.lastPunch = 0
+	check("no digging in a stranger's tunnel", Dig.punch(guest, x, y, 0, 6, fake.UserId) == "not your crew")
+	local soloMult = Loot.multiplier(gs)
+	check("crew invite", Crew.invite(fake, guest.UserId) == nil)
+	check("crew join", Crew.answer(guest, fake.UserId, true) == nil and Crew.hostOf(guest) == fake)
+	check("crew bonus", math.abs(Crew.bonus(guest) - Economy.CrewBonus) < 1e-6, Crew.bonus(guest))
+	check("crew bonus in the Noodles multiplier", Loot.multiplier(gs) > soloMult, Loot.multiplier(gs))
+	local hostBlocks = s.data.MaxDepth
+	gs.lastPunch = 0
+	task.wait(0.22)
+	check("crew guest punch accepted", Dig.punch(guest, x, y, 0, 6, fake.UserId) == nil)
+	check("the host's tunnel was dug", Voxel.isDug(s.grid, x :: number, y :: number, 0))
+	check("the guest keeps the rubble", gs.loose >= 1 and #gs.piles >= 1, gs.loose)
+	check("the guest's own tunnel untouched", Voxel.isSolid(gs.grid, x :: number, y :: number, 0))
+	check("the host keeps the depth record", s.data.MaxDepth >= hostBlocks)
+	check("a guest can't host a crew", Crew.invite(guest, fake.UserId) == "guest")
+	Crew.leave(guest)
+	check("crew leave", Crew.hostOf(guest) == nil and Crew.bonus(fake) == 0)
+	gs.lastPunch = 0
+	check("no digging after leaving", Dig.punch(guest, x, y + 1, 0, 6, fake.UserId) == "not your crew")
+	Cells.release(guest)
+	State.remove(guest)
 end
 
 -- shop

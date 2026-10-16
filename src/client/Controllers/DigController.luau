@@ -51,8 +51,34 @@ end
 
 -- ===== aiming =====
 
+-- The tunnel you're digging in: your own, or your CREW host's while you stand in theirs.
+local current: any = nil
+local function hereTunnel(): any
+	local own = VoxelRender.own()
+	local r = root()
+	if not r then
+		return own
+	end
+	if own and Tunnel.inside(own.frame, r.Position, 4) then
+		return own
+	end
+	local host = player:GetAttribute("CrewHost")
+	if typeof(host) == "number" and host > 0 then
+		local t = VoxelRender.get(host)
+		if t and Tunnel.inside(t.frame, r.Position, 4) then
+			return t
+		end
+	end
+	return own
+end
+
+function DigController.tunnel(): any
+	return current or VoxelRender.own()
+end
+
 local function findAim(): Aim?
-	local t = VoxelRender.own()
+	local t = hereTunnel()
+	current = t
 	local r = root()
 	local cam = workspace.CurrentCamera
 	if not t or not r or not cam then
@@ -132,7 +158,7 @@ local function outline(i: number): Part
 end
 
 local function targetsFor(a: Aim): { { number } }
-	local t = VoxelRender.own()
+	local t = DigController.tunnel()
 	if not t then
 		return {}
 	end
@@ -153,7 +179,7 @@ local function willBreak(t: any, x: number, y: number, z: number): boolean
 end
 
 local function showPreview(a: Aim?)
-	local t = VoxelRender.own()
+	local t = DigController.tunnel()
 	local list = if a and t then targetsFor(a) else {}
 	for i, p in list do
 		local o = outline(i)
@@ -202,8 +228,10 @@ local function punch()
 	end
 	lastPunch = now
 	PunchAnim.play(player.Character)
-	punchRemote:FireServer(a.x, a.y, a.z, a.face)
-	local t = VoxelRender.own()
+	local t = DigController.tunnel()
+	-- a CREW host's tunnel: say whose (the server checks you're in their crew)
+	local owner = if t and t.owner ~= player.UserId then t.owner else nil
+	punchRemote:FireServer(a.x, a.y, a.z, a.face, owner)
 	if t then
 		local stage = t.damage[Voxel.index(t.grid, a.x, a.y, a.z)] or 0
 		DigAudio.punch(a.z, stage, willBreak(t, a.x, a.y, a.z))

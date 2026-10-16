@@ -187,6 +187,22 @@ data blandas aldrig in.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
 
+### CREW: gräv tillsammans med kompisar
+- Tryck på **👥 Crew** (ny ruta under Index/Gift) för att se din crew och alla andra på servern.
+  Varje spelare har en **Invite**-knapp. Där finns också **📨 Invite friends**, som öppnar
+  Robloxs egen inbjudan så att du kan dra in kompisar från din vänlista.
+- Den inbjudna får ett smalt kort: "👥 Philip wants you in their crew!" med JOIN / ✕. Kortet går
+  ut efter 30 s. JOIN tar dig direkt till värdens cell (på dagen, på natten är dörrarna låsta).
+- I värdens tunnel gräver du som vanligt, siktet hittar rätt tunnel av sig själv. Tunneln,
+  djupet och kamrarna är värdens, men **du behåller ditt eget grus, dina fynd, ditt guld och din
+  kombo**.
+- **Crew-bonus:** alla i crewen tjänar +15 % Noodles per annan medlem, och +10 % till för varje
+  medlem som är Roblox-vän (max +75 %). Högst 3 gäster per crew.
+- Värden kan skicka hem en gäst eller bryta upp crewen, och en gäst kan lämna när den vill.
+  Servern kontrollerar varje slag: bara crew-medlemmar får gräva i någon annans tunnel.
+- **Testa på iPhone** (behöver två spelare): öppna 👥 Crew, tryck Invite på din kompis, låt
+  kompisen trycka JOIN och gräva i din tunnel. Kolla att båda får mer Noodles vid dumpen.
+
 ### THE BREAKOUT: rymningen är nu en riktig, spelbar final
 - När du har grävt dig till botten och trycker ESCAPE görs rebirth-bokföringen direkt, så att du
   aldrig förlorar den om du lämnar. Sedan börjar **THE BREAKOUT**, en jakt som tar 1–3 minuter:

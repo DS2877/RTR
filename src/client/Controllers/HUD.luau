@@ -38,6 +38,7 @@ local HUD = {}
 -- containers other controllers fill (set in HUD.start)
 HUD.hotbar = nil :: Frame?
 HUD.buttons = nil :: Frame?
+HUD.crewTile = nil :: GuiButton? -- Controllers/Crew wires it
 HUD.right = nil :: Frame?
 HUD.replayTour = nil :: (() -> ())? -- (admin) the first-join tour again (Controllers/Tour)
 
@@ -575,7 +576,7 @@ function HUD.start()
 			}),
 		})
 	end
-	local row1, row2 = tileRow(1), tileRow(2)
+	local row1, row2, row3 = tileRow(1), tileRow(2), tileRow(3)
 	local storeTile =
 		UI.tile(row1, "Store", "🛒", "Store", Color3.fromRGB(255, 120, 200), Color3.fromRGB(110, 90, 255))
 	storeTile.LayoutOrder = 1
@@ -618,7 +619,13 @@ function HUD.start()
 	local giftTile =
 		UI.tile(row2, "Gift", "🎁", "10m", Color3.fromRGB(140, 240, 120), Color3.fromRGB(30, 160, 80))
 	giftTile.LayoutOrder = 2
-	UI.toggle(left, 3, "Music", true, function(on)
+	-- CREW: dig with friends (Controllers/Crew opens the panel)
+	local crewTile =
+		UI.tile(row3, "Crew", "👥", "Crew", Color3.fromRGB(120, 230, 255), Color3.fromRGB(40, 120, 220))
+	crewTile.LayoutOrder = 1
+	HUD.crewTile = crewTile
+	left.Size = UDim2.fromOffset(160, 264)
+	UI.toggle(left, 4, "Music", true, function(on)
 		Music.setEnabled(on)
 	end)
 	storeTile.Activated:Connect(function()
