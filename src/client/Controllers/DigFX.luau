@@ -604,84 +604,6 @@ function DigFX.confetti(at: Vector3?)
 	end
 end
 
-function DigFX.start()
-	folder = Instance.new("Folder")
-	folder.Name = "DigFX"
-	folder.Parent = workspace
-	VoxelRender.onBroken = onBroken
-	VoxelRender.onDamaged = onDamaged
-	VoxelRender.onChamber = function(t, zone)
-		local b = Progression.chamberBox(zone)
-		if b and t.owner == player.UserId then
-			local mid = Tunnel.blockCenter(t.frame, (b.x0 + b.x1) // 2, 2, (b.z0 + b.z1) // 2)
-			DigFX.confetti(mid)
-			Shake.kick(0.8)
-		end
-	end
-	Remotes.get(Remotes.Names.Piles).OnClientEvent:Connect(setPiles)
-	RunService.Heartbeat:Connect(updateVacuum)
-	Remotes.get(Remotes.Names.Gold).OnClientEvent:Connect(onGold)
-	Remotes.get(Remotes.Names.CaveIn).OnClientEvent:Connect(onCaveIn)
-	-- CRIT: a hot flash, a bigger kick and a "CRIT!" that pops off the block
-	Remotes.get(Remotes.Names.Crit).OnClientEvent:Connect(function(x: number, y: number, z: number)
-		local t = VoxelRender.own()
-		if not t or typeof(x) ~= "number" then
-			return
-		end
-		local pos = Tunnel.blockCenter(t.frame, x, y, z)
-		local r = root()
-		local toward = if r then (r.Position - pos).Unit else Vector3.yAxis
-		local at = pos + toward * 1.4
-		puff(at, Color3.fromRGB(255, 200, 90), 1, 1.4)
-		impact(at, toward, Color3.fromRGB(255, 210, 110))
-		Shake.kick(0.45)
-		Shake.punch(3.5)
-		Sound.play("Fist", 0.9, 0.62)
-		Sound.play("Chime", 0.5, 1.5)
-		local holder = Instance.new("Part")
-		holder.Anchored = true
-		holder.CanCollide = false
-		holder.CanQuery = false
-		holder.Transparency = 1
-		holder.Size = Vector3.one
-		holder.Position = at
-		holder.Parent = folder
-		local gui = Instance.new("BillboardGui")
-		gui.Size = UDim2.new(5, 0, 1.6, 0)
-		gui.StudsOffset = Vector3.new(0, 0.6, 0)
-		gui.AlwaysOnTop = true
-		gui.LightInfluence = 0
-		gui.Parent = holder
-		local label = Instance.new("TextLabel")
-		label.BackgroundTransparency = 1
-		label.Size = UDim2.fromScale(1, 1)
-		label.Text = "CRIT!"
-		label.Font = Enum.Font.GothamBlack
-		label.TextScaled = true
-		label.TextColor3 = Color3.fromRGB(255, 196, 60)
-		label.Rotation = math.random(-8, 8)
-		label.Parent = gui
-		local stroke = Instance.new("UIStroke")
-		stroke.Color = Color3.fromRGB(80, 30, 0)
-		stroke.Thickness = 2
-		stroke.Parent = label
-		local scale = Instance.new("UIScale")
-		scale.Scale = 0.3
-		scale.Parent = label
-		TweenService:Create(scale, TweenInfo.new(0.18, Enum.EasingStyle.Back), { Scale = 1 }):Play()
-		TweenService
-			:Create(gui, TweenInfo.new(0.7, Enum.EasingStyle.Quad), { StudsOffset = Vector3.new(0, 2.4, 0) })
-			:Play()
-		task.delay(0.35, function()
-			TweenService:Create(label, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
-			TweenService:Create(stroke, TweenInfo.new(0.35), { Transparency = 1 }):Play()
-		end)
-		task.delay(0.75, function()
-			holder:Destroy()
-		end)
-	end)
-end
-
 -- ===== gold, jackpots, cave-ins =====
 
 -- Text that pops off a spot in the world and floats up (CRIT!, +1.2K, CAVE-IN!).
@@ -833,6 +755,84 @@ local function onCaveIn(owner: number, x: number, y: number, z: number, blocks: 
 	popText(pos + Vector3.new(0, 1.5, 0), "CAVE-IN! x" .. blocks, Color3.fromRGB(255, 170, 90), 6, 1.3)
 	Shake.kick(0.9)
 	Shake.punch(4)
+end
+
+function DigFX.start()
+	folder = Instance.new("Folder")
+	folder.Name = "DigFX"
+	folder.Parent = workspace
+	VoxelRender.onBroken = onBroken
+	VoxelRender.onDamaged = onDamaged
+	VoxelRender.onChamber = function(t, zone)
+		local b = Progression.chamberBox(zone)
+		if b and t.owner == player.UserId then
+			local mid = Tunnel.blockCenter(t.frame, (b.x0 + b.x1) // 2, 2, (b.z0 + b.z1) // 2)
+			DigFX.confetti(mid)
+			Shake.kick(0.8)
+		end
+	end
+	Remotes.get(Remotes.Names.Piles).OnClientEvent:Connect(setPiles)
+	RunService.Heartbeat:Connect(updateVacuum)
+	Remotes.get(Remotes.Names.Gold).OnClientEvent:Connect(onGold)
+	Remotes.get(Remotes.Names.CaveIn).OnClientEvent:Connect(onCaveIn)
+	-- CRIT: a hot flash, a bigger kick and a "CRIT!" that pops off the block
+	Remotes.get(Remotes.Names.Crit).OnClientEvent:Connect(function(x: number, y: number, z: number)
+		local t = VoxelRender.own()
+		if not t or typeof(x) ~= "number" then
+			return
+		end
+		local pos = Tunnel.blockCenter(t.frame, x, y, z)
+		local r = root()
+		local toward = if r then (r.Position - pos).Unit else Vector3.yAxis
+		local at = pos + toward * 1.4
+		puff(at, Color3.fromRGB(255, 200, 90), 1, 1.4)
+		impact(at, toward, Color3.fromRGB(255, 210, 110))
+		Shake.kick(0.45)
+		Shake.punch(3.5)
+		Sound.play("Fist", 0.9, 0.62)
+		Sound.play("Chime", 0.5, 1.5)
+		local holder = Instance.new("Part")
+		holder.Anchored = true
+		holder.CanCollide = false
+		holder.CanQuery = false
+		holder.Transparency = 1
+		holder.Size = Vector3.one
+		holder.Position = at
+		holder.Parent = folder
+		local gui = Instance.new("BillboardGui")
+		gui.Size = UDim2.new(5, 0, 1.6, 0)
+		gui.StudsOffset = Vector3.new(0, 0.6, 0)
+		gui.AlwaysOnTop = true
+		gui.LightInfluence = 0
+		gui.Parent = holder
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 1
+		label.Size = UDim2.fromScale(1, 1)
+		label.Text = "CRIT!"
+		label.Font = Enum.Font.GothamBlack
+		label.TextScaled = true
+		label.TextColor3 = Color3.fromRGB(255, 196, 60)
+		label.Rotation = math.random(-8, 8)
+		label.Parent = gui
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = Color3.fromRGB(80, 30, 0)
+		stroke.Thickness = 2
+		stroke.Parent = label
+		local scale = Instance.new("UIScale")
+		scale.Scale = 0.3
+		scale.Parent = label
+		TweenService:Create(scale, TweenInfo.new(0.18, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+		TweenService
+			:Create(gui, TweenInfo.new(0.7, Enum.EasingStyle.Quad), { StudsOffset = Vector3.new(0, 2.4, 0) })
+			:Play()
+		task.delay(0.35, function()
+			TweenService:Create(label, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
+			TweenService:Create(stroke, TweenInfo.new(0.35), { Transparency = 1 }):Play()
+		end)
+		task.delay(0.75, function()
+			holder:Destroy()
+		end)
+	end)
 end
 
 -- hit sparks at the aimed block (called by the HUD wiring when a punch lands)

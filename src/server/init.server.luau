@@ -144,7 +144,7 @@ Dig.onDeeper = function(player, layers)
 end
 -- gold pays out right away, with every Noodles multiplier
 Dig.valueMult = Loot.multiplier
-Dig.onGold = function(player, kind, value)
+Dig.onGold = function(player, _kind, value)
 	local s = State.get(player)
 	if not s then
 		return 0
