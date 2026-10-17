@@ -8,6 +8,42 @@ data blandas aldrig in.
 
 ## ✅ Klart
 
+### Ljud, fängelsefasad, renare HUD (17 okt, efter din feedback)
+- **Alla ljud bytta.** Varje ljud är uppmätt (ingen fördröjning före smällen, rätt längd, inte
+  skarpt eller klippt) och har fått en egen volym så att alla ligger lika högt. Bara licensierade
+  Roblox-ljud (Pro Sound Effects) används. Musiken är orörd.
+  - Ett slag är nu ett enda tydligt materialljud plus en svag knytnäve (whooshen, som kom efter
+    smällen, är borta).
+  - Ett sönderslaget block ger ett enda brytljud, med grus bara ibland.
+  - Gruskuber och dammsugarpop är kraftigt begränsade.
+  - "Ryggsäcken full" är ett mjukt kort "nej" i stället för en alarmsummer.
+  - Sirenen spelas inte längre ovanpå sig själv.
+  - Vakternas fotsteg är riktiga fotsteg.
+  - Dammsugaren pulserar inte längre.
+- **Fängelset utifrån:** från gården ser du nu ett 4 våningar högt cellblock i grå betong.
+  - Ett porttorn med skylten **STATE PENITENTIARY** och en vaktkur på toppen.
+  - Rader av smala fönster med galler, där några lyser på natten.
+  - En vaktgång med strålkastare, kameror, taggtråd på taket, ventilationsaggregat och ett
+    vattentorn.
+  - En stålport med varningsränder och "CELL BLOCK A". **CELL BLOCK B** syns bakom staketet,
+    tillsammans med varningsskyltar.
+- **Husdjuren är borttagna.** Prison Passets sista premiumbelöning är nu uniformen
+  **Kingpin**. Zonerna är omkalibrerade utan husdjur: rymningen tar 1:43 h i simulatorn.
+- **Snabbresan (⏬/⏫) är borttagen.** Kvar finns bara 📦 CATALOG i cellen på natten.
+- **Renare HUD:**
+  - Rutorna sitter i två rader om tre (Store, Jobs, Pass / Index, Gift, Crew).
+  - Notiserna ligger högst upp under målstapeln, max två åt gången.
+  - Boostarna visas som små ikoner (🐶 ⭐ 💎 🏃x1.5 ⚡2x).
+  - LIGHTS OUT-nedräkningen syns ovanför gubben.
+  - Gymmets "ON FIRE" blinkar till i stället för att stå kvar.
+  - "Zzz" över den sovande vakten är mindre.
+  - Admin-knappen sitter uppe till vänster bredvid 🎵.
+- **Testa på iPhone:**
+  - Gräv i några zoner och lyssna. Fyll ryggsäcken och slå igen (mjukt "nej").
+  - Vänta på LIGHTS OUT.
+  - Gå ut på gården och titta på fängelset, både dag och natt (ADMIN → 🌙).
+  - Lyft den sovande vakten i gymmet: inget ska täcka mitten av skärmen.
+
 ### Slutgenomgången inför lansering (17 okt)
 Tre granskningar gick igenom hela spelet: servern (säkerhet och buggar), klienten (mobil-UX)
 och speldesignen (tempo, ekonomi, retention, intäkter). Allt viktigt är åtgärdat:
