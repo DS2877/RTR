@@ -21,6 +21,7 @@ local UI = require(Client.Util.UI)
 local Panel = require(Client.Util.Panel)
 local Sound = require(Client.Util.Sound)
 local Shake = require(Client.Util.Shake)
+local Quality = require(script.Parent.Quality)
 local DigController = require(script.Parent.DigController)
 local HUD = require(script.Parent.HUD)
 
@@ -113,7 +114,46 @@ end
 -- ===== being hit =====
 
 local stunToken = 0
-local function dizzy(seconds: number, spin: boolean)
+-- KNOCKOUT RAGDOLL: the joints go loose for a moment (your client owns your character's physics,
+-- so everyone sees you flop); everything is put back when you get up.
+local function ragdoll(c: Model, seconds: number)
+	local undo: { () -> () } = {}
+	for _, m in c:GetDescendants() do
+		if m:IsA("Motor6D") and m.Name ~= "Root" and m.Part0 and m.Part1 then
+			local a0 = Instance.new("Attachment")
+			a0.CFrame = m.C0
+			a0.Parent = m.Part0
+			local a1 = Instance.new("Attachment")
+			a1.CFrame = m.C1
+			a1.Parent = m.Part1
+			local ball = Instance.new("BallSocketConstraint")
+			ball.Attachment0, ball.Attachment1 = a0, a1
+			ball.LimitsEnabled = true
+			ball.UpperAngle = 70
+			ball.TwistLimitsEnabled = true
+			ball.TwistLowerAngle, ball.TwistUpperAngle = -45, 45
+			ball.Parent = m.Part1
+			local p1 = m.Part1 :: BasePart
+			local collide = p1.CanCollide
+			p1.CanCollide = true
+			m.Enabled = false
+			table.insert(undo, function()
+				m.Enabled = true
+				p1.CanCollide = collide
+				ball:Destroy()
+				a0:Destroy()
+				a1:Destroy()
+			end)
+		end
+	end
+	task.delay(seconds, function()
+		for _, f in undo do
+			pcall(f)
+		end
+	end)
+end
+
+local function dizzy(seconds: number, spin: boolean, flop: boolean?)
 	local c = player.Character
 	local h = c and c:FindFirstChildOfClass("Humanoid")
 	local r = root()
@@ -125,6 +165,9 @@ local function dizzy(seconds: number, spin: boolean)
 	local mine = stunToken
 	if spin then
 		r.AssemblyAngularVelocity = Vector3.new(math.random() * 8 - 4, 10, math.random() * 8 - 4)
+	end
+	if flop and c and Quality.level() > 1 then
+		ragdoll(c, seconds - 0.15)
 	end
 	local stars = Instance.new("BillboardGui")
 	stars.Size = UDim2.fromOffset(120, 40)
@@ -355,7 +398,7 @@ function PvPController.start()
 			Shake.kick(if out then 0.9 else 0.45)
 			Sound.play("Punch", 0.9, 0.6)
 			if out then
-				dizzy(2.2, true)
+				dizzy(2.2, true, true)
 			end
 		end)
 	Remotes.get(Remotes.Names.Hit).OnClientEvent:Connect(function(_victim: number, out: boolean)
