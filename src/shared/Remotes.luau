@@ -14,9 +14,6 @@ Remotes.Names = {
 	CrewInvite = "CrewInvite", -- (userId: number) invite a player to dig in your tunnel
 	CrewAnswer = "CrewAnswer", -- (hostId: number, accept: boolean) answer an invite
 	PassClaim = "PassClaim", -- (tier: number, premium: boolean) claim a Prison Pass reward
-	Travel = "Travel", -- (where: "face" | "cell") quick trip inside your own cell + tunnel
-	PetBuy = "PetBuy", -- (id: string) buy a cellmate (known price)
-	PetEquip = "PetEquip", -- (id: string, on: boolean) take a cellmate out / back to the cell
 	CrewLeave = "CrewLeave", -- (kickUserId: number?) leave your crew (host: nil = disband, id = kick)
 	Vacuum = "Vacuum", -- (on: boolean) holding the VACUUM button
 	Lift = "Lift", -- () one rep while you hold a gym station's thing over your head
@@ -66,11 +63,8 @@ Remotes.Names = {
 	Raid = "Raid", -- (kind: "alarm" | "stolen" | "carry" | "home" | "dropped", text, userId?)
 	Boom = "Boom", -- (owner: number, x, y, z) dynamite went off
 	Crit = "Crit", -- (x, y, z, owner) your punch was a CRIT (owner = whose tunnel)
-	TravelState = "TravelState", -- (state: "start" | "done" | "cancel", where: string, seconds: number?)
 	PassTier = "PassTier", -- (tier: number) you reached a new Prison Pass tier
 	PassClaimed = "PassClaimed", -- (tier: number, premium: boolean) a pass reward was given
-	PetAct = "PetAct", -- (ownerUserId, petId, x, y, z, tunnelOwner) a pet swung at a block
-	PetLevel = "PetLevel", -- (petId, level) your pet leveled up
 	CrewInvited = "CrewInvited", -- (hostId: number, hostName: string, friend: boolean) an invite
 	Combo = "Combo", -- (hits: number, tier: number, bonus: number) your combo chain after a punch
 	Gold = "Gold", -- (owner, x, y, z, kind: "gold" | "jackpot", paid: number, puncher) gold broke

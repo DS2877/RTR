@@ -104,11 +104,6 @@ local function give(player: any, s: State.PlayerState, r: any)
 		end
 	elseif r.kind == "uniform" or r.kind == "fist" then
 		s.data.Uniforms[r.id] = true
-	elseif r.kind == "pet" then
-		local pets = s.data.Pets
-		if pets and not pets.Owned[r.id] then
-			pets.Owned[r.id] = 0
-		end
 	end
 	if Pass.onReward then
 		Pass.onReward(player, r.kind, r.id)

@@ -11,7 +11,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Config = require(Shared.Config.Pass)
 local Extras = require(Shared.Config.Extras)
-local PetsConfig = require(Shared.Config.Pets)
 local Products = require(Shared.Config.Products)
 local PassMath = require(Shared.Pass)
 local Format = require(Shared.Format)
@@ -46,9 +45,6 @@ for _, list in { Extras.Uniforms, Extras.Fists } do
 	for _, it in list :: { any } do
 		names[it.id] = (it.emoji or "") .. " " .. (it.name or it.id)
 	end
-end
-for _, pet in PetsConfig.List do
-	names[pet.id] = pet.emoji .. " " .. pet.name .. " (cellmate)"
 end
 
 local function read(): any

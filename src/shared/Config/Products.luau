@@ -111,7 +111,7 @@ local Products = {
 			name = "Prison Pass Premium",
 			emoji = "🎫",
 			price = 399,
-			desc = "This season's Prison Pass premium track: every premium reward listed in the Pass panel (Riot Gear, Lightning Fists, the Jailbird cellmate and more) plus +25% pass XP. Lasts this season.",
+			desc = "This season's Prison Pass premium track: every premium reward listed in the Pass panel (Riot Gear, Lightning Fists, the Kingpin uniform and more) plus +25% pass XP. Lasts this season.",
 		},
 		{
 			key = "InstantEmpty",

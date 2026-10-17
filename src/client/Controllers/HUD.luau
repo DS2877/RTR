@@ -19,7 +19,7 @@ local Upgrades = require(Shared.Config.Upgrades)
 local Extras = require(Shared.Config.Extras)
 
 -- buff id -> the emoji of the meal / item that gives it (HUD boost line)
-local BUFF_ICON: { [string]: string } = { Rush = "⚡2x NOODLES" }
+local BUFF_ICON: { [string]: string } = { Rush = "⚡2x" }
 for _, list in { Extras.Meals, Extras.Market } do
 	for _, it in list :: { any } do
 		if it.buff and not BUFF_ICON[it.buff] then
@@ -50,7 +50,6 @@ local HUD = {}
 HUD.hotbar = nil :: Frame?
 HUD.buttons = nil :: Frame?
 HUD.crewTile = nil :: GuiButton? -- Controllers/Crew wires it
-HUD.petsTile = nil :: GuiButton? -- Controllers/Pets wires it
 HUD.passTile = nil :: GuiButton? -- Controllers/PassUI wires it
 HUD.right = nil :: Frame?
 HUD.replayTour = nil :: (() -> ())? -- (admin) the first-join tour again (Controllers/Tour)
@@ -142,7 +141,7 @@ local function placeToasts()
 		end
 	else
 		toastHolder.AnchorPoint = Vector2.new(0.5, 0)
-		toastHolder.Position = UDim2.new(0.5, 0, 0, 118)
+		toastHolder.Position = UDim2.new(0.5, 0, 0, 82)
 		local layout = toastHolder:FindFirstChildOfClass("UIListLayout")
 		if layout then
 			layout.VerticalAlignment = Enum.VerticalAlignment.Top
@@ -207,7 +206,7 @@ local function toast(text: string, kind: string?)
 			table.insert(kids, k)
 		end
 	end
-	if #kids > 4 then
+	if #kids > 2 then
 		kids[1]:Destroy()
 	end
 end
@@ -630,18 +629,18 @@ function HUD.start()
 		Parent = player:WaitForChild("PlayerGui"),
 	})
 
-	-- ===== LEFT: icon tiles (Store / Jobs / Pass, Index / Gift, Crew / Pets) =====
+	-- ===== LEFT: icon tiles (Store / Jobs / Pass, Index / Gift / Crew) =====
 	-- (a bit bigger than the rest of the HUD: these are tap targets; the Music switch is a small
 	-- chip in the top-left corner so the column clears the stat lines below it)
 	local left = UI.new("Frame", {
 		Name = "Left",
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 12, 0.4, 0),
-		Size = UDim2.fromOffset(210, 190),
+		Position = UDim2.new(0, 12, 0.36, 0),
+		Size = UDim2.fromOffset(210, 136),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, { UI.new("UIListLayout", { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder }) })
-	UI.scaleObject(left, 1.15)
+	UI.scaleObject(left)
 	local function tileRow(order: number): Frame
 		return UI.new("Frame", {
 			LayoutOrder = order,
@@ -656,7 +655,7 @@ function HUD.start()
 			}),
 		})
 	end
-	local row1, row2, row3 = tileRow(1), tileRow(2), tileRow(3)
+	local row1, row2 = tileRow(1), tileRow(2)
 	local storeTile =
 		UI.tile(row1, "Store", "🛒", "Store", Color3.fromRGB(255, 120, 200), Color3.fromRGB(110, 90, 255))
 	storeTile.LayoutOrder = 1
@@ -706,15 +705,9 @@ function HUD.start()
 	giftTile.LayoutOrder = 2
 	-- CREW: dig with friends (Controllers/Crew opens the panel)
 	local crewTile =
-		UI.tile(row3, "Crew", "👥", "Crew", Color3.fromRGB(120, 230, 255), Color3.fromRGB(40, 120, 220))
-	crewTile.LayoutOrder = 1
+		UI.tile(row2, "Crew", "👥", "Crew", Color3.fromRGB(120, 230, 255), Color3.fromRGB(40, 120, 220))
+	crewTile.LayoutOrder = 3
 	HUD.crewTile = crewTile
-	-- CELLMATES (Controllers/Pets)
-	local petsTile =
-		UI.tile(row3, "Pets", "🐀", "Pets", Color3.fromRGB(255, 200, 120), Color3.fromRGB(190, 110, 40))
-	petsTile.LayoutOrder = 2
-	HUD.petsTile = petsTile
-	left.Size = UDim2.fromOffset(210, 210)
 	-- MUSIC: a small round 🎵 chip in the top-left corner (the now-playing chip slides in right of it)
 	local musicOn = true
 	local musicBtn: TextButton = UI.new("TextButton", {
@@ -880,7 +873,7 @@ function HUD.start()
 	})
 	toastHolder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 118),
+		Position = UDim2.new(0.5, 0, 0, 82),
 		Size = UDim2.fromOffset(460, 160),
 		BackgroundTransparency = 1,
 		Parent = toastGui,
@@ -1048,18 +1041,17 @@ function HUD.start()
 		setVac(false)
 	end)
 
-	-- ===== RIGHT: admin tile =====
-	-- (left of the top-right column: never under the loot cards or the clock)
+	-- ===== admin chip (admins only): a small round tile right of the 🎵 chip, top-left =====
 	local right = UI.new("Frame", {
 		Name = "Right",
-		AnchorPoint = Vector2.new(1, 0),
-		Size = UDim2.fromOffset(56, 130),
+		AnchorPoint = Vector2.new(0, 0),
+		Size = UDim2.fromOffset(46, 46),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, { UI.new("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder }) })
 	UI.scaleObject(right)
 	local function placeRight()
-		right.Position = UDim2.new(1, -(14 + 310 * UI.screenScale()), 0, 10)
+		right.Position = UDim2.new(0, 12 + 56 * UI.screenScale(), 0, 6)
 	end
 	placeRight()
 	if workspace.CurrentCamera then
@@ -1071,10 +1063,10 @@ function HUD.start()
 		right,
 		"Admin",
 		"🛠️",
-		"Admin",
+		nil,
 		Color3.fromRGB(255, 130, 120),
 		Color3.fromRGB(200, 40, 50),
-		54
+		46
 	)
 	adminBtn.LayoutOrder = 9
 	adminBtn.Visible = false
@@ -1103,32 +1095,28 @@ function HUD.start()
 			.. (if loose > 0 then string.format("  +%s", Format.number(loose)) else "")
 		bagText.TextColor3 = if bag >= cap then Color3.fromRGB(255, 90, 90) else Color3.fromRGB(235, 205, 150)
 		slots.Text = string.format("%d/%d", attr("SlotsUsed", 0), attr("Slots", 3))
+		-- boosts as short icon chips (one glance, never a sentence)
 		local parts = {}
 		if player:GetAttribute("TopDog") == true then
-			table.insert(parts, "🐶 TOP DOG")
+			table.insert(parts, "🐶")
 		end
 		local rebirths = attr("Rebirths", 0)
 		if rebirths > 0 then
-			table.insert(parts, string.format("Escapes x%s", Format.number(1 + rebirths * 0.5)))
-		end
-		if player:GetAttribute("GroupBonus") == true then
-			table.insert(parts, "Group Boost: +10%")
+			table.insert(parts, string.format("🏃x%s", Format.number(1 + rebirths * 0.5)))
 		end
 		if player:GetAttribute("VIP") == true then
-			table.insert(parts, "⭐ VIP +10%")
+			table.insert(parts, "⭐")
 		end
-		if player:GetAttribute("PremiumBonus") == true then
-			table.insert(parts, "Premium +10%")
+		if player:GetAttribute("PremiumBonus") == true or player:GetAttribute("GroupBonus") == true then
+			table.insert(parts, "💎")
 		end
 		local buffs = tostring(player:GetAttribute("Buffs") or "")
 		if buffs ~= "" then
-			local icons = {}
 			for _, id in string.split(buffs, ",") do
-				table.insert(icons, BUFF_ICON[id] or id)
+				table.insert(parts, BUFF_ICON[id] or id)
 			end
-			table.insert(parts, table.concat(icons, " "))
 		end
-		boost.Text = table.concat(parts, " · ")
+		boost.Text = table.concat(parts, "  ")
 		local minutes = attr("PlayMinutes", 0)
 		local label = giftTile:FindFirstChild("Label") :: TextLabel
 		label.Text = (Economy.GiftMinutes - minutes % Economy.GiftMinutes) .. "m"

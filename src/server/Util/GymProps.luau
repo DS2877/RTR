@@ -247,9 +247,10 @@ local builders: { [string]: (m: Model) -> () } = {
 		local head = m:FindFirstChild("Head") :: BasePart?
 		if head then
 			local bb = Instance.new("BillboardGui")
-			bb.Size = UDim2.fromOffset(60, 40)
-			bb.StudsOffset = Vector3.new(0, 2, 0)
-			bb.MaxDistance = 60
+			-- (sized in studs: a small "Zzz" in the world, not a big label over the HUD up close)
+			bb.Size = UDim2.fromScale(1.6, 1)
+			bb.StudsOffset = Vector3.new(0, 1.6, 0)
+			bb.MaxDistance = 45
 			bb.Parent = head
 			local l = Instance.new("TextLabel")
 			l.BackgroundTransparency = 1
@@ -258,6 +259,7 @@ local builders: { [string]: (m: Model) -> () } = {
 			l.TextScaled = true
 			l.Font = Enum.Font.GothamBlack
 			l.TextColor3 = Color3.fromRGB(220, 230, 255)
+			l.TextTransparency = 0.25
 			l.Parent = bb
 		end
 	end,

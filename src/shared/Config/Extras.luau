@@ -86,6 +86,15 @@ local Extras = {
 			starter = true,
 		},
 		{
+			id = "Kingpin",
+			name = "Kingpin",
+			emoji = "👑",
+			desc = "Prison Pass exclusive (tier 30 premium). Black and gold: runs the whole block.",
+			cost = 0,
+			color = { 24, 22, 20 },
+			pass = true,
+		},
+		{
 			id = "Riot",
 			name = "Riot Gear",
 			emoji = "🪖",

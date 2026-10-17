@@ -5,7 +5,7 @@
 -- one. Every reward is listed in the panel before you buy (known contents, nothing random).
 --
 -- reward kinds: noodles (n = blocks of rubble of your deepest zone), dynamite (n sticks),
--- uniform / fist (an exclusive Laundry item id), pet (an exclusive cellmate id)
+-- uniform / fist (an exclusive Laundry item id)
 
 export type Reward = { kind: string, n: number?, id: string? }
 
@@ -66,7 +66,7 @@ local Pass = {
 		tier(dynamite(3), noodles(4800)),
 		tier(noodles(2800), dynamite(6)),
 		tier(noodles(3000), noodles(5200)),
-		tier({ kind = "fist", id = "Spark" }, { kind = "pet", id = "Jailbird" }),
+		tier({ kind = "fist", id = "Spark" }, { kind = "uniform", id = "Kingpin" }),
 	},
 }
 

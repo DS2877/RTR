@@ -9,7 +9,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ProfileStore = require(script.Parent.Parent.Packages.ProfileStore)
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local Finds = require(ReplicatedStorage.Shared.Config.Finds)
-local PetMath = require(ReplicatedStorage.Shared.Pets)
 
 export type PlayerData = {
 	Version: number,
@@ -57,7 +56,6 @@ export type PlayerData = {
 		NoDepth: boolean?,
 	}, -- WORK DETAIL
 	LastOnline: number,
-	Pets: { Owned: { [string]: number }, Equipped: { string } }, -- CELLMATES: id -> XP, equipped ids
 	Week: { Id: number, Blocks: number }, -- the weekly race (Services/TopDog): blocks since Monday
 	-- bought buffs that outlive a rejoin: id -> os.time() it ends (0 = "until the morning")
 	Buffs: { [string]: number },
@@ -132,7 +130,6 @@ local TEMPLATE: PlayerData = {
 	TourDone = false,
 	Missions = { Day = 0, Progress = { 0, 0, 0 }, Claimed = { false, false, false }, Bonus = false },
 	LastOnline = 0,
-	Pets = { Owned = {}, Equipped = {} },
 	Week = { Id = 0, Blocks = 0 },
 	Buffs = {},
 	StarterBought = false,
@@ -197,23 +194,6 @@ function Data.sanitize(data: PlayerData)
 			end
 		end
 		(data :: any)[key] = kept
-	end
-	-- cellmates that no longer exist in Config/Pets (renamed / removed) are dropped
-	local pets = (data :: any).Pets
-	if typeof(pets) == "table" then
-		local owned = {}
-		for id, xp in pets.Owned or {} do
-			if PetMath.get(id) and typeof(xp) == "number" then
-				owned[id] = xp
-			end
-		end
-		local out = {}
-		for _, id in pets.Equipped or {} do
-			if owned[id] ~= nil and not table.find(out, id) then
-				table.insert(out, id)
-			end
-		end
-		pets.Owned, pets.Equipped = owned, out
 	end
 	data.Noodles = math.max(0, data.Noodles)
 end

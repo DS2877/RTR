@@ -326,7 +326,7 @@ local function fencePanel()
 	return panel, render
 end
 
--- Opens a catalog page (Trips' 📦 button; the server checks night + your cell).
+-- Opens a catalog page (Controllers/Catalog's 📦 button; the server checks night + your cell).
 function Shops.openCatalog(shop: string)
 	local p = upgradePanels[shop]
 	if p then

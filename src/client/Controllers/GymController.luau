@@ -260,7 +260,7 @@ function GymController.start()
 	-- feedback above the character: PERFECT! / GOOD / OOF + the gain
 	local popHolder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.3),
+		Position = UDim2.fromScale(0.5, 0.42),
 		Size = UDim2.fromOffset(420, 90),
 		BackgroundTransparency = 1,
 		Parent = gui,
@@ -518,8 +518,16 @@ function GymController.start()
 			if tierIndex > lastTier and tier then
 				tierLabel.Text = tier.name
 				tierLabel.TextColor3 = UI.rgb(tier.color)
+				tierLabel.TextTransparency = 0
 				tierScale.Scale = 1.8
 				UI.tween(tierScale, 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
+				-- a flash, not a sign: the combo stays on the card below
+				local shown = tier.name
+				task.delay(1.4, function()
+					if tierLabel.Text == shown then
+						UI.tween(tierLabel, 0.4, { TextTransparency = 1 })
+					end
+				end)
 				Sound.play("Upgrade", 0.6, 0.9 + tierIndex * 0.08)
 				Shake.punch(2 + tierIndex)
 			elseif tierIndex == 0 then

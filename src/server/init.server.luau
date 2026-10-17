@@ -40,9 +40,7 @@ local Market = require(Services.Market)
 local Tutorial = require(Services.Tutorial)
 local Breakout = require(Services.Breakout)
 local Crew = require(Services.Crew)
-local Pets = require(Services.Pets)
 local Pass = require(Services.Pass)
-local Travel = require(Services.Travel)
 
 Remotes.setup()
 
@@ -71,9 +69,7 @@ Product.start()
 Escape.start()
 Breakout.start()
 Crew.start()
-Pets.start()
 Pass.start()
-Travel.start()
 -- PRISON PASS XP from everything you do
 Missions.onClaim = function(player, index)
 	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
@@ -93,21 +89,16 @@ Breakout.onFinish = function(player, medal)
 		Pass.addXp(player, PassCfg.Xp.Breakout)
 	end
 end
--- exclusive rewards show up right away (uniform / fists re-render, a new cellmate)
+-- exclusive rewards show up right away (uniform / fists re-render)
 Pass.onReward = function(player, kind)
 	if kind == "uniform" or kind == "fist" then
 		Market.sync(player)
-	elseif kind == "pet" then
-		Pets.sync(player)
 	end
 end
 Shop.catalogOpen = function(player)
 	local s = State.get(player)
 	local pos = State.root(player)
 	return DayNight.phase() == "Night" and s ~= nil and pos ~= nil and DayNight.inOwnCell(s, pos)
-end
-Travel.busy = function(player)
-	return Breakout.running(player) or Gym.lifting(player) ~= nil
 end
 Crew.busy = function(player)
 	return Breakout.running(player) or Gym.lifting(player) ~= nil
@@ -176,7 +167,6 @@ Dig.speedBoost = Market.speedBoost
 Loot.magnet = Market.magnet
 Escape.onEscaped = function(player)
 	Market.renderDecor(player)
-	Pets.sync(player) -- escapes open pet slots
 end
 Product.isActive = Data.isActive
 Product.addBuff = Market.addBuff
@@ -323,7 +313,6 @@ local function onPlayerAdded(player: Player)
 	Rewards.onJoin(player, lastOnline)
 	Tutorial.onJoin(player)
 	Missions.sync(player)
-	Pets.sync(player)
 	Pass.sync(player)
 	player:SetAttribute("JoinedAt", os.time())
 	Market.renderDecor(player)
@@ -359,7 +348,6 @@ local function leave(player: Player)
 	Breakout.leaving(player)
 	Crew.onLeaving(player)
 	Pass.onLeaving(player)
-	Travel.onLeaving(player)
 	TopDog.onLeaving(player)
 	Events.onLeaving(player)
 	Market.clearRender(player)

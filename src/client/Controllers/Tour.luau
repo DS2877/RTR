@@ -62,7 +62,7 @@ local function cellView(eye: Vector3, at: Vector3): () -> CFrame?
 	end
 end
 
--- short on purpose: the rest (Fence, Gym, Mess Hall, Pets, Crew...) explains itself as you meet it
+-- short on purpose: the rest (Fence, Gym, Mess Hall, Crew...) explains itself as you meet it
 local STOPS: { Stop } = {
 	{
 		title = "Welcome, inmate!",

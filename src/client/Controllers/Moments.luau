@@ -441,7 +441,7 @@ function Moments.start()
 			1,
 			"title",
 			string.format(
-				"✅ KEEP: x%s power & Noodles forever, depth record, collection, pets, decor, outfits, Prison Pass",
+				"✅ KEEP: x%s power & Noodles forever, depth record, collection, decor, outfits, Prison Pass",
 				tostring(nextMult)
 			),
 			Color3.fromRGB(140, 240, 150)

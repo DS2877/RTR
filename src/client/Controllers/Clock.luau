@@ -164,11 +164,11 @@ function Clock.start()
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		Text = "",
 	})
-	-- the LIGHTS OUT countdown: between the FULL chip (top) and the toasts, never over either
+	-- the LIGHTS OUT countdown: big, above your character's head, clear of the toasts up top
 	-- (a holder carries the screen scale, so the label's own bump scale doesn't fight it)
 	local warningHolder = UI.new("Frame", {
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 80),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.4),
 		Size = UDim2.fromOffset(420, 52),
 		BackgroundTransparency = 1,
 		Parent = gui,
