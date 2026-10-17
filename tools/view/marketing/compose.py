@@ -15,13 +15,14 @@ BOLD = "/usr/share/fonts/opentype/inter/Inter-ExtraBold.otf"
 ORANGE = (255, 138, 30)
 INK = (20, 18, 24)
 
+# (name, caption[, "low"]): "low" puts the logo bottom-left so it keeps the building's signs clear
 THUMBS = [
     ("hero", "PUNCH THROUGH THE WALL"),
-    ("crystal", "DIG DEEPER. FIND CRYSTALS."),
-    ("lava", "10 ZONES DOWN TO THE MAGMA"),
+    ("prison", "BREAK OUT OF THE STATE PEN", "low"),
+    ("crystal", "10 ZONES. DIG DEEPER."),
     ("yardGym", "GET STRONG. LIFT A TOILET."),
     ("corridorNight", "DON'T GET CAUGHT"),
-    ("escape", "ESCAPE!"),
+    ("prisonNight", "ESCAPE BEFORE ROLL CALL", "low"),
 ]
 
 
@@ -68,14 +69,15 @@ def main():
     src, dst = sys.argv[1], sys.argv[2]
     os.makedirs(dst, exist_ok=True)
     mark = logo(190)
-    for i, (name, text) in enumerate(THUMBS, 1):
+    for i, (name, text, *where) in enumerate(THUMBS, 1):
         path = os.path.join(src, name + ".png")
         if not os.path.exists(path):
             print("missing", path)
             continue
         img = Image.open(path).convert("RGBA").resize((1920, 1080))
         caption(img, text)
-        img.alpha_composite(mark, (40, 20))
+        at = (40, 1080 - 118 - mark.height + 30) if where == ["low"] else (40, 20)
+        img.alpha_composite(mark, at)
         img.convert("RGB").save(os.path.join(dst, f"thumb-{i}-{name}.jpg"), quality=90)
         print("thumb", i, name)
     icon_src = os.path.join(src, "icon.png")

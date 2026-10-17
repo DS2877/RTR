@@ -8,6 +8,15 @@ data blandas aldrig in.
 
 ## ✅ Klart
 
+### Ny butiksgrafik (17 okt)
+- `marketing/store/` har nya bilder renderade från dagens värld: **icon.png** (512x512) och sex
+  thumbnails (1920x1080): 1 Slaget genom väggen, 2 **Fängelset** (STATE PENITENTIARY-fasaden från
+  gården, dag), 3 Kristallzonen, 4 Gymmet på gården, 5 Korridoren på natten, 6 **Fängelset på natten**.
+- Lava- och escape-bilderna är borttagna (de såg platta ut). På fängelsebilderna sitter loggan nere
+  till vänster så att skylten syns.
+- Gör om: rendera med `tools/view` (vyer i `tools/view/marketing/views.json`) och kör
+  `python3 tools/view/marketing/compose.py <renders> marketing/store`.
+
 ### Admin-panelen + uppdaterad tutorial (17 okt)
 - **Inga chattkommandon längre.** Allt finns i ADMIN-panelen (🛠️ uppe till vänster), uppdelat
   i sektioner:
@@ -808,7 +817,8 @@ Ops-workflowen försöker göra detta automatiskt – se `tools/ops/ops-log.md` 
 - [x] Arkivtaggen `archive/rob-the-rich` skapad.
 - [x] De nya passen (5) och produkterna (4) skapade i Creator Hub (15 okt) med id:n i Config/Products.
 - [ ] **Ikoner för passen/produkterna** (de har Robloxs standardikon – ladda upp bilder i Creator Hub).
-- [ ] **Ny ikon och thumbnails** (kan inte göras via API:t – ladda upp manuellt).
+- [ ] **Ny ikon och thumbnails** (kan inte göras via API:t – ladda upp manuellt): `marketing/store/icon.png`
+      och `thumb-1…6-*.jpg` i den ordningen.
 - [ ] Genre/kategori och åldersenkät (Experience Questionnaire) uppdaterade för det nya spelet.
 - [ ] Nya produkter (Prison Pass Premium, Noodle Train, Starter Pack, Noodle Rush) skapas av
       ops-workflowen. Se `tools/ops/ops-log.md`. De behöver också ikoner.
