@@ -164,6 +164,47 @@ function Progression.pickFind(zoneIndex: number, roll01: number): string?
 	return list[#list].id
 end
 
+-- PITY: an unfound find of this zone (weighted like pickFind, rare ones stay rarer), or nil once
+-- you have them all. Used after Finds.PityAfter duplicates in a row in that zone.
+function Progression.pickUnfound(zoneIndex: number, found: { [string]: boolean }, roll01: number): string?
+	local list = Finds.ByZone[zoneIndex]
+	if not list then
+		return nil
+	end
+	local total = 0
+	for _, f in list do
+		if not found[f.id] then
+			total += f.weight
+		end
+	end
+	if total <= 0 then
+		return nil
+	end
+	local roll = roll01 * total
+	local last: string? = nil
+	for _, f in list do
+		if not found[f.id] then
+			roll -= f.weight
+			last = f.id
+			if roll < 0 then
+				return f.id
+			end
+		end
+	end
+	return last
+end
+
+-- How many finds of this zone's set you still miss.
+function Progression.missingInSet(zoneIndex: number, found: { [string]: boolean }): number
+	local n = 0
+	for _, f in Finds.ByZone[zoneIndex] or {} do
+		if not found[f.id] then
+			n += 1
+		end
+	end
+	return n
+end
+
 -- The find inside block (x, y, z) of a tunnel with this seed, or nil. Deterministic.
 function Progression.findAt(seed: number, x: number, y: number, z: number): string?
 	if Progression.chamberAt(x, y, z) then

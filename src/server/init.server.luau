@@ -41,6 +41,7 @@ local Tutorial = require(Services.Tutorial)
 local Breakout = require(Services.Breakout)
 local Crew = require(Services.Crew)
 local Pass = require(Services.Pass)
+local Badges = require(Services.Badges)
 
 Remotes.setup()
 
@@ -82,8 +83,12 @@ end
 Dig.onBoss = function(player)
 	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
 	Pass.addXp(player, PassCfg.Xp.Vault)
+	Badges.award(player, "FirstVault")
 end
 Breakout.onFinish = function(player, medal)
+	if medal == "gold" then
+		Badges.award(player, "GoldBreakout")
+	end
 	if medal ~= "" then
 		local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
 		Pass.addXp(player, PassCfg.Xp.Breakout)
@@ -165,8 +170,12 @@ Dig.powerBoost = Market.powerBoost
 Dig.findBoost = Market.findBoost
 Dig.speedBoost = Market.speedBoost
 Loot.magnet = Market.magnet
+Collection.onSet = function(player)
+	Badges.award(player, "SetComplete")
+end
 Escape.onEscaped = function(player)
 	Market.renderDecor(player)
+	Badges.award(player, "FirstEscape")
 end
 Product.isActive = Data.isActive
 Product.addBuff = Market.addBuff
@@ -225,6 +234,9 @@ Dig.onDeeper = function(player, layers)
 end
 Dig.onGold = function(player, kind)
 	Missions.count(player, "Gold", 1)
+	if kind == "jackpot" then
+		Badges.award(player, "Jackpot")
+	end
 	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
 	Pass.addXp(player, PassCfg.Xp.Gold * (if kind == "jackpot" then 10 else 1))
 end
@@ -258,6 +270,12 @@ Loot.onSell = function(player, total, count)
 end
 Dig.onZone = function(player, zone)
 	Tutorial.zone(player, zone)
+	if zone >= 5 then
+		Badges.award(player, "Zone5")
+	end
+	if zone >= 10 then
+		Badges.award(player, "Zone10")
+	end
 end
 
 local function onCharacter(player: Player, character: Model)
@@ -314,6 +332,7 @@ local function onPlayerAdded(player: Player)
 	Tutorial.onJoin(player)
 	Missions.sync(player)
 	Pass.sync(player)
+	Badges.award(player, "Welcome")
 	player:SetAttribute("JoinedAt", os.time())
 	Market.renderDecor(player)
 	Market.sync(player)
@@ -348,6 +367,7 @@ local function leave(player: Player)
 	Breakout.leaving(player)
 	Crew.onLeaving(player)
 	Pass.onLeaving(player)
+	Badges.onLeaving(player)
 	TopDog.onLeaving(player)
 	Events.onLeaving(player)
 	Market.clearRender(player)

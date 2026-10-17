@@ -259,4 +259,20 @@ return function()
 		check(Progression.bossHp(zone) > Progression.bossHp(zone - 1), "doors get tougher: " .. zone)
 		check(Progression.bossReward(zone) > Progression.bossReward(zone - 1), "doors pay more: " .. zone)
 	end
+	-- pity: an unfound find of the zone, never one you have; nil once the set is complete
+	do
+		local Finds = require("../src/shared/Config/Finds")
+		local list = Finds.ByZone[1]
+		local found: { [string]: boolean } = {}
+		for k = 1, #list - 1 do
+			found[list[k].id] = true
+		end
+		for _, roll in { 0, 0.5, 0.999 } do
+			check(Progression.pickUnfound(1, found, roll) == list[#list].id, "pity picks the missing one")
+		end
+		check(Progression.missingInSet(1, found) == 1, "one missing")
+		found[list[#list].id] = true
+		check(Progression.pickUnfound(1, found, 0.3) == nil, "nothing left to pity")
+		check(Progression.missingInSet(1, found) == 0, "set complete")
+	end
 end

@@ -180,8 +180,13 @@ local function puff(pos: Vector3, color: Color3, amount: number, size: number)
 end
 
 -- The punch landing: a quick white shock ring flat on the hit face + a dust puff.
+-- the first punch with a new tool lands extra big (Controllers/Juice sets it)
+DigFX.empowerNext = false
+
 local function impact(pos: Vector3, normal: Vector3, color: Color3)
 	local at = pos + normal * (World.BlockSize / 2 + 0.06)
+	local big = DigFX.empowerNext
+	DigFX.empowerNext = false
 	local ring = Instance.new("Part")
 	ring.Anchored = true
 	ring.CanCollide = false
@@ -199,20 +204,23 @@ local function impact(pos: Vector3, normal: Vector3, color: Color3)
 	TweenService:Create(
 		ring,
 		TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{ Size = Vector3.new(0.05, 3.2, 3.2), Transparency = 1 }
+		{ Size = if big then Vector3.new(0.05, 7, 7) else Vector3.new(0.05, 3.2, 3.2), Transparency = 1 }
 	):Play()
 	task.delay(0.2, function()
 		ring:Destroy()
 	end)
-	puff(at, color, 4, 0.6)
+	puff(at, color, if big then 12 else 4, if big then 1.1 else 0.6)
+	if big then
+		Shake.punch(3.5)
+		Shake.kick(0.35)
+	end
 end
 
 local function sparks(pos: Vector3, color: Color3)
 	puff(pos, color, 4, 0.6)
 end
 
-local function onBroken(t: VoxelRender.T, broken: { number }, puncher: number)
-	local mine = puncher == player.UserId
+local function burst(t: VoxelRender.T, broken: { number })
 	local r = root()
 	local many = #broken > 9
 	for i, idx in broken do
@@ -255,6 +263,17 @@ local function onBroken(t: VoxelRender.T, broken: { number }, puncher: number)
 		if i <= 4 then
 			puff(pos, color, if many then 3 else 6, 1)
 		end
+	end
+end
+
+-- HITSTOP: when your own block gives, your punch and the camera freeze for a beat while the
+-- rubble bursts out: that tiny pause is what makes a hit feel heavy
+DigFX.onHitstop = nil :: ((seconds: number) -> ())?
+local function onBroken(t: VoxelRender.T, broken: { number }, puncher: number)
+	local mine = puncher == player.UserId
+	burst(t, broken)
+	if mine and DigFX.onHitstop then
+		DigFX.onHitstop(if #broken >= 6 then 0.07 else 0.045)
 	end
 	do
 		local x, y, z = Voxel.unindex(t.grid, broken[1])

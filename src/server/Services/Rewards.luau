@@ -103,6 +103,48 @@ function Rewards.cellmate(player: Player, awaySeconds: number): number
 	return amount
 end
 
+-- INVITES: a brand-new prisoner who came from a friend's invite (Roblox join data) gets
+-- Economy.ReferralDynamite 🧨, and so does the friend if they're on this server (known contents).
+local function giveDynamite(player: Player, n: number, text: string)
+	local s = State.get(player)
+	if not s then
+		return
+	end
+	s.data.Dynamite += n
+	if typeof(player) == "Instance" then
+		player:SetAttribute("Dynamite", s.data.Dynamite)
+	end
+	Net.fire(player, Remotes.Names.Reward, "invite", text)
+end
+
+function Rewards.referral(player: Player, referrerId: number?)
+	local s = State.get(player)
+	if not s or not referrerId or referrerId <= 0 or referrerId == player.UserId then
+		return false
+	end
+	-- only for a new prisoner, once
+	if s.data.ReferredBy ~= 0 or s.data.PlayMinutes > 5 then
+		return false
+	end
+	s.data.ReferredBy = referrerId
+	local n = Economy.ReferralDynamite
+	local friend: Player? = nil
+	for p in State.all() do
+		if (p :: any).UserId == referrerId then
+			friend = p
+		end
+	end
+	giveDynamite(player, n, string.format("📨 You came on a friend's invite: +%d 🧨 Dynamite!", n))
+	if friend then
+		giveDynamite(
+			friend,
+			n,
+			string.format("📨 %s joined on your invite: +%d 🧨 Dynamite!", (player :: any).Name, n)
+		)
+	end
+	return true
+end
+
 -- `lastOnline` = when this player was last seen (before this join overwrote it).
 function Rewards.onJoin(player: Player, lastOnline: number?)
 	local s = State.get(player)
@@ -111,6 +153,15 @@ function Rewards.onJoin(player: Player, lastOnline: number?)
 	end
 	if lastOnline and lastOnline > 0 then
 		Rewards.cellmate(player, os.time() - lastOnline)
+	end
+	if typeof(player) == "Instance" then
+		local ok, join = pcall(function()
+			return player:GetJoinData()
+		end)
+		local ref = if ok and typeof(join) == "table" then (join :: any).ReferredByPlayerId else nil
+		if typeof(ref) == "number" then
+			Rewards.referral(player, ref)
+		end
 	end
 	if typeof(player) == "Instance" then
 		s.premium = player.MembershipType == Enum.MembershipType.Premium

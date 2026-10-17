@@ -2,7 +2,7 @@
 -- Material zones = depth bands of the tunnel. Depths add up to World.TunnelDepth (600).
 -- hp: hit points of one block. rubble: Noodles paid per block when dumped in the Yard.
 -- oreChance: share of blocks with a find inside. palette: block colors (each block picks one by hash).
--- tint: ColorCorrection tint while your camera is in the zone. chamber: the pre-built room you break
+-- tint / saturation: ColorCorrection while your camera is in the zone (each zone its own world). chamber: the pre-built room you break
 -- into at the start of the zone (the WOW moment), nil for zone 1.
 
 export type Chamber = {
@@ -25,6 +25,7 @@ export type Zone = {
 	material: string, -- Enum.Material name
 	palette: { { number } },
 	tint: { number },
+	saturation: number?, -- color grading while your camera is in the zone (the prison above is greyer)
 	brightness: number, -- 0..1 how bright the tunnel lamp is here
 	chamber: Chamber?,
 }
@@ -41,7 +42,8 @@ local Zones: { Zone } = {
 		material = "Concrete",
 		-- institutional pale green paint over plaster (zone 3's concrete is a cold blue-grey)
 		palette = { { 150, 168, 150 }, { 142, 160, 143 }, { 158, 176, 158 } },
-		tint = { 240, 244, 250 },
+		tint = { 236, 246, 236 },
+		saturation = -0.25,
 		brightness = 1,
 	},
 	{
@@ -54,7 +56,8 @@ local Zones: { Zone } = {
 		oreChance = 0.05,
 		material = "Brick",
 		palette = { { 160, 82, 60 }, { 140, 70, 52 }, { 176, 96, 70 } },
-		tint = { 255, 236, 225 },
+		tint = { 255, 226, 206 },
+		saturation = -0.15,
 		brightness = 0.9,
 		chamber = { name = "Old Boiler Room", width = 14, height = 7, depth = 6, light = { 255, 170, 90 } },
 	},
@@ -68,7 +71,8 @@ local Zones: { Zone } = {
 		oreChance = 0.05,
 		material = "Concrete",
 		palette = { { 132, 140, 152 }, { 118, 126, 140 }, { 146, 154, 166 } },
-		tint = { 225, 235, 255 },
+		tint = { 214, 226, 255 },
+		saturation = -0.25,
 		brightness = 0.85,
 		chamber = { name = "Forgotten Bunker", width = 14, height = 7, depth = 6, light = { 170, 210, 255 } },
 	},
@@ -82,7 +86,8 @@ local Zones: { Zone } = {
 		oreChance = 0.05,
 		material = "DiamondPlate",
 		palette = { { 100, 106, 116 }, { 88, 94, 104 }, { 112, 118, 128 } },
-		tint = { 220, 228, 240 },
+		tint = { 206, 214, 232 },
+		saturation = -0.25,
 		brightness = 0.8,
 		chamber = { name = "Rebar Vault", width = 14, height = 7, depth = 6, light = { 255, 120, 60 } },
 	},
@@ -96,7 +101,8 @@ local Zones: { Zone } = {
 		oreChance = 0.05,
 		material = "Ground",
 		palette = { { 150, 102, 64 }, { 134, 90, 56 }, { 164, 114, 74 } },
-		tint = { 255, 235, 210 },
+		tint = { 255, 224, 188 },
+		saturation = -0.1,
 		brightness = 0.75,
 		chamber = { name = "Pipe Junction", width = 14, height = 7, depth = 6, light = { 255, 200, 120 } },
 	},
@@ -110,7 +116,8 @@ local Zones: { Zone } = {
 		oreChance = 0.05,
 		material = "Slate",
 		palette = { { 74, 110, 70 }, { 62, 96, 60 }, { 88, 124, 80 } },
-		tint = { 215, 255, 215 },
+		tint = { 196, 255, 204 },
+		saturation = -0.05,
 		brightness = 0.7,
 		chamber = {
 			name = "Old Sewer Canal",
@@ -131,7 +138,8 @@ local Zones: { Zone } = {
 		oreChance = 0.05,
 		material = "Basalt",
 		palette = { { 48, 46, 54 }, { 40, 38, 46 }, { 58, 56, 66 } },
-		tint = { 230, 225, 255 },
+		tint = { 214, 206, 255 },
+		saturation = -0.15,
 		brightness = 0.6,
 		chamber = { name = "Glittering Hollow", width = 14, height = 7, depth = 6, light = { 200, 200, 255 } },
 	},
@@ -145,7 +153,8 @@ local Zones: { Zone } = {
 		oreChance = 0.05,
 		material = "Glass",
 		palette = { { 58, 48, 82 }, { 50, 42, 72 }, { 66, 54, 92 } },
-		tint = { 240, 215, 255 },
+		tint = { 196, 220, 255 },
+		saturation = 0.1,
 		brightness = 0.7,
 		chamber = { name = "Crystal Grotto", width = 16, height = 9, depth = 8, light = { 210, 120, 255 } },
 	},
@@ -159,7 +168,8 @@ local Zones: { Zone } = {
 		oreChance = 0.05,
 		material = "CrackedLava",
 		palette = { { 52, 38, 36 }, { 44, 32, 30 }, { 60, 44, 40 } },
-		tint = { 255, 220, 200 },
+		tint = { 255, 196, 160 },
+		saturation = 0.15,
 		brightness = 0.7,
 		chamber = {
 			name = "Lava Lake",
@@ -180,7 +190,8 @@ local Zones: { Zone } = {
 		oreChance = 0.05,
 		material = "Sandstone",
 		palette = { { 200, 170, 100 }, { 184, 154, 88 }, { 214, 184, 112 } },
-		tint = { 255, 245, 215 },
+		tint = { 255, 236, 180 },
+		saturation = 0.05,
 		brightness = 0.85,
 		chamber = { name = "The Old Escape", width = 16, height = 9, depth = 8, light = { 255, 215, 90 } },
 	},

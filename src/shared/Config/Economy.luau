@@ -138,6 +138,7 @@ local Economy = {
 	},
 
 	-- retention
+	ReferralDynamite = 2, -- a friend you invited joins for the first time: you both get this many 🧨
 	VipBonus = 0.1, -- VIP pass: +10% Noodles
 	PremiumBonus = 0.1, -- Roblox Premium members: +10% Noodles
 	CatalogMarkup = 1.2, -- the CELL CATALOG (upgrades from your cell during LOCKDOWN) costs this x

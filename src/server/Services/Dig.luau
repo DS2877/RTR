@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local World = require(Shared.Config.World)
 local Zones = require(Shared.Config.Zones)
+local Finds = require(Shared.Config.Finds)
 local Voxel = require(Shared.Voxel)
 local Progression = require(Shared.Progression)
 local Tunnel = require(Shared.Tunnel)
@@ -614,6 +615,25 @@ function Dig.applyHits(
 					local zone = Progression.zoneAt(tz)
 					if math.random() < Zones[zone].oreChance * bonus then
 						find = Progression.pickFind(zone, math.random())
+					end
+				end
+				-- PITY: a long run of duplicates in a zone turns the next find into a new one
+				if find then
+					local zkey = tostring(Progression.zoneAt(tz))
+					local pity = data.Pity or {}
+					data.Pity = pity
+					if data.Found[find] then
+						pity[zkey] = (pity[zkey] or 0) + 1
+						if pity[zkey] >= Finds.PityAfter then
+							local fresh =
+								Progression.pickUnfound(Progression.zoneAt(tz), data.Found, math.random())
+							if fresh then
+								find = fresh
+							end
+						end
+					end
+					if find and not data.Found[find] then
+						pity[zkey] = 0
 					end
 				end
 				if find and #data.Finds >= slots then

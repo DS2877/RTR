@@ -87,6 +87,8 @@ function Collection.render(player: Player)
 	end
 end
 
+Collection.onSet = nil :: ((player: Player, zone: number) -> ())? -- a set completed (badges)
+
 -- A find was dug up (hooked from Dig).
 function Collection.onFound(player: Player, id: string, firstTime: boolean)
 	if not firstTime then
@@ -98,6 +100,22 @@ function Collection.onFound(player: Player, id: string, firstTime: boolean)
 	end
 	local f = Finds.ById[id]
 	Collection.render(player)
+	-- so close: the last one or two of a set
+	if f then
+		local missing = Progression.missingInSet(f.zone, s.data.Found)
+		if missing == 1 or missing == 2 then
+			Net.notice(
+				player,
+				string.format(
+					"🔎 %d find%s left for the %s set (+10%% Noodles forever)!",
+					missing,
+					if missing == 1 then "" else "s",
+					Zones[f.zone].name
+				),
+				"good"
+			)
+		end
+	end
 	for _, zone in Progression.completedSets(s.data.Found) do
 		if f and zone == f.zone then
 			Net.announce(
@@ -106,6 +124,9 @@ function Collection.onFound(player: Player, id: string, firstTime: boolean)
 				"Rare"
 			)
 			Net.notice(player, "Set complete: +10% Noodles forever!", "upgrade")
+			if Collection.onSet then
+				Collection.onSet(player, zone)
+			end
 		end
 	end
 end

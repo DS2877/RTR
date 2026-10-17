@@ -119,6 +119,10 @@ function Loot.vacuum(player: Player): number
 	end
 	s.piles = keep
 	if moved > 0 then
+		-- (the client pops "+N 🍜" as rubble flies in: BagValue x this = what the dump will pay)
+		if typeof(player) == "Instance" then
+			player:SetAttribute("NoodleMult", noodleMult(s))
+		end
 		if Loot.onVacuum then
 			Loot.onVacuum(player)
 		end

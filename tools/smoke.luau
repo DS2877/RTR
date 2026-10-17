@@ -1081,6 +1081,21 @@ check(
 	s.data.Daily.Streak
 )
 do
+	-- an invite: the new prisoner and the friend (on this server) both get dynamite, once
+	local newbie: any = { UserId = -6262, Name = "SmokeNewbie", Position = Vector3.zero }
+	local ns = State.add(newbie, Data.fresh())
+	local dynFriend, dynNew = s.data.Dynamite, ns.data.Dynamite
+	check(
+		"invite reward",
+		Rewards.referral(newbie, fake.UserId)
+			and ns.data.Dynamite == dynNew + Economy.ReferralDynamite
+			and s.data.Dynamite == dynFriend + Economy.ReferralDynamite
+	)
+	check("invite reward once", not Rewards.referral(newbie, fake.UserId))
+	check("no self-invite", not Rewards.referral(fake, fake.UserId))
+	State.remove(newbie)
+end
+do
 	local before = s.data.Noodles
 	local paid = Rewards.cellmate(fake, 3600)
 	check("bunkmate pays while away", paid > 0 and s.data.Noodles == before + paid, paid)

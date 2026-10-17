@@ -563,4 +563,7 @@ return {
 	List = List,
 	ById = ById,
 	ByZone = ByZone,
+	-- PITY: after this many duplicate finds in a row in one zone, the next find there is one you
+	-- don't have yet (free, nothing bought: it only makes a set completable)
+	PityAfter = 25,
 }

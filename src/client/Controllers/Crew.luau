@@ -131,11 +131,15 @@ local function buildPanel(): Panel.Panel
 		end
 		-- invite Roblox friends into this server
 		local fr = Panel.row(panel.body, nextOrder(), 56)
-		Panel.text("title", "📨 Bring your friends", {
-			Position = UDim2.fromOffset(12, 0),
-			Size = UDim2.new(0.6, -12, 1, 0),
-			Parent = fr,
-		})
+		Panel.text(
+			"title",
+			string.format("📨 Invite a friend: you both get %d 🧨", Economy.ReferralDynamite),
+			{
+				Position = UDim2.fromOffset(12, 0),
+				Size = UDim2.new(0.6, -12, 1, 0),
+				Parent = fr,
+			}
+		)
 		local fb = Panel.button({
 			AnchorPoint = Vector2.new(1, 0.5),
 			Position = UDim2.new(1, -10, 0.5, 0),

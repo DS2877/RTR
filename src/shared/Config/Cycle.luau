@@ -3,7 +3,7 @@
 -- bonus finds. Day: doors open, shops open, free movement (PvP from M3).
 
 local Cycle = {
-	NightSeconds = 180, -- (was 270: a full backpack left nothing to do; see FlushRate)
+	NightSeconds = 150, -- short and sweet: digging for bonus finds, not waiting (was 270, then 180)
 	DaySeconds = 200,
 	RollCallSeconds = 25,
 	LightsOutWarning = 10, -- "LIGHTS OUT!" countdown before the doors lock
@@ -38,10 +38,10 @@ local Cycle = {
 			name = "LOCKDOWN",
 			emoji = "🌙",
 			clock = { 19, 30 },
-			rules = "Doors locked · +25% finds",
+			rules = "Doors locked · +40% finds",
 		},
 	} :: { { id: string, name: string, emoji: string, clock: { number }, rules: string } },
-	NightFindBonus = 0.25, -- +25% finds at night (bonus finds in plain blocks)
+	NightFindBonus = 0.4, -- +40% finds at night (bonus finds in plain blocks): the reward for staying in
 	DayClock = 14, -- Lighting.ClockTime
 	NightClock = 0.5,
 	-- the prison look: grey, overcast and cold; night is dark (colors are RGB)

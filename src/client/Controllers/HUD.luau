@@ -792,6 +792,55 @@ function HUD.start()
 	local bagText = UI.statLine(stats, 3, "🧱", Color3.fromRGB(235, 205, 150), 24)
 	local slots = UI.statLine(stats, 4, "💎", Color3.fromRGB(205, 160, 255), 24)
 	local noodles = UI.statLine(stats, 5, "🍜", Color3.fromRGB(255, 215, 70), 32)
+	-- NEXT GOAL: a whisper right after the Noodles count, "⛏️ 64%" toward the cheapest next core
+	-- upgrade (tool / brush / backpack); "⛏️ ✓" in green once you can buy it. Nothing more.
+	local nextGoal: TextLabel = UI.new("TextLabel", {
+		Name = "NextGoal",
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 0, 0.5, 1),
+		Size = UDim2.fromOffset(80, 18),
+		Font = Enum.Font.GothamBold,
+		TextSize = 15,
+		TextColor3 = Color3.fromRGB(230, 225, 210),
+		TextTransparency = 0.35,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Text = "",
+		Parent = noodles.Parent,
+	}, { UI.textStroke(UI.INK, 1) })
+	local function placeNextGoal()
+		nextGoal.Position = UDim2.new(0, noodles.Position.X.Offset + noodles.TextBounds.X + 10, 0.5, 1)
+	end
+	noodles:GetPropertyChangedSignal("TextBounds"):Connect(placeNextGoal)
+	local function updateNextGoal()
+		local money = attr("Noodles", 0)
+		local best: { emoji: string, cost: number }? = nil
+		for _, track in { "Tools", "Brushes", "Backpack" } do
+			local level = attr(track, 1)
+			local cost = Progression.nextCost(track, level)
+			if cost and (not best or cost < best.cost) then
+				best = { emoji = (Upgrades :: any)[track][level + 1].emoji, cost = cost }
+			end
+		end
+		if not best then
+			nextGoal.Text = ""
+			return
+		end
+		if money >= best.cost then
+			nextGoal.Text = best.emoji .. " ✓"
+			nextGoal.TextColor3 = Color3.fromRGB(120, 235, 140)
+			nextGoal.TextTransparency = 0.1
+		else
+			nextGoal.Text = string.format("%s %d%%", best.emoji, math.floor(money / best.cost * 100))
+			nextGoal.TextColor3 = Color3.fromRGB(230, 225, 210)
+			nextGoal.TextTransparency = 0.35
+		end
+		placeNextGoal()
+	end
+	for _, name in { "Noodles", "Tools", "Brushes", "Backpack" } do
+		player:GetAttributeChangedSignal(name):Connect(updateNextGoal)
+	end
+	task.defer(updateNextGoal)
 
 	-- ===== TOP CENTER: zone + depth, toasts, full prompt =====
 	local zoneText = UI.bigText({

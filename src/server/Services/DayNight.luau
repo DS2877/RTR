@@ -116,7 +116,14 @@ local function setPhase(p: string, seconds: number?)
 			sendEveryoneHome()
 			setDoors(true)
 		end
-		Net.announce("LOCKDOWN. Doors locked. Night digging gives +25% finds!", { 140, 170, 255 }, nil)
+		Net.announce(
+			string.format(
+				"LOCKDOWN. Doors locked. Night digging: +%d%% finds!",
+				math.floor(Cycle.NightFindBonus * 100 + 0.5)
+			),
+			{ 140, 170, 255 },
+			nil
+		)
 	elseif p == "RollCall" then
 		setDoors(false)
 		Net.announce("ROLL CALL! Stay in your cell to be counted.", { 255, 220, 120 }, "Announce")
