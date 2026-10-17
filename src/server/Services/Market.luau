@@ -555,8 +555,23 @@ function Market.sync(player: Player)
 	syncBuffs(player)
 end
 
-local SHOP_PART =
-	{ Laundry = "Laundry", MessHall = "MessHall", BlackMarket = "BlackMarket", Decor = "Workshop" }
+-- THE CANTEEN: Laundry, Mess Hall and Black Market share one panel (tabs), so a buy from any of
+-- them is fine at any of their counters. Decor is bought at the Workshop.
+local CANTEEN = { "Laundry", "MessHall", "BlackMarket" }
+local COUNTERS: { [string]: { string } } =
+	{ Laundry = CANTEEN, MessHall = CANTEEN, BlackMarket = CANTEEN, Decor = { "Workshop" } }
+local BUY_RANGE = 22 -- studs from the counter (the prompt range + walking room)
+
+-- Is `pos` near a counter that sells from `shop`?
+function Market.nearCounter(shop: string, pos: Vector3): boolean
+	for _, partName in COUNTERS[shop] or {} do
+		local counter = world and world.shops[partName]
+		if counter and (counter.Position - pos).Magnitude <= BUY_RANGE then
+			return true
+		end
+	end
+	return false
+end
 
 -- Returns a reason when refused.
 function Market.buy(player: Player, shop: string, id: string): string?
@@ -565,9 +580,7 @@ function Market.buy(player: Player, shop: string, id: string): string?
 	if not s or not pos then
 		return "no state"
 	end
-	local partName = SHOP_PART[shop]
-	local counter = partName and world.shops[partName]
-	if not counter or (counter.Position - pos).Magnitude > 22 then
+	if not Market.nearCounter(shop, pos) then
 		return "too far"
 	end
 	local item: Extras.Item? = nil
@@ -597,6 +610,10 @@ function Market.buy(player: Player, shop: string, id: string): string?
 	if item.starter then
 		Net.notice(player, "🎁 Comes with the Starter Pack (Store)!", "info")
 		return "starter only"
+	end
+	if item.daily then
+		Net.notice(player, "📅 Reach a 7-day login streak to earn it!", "info")
+		return "daily only"
 	end
 	local price = Progression.itemPrice(item, s.data.Zone)
 	if s.data.Noodles < price then

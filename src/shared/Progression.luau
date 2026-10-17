@@ -165,6 +165,47 @@ function Progression.pickFind(zoneIndex: number, roll01: number): string?
 	return list[#list].id
 end
 
+-- PITY: an unfound find of this zone (weighted like pickFind, rare ones stay rarer), or nil once
+-- you have them all. Used after Finds.PityAfter duplicates in a row in that zone.
+function Progression.pickUnfound(zoneIndex: number, found: { [string]: boolean }, roll01: number): string?
+	local list = Finds.ByZone[zoneIndex]
+	if not list then
+		return nil
+	end
+	local total = 0
+	for _, f in list do
+		if not found[f.id] then
+			total += f.weight
+		end
+	end
+	if total <= 0 then
+		return nil
+	end
+	local roll = roll01 * total
+	local last: string? = nil
+	for _, f in list do
+		if not found[f.id] then
+			roll -= f.weight
+			last = f.id
+			if roll < 0 then
+				return f.id
+			end
+		end
+	end
+	return last
+end
+
+-- How many finds of this zone's set you still miss.
+function Progression.missingInSet(zoneIndex: number, found: { [string]: boolean }): number
+	local n = 0
+	for _, f in Finds.ByZone[zoneIndex] or {} do
+		if not found[f.id] then
+			n += 1
+		end
+	end
+	return n
+end
+
 -- The find inside block (x, y, z) of a tunnel with this seed, or nil. Deterministic.
 function Progression.findAt(seed: number, x: number, y: number, z: number): string?
 	if Progression.chamberAt(x, y, z) then
@@ -465,6 +506,41 @@ function Progression.marketStock(day: number): { string }
 	local out = {}
 	for i = 1, math.min(Extras.MarketSlots, #pool) do
 		table.insert(out, pool[i].id)
+	end
+	return out
+end
+
+-- ===== daily streak =====
+
+-- The streak after claiming on `today` (days since 1970) when the last claim was on `lastDay`
+-- with `streak`: +1 on the next day (capped), a missed day halves it instead of wiping it.
+function Progression.dailyStreak(lastDay: number, streak: number, today: number): number
+	if lastDay == today - 1 then
+		return math.min(streak + 1, Economy.DailyMaxStreak)
+	end
+	return math.max(1, math.floor(streak / 2) + 1)
+end
+
+-- Noodles for day `streak` of the streak for someone whose deepest zone is `zone`.
+function Progression.dailyNoodles(streak: number, zone: number): number
+	local z = Zones[math.clamp(zone, 1, #Zones)]
+	return Economy.DailyBlocks * z.rubble * math.clamp(streak, 1, Economy.DailyMaxStreak)
+end
+
+export type DailyDay = { day: number, noodles: number, dynamite: number, uniform: string? }
+
+-- The prizes of every day of the streak (known up front): day N = N x the daily Noodles; the last
+-- day adds dynamite and, until you own it, the exclusive uniform.
+function Progression.dailyCalendar(zone: number, hasUniform: boolean): { DailyDay }
+	local out: { DailyDay } = {}
+	for day = 1, Economy.DailyMaxStreak do
+		local last = day == Economy.DailyMaxStreak
+		table.insert(out, {
+			day = day,
+			noodles = Progression.dailyNoodles(day, zone),
+			dynamite = if last then Economy.DailyMaxDynamite else 0,
+			uniform = if last and not hasUniform then Economy.DailyUniform else nil,
+		})
 	end
 	return out
 end

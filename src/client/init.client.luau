@@ -29,6 +29,10 @@ do
 	local Voxel = require(Shared.Voxel)
 	local PunchAnim = require(script.Util.PunchAnim)
 	PunchAnim.start()
+	DigFX.onHitstop = function(seconds)
+		PunchAnim.hitstop(player.Character, seconds)
+		Shake.punch(1.2)
+	end
 	DigController.onPunch = function(a)
 		local t = DigController.tunnel()
 		if t then
@@ -60,6 +64,7 @@ require(Controllers.Combo).start()
 require(Controllers.Breakout).start()
 require(Controllers.Crew).start()
 require(Controllers.HeldTools).start()
+require(Controllers.Juice).start()
 require(Controllers.PassUI).start()
 require(Controllers.Shops).start()
 require(Controllers.Catalog).start()

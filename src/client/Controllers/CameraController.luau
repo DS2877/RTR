@@ -57,6 +57,7 @@ end
 
 function CameraController.start()
 	local tint = Lighting:WaitForChild("ZoneTint", 10) :: ColorCorrectionEffect?
+	local baseSaturation = if tint then tint.Saturation else -0.35
 	local look = require(Shared.Config.Cycle).Look
 	local tunnelAmbient =
 		Color3.fromRGB(look.Tunnel.ambient[1], look.Tunnel.ambient[2], look.Tunnel.ambient[3])
@@ -145,6 +146,13 @@ function CameraController.start()
 		local k = 0.35
 		if tint then
 			tint.TintColor = tint.TintColor:Lerp(targetTint, k)
+			-- the prison is washed-out grey; every zone down the tunnel has its own color grading
+			local sat = if inTunnel and zone.saturation then zone.saturation else baseSaturation
+			tint.Saturation += (sat - tint.Saturation) * k
+		end
+		if lamp and inTunnel then
+			-- the headlamp takes a hint of the zone's light
+			lamp.Color = Color3.fromRGB(255, 240, 215):Lerp(rgb(zone.tint), 0.35)
 		end
 		if not Clock.override then -- (a cinematic owns the sky)
 			Lighting.Ambient = Lighting.Ambient:Lerp(if inTunnel then tunnelAmbient else Clock.ambient(), k)

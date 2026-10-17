@@ -34,6 +34,8 @@ type Rig = {
 	base: { [Instance]: CFrame }, -- the Animator's Transform this frame
 	written: { [Instance]: CFrame }, -- what we wrote last frame
 	posed: boolean,
+	frozenAt: number?, -- HITSTOP: the punch holds still from here...
+	frozenUntil: number, -- ...until here
 }
 
 local rigs: { [Model]: Rig } = {}
@@ -90,6 +92,8 @@ local function rigFor(c: Model): Rig?
 		base = {},
 		written = {},
 		posed = false,
+		frozenAt = nil,
+		frozenUntil = 0,
 	}
 	rigs[c] = r
 	c.AncestryChanged:Connect(function()
@@ -205,6 +209,17 @@ function PunchAnim.play(c: Model?)
 	r.last = now
 end
 
+-- Your punch froze on a breaking block (DigFX.onHitstop): hold the pose for `seconds`.
+function PunchAnim.hitstop(c: Model?, seconds: number)
+	local r = c and rigs[c]
+	if not r or r.frozenAt then
+		return
+	end
+	local now = os.clock()
+	r.frozenAt = now
+	r.frozenUntil = now + seconds
+end
+
 function PunchAnim.playPlayer(userId: number)
 	local p = Players:GetPlayerByUserId(userId)
 	if p then
@@ -241,7 +256,15 @@ function PunchAnim.start()
 			local lifting = owner ~= nil and owner:GetAttribute("Lifting") ~= nil
 			local target = if not lifting and now - r.last < GUARD_TIME then 1 else 0
 			r.guard += (target - r.guard) * math.min(1, dt * (if target > r.guard then 16 else 7))
-			local t = now - r.started
+			-- HITSTOP: the pose holds at the moment of impact, then the punch carries on
+			local frozenAt = r.frozenAt
+			if frozenAt then
+				if now >= r.frozenUntil then
+					r.started += r.frozenUntil - frozenAt
+					r.frozenAt = nil
+				end
+			end
+			local t = if r.frozenAt then (r.frozenAt :: number) - r.started else now - r.started
 			local wind, strike = curve(t)
 			if lifting then
 				wind, strike = 0, 0

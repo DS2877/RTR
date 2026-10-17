@@ -31,6 +31,7 @@ local Breakout = require(script.Parent.Breakout)
 local Market = require(script.Parent.Market)
 local Locker = require(script.Parent.Locker)
 local Upgrades = require(Shared.Config.Upgrades)
+local Rewards = require(script.Parent.Rewards)
 
 local Admin = {}
 
@@ -121,6 +122,10 @@ function Admin.run(player: Player, cmd: string, arg: number?): boolean
 	elseif cmd == "cart" then
 		s.data.Levels.Cart = math.clamp(math.floor(arg or #Upgrades.Cart), 1, #Upgrades.Cart)
 		Stats.sync(player)
+	elseif cmd == "daily" then
+		-- the next day of the streak now (as if you'd claimed yesterday): tests the calendar card
+		s.data.Daily.Day = Rewards.today() - 1
+		Rewards.daily(player)
 	elseif cmd == "breakout" then
 		-- practice THE BREAKOUT (no rebirth, no reward)
 		Breakout.begin(player, true)

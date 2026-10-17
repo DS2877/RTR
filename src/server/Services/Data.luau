@@ -62,6 +62,8 @@ export type PlayerData = {
 	-- bought buffs that outlive a rejoin: id -> os.time() it ends (0 = "until the morning")
 	Buffs: { [string]: number },
 	StarterBought: boolean, -- the one-time Starter Pack
+	Pity: { [string]: number }, -- duplicate finds in a row per zone ("1".."10")
+	ReferredBy: number, -- the friend whose invite brought you here (0 = none; rewarded once)
 	BuffsAt: number, -- when Buffs was written
 	-- PRISON PASS: this season's XP, premium, claimed tiers ("1".."30" -> true)
 	Pass: {
@@ -144,6 +146,8 @@ local TEMPLATE: PlayerData = {
 	Week = { Id = 0, Blocks = 0 },
 	Buffs = {},
 	StarterBought = false,
+	Pity = {},
+	ReferredBy = 0,
 	BuffsAt = 0,
 	Pass = { Season = 0, Xp = 0, Premium = false, Free = {}, Paid = {} },
 	Locker = { FP = 0, Earned = 0, Perks = {}, RunStart = 0 },

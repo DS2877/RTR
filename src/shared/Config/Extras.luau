@@ -11,7 +11,8 @@ export type Item = {
 	cost: number?, -- fixed price
 	blocks: number?, -- or: price in blocks of your zone's rubble
 	pass: boolean?, -- PRISON PASS reward: never sold
-	starter: boolean?, -- STARTER PACK exclusive: never sold -- PRISON PASS exclusive: never sold, only earned on the pass
+	starter: boolean?, -- STARTER PACK exclusive: never sold
+	daily: boolean?, -- DAILY STREAK exclusive: never sold, given once at a 7-day streak
 	color: { number }?,
 	buff: string?, -- buff id it gives
 	seconds: number?, -- buff length (nil = until the next morning)
@@ -102,6 +103,15 @@ local Extras = {
 			cost = 0,
 			color = { 40, 40, 44 },
 			pass = true,
+		},
+		{
+			id = "Lifer",
+			name = "Lifer",
+			emoji = "⛓️",
+			desc = "7-day streak exclusive. Faded from years inside: everyone knows you never left.",
+			cost = 0,
+			color = { 150, 118, 92 },
+			daily = true,
 		},
 	} :: { Item },
 	Fists = {

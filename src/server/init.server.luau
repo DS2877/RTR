@@ -43,6 +43,7 @@ local Crew = require(Services.Crew)
 local Pass = require(Services.Pass)
 local Locker = require(Services.Locker)
 local Cart = require(Services.Cart)
+local Badges = require(Services.Badges)
 
 Remotes.setup()
 
@@ -79,6 +80,7 @@ Missions.onClaim = function(player, index)
 	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
 	Pass.addXp(player, if index == 4 then PassCfg.Xp.MissionBonus else PassCfg.Xp.Mission)
 end
+Rewards.onUniform = Market.equip -- the 7-day streak uniform goes on right away
 Rewards.onDaily = function(player)
 	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
 	Pass.addXp(player, PassCfg.Xp.Daily)
@@ -86,10 +88,14 @@ end
 Dig.onBoss = function(player)
 	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
 	Pass.addXp(player, PassCfg.Xp.Vault)
+	Badges.award(player, "FirstVault")
 end
 Breakout.onFinish = function(player, medal)
 	-- the LIFER'S LOCKER: a GOLD medal adds a Freedom Point, then the "+N FP" card shows
 	Locker.onBreakout(player, medal)
+	if medal == "gold" then
+		Badges.award(player, "GoldBreakout")
+	end
 	if medal ~= "" then
 		local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
 		Pass.addXp(player, PassCfg.Xp.Breakout)
@@ -178,8 +184,12 @@ Dig.findBoost = function(player)
 end
 Dig.speedBoost = Market.speedBoost
 Loot.magnet = Market.magnet
+Collection.onSet = function(player)
+	Badges.award(player, "SetComplete")
+end
 Escape.onEscaped = function(player)
 	Market.renderDecor(player)
+	Badges.award(player, "FirstEscape")
 end
 Product.isActive = Data.isActive
 Product.addBuff = Market.addBuff
@@ -241,6 +251,9 @@ Dig.onDeeper = function(player, layers)
 end
 Dig.onGold = function(player, kind)
 	Missions.count(player, "Gold", 1)
+	if kind == "jackpot" then
+		Badges.award(player, "Jackpot")
+	end
 	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
 	Pass.addXp(player, PassCfg.Xp.Gold * (if kind == "jackpot" then 10 else 1))
 end
@@ -274,6 +287,13 @@ Loot.onSell = function(player, total, count)
 end
 Dig.onZone = function(player, zone)
 	Tutorial.zone(player, zone)
+	if zone >= 5 then
+		Badges.award(player, "Zone5")
+	end
+	if zone >= 10 then
+		Badges.award(player, "Zone10")
+	end
+	Rewards.syncCalendar(player) -- the daily prizes + gifts follow your deepest zone
 end
 
 local function onCharacter(player: Player, character: Model)
@@ -331,6 +351,7 @@ local function onPlayerAdded(player: Player)
 	Missions.sync(player)
 	Pass.sync(player)
 	Locker.sync(player)
+	Badges.award(player, "Welcome")
 	player:SetAttribute("JoinedAt", os.time())
 	Market.renderDecor(player)
 	Market.sync(player)
@@ -367,6 +388,7 @@ local function leave(player: Player)
 	Pass.onLeaving(player)
 	Locker.onLeaving(player)
 	Cart.onLeaving(player)
+	Badges.onLeaving(player)
 	TopDog.onLeaving(player)
 	Events.onLeaving(player)
 	Market.clearRender(player)
