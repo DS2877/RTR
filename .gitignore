@@ -8,3 +8,4 @@ sourcemap.json
 .tools/
 smoke-result.md
 __pycache__/
+.claude/worktrees/
