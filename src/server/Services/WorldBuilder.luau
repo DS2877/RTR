@@ -16,6 +16,7 @@ local Build = require(script.Parent.Parent.Util.Build)
 local Props = require(script.Parent.Parent.Util.Props)
 local GymProps = require(script.Parent.Parent.Util.GymProps)
 local Dressing = require(script.Parent.Parent.Util.Dressing)
+local Facade = require(script.Parent.Parent.Util.Facade)
 local Format = require(Shared.Format)
 
 local WorldBuilder = {}
@@ -1836,9 +1837,9 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 			"TowerLeg",
 			Vector3.new(1, 22, 1),
 			CFrame.new(tx + d[1], 11, tz + d[2]),
-			Color3.fromRGB(90, 80, 70),
+			DARK_STEEL,
 			{
-				Material = Enum.Material.Wood,
+				Material = Enum.Material.Metal,
 			}
 		)
 	end
@@ -1847,18 +1848,14 @@ local function buildYard(parent: Instance, shops: { [string]: BasePart }): (Base
 		"TowerCabin",
 		Vector3.new(10, 6, 10),
 		CFrame.new(tx, 25, tz),
-		Color3.fromRGB(200, 190, 170),
+		Color3.fromRGB(104, 104, 100),
 		{
-			Material = Enum.Material.WoodPlanks,
+			Material = Enum.Material.Concrete,
 		}
 	)
-	Build.part(
-		parent,
-		"TowerRoof",
-		Vector3.new(12, 1, 12),
-		CFrame.new(tx, 28.5, tz),
-		Color3.fromRGB(150, 50, 40)
-	)
+	Build.part(parent, "TowerRoof", Vector3.new(12, 1, 12), CFrame.new(tx, 28.5, tz), DARK_STEEL, {
+		Material = Enum.Material.Metal,
+	})
 	local search = Build.part(
 		parent,
 		"Searchlight",
@@ -2104,6 +2101,7 @@ function WorldBuilder.build(): WorldRecord
 	yard.Name = "Yard"
 	yard.Parent = root
 	local dump, stations = buildYard(yard, shops)
+	Facade.build(root)
 	Dressing.dress(root, cells)
 	setupLighting()
 	return { cells = cells, boards = boards, shops = shops, dump = dump, stations = stations }
