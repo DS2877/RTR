@@ -59,7 +59,7 @@ upgrade -> punch harder -> new zone. The punch and the crumble must feel amazing
   Escape, Rewards, Guards, Hideout, Patrol, Events, Market, Tutorial, Admin), Util (Build, RateLimit, GymProps, Dressing, Interior), Packages (ProfileStore).
   Services talk through hooks wired in `init.server.luau` (e.g. `Dig.onFind`, `DayNight.onDay`).
 - `src/client` -> StarterPlayerScripts.Client: Controllers (VoxelRender, DigController, DigFX,
-  CameraController, HUD, Shops, Clock, PvPController, ExtraShops, Moments, GymController, DigAudio, GuardController, Chambers, Quality, Tour), Util (UI, Panel,
+  CameraController, HUD, Shops, Clock, PvPController, ExtraShops, Moments, GymController, DigAudio, GuardController, Chambers, Quality, Tour, PassUI, Catalog, HeldTools, Juice, Daily, Locker, CartFX), Util (UI, Panel,
   Sound, Shake, PunchAnim, LootToast).
 - `tools/view/`: renders CI's world dump (artifact "world") + a Lune-generated tunnel with three.js in
   headless Chromium (`render.mjs`, views in `views.json`). Use it to LOOK at changes to the world.

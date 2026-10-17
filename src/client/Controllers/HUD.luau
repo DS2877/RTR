@@ -16,6 +16,7 @@ local Rarity = require(Shared.Config.Rarity)
 local World = require(Shared.Config.World)
 local Upgrades = require(Shared.Config.Upgrades)
 local Extras = require(Shared.Config.Extras)
+local Locker = require(Shared.Locker)
 
 -- buff id -> the emoji of the meal / item that gives it (HUD boost line)
 local BUFF_ICON: { [string]: string } = { Rush = "⚡2x" }
@@ -863,7 +864,7 @@ function HUD.start()
 		local best: { emoji: string, cost: number }? = nil
 		for _, track in { "Tools", "Brushes", "Backpack" } do
 			local level = attr(track, 1)
-			local cost = Progression.nextCost(track, level)
+			local cost = Progression.upgradeCost(track, level, { Bargain = attr(Locker.attr("Bargain"), 0) })
 			if cost and (not best or cost < best.cost) then
 				best = { emoji = (Upgrades :: any)[track][level + 1].emoji, cost = cost }
 			end
@@ -883,7 +884,7 @@ function HUD.start()
 		end
 		placeNextGoal()
 	end
-	for _, name in { "Noodles", "Tools", "Brushes", "Backpack" } do
+	for _, name in { "Noodles", "Tools", "Brushes", "Backpack", "PerkBargain" } do
 		player:GetAttributeChangedSignal(name):Connect(updateNextGoal)
 	end
 	task.defer(updateNextGoal)
@@ -1252,7 +1253,7 @@ function HUD.start()
 		local money = attr("Noodles", 0)
 		for _, track in { "Tools", "Brushes", "Backpack" } do
 			local level = attr(track, 1)
-			local cost = Progression.nextCost(track, level)
+			local cost = Progression.upgradeCost(track, level, { Bargain = attr(Locker.attr("Bargain"), 0) })
 			local key = track .. level
 			if cost and money >= cost and not told[key] then
 				told[key] = true

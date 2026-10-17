@@ -8,6 +8,52 @@ data blandas aldrig in.
 
 ## ✅ Klart
 
+### Roligare, tydligare, mer att jaga (17 okt, kvällen)
+- **Köpögonblicket:** köper du ett verktyg, en pensel eller en ryggsäck poppar den stort på
+  skärmen med vad den gör ("BRICK 18 → 9 hits"). Första slaget med det nya verktyget smäller
+  extra hårt.
+- **Hitstop:** när ditt block går sönder fryser slaget ett ögonblick, så att träffen känns tung.
+- **"+🍜"** flyger upp när gruset sugs in och visar vad ryggsäcken är värd vid dumpen.
+- **Diskret nästa mål:** en liten nedtonad text direkt efter nudelsumman, till exempel "⛏️ 64%".
+  Den blir grön "⛏️ ✓" när du har råd med nästa verktyg, pensel eller ryggsäck. Inget mer.
+- **Varje zon har sin egen färgton** (kristallgrottan blå, magman röd, ruinerna gyllene), och
+  pannlampan tar färg av zonen. Fängelset ovanför är fortfarande grått.
+- **Natten är kortare (150 s) och ger mer:** +40 % fynd.
+- **Samlingen:** efter 25 dubbletter i rad i en zon blir nästa fynd garanterat nytt. Notisen
+  "🔎 1 find left for the … set" visas när ett set nästan är klart.
+- **FREEDOM POINTS + LIFER'S LOCKER** (skåpet i din cell):
+  - Varje rymning ger 🗝️ Freedom Points: +1 alltid, +1 för en snabb runda (högst 75 min
+    speltid) och +1 för GULD i Breakout.
+  - Poängen köper permanenta förmåner:
+    - 🎒 Head Start: börja med Spoon och Sock, och mer på högre nivåer.
+    - 💪 Muscle Memory: behåll 10–30 % av styrkan.
+    - 👊 Quick Hands: +10–30 % slagkraft.
+    - 👖 Deep Pockets: +1–3 fyndplatser.
+    - 🏷️ Bargain Hunter: −10–20 % på alla uppgraderingar.
+    - 🦉 Night Owl: fler fynd på natten.
+  - En 🗝️ svävar över skåpet när du har råd med något.
+- **CART** (tredje spåret i Tool Crib): Wheelbarrow → Minecart → Rail Car → Rocket Cart gör
+  dig upp till 2,5x snabbare, men bara i din egen tunnel. Damm och gnistor syns bakom dig.
+- **THE CANTEEN:** Laundry, Mess Hall och Black Market är nu en butik med flikar. Den öppnas
+  från vilken av de tre diskarna som helst.
+- **Färre HUD-rutor:** Gift ligger nu i Jobs. Rutorna är Store, Jobs och Pass i första raden,
+  Index och Crew i andra.
+- **Synlig dagskalender:** en 7-dagarsremsa med kända priser visas när den dagliga belöningen
+  kommer och överst i Jobs. Dag 7 ger dessutom den exklusiva uniformen ⛓️ **Lifer**, en gång.
+- **Bjud in en kompis:** ni får båda 2 🧨 när kompisen kommer in för första gången.
+- **Badges:** koden delar ut 8 badges (välkommen, första valvet, zon 5, zon 10, första
+  rymningen, guld i Breakout, jackpot och klart set) så fort de finns. Skapa dem i Creator Hub
+  (Experience → Badges) och klistra in id:na i `src/shared/Config/Badges.luau`.
+- **Balans:** rymningen tar 1:39 h i simulatorn, med vagnen inräknad. Alla mål är OK.
+- **Testa på iPhone:**
+  - Köp ett verktyg och titta på mitten av skärmen. Slå sönder ett block och känn pausen.
+  - Sug in grus och se "+🍜". Titta på den lilla texten efter nudelsumman.
+  - Gå ner i olika zoner och titta på färgerna.
+  - Öppna skåpet i cellen (ADMIN-chatt `!fp 10`) och köp en förmån.
+  - Köp Wheelbarrow (eller `!cart 5`) och spring i tunneln.
+  - Öppna Laundry och byt flik.
+  - Öppna Jobs och titta på kalendern (ADMIN → 📅 Next day sex gånger ger dag 7 och Lifer).
+
 ### Ljud, fängelsefasad, renare HUD (17 okt, efter din feedback)
 - **Alla ljud bytta.** Varje ljud är uppmätt (ingen fördröjning före smällen, rätt längd, inte
   skarpt eller klippt) och har fått en egen volym så att alla ligger lika högt. Bara licensierade
