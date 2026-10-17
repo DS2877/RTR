@@ -138,6 +138,8 @@ local Economy = {
 	},
 
 	-- retention
+	VipBonus = 0.1, -- VIP pass: +10% Noodles
+	PremiumBonus = 0.1, -- Roblox Premium members: +10% Noodles
 	CatalogMarkup = 1.2, -- the CELL CATALOG (upgrades from your cell during LOCKDOWN) costs this x
 	DailyBlocks = 300, -- daily reward = this many blocks of rubble from your deepest zone x streak (max 7)
 	DailyMaxStreak = 7,

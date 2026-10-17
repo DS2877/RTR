@@ -4,6 +4,7 @@
 -- when a tunnel snapshot arrives with the chamber already open, and with a little pop-in the
 -- moment someone breaks into it. Cosmetic only, client side.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -202,6 +203,8 @@ function Chambers.drop(owner: number)
 	built[owner] = nil
 end
 
+local askedFavorite = false
+
 function Chambers.start()
 	folder = Instance.new("Folder")
 	folder.Name = "Chambers"
@@ -212,6 +215,16 @@ function Chambers.start()
 			prevChamber(t, zone)
 		end
 		Chambers.build(t, zone, true)
+		-- the first vault in your own tunnel is the best moment to ask for a ⭐ (once a session)
+		if zone == 2 and t.owner == Players.LocalPlayer.UserId and not askedFavorite then
+			askedFavorite = true
+			task.delay(5, function()
+				pcall(function()
+					game:GetService("AvatarEditorService")
+						:PromptSetFavorite(game.PlaceId, Enum.AvatarItemType.Asset, true)
+				end)
+			end)
+		end
 	end
 	VoxelRender.onLoaded = function(t)
 		for zone in Zones do

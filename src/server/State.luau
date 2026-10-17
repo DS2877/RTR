@@ -32,6 +32,7 @@ export type PlayerState = {
 	carrying: { id: string, owner: Player }?, -- a stolen find on its way home
 	-- M4
 	groupBonus: boolean,
+	premium: boolean, -- Roblox Premium member (+10% Noodles)
 	escapeReady: boolean,
 	buffs: { [string]: number }, -- buff id -> os.time() it ends
 	hidden: boolean, -- lying in bed (Services/Hideout)
@@ -78,6 +79,7 @@ function State.add(player: Player, data: Data.PlayerData): PlayerState
 		protectedUntil = 0,
 		carrying = nil,
 		groupBonus = false,
+		premium = false,
 		escapeReady = false,
 		buffs = {},
 		hidden = false,

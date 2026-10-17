@@ -53,7 +53,7 @@ local Products = {
 			name = "VIP Prisoner",
 			emoji = "⭐",
 			price = 299,
-			desc = "Gold fists, a VIP chat tag and the VIP corner in the Common Room.",
+			desc = "+10% Noodles forever, gold fists, a VIP chat tag and the VIP lounge in the Common Room.",
 		},
 	} :: { Product },
 	Items = {

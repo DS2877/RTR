@@ -1114,6 +1114,12 @@ function HUD.start()
 		if player:GetAttribute("GroupBonus") == true then
 			table.insert(parts, "Group Boost: +10%")
 		end
+		if player:GetAttribute("VIP") == true then
+			table.insert(parts, "⭐ VIP +10%")
+		end
+		if player:GetAttribute("PremiumBonus") == true then
+			table.insert(parts, "Premium +10%")
+		end
 		local buffs = tostring(player:GetAttribute("Buffs") or "")
 		if buffs ~= "" then
 			local icons = {}
@@ -1138,6 +1144,8 @@ function HUD.start()
 			"Slots",
 			"Rebirths",
 			"GroupBonus",
+			"VIP",
+			"PremiumBonus",
 			"Buffs",
 			"PlayMinutes",
 			"TopDog",

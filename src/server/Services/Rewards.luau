@@ -113,6 +113,8 @@ function Rewards.onJoin(player: Player, lastOnline: number?)
 		Rewards.cellmate(player, os.time() - lastOnline)
 	end
 	if typeof(player) == "Instance" then
+		s.premium = player.MembershipType == Enum.MembershipType.Premium
+		player:SetAttribute("PremiumBonus", s.premium)
 		if game.CreatorType == Enum.CreatorType.Group then
 			local ok, member = pcall(function()
 				return player:IsInGroup(game.CreatorId)

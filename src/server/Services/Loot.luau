@@ -35,6 +35,9 @@ Loot.crewBonus = nil :: ((s: State.PlayerState) -> number)?
 function Loot.multiplier(s: State.PlayerState): number
 	local pass = if s.passes.DoubleNoodles then Economy.PassEffects.DoubleNoodles else 1
 	local group = if s.groupBonus then 1 + Economy.GroupBonus else 1
+	local vip = 1
+		+ (if s.passes.VIP then Economy.VipBonus else 0)
+		+ (if s.premium then Economy.PremiumBonus else 0)
 	local crew = 1 + (if Loot.crewBonus then Loot.crewBonus(s) else 0)
 	local pets = s.data.Pets
 	local pet = 1 + (if pets then Pets.bonus(pets.Owned, pets.Equipped, "value") else 0)
@@ -48,6 +51,7 @@ function Loot.multiplier(s: State.PlayerState): number
 		end
 	end
 	return pass
+		* vip
 		* rush
 		* Progression.collectionMultiplier(s.data.Found)
 		* Progression.rebirthMultiplier(s.data.Rebirths)
