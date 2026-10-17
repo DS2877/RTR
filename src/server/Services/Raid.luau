@@ -82,7 +82,7 @@ function Raid.stashCmd(player: Player, cmd: string): number
 			moved += 1
 		end
 	elseif cmd == "take" then
-		local slots = Progression.findSlots(data.Levels.FindSlots)
+		local slots = Stats.findSlots(data)
 		while #data.Stash > 0 and #data.Finds < slots do
 			table.insert(data.Finds, table.remove(data.Stash) :: string)
 			moved += 1
@@ -138,7 +138,7 @@ local function deliver(thief: Player, ts: State.PlayerState)
 	local c = ts.carrying :: any
 	ts.carrying = nil
 	setCarrying(thief, false)
-	local slots = Progression.findSlots(ts.data.Levels.FindSlots)
+	local slots = Stats.findSlots(ts.data)
 	if #ts.data.Finds < slots then
 		table.insert(ts.data.Finds, c.id)
 		Net.fire(thief, Remotes.Names.Finds, ts.data.Finds)

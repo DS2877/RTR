@@ -2,7 +2,9 @@
 -- ESCAPE (rebirth): when you break through the last layer of zone 10 the ESCAPE button appears.
 -- Escaping plays the cinematic (searchlights, sprint over the wall), then you get caught and land
 -- in a tougher prison: Rebirths + 1 (permanent multiplier). Your tunnel, Noodles, strength and
--- tools reset; your depth record, collection, defenses and decor items are kept.
+-- tools reset; your depth record, collection, defenses and decor items are kept. Every escape
+-- earns FREEDOM POINTS for the LIFER'S LOCKER (Services/Locker): its perks are kept forever and
+-- change what you start the next run with (Head Start, Muscle Memory).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -22,6 +24,7 @@ local Cells = require(script.Parent.Cells)
 local Breakout = require(script.Parent.Breakout)
 local Raid = require(script.Parent.Raid)
 local Gym = require(script.Parent.Gym)
+local Locker = require(script.Parent.Locker)
 
 local Escape = {}
 
@@ -59,13 +62,16 @@ function Escape.escape(player: Player): string?
 	Raid.returnCarry(player, "escaped")
 	Gym.stop(player)
 	local d = s.data
+	-- Freedom Points first (the run's time ends now), then the reset
+	Locker.onEscape(player)
 	d.Rebirths += 1
 	table.insert(d.Escapes, os.time())
 	d.Noodles = 0
-	d.Strength = Economy.StartingStrength
-	for _, track in { "Tools", "Brushes", "Backpack", "FindSlots", "Vacuum" } do
+	d.Strength = Locker.strengthAfterEscape(s)
+	for _, track in { "Tools", "Brushes", "Backpack", "FindSlots", "Vacuum", "Cart" } do
 		(d.Levels :: any)[track] = 1
 	end
+	Locker.applyHeadStart(s)
 	d.Bag, d.BagValue = 0, 0
 	d.Finds, d.Stash = {}, {}
 	-- placed decor goes back into your decor box
@@ -87,9 +93,13 @@ function Escape.escape(player: Player): string?
 	-- the rebirth is done (leaving mid-run never loses it): now run for it. THE BREAKOUT ends at
 	-- the getaway car and brings you to your new cell (Services/Breakout).
 	local name = Escape.prisonName(d.Rebirths)
-	if not Breakout.begin(player, false, d.Rebirths, name) and typeof(player) == "Instance" then
-		task.spawn(Cells.toCell, player)
-		Net.fire(player, Remotes.Names.Escaped, d.Rebirths, name)
+	if not Breakout.begin(player, false, d.Rebirths, name) then
+		-- no run (shouldn't happen): the points card shows now
+		Locker.onBreakout(player, "")
+		if typeof(player) == "Instance" then
+			task.spawn(Cells.toCell, player)
+			Net.fire(player, Remotes.Names.Escaped, d.Rebirths, name)
+		end
 	end
 	Net.announce(
 		string.format("🚨 %s broke through! THE BREAKOUT is on!", player.Name),

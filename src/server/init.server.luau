@@ -41,6 +41,8 @@ local Tutorial = require(Services.Tutorial)
 local Breakout = require(Services.Breakout)
 local Crew = require(Services.Crew)
 local Pass = require(Services.Pass)
+local Locker = require(Services.Locker)
+local Cart = require(Services.Cart)
 
 Remotes.setup()
 
@@ -70,6 +72,8 @@ Escape.start()
 Breakout.start()
 Crew.start()
 Pass.start()
+Locker.start(world)
+Cart.start()
 -- PRISON PASS XP from everything you do
 Missions.onClaim = function(player, index)
 	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
@@ -84,6 +88,8 @@ Dig.onBoss = function(player)
 	Pass.addXp(player, PassCfg.Xp.Vault)
 end
 Breakout.onFinish = function(player, medal)
+	-- the LIFER'S LOCKER: a GOLD medal adds a Freedom Point, then the "+N FP" card shows
+	Locker.onBreakout(player, medal)
 	if medal ~= "" then
 		local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
 		Pass.addXp(player, PassCfg.Xp.Breakout)
@@ -162,7 +168,14 @@ Guards.isNight = function(): boolean
 	return DayNight.phase() == "Night"
 end
 Dig.powerBoost = Market.powerBoost
-Dig.findBoost = Market.findBoost
+-- bought finds boosts, and the Night Owl perk on top of the night's bonus finds
+Dig.findBoost = function(player)
+	local boost = Market.findBoost(player)
+	if Dig.nightBonus > 0 then
+		boost += Locker.nightBonus(player)
+	end
+	return boost
+end
 Dig.speedBoost = Market.speedBoost
 Loot.magnet = Market.magnet
 Escape.onEscaped = function(player)
@@ -181,6 +194,9 @@ Data.onSave = function(player)
 end
 Product.onPasses = function(player)
 	task.spawn(Market.onCharacter, player)
+end
+Locker.onBought = function(player, id, level)
+	Tutorial.event(player, "Perk_" .. id, level)
 end
 Shop.onBought = function(player, track)
 	if track == "Lock" then
@@ -314,6 +330,7 @@ local function onPlayerAdded(player: Player)
 	Tutorial.onJoin(player)
 	Missions.sync(player)
 	Pass.sync(player)
+	Locker.sync(player)
 	player:SetAttribute("JoinedAt", os.time())
 	Market.renderDecor(player)
 	Market.sync(player)
@@ -348,6 +365,8 @@ local function leave(player: Player)
 	Breakout.leaving(player)
 	Crew.onLeaving(player)
 	Pass.onLeaving(player)
+	Locker.onLeaving(player)
+	Cart.onLeaving(player)
 	TopDog.onLeaving(player)
 	Events.onLeaving(player)
 	Market.clearRender(player)

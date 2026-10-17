@@ -12,6 +12,7 @@ local World = require(Shared.Config.World)
 local Economy = require(Shared.Config.Economy)
 local Tunnel = require(Shared.Tunnel)
 local Cycle = require(Shared.Config.Cycle)
+local LockerConfig = require(Shared.Config.Locker)
 local Build = require(script.Parent.Parent.Util.Build)
 local Props = require(script.Parent.Parent.Util.Props)
 local GymProps = require(script.Parent.Parent.Util.GymProps)
@@ -34,6 +35,7 @@ export type CellRecord = {
 	shelf: Frame, -- collection slots (Services/Collection fills it)
 	stash: BasePart,
 	toilet: BasePart, -- FlushPrompt: the night dump (Loot.flush)
+	locker: BasePart, -- LockerPrompt: the LIFER'S LOCKER (Services/Locker)
 }
 
 export type WorldRecord = {
@@ -152,6 +154,71 @@ local function buildRowShell(parent: Instance, row: number)
 			Material = Enum.Material.Basalt,
 		})
 	end
+end
+
+-- The LIFER'S LOCKER in a cell: steel body, a door with vents, a handle, a padlock and a name
+-- plate, its back against the front wall. `x` = center across the cell, s = the row's direction.
+-- Returns the body (it holds the prompt).
+local function buildLocker(
+	model: Instance,
+	inCell: (x: number, y: number, d: number) -> CFrame,
+	s: number,
+	x: number
+): BasePart
+	local steel = Color3.fromRGB(74, 92, 104)
+	local dark = Color3.fromRGB(34, 38, 44)
+	local metal = { Material = Enum.Material.Metal }
+	local m = Instance.new("Model")
+	m.Name = "Locker"
+	m.Parent = model
+	local body = Build.part(m, "LockerBody", Vector3.new(2.8, 6.4, 1.8), inCell(x, 3.2, 1.0), steel, metal)
+	Build.part(m, "LockerCap", Vector3.new(2.9, 0.15, 1.9), inCell(x, 6.475, 1.0), dark, metal)
+	Build.part(
+		m,
+		"LockerDoor",
+		Vector3.new(2.5, 6.0, 0.1),
+		inCell(x, 3.2, 1.95),
+		steel:Lerp(Color3.new(1, 1, 1), 0.08),
+		metal
+	)
+	for i = 0, 3 do
+		Build.part(
+			m,
+			"LockerVent",
+			Vector3.new(1.8, 0.12, 0.05),
+			inCell(x, 5.1 + i * 0.22, 2.025),
+			dark,
+			{ CanCollide = false }
+		)
+	end
+	-- the handle and a brass padlock (a lifer keeps the good stuff locked up)
+	local hx = x + 0.85 -- (the hinge side is against the side wall)
+	Build.part(m, "LockerHandle", Vector3.new(0.14, 0.8, 0.14), inCell(hx, 3.4, 2.07), dark, metal)
+	Build.part(
+		m,
+		"LockerPadlock",
+		Vector3.new(0.36, 0.42, 0.16),
+		inCell(hx, 2.8, 2.08),
+		Color3.fromRGB(214, 170, 60),
+		metal
+	)
+	local plate = Build.part(
+		m,
+		"LockerPlate",
+		Vector3.new(1.9, 0.5, 0.05),
+		inCell(x, 4.4, 2.025),
+		Color3.fromRGB(28, 30, 36),
+		{ CanCollide = false }
+	)
+	Build.sign(
+		plate,
+		if s < 0 then Enum.NormalId.Front else Enum.NormalId.Back,
+		"🗝️ LIFER",
+		Color3.fromRGB(255, 220, 120)
+	)
+	local prompt = Build.prompt(body, "Open", "Lifer's Locker", LockerConfig.Range)
+	prompt.Name = "LockerPrompt"
+	return body
 end
 
 local function buildCell(parent: Instance, index: number): CellRecord
@@ -344,6 +411,9 @@ local function buildCell(parent: Instance, index: number): CellRecord
 	stashPrompt.Name = "StashPrompt"
 	stash:SetAttribute("Cell", index)
 	CollectionService:AddTag(stash, "Stash")
+	-- LIFER'S LOCKER: a tall steel locker in the front corner by the bed (between the front wall
+	-- and the desk; clear of the bed, the door, the back wall and the shelf above the bed)
+	local locker = buildLocker(model, inCell, s, -halfW + 1.5)
 	-- collection shelf above the bed: one slot per find, silhouettes for the missing ones
 	local shelfPart = Build.part(
 		model,
@@ -378,6 +448,7 @@ local function buildCell(parent: Instance, index: number): CellRecord
 		shelf = shelf,
 		stash = stash,
 		toilet = toilet,
+		locker = locker,
 	}
 end
 

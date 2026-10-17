@@ -2,6 +2,7 @@
 -- Admin commands for phone testing. The ADMIN button in the HUD (admins only) sends AdminCmd;
 -- the same commands work in chat with "!": !noodles 1e6  !strength 500  !zone 3  !resettunnel
 -- !stress  !reset  !day  !night  !inspect  !blackout !riot !inspection !treasure  !dynamite 5  !bottom
+-- !fp 10 (Freedom Points for the Lifer's Locker)  !cart 5 (cart level)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,6 +29,8 @@ local Guards = require(script.Parent.Guards)
 local Escape = require(script.Parent.Escape)
 local Breakout = require(script.Parent.Breakout)
 local Market = require(script.Parent.Market)
+local Locker = require(script.Parent.Locker)
+local Upgrades = require(Shared.Config.Upgrades)
 
 local Admin = {}
 
@@ -113,6 +116,11 @@ function Admin.run(player: Player, cmd: string, arg: number?): boolean
 	elseif cmd == "dynamite" then
 		s.data.Dynamite += math.floor(arg or 5)
 		player:SetAttribute("Dynamite", s.data.Dynamite)
+	elseif cmd == "fp" then
+		Locker.grant(player, math.clamp(math.floor(arg or 10), 1, 1000))
+	elseif cmd == "cart" then
+		s.data.Levels.Cart = math.clamp(math.floor(arg or #Upgrades.Cart), 1, #Upgrades.Cart)
+		Stats.sync(player)
 	elseif cmd == "breakout" then
 		-- practice THE BREAKOUT (no rebirth, no reward)
 		Breakout.begin(player, true)

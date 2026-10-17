@@ -37,6 +37,7 @@ Remotes.Names = {
 	Equip = "Equip", -- (kind: "uniform", id: string)
 	PlaceDecor = "PlaceDecor", -- (kind: string) place a decor item where you stand
 	ClearDecor = "ClearDecor", -- () pick up every placed decor item
+	LockerBuy = "LockerBuy", -- (perkId: string) buy the next level of a Lifer's Locker perk
 	-- server -> client
 	Notice = "Notice", -- (text, kind) small toast
 	Announce = "Announce", -- (text, color: {number}, sound: string?) server-wide message
@@ -82,6 +83,8 @@ Remotes.Names = {
 	Event = "Event", -- (id: string, seconds: number) a server event started ("" = ended)
 	Treasure = "Treasure", -- (x, y, z | nil) where the treasure is in your tunnel
 	Reward = "Reward", -- (kind: string, text: string) daily / playtime / cellmate rewards
+	OpenLocker = "OpenLocker", -- () your cell locker's prompt was used
+	Freedom = "Freedom", -- (gained: number, total: number, gold: boolean) Freedom Points from an escape
 }
 
 local FOLDER_NAME = "Remotes"

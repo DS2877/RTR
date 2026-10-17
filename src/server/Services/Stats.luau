@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Progression = require(ReplicatedStorage.Shared.Progression)
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
+local Locker = require(ReplicatedStorage.Shared.Locker)
 local State = require(script.Parent.Parent.State)
 
 local Stats = {}
@@ -16,6 +17,12 @@ end
 
 function Stats.power(s: State.PlayerState): number
 	return Progression.punchPower(s.data.Strength, s.data.Levels.Tools, s.data.Rebirths)
+		* Locker.powerMult(s.data.Locker.Perks)
+end
+
+-- Find slots with the Deep Pockets perk.
+function Stats.findSlots(data: any): number
+	return Progression.findSlots(data.Levels.FindSlots, Locker.slotBonus(data.Locker and data.Locker.Perks))
 end
 
 function Stats.sync(player: Player)
@@ -32,6 +39,7 @@ function Stats.sync(player: Player)
 	player:SetAttribute("Backpack", d.Levels.Backpack)
 	player:SetAttribute("FindSlots", d.Levels.FindSlots)
 	player:SetAttribute("Vacuum", d.Levels.Vacuum)
+	player:SetAttribute("Cart", d.Levels.Cart)
 	player:SetAttribute("Lock", d.Levels.Lock)
 	player:SetAttribute("Trap", d.Levels.Trap)
 	player:SetAttribute("Alarm", d.Levels.Alarm)
@@ -39,7 +47,7 @@ function Stats.sync(player: Player)
 	player:SetAttribute("Bag", d.Bag)
 	player:SetAttribute("BagCap", Stats.capacity(s))
 	player:SetAttribute("Loose", s.loose)
-	player:SetAttribute("Slots", Progression.findSlots(d.Levels.FindSlots))
+	player:SetAttribute("Slots", Stats.findSlots(d))
 	player:SetAttribute("SlotsUsed", #d.Finds)
 	player:SetAttribute("MaxDepth", d.MaxDepth)
 	player:SetAttribute("RunDepth", d.RunDepth)

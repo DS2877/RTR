@@ -16,6 +16,7 @@ local function config(name: string): any
 end
 
 local Voxel = shared("Voxel")
+local Locker = shared("Locker")
 local World = config("World")
 local Zones = config("Zones")
 local Finds = config("Finds")
@@ -265,12 +266,28 @@ function Progression.nextCost(track: string, level: number): number?
 	return nextLevel.cost
 end
 
+-- What the next level costs THIS player (Bargain Hunter perk off), or nil when maxed / not open.
+-- The shops (server) and the upgrade panels (client) both price with this.
+function Progression.upgradeCost(track: string, level: number, perks: { [string]: number }?): number?
+	local cost = Progression.nextCost(track, level)
+	if not cost then
+		return nil
+	end
+	return math.ceil(cost * Locker.priceMult(perks) - 1e-9)
+end
+
+-- Tunnel walk speed multiplier of a cart level (1 = on foot).
+function Progression.cartSpeed(level: number): number
+	return (Upgrades.Cart[level] or Upgrades.Cart[1]).value
+end
+
 function Progression.capacity(level: number): number
 	return (Upgrades.Backpack[level] or Upgrades.Backpack[1]).value
 end
 
-function Progression.findSlots(level: number): number
-	return (Upgrades.FindSlots[level] or Upgrades.FindSlots[1]).value
+-- Find slots of a FindSlots level (+ `extra` from the Deep Pockets perk).
+function Progression.findSlots(level: number, extra: number?): number
+	return (Upgrades.FindSlots[level] or Upgrades.FindSlots[1]).value + (extra or 0)
 end
 
 function Progression.vacuumRange(level: number): number

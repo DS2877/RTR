@@ -578,7 +578,7 @@ function Dig.applyHits(
 	local grid = ts.grid
 	local data = s.data
 	local seed = ts.data.Seed
-	local slots = Progression.findSlots(data.Levels.FindSlots)
+	local slots = Stats.findSlots(data)
 	local bonus = Dig.nightBonus + Dig.eventBonus + (if Dig.findBoost then Dig.findBoost(player) else 0)
 	local broken: { number } = {}
 	local damaged: { number } = {}

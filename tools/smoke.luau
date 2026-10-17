@@ -47,6 +47,7 @@ local Zones = req(Config, "Zones")
 local Economy = req(Config, "Economy")
 local Assets = req(Config, "Assets")
 local Cycle = req(Config, "Cycle")
+local Upgrades = req(Config, "Upgrades")
 
 local State = req(Server, "State")
 local Net = req(Server, "Net")
@@ -74,6 +75,9 @@ local Events = req(Services, "Events")
 local Market = req(Services, "Market")
 local Crew = req(Services, "Crew")
 local PassService = req(Services, "Pass")
+local LockerService = req(Services, "Locker")
+local Cart = req(Services, "Cart")
+local LockerRules = req(Shared, "Locker")
 
 local sent: { { name: string, args: { any } } } = {}
 Net.sink = function(_player: any, name: string, args: { any })
@@ -137,6 +141,9 @@ step("Market.start", function()
 end)
 step("Crew.start", Crew.start)
 step("Pass.start", PassService.start)
+step("Locker.start", function()
+	LockerService.start(world)
+end)
 DayNight.riot = Events.riot
 Events.onRiot = DayNight.setRiot
 Events.phase = DayNight.phase
@@ -162,6 +169,19 @@ for name, counter in world.shops do
 	check("shop prompt " .. name, counter:FindFirstChild("ShopPrompt") ~= nil)
 end
 check("dump prompt", world.dump:FindFirstChild("DumpPrompt") ~= nil)
+-- LIFER'S LOCKER: one per cell, with its prompt, standing in the cell room (not in the tunnel,
+-- not on the spawn, not in the doorway)
+for i, cell in world.cells do
+	local l = cell.locker
+	check("cell " .. i .. " locker prompt", l ~= nil and l:FindFirstChild("LockerPrompt") ~= nil)
+	if l then
+		local _, _, lz = Tunnel.toBlock(cell.frame, l.Position)
+		check("cell " .. i .. " locker in the cell room", Tunnel.cellAt(l.Position) == i and lz < 0, lz)
+		check("cell " .. i .. " locker clear of the spawn", (l.Position - cell.spawn.Position).Magnitude > 8)
+		local doorway = cell.doorBlock.Position
+		check("cell " .. i .. " locker clear of the door", math.abs(l.Position.X - doorway.X) > 8)
+	end
+end
 check("gym stations", #world.stations == #Economy.Gym, #world.stations)
 for i, cell in world.cells do
 	local frame: CFrame = cell.frame
@@ -1188,15 +1208,102 @@ check(
 	"meals end in the morning",
 	Market.powerBoost(fake) < 1.2 or s.buffs.Shake ~= nil or s.buffs.Gloves ~= nil
 )
+-- ===== LIFER'S LOCKER (perks bought with Freedom Points) =====
+local myLocker = world.cells[s.cell].locker
+fake.Position = world.shops.Workshop.Position
+check("locker: too far away", select(2, LockerService.buy(fake, "QuickHands")) == "too far")
+fake.Position = myLocker.Position
+check("locker: no FP = refused", select(2, LockerService.buy(fake, "QuickHands")) == "poor")
+check("locker: unknown perk", select(2, LockerService.buy(fake, "Nope")) == "unknown perk")
+LockerService.grant(fake, 30)
+check("locker: FP granted", s.data.Locker.FP == 30 and s.data.Locker.Earned == 30, s.data.Locker.FP)
+do
+	local power0 = Stats.power(s)
+	check("buy Quick Hands", LockerService.buy(fake, "QuickHands") == 1)
+	check("quick hands: +10% power", math.abs(Stats.power(s) / power0 - 1.1) < 1e-6, Stats.power(s) / power0)
+	local slots0 = Stats.findSlots(s.data)
+	check("buy Deep Pockets", LockerService.buy(fake, "DeepPockets") == 1)
+	check("deep pockets: +1 find slot", Stats.findSlots(s.data) == slots0 + 1, Stats.findSlots(s.data))
+	local lv = s.data.Levels.Tools
+	local full = Progression.nextCost("Tools", lv)
+	check("buy Bargain Hunter", LockerService.buy(fake, "Bargain") == 1)
+	local paid = Shop.price(fake, "Tools", lv)
+	check("bargain: -10% at the shop", full == nil or paid == math.ceil(full * 0.9), paid)
+	check("buy Bargain Hunter 2", LockerService.buy(fake, "Bargain") == 2)
+	check("a maxed perk is refused", select(2, LockerService.buy(fake, "Bargain")) == "maxed")
+	check("buy Head Start", LockerService.buy(fake, "HeadStart") == 1)
+	check("head start applies now", s.data.Levels.Tools >= 2 and s.data.Levels.Backpack >= 2)
+	check("buy Muscle Memory", LockerService.buy(fake, "MuscleMemory") == 1)
+	local spent = 0
+	for id, level in s.data.Locker.Perks do
+		local perk = LockerRules.perk(id)
+		for k = 1, level do
+			spent += perk.levels[k].cost
+		end
+	end
+	check("FP paid exactly", s.data.Locker.FP == 30 - spent, s.data.Locker.FP)
+	-- only your own locker: someone else's cell is "too far" for you
+	fake.Position = world.cells[2].locker.Position
+	check("not someone else's locker", select(2, LockerService.buy(fake, "NightOwl")) == "too far")
+	fake.Position = myLocker.Position
+	-- Night Owl: more bonus finds at night only
+	check("buy Night Owl", LockerService.buy(fake, "NightOwl") == 1)
+	check("night owl", LockerService.nightBonus(fake) > 0)
+end
+
+-- ===== CART (faster in your own tunnel only) =====
+do
+	local cartLv = s.data.Levels.Cart
+	check("cart starts on foot", cartLv == 1, cartLv)
+	local inTunnel = Tunnel.blockCenter(frame, 9, 1, 5)
+	check("on foot: no cart speed", Cart.desired(fake, s, inTunnel) == nil)
+	s.data.Levels.Cart = 3
+	local want = Cart.desired(fake, s, inTunnel)
+	check(
+		"minecart in your tunnel",
+		want == math.floor(Economy.WalkSpeed * Progression.cartSpeed(3) + 0.5),
+		want
+	)
+	check("not in the cell room", Cart.desired(fake, s, Tunnel.blockCenter(frame, 9, 1, -3)) == nil)
+	check("not in the corridor", Cart.desired(fake, s, Vector3.new(0, 3, 0)) == nil)
+	local otherTunnel = Tunnel.blockCenter(world.cells[2].frame, 9, 1, 5)
+	check("not in someone else's tunnel", Cart.desired(fake, s, otherTunnel) == nil)
+	s.carrying = { id = "x", owner = fake }
+	check("not with a stolen find", Cart.desired(fake, s, inTunnel) == nil)
+	s.carrying = nil
+	fake.Position = world.shops.Workshop.Position
+	s.data.Noodles += 2e6
+	local n0 = s.data.Noodles
+	local cost = Shop.price(fake, "Cart", 3)
+	check(
+		"buy a rail car at the Tool Crib (bargain price)",
+		Shop.buy(fake, "Cart") == 4 and s.data.Noodles == n0 - cost and cost < Upgrades.Cart[4].cost,
+		cost
+	)
+end
+
 -- ESCAPE (rebirth)
 check("no escape before the bottom", Escape.escape(fake) == "not at the bottom")
 Admin.run(fake, "bottom")
 check("escape ready", s.escapeReady)
+s.data.Strength = 5000
+local fp0 = s.data.Locker.FP
+local expectFp = LockerRules.escapePoints(s.data.PlayMinutes - s.data.Locker.RunStart)
+local Breakout0 = req(Services, "Breakout")
+Breakout0.onFinish = function(p, medal)
+	LockerService.onBreakout(p, medal)
+end
 check("escape", Escape.escape(fake) == nil and s.data.Rebirths == 1 and s.grid.count == 0)
+check("escape pays Freedom Points", s.data.Locker.FP == fp0 + expectFp, s.data.Locker.FP - fp0)
+check("a new run starts the clock", s.data.Locker.RunStart == s.data.PlayMinutes)
+check("escape keeps the perks", s.data.Locker.Perks.QuickHands == 1 and s.data.Locker.Perks.Bargain == 2)
+check("muscle memory keeps 10% strength", s.data.Strength == 500, s.data.Strength)
+check("head start: spoon + sock", s.data.Levels.Tools == 2 and s.data.Levels.Backpack == 2)
+check("escape resets the cart", s.data.Levels.Cart == 1, s.data.Levels.Cart)
 check("escape keeps the record", s.data.MaxDepth >= World.TunnelDepth - 1)
 check("a new run starts at depth 0", s.data.RunDepth == 0, s.data.RunDepth)
 check("escape keeps the collection", next(s.data.Found) ~= nil)
-check("escape resets tools", s.data.Levels.Tools == 1 and s.data.Noodles == 0)
+check("escape resets tools (to the head start)", s.data.Levels.Brushes == 1 and s.data.Noodles == 0)
 check("decor back in the box", #s.data.Placed == 0 and s.data.Decor.Lamp == 1)
 check("rebirth multiplier", Progression.punchPower(10, 1, 1) > Progression.punchPower(10, 1, 0))
 
@@ -1289,6 +1396,17 @@ do
 	check("reaching the car finishes the run", run.done and count("Breakout") > finishes)
 	local medal = Rules.medal(60, 3)
 	check("the medal pays its Noodles", s.data.Noodles - noodles == medal.cash, s.data.Noodles - noodles)
+	local fpCard: any = nil
+	for _, m in sent do
+		if m.name == "Freedom" then
+			fpCard = m.args
+		end
+	end
+	check(
+		"the FP card after the run",
+		fpCard ~= nil and fpCard[1] == expectFp and fpCard[3] == false,
+		fpCard and fpCard[1]
+	)
 	check(
 		"breakout counted",
 		s.data.Stats.Breakouts == 1 and s.data.Stats.BestEscape > 0,
@@ -1304,7 +1422,18 @@ do
 	at(Rules.Car.x, Y + 3, Rules.Car.z)
 	Breakout.check(fake, 0)
 	check("practice pays nothing", p.done and s.data.Noodles == n2)
+	check("practice earns no FP", count("Freedom") == 1, count("Freedom"))
 	task.wait(0.2)
+	-- a GOLD breakout adds its point on top of the escape's
+	local before = s.data.Locker.FP
+	local base = LockerService.onEscape(fake)
+	LockerService.onBreakout(fake, "gold")
+	check(
+		"gold breakout +1 FP",
+		s.data.Locker.FP == before + base + LockerRules.medalPoints("gold"),
+		s.data.Locker.FP - before
+	)
+	Breakout0.onFinish = nil
 end
 
 Cells.release(fake)

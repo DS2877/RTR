@@ -36,7 +36,9 @@ end
 Shop.catalogOpen = nil :: ((player: Player) -> boolean)?
 
 function Shop.price(player: Player, track: string, level: number): (number?, boolean)
-	local cost = Progression.nextCost(track, level)
+	local s = State.get(player)
+	-- (the Bargain Hunter perk; the client's panels price with the same function)
+	local cost = Progression.upgradeCost(track, level, s and s.data.Locker.Perks)
 	local root = State.root(player)
 	local counter = world and world.shops[shopFor(track) or ""]
 	local near = root ~= nil

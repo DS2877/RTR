@@ -228,7 +228,7 @@ local function pickups()
 						d.value -= v
 						changed = true
 					end
-					local slots = Progression.findSlots(s.data.Levels.FindSlots)
+					local slots = Stats.findSlots(s.data)
 					while #d.finds > 0 and #s.data.Finds < slots do
 						local id = table.remove(d.finds) :: string
 						table.insert(s.data.Finds, id)

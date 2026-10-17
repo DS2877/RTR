@@ -18,6 +18,8 @@ local Tunnel = require(Shared.Tunnel)
 local Remotes = require(Shared.Remotes)
 local Format = require(Shared.Format)
 local Progression = require(Shared.Progression)
+local LockerRules = require(Shared.Locker)
+local LockerConfig = require(Shared.Config.Locker)
 
 local Client = script.Parent.Parent
 local UI = require(Client.Util.UI)
@@ -412,7 +414,7 @@ function Moments.start()
 		"🚨 ESCAPE?",
 		Color3.fromRGB(255, 110, 80),
 		Color3.fromRGB(110, 20, 10),
-		Vector2.new(560, 310)
+		Vector2.new(560, 350)
 	)
 	UI.new("UIListLayout", {
 		Padding = UDim.new(0, 6),
@@ -428,8 +430,8 @@ function Moments.start()
 		local rebirths = (player:GetAttribute("Rebirths") or 0) :: number
 		local nextMult = Progression.rebirthMultiplier(rebirths + 1)
 		escapePanel.subtitle.Text = "then run for it: THE BREAKOUT"
-		local function line(order: number, kind: string, text: string, color: Color3?)
-			local r = Panel.row(escapePanel.body, order, 54)
+		local function line(order: number, kind: string, text: string, color: Color3?, height: number?)
+			local r = Panel.row(escapePanel.body, order, height or 54)
 			Panel.text(kind, text, {
 				Position = UDim2.fromOffset(12, 0),
 				Size = UDim2.new(1, -24, 1, 0),
@@ -441,7 +443,7 @@ function Moments.start()
 			1,
 			"title",
 			string.format(
-				"✅ KEEP: x%s power & Noodles forever, depth record, collection, decor, outfits, Prison Pass",
+				"✅ KEEP: x%s power & Noodles forever, Locker perks, depth record, collection, decor, outfits, Prison Pass",
 				tostring(nextMult)
 			),
 			Color3.fromRGB(140, 240, 150)
@@ -460,7 +462,27 @@ function Moments.start()
 			),
 			Color3.fromRGB(255, 150, 130)
 		)
-		local r = Panel.row(escapePanel.body, 3, 58)
+		-- the Freedom Points this escape earns (the same rule the server uses: Shared/Locker)
+		local played = player:GetAttribute("PlayMinutes")
+		local runStart = player:GetAttribute("RunStart")
+		local runMinutes = (if typeof(played) == "number" then played else 0)
+			- (if typeof(runStart) == "number" then runStart else 0)
+		local points = LockerRules.escapePoints(runMinutes)
+		local gold = LockerConfig.Points.Gold
+		line(
+			3,
+			"title",
+			string.format(
+				"🗝️ EARN: +%d Freedom Point%s%s · +%d more for a GOLD breakout",
+				points,
+				if points == 1 then "" else "s",
+				if points > LockerConfig.Points.Base then " (fast run!)" else "",
+				gold
+			),
+			Color3.fromRGB(255, 210, 110),
+			44
+		)
+		local r = Panel.row(escapePanel.body, 4, 58)
 		r.BackgroundTransparency = 1
 		local go = Panel.button({
 			Position = UDim2.new(0, 4, 0.5, 0),

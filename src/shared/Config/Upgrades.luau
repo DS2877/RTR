@@ -1,13 +1,14 @@
 --!strict
 -- Every upgrade track. Level 1 is what a new prisoner starts with (cost 0).
--- Workshop: Tools, Brushes. Commissary: Backpack, FindSlots, Vacuum.
+-- Workshop (Tool Crib): Tools, Brushes, Cart. Commissary: Backpack, FindSlots, Vacuum.
 -- `Open` = highest level that can be bought right now (raised with each milestone).
 
 export type Level = {
 	name: string,
 	emoji: string,
 	cost: number,
-	value: number, -- tool: punch multiplier, backpack: rubble capacity, slots: find slots, vacuum: studs
+	value: number, -- tool: punch multiplier, backpack: rubble capacity, slots: find slots, vacuum: studs,
+	-- cart: tunnel walk speed multiplier
 }
 
 export type Brush = {
@@ -86,6 +87,16 @@ local Upgrades = {
 		{ name = "Tornado", emoji = "🌪️", cost = 8000000, value = 50 },
 	} :: { Level },
 
+	-- CART: how fast you move inside YOUR OWN tunnel (value = walk speed multiplier; Services/Cart
+	-- sets it, never in the cell, the corridors, other tunnels, THE BREAKOUT or with a stolen find)
+	Cart = {
+		{ name = "On Foot", emoji = "🚶", cost = 0, value = 1 },
+		{ name = "Wheelbarrow", emoji = "🛞", cost = 2000, value = 1.25 },
+		{ name = "Minecart", emoji = "🚃", cost = 40000, value = 1.6 },
+		{ name = "Rail Car", emoji = "🚋", cost = 1500000, value = 2 },
+		{ name = "Rocket Cart", emoji = "🚀", cost = 60000000, value = 2.5 },
+	} :: { Level },
+
 	-- cell defenses against raids (Commissary). Lock: value = seconds to pick the lock.
 	Lock = {
 		{ name = "No Lock", emoji = "🚪", cost = 0, value = 2 },
@@ -111,6 +122,7 @@ local Upgrades = {
 		Backpack = 9,
 		FindSlots = 6,
 		Vacuum = 6,
+		Cart = 5,
 		Lock = 4,
 		Trap = 2,
 		Alarm = 2,
@@ -118,7 +130,7 @@ local Upgrades = {
 
 	-- which shop sells which track
 	Shops = {
-		Workshop = { "Tools", "Brushes" },
+		Workshop = { "Tools", "Brushes", "Cart" },
 		Commissary = { "Backpack", "FindSlots", "Vacuum", "Lock", "Trap", "Alarm" },
 	} :: { [string]: { string } },
 }

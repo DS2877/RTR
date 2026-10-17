@@ -62,7 +62,7 @@ local function run(passes: boolean): Result
 	local maxDepth = if ALL then World.TunnelDepth else Progression.diggableDepth()
 
 	local t, noodles, strength = 0, Economy.StartingNoodles, Economy.StartingStrength
-	local lv = { Tools = 1, Brushes = 1, Backpack = 1, FindSlots = 1, Vacuum = 1 }
+	local lv = { Tools = 1, Brushes = 1, Backpack = 1, FindSlots = 1, Vacuum = 1, Cart = 1 }
 	local depth, layerLeft = 0, CROSS
 	local bag, bagValue, findValue, findCount = 0, 0, 0, 0
 	local reached: { [number]: number } = { [1] = 0 }
@@ -163,8 +163,10 @@ local function run(passes: boolean): Result
 		if bag >= cap or (bag >= 10 and noodles + (bagValue + findValue) * noodleMult >= goal) then
 			-- trip: out of the tunnel, Yard (dump + gym), Common Room (sell + shop), back
 			-- (the very first trip goes straight to the shop: nobody lifts before their first upgrade)
+			-- the cart only speeds up the part inside your own tunnel
 			local gym = if firstBuy then (t - lastTrip) * GYM_SHARE else 0
-			t += (depth * World.BlockSize * 2 + BASE_TRIP * 2) / WALK + gym + SHOP_TIME
+			local tunnelWalk = depth * World.BlockSize * 2 / (WALK * Progression.cartSpeed(lv.Cart))
+			t += tunnelWalk + BASE_TRIP * 2 / WALK + gym + SHOP_TIME
 			lastTrip = t
 			noodles += bagValue * noodleMult + findValue * noodleMult
 			bag, bagValue, findValue, findCount = 0, 0, 0, 0

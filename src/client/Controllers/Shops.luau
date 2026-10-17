@@ -11,6 +11,7 @@ local Economy = require(Shared.Config.Economy)
 local Finds = require(Shared.Config.Finds)
 local Rarity = require(Shared.Config.Rarity)
 local Progression = require(Shared.Progression)
+local Locker = require(Shared.Locker)
 local Remotes = require(Shared.Remotes)
 local Format = require(Shared.Format)
 
@@ -29,15 +30,21 @@ Shops.openDecor = nil :: (() -> ())?
 local catalog = false
 local upgradePanels: { [string]: any } = {}
 
+local player = Players.LocalPlayer
+
+-- the same price the server charges (Shop.price): Bargain Hunter perk off, catalog markup on top
 local function price(track: string, level: number): number?
-	local cost = Progression.nextCost(track, level)
+	local bargain = player:GetAttribute(Locker.attr("Bargain"))
+	local cost = Progression.upgradeCost(
+		track,
+		level,
+		{ Bargain = if typeof(bargain) == "number" then bargain else 0 }
+	)
 	if cost and catalog then
 		return math.ceil(cost * Economy.CatalogMarkup)
 	end
 	return cost
 end
-
-local player = Players.LocalPlayer
 
 local TRACK_INFO: { [string]: { title: string, unit: (v: any) -> string } } = {
 	Tools = {
@@ -68,6 +75,12 @@ local TRACK_INFO: { [string]: { title: string, unit: (v: any) -> string } } = {
 		title = "VACUUM",
 		unit = function(v)
 			return v.value .. " studs range"
+		end,
+	},
+	Cart = {
+		title = "CART",
+		unit = function(v)
+			return if v.value > 1 then "x" .. v.value .. " speed in your tunnel" else "walking"
 		end,
 	},
 	Lock = {
@@ -218,8 +231,8 @@ local function upgradePanel(shop: string, title: string, color: Color3, dark: Co
 		end
 	end
 	panel.onOpen = render
-	for _, track in Upgrades.Shops[shop] do
-		player:GetAttributeChangedSignal(track):Connect(function()
+	for _, attr in { Locker.attr("Bargain"), table.unpack(Upgrades.Shops[shop]) } do
+		player:GetAttributeChangedSignal(attr):Connect(function()
 			if panel.isOpen() then
 				render()
 			end

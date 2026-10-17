@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ProfileStore = require(script.Parent.Parent.Packages.ProfileStore)
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local Finds = require(ReplicatedStorage.Shared.Config.Finds)
+local Locker = require(ReplicatedStorage.Shared.Locker)
 
 export type PlayerData = {
 	Version: number,
@@ -20,6 +21,7 @@ export type PlayerData = {
 		Backpack: number,
 		FindSlots: number,
 		Vacuum: number,
+		Cart: number,
 		Lock: number,
 		Trap: number,
 		Alarm: number,
@@ -69,6 +71,14 @@ export type PlayerData = {
 		Free: { [string]: boolean },
 		Paid: { [string]: boolean },
 	},
+	-- LIFER'S LOCKER: Freedom Points (FP) to spend, FP ever earned, the perks bought (id -> level)
+	-- and PlayMinutes when this run started (the fast-escape bonus)
+	Locker: {
+		FP: number,
+		Earned: number,
+		Perks: { [string]: number },
+		RunStart: number,
+	},
 	Stats: {
 		Punches: number,
 		Blocks: number,
@@ -101,6 +111,7 @@ local TEMPLATE: PlayerData = {
 		Backpack = 1,
 		FindSlots = 1,
 		Vacuum = 1,
+		Cart = 1,
 		Lock = 1,
 		Trap = 1,
 		Alarm = 1,
@@ -135,6 +146,7 @@ local TEMPLATE: PlayerData = {
 	StarterBought = false,
 	BuffsAt = 0,
 	Pass = { Season = 0, Xp = 0, Premium = false, Free = {}, Paid = {} },
+	Locker = { FP = 0, Earned = 0, Perks = {}, RunStart = 0 },
 	Stats = {
 		Punches = 0,
 		Blocks = 0,
@@ -196,6 +208,17 @@ function Data.sanitize(data: PlayerData)
 		(data :: any)[key] = kept
 	end
 	data.Noodles = math.max(0, data.Noodles)
+	-- the locker: whole, non-negative numbers and only perks that exist
+	local locker = (data :: any).Locker
+	if typeof(locker) ~= "table" then
+		locker = {};
+		(data :: any).Locker = locker
+	end
+	for _, key in { "FP", "Earned", "RunStart" } do
+		local v = locker[key]
+		locker[key] = if typeof(v) == "number" and v == v then math.max(0, math.floor(v)) else 0
+	end
+	locker.Perks = Locker.sanitize(locker.Perks)
 end
 
 function Data.migrate(data: PlayerData)

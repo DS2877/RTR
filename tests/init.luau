@@ -15,6 +15,7 @@ local suites = {
 	{ name = "Missions", run = require("./Missions.spec") },
 	{ name = "Breakout", run = require("./Breakout.spec") },
 	{ name = "Pass", run = require("./Pass.spec") },
+	{ name = "Locker", run = require("./Locker.spec") },
 }
 
 local failures = 0
