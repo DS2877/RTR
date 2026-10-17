@@ -8,6 +8,33 @@ data blandas aldrig in.
 
 ## ✅ Klart
 
+### Admin-panelen + uppdaterad tutorial (17 okt)
+- **Inga chattkommandon längre.** Allt finns i ADMIN-panelen (🛠️ uppe till vänster), uppdelat
+  i sektioner:
+  - 💰 Pengar och styrka (+1M/+1B/+1T, 💪 1K/100K/10M)
+  - ⛏️ Hoppa till zon 2–10
+  - 🏃 Rymning och progression (Bottom→Escape, Breakout, 🗝️ +10 FP, 🚀 Max cart,
+    🎫 +1 Pass tier, 📅 Next day, 🧨 x5, fyll ryggsäcken)
+  - 🌙 Dag och natt (Day, Night, Roll call, Inspect me)
+  - 🎲 Alla events
+  - 🛠️ Verktyg (Stress dig, Reset tunnel, Perf, Tour, Photo, RESET DATA)
+  RESET DATA kräver två tryck. Ett test i CI kontrollerar att varje kommando har en knapp och att
+  varje knapp har ett kommando.
+- **Tutorial:** rundturen har 6 stopp med uppdaterade texter (kombo, dammsugare, dumpen och
+  The Fence, Spoon → verktyg, penslar och cart, natten, valvdörrar och rymning).
+- **Engångstips** (ett litet kort under notiserna, visas en gång per spelare precis när det blir
+  relevant, försvinner vid tryck eller efter 6 s):
+  - full ryggsäck → dumpen
+  - första fyndet → The Fence
+  - första dumpen → 📋 Jobs och inloggningsstreaken
+  - första natten → vad natten är till för
+  - andra natten → 📦 CATALOG
+  - zon 2 → 👥 Crew
+  Tipsen väntar medan rundturen spelas.
+- **Testa på iPhone:** öppna ADMIN och scrolla igenom sektionerna. Kör ADMIN → 🎬 Tour. Med ett
+  nytt konto (ADMIN → RESET DATA, tryck två gånger): fyll ryggsäcken, hitta ett fynd, dumpa och
+  vänta på natten. Ett tips per sak ska dyka upp.
+
 ### Roligare, tydligare, mer att jaga (17 okt, kvällen)
 - **Köpögonblicket:** köper du ett verktyg, en pensel eller en ryggsäck poppar den stort på
   skärmen med vad den gör ("BRICK 18 → 9 hits"). Första slaget med det nya verktyget smäller
@@ -49,8 +76,8 @@ data blandas aldrig in.
   - Köp ett verktyg och titta på mitten av skärmen. Slå sönder ett block och känn pausen.
   - Sug in grus och se "+🍜". Titta på den lilla texten efter nudelsumman.
   - Gå ner i olika zoner och titta på färgerna.
-  - Öppna skåpet i cellen (ADMIN-chatt `!fp 10`) och köp en förmån.
-  - Köp Wheelbarrow (eller `!cart 5`) och spring i tunneln.
+  - Öppna skåpet i cellen (ADMIN → 🗝️ +10 FP) och köp en förmån.
+  - Köp Wheelbarrow (eller ADMIN → 🚀 Max cart) och spring i tunneln.
   - Öppna Laundry och byt flik.
   - Öppna Jobs och titta på kalendern (ADMIN → 📅 Next day sex gånger ger dag 7 och Lifer).
 
@@ -207,8 +234,8 @@ och speldesignen (tempo, ekonomi, retention, intäkter). Allt viktigt är åtgä
   slagtakt, plats i ryggsäcken). Att radera block på klienten ger ingenting.
 - **Admin (för iPhone-test):** ADMIN-knapp uppe till höger: +1M/+1B Noodles, styrka 1K/100K,
   hoppa till zon 2/3, fyll ryggsäck, stresstest-grävning, återställ tunnel, prestandamätare
-  (FPS, antal voxel-delar, smulor), återställ all data. Samma kommandon i chatten: `!noodles 1e6`,
-  `!strength 500`, `!zone 3`, `!resettunnel`, `!stress`, `!fill`, `!reset`.
+  (FPS, antal voxel-delar, smulor), återställ all data. (Inga chattkommandon: allt finns i
+  ADMIN-panelen.)
 
 ### M2 – fängelset
 - **Dag/natt** för hela servern: DAG 3 min, NATT 5 min (Config/Cycle). Stor klocka uppe till höger

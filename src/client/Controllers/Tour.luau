@@ -62,7 +62,8 @@ local function cellView(eye: Vector3, at: Vector3): () -> CFrame?
 	end
 end
 
--- short on purpose: the rest (Fence, Gym, Mess Hall, Crew...) explains itself as you meet it
+-- short on purpose: the rest (Fence, Jobs, night, Crew, the Canteen...) comes as one-time tips the
+-- moment it matters (Config/Tips)
 local STOPS: { Stop } = {
 	{
 		title = "Welcome, inmate!",
@@ -76,26 +77,26 @@ local STOPS: { Stop } = {
 	},
 	{
 		title = "🧱 Rubble Dump",
-		body = "Backpack full? Dump it here in the Yard for 🍜 Noodles. Sell finds at The Fence next door.",
+		body = "Backpack full? Dump it here in the Yard for 🍜 Noodles. Finds sell at The Fence.",
 		view = function()
 			return lookAt(CollectionService:GetTagged("Dump")[1] :: BasePart?, 20, 12)
 		end,
 	},
 	{
 		title = "🔨 Tool Crib",
-		body = "Buy a 🥄 Spoon first: it punches twice as hard! Then better tools, bags and vacuums.",
+		body = "Buy a 🥄 Spoon first: it hits twice as hard! Then bigger tools, brushes and a cart.",
 		view = function()
 			return lookAt(shop("Workshop"), 16, 7)
 		end,
 	},
 	{
 		title = "🌙 Lights out",
-		body = "At night the doors lock and guards check the cells: cover the hole and get in bed in time!",
+		body = "At night the doors lock: dig for bonus finds, and hide in bed when the guard comes!",
 		view = cellView(Vector3.new(-12, 8, 16), Vector3.new(-6, 2, 9)),
 	},
 	{
 		title = "🏃 600 m to freedom",
-		body = "Break through 10 zones to the bottom and ESCAPE. Good luck!",
+		body = "Crack the vault door of each zone, reach the bottom and ESCAPE. Every escape makes you stronger!",
 		view = cellView(Vector3.new(0, 7, 12), Vector3.new(0, 4, -6)),
 	},
 }

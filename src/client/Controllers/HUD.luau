@@ -542,46 +542,85 @@ local function buildAdmin(parent: Instance)
 		Color3.fromRGB(120, 20, 30),
 		Vector2.new(560, 320)
 	)
-	local grid = UI.new("UIGridLayout", {
-		CellSize = UDim2.fromOffset(122, 40),
-		CellPadding = UDim2.fromOffset(8, 8),
+	UI.new("UIListLayout", {
+		Padding = UDim.new(0, 6),
+		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = panel.body,
 	})
-	local _ = grid
 	local perfOn = false
-	local cmds: { { any } } = {
-		{ "+1M 🍜", "noodles", 1e6 },
-		{ "+1B 🍜", "noodles", 1e9 },
-		{ "💪 1K", "strength", 1000 },
-		{ "💪 100K", "strength", 1e5 },
-		{ "Zone 2", "zone", 2 },
-		{ "Zone 3", "zone", 3 },
-		{ "Zone 4", "zone", 4 },
-		{ "Zone 6", "zone", 6 },
-		{ "Fill bag", "fill", nil },
-		{ "Stress dig", "stress", nil },
-		{ "Reset tunnel", "resettunnel", nil },
-		{ "☀️ Day", "day", nil },
-		{ "🌙 Night", "night", nil },
-		{ "📋 Roll call", "rollcall", nil },
-		{ "Zone 10", "zone", 10 },
-		{ "Bottom→Escape", "bottom", nil },
-		{ "🏃 Breakout", "breakout", nil },
-		{ "👮 Inspect me", "inspect", nil },
-		{ "⚡ Blackout", "blackout", nil },
-		{ "🔓 Riot", "riot", nil },
-		{ "🧹 Inspection", "inspection", nil },
-		{ "💰 Treasure", "treasure", nil },
-		{ "💎 Gold rush", "goldrush", nil },
-		{ "🍜 Payday", "payday", nil },
-		{ "🌋 Quake", "earthquake", nil },
-		{ "📦 Supply", "supplydrop", nil },
-		{ "🧨 x5", "dynamite", 5 },
-		{ "📅 Next day", "daily", nil },
-		{ "Perf", "perf", nil },
-		{ "🎬 Tour", "tour", nil },
-		{ "📸 Photo", "photo", nil },
-		{ "RESET DATA", "reset", nil },
+	-- every admin command lives here (there are no chat commands), grouped so it's quick to find
+	local sections: { { title: string, cmds: { { any } } } } = {
+		{
+			title = "💰 MONEY + STRENGTH",
+			cmds = {
+				{ "+1M 🍜", "noodles", 1e6 },
+				{ "+1B 🍜", "noodles", 1e9 },
+				{ "+1T 🍜", "noodles", 1e12 },
+				{ "💪 1K", "strength", 1000 },
+				{ "💪 100K", "strength", 1e5 },
+				{ "💪 10M", "strength", 1e7 },
+			},
+		},
+		{
+			title = "⛏️ JUMP TO ZONE",
+			cmds = {
+				{ "Zone 2", "zone", 2 },
+				{ "Zone 3", "zone", 3 },
+				{ "Zone 4", "zone", 4 },
+				{ "Zone 5", "zone", 5 },
+				{ "Zone 6", "zone", 6 },
+				{ "Zone 7", "zone", 7 },
+				{ "Zone 8", "zone", 8 },
+				{ "Zone 9", "zone", 9 },
+				{ "Zone 10", "zone", 10 },
+			},
+		},
+		{
+			title = "🏃 ESCAPE + PROGRESS",
+			cmds = {
+				{ "Bottom→Escape", "bottom", nil },
+				{ "🏃 Breakout", "breakout", nil },
+				{ "🗝️ +10 FP", "fp", 10 },
+				{ "🚀 Max cart", "cart", 5 },
+				{ "🎫 +1 Pass tier", "passtier", nil },
+				{ "📅 Next day", "daily", nil },
+				{ "🧨 x5", "dynamite", 5 },
+				{ "🎒 Fill bag", "fill", nil },
+			},
+		},
+		{
+			title = "🌙 DAY + NIGHT",
+			cmds = {
+				{ "☀️ Day", "day", nil },
+				{ "🌙 Night", "night", nil },
+				{ "📋 Roll call", "rollcall", nil },
+				{ "👮 Inspect me", "inspect", nil },
+			},
+		},
+		{
+			title = "🎲 EVENTS",
+			cmds = {
+				{ "⚡ Blackout", "blackout", nil },
+				{ "🔓 Riot", "riot", nil },
+				{ "🧹 Inspection", "inspection", nil },
+				{ "💰 Treasure", "treasure", nil },
+				{ "💎 Gold rush", "goldrush", nil },
+				{ "🍜 Payday", "payday", nil },
+				{ "🌋 Quake", "earthquake", nil },
+				{ "📦 Supply", "supplydrop", nil },
+			},
+		},
+		{
+			title = "🛠️ TOOLS",
+			cmds = {
+				{ "Stress dig", "stress", nil },
+				{ "Reset tunnel", "resettunnel", nil },
+				{ "Perf", "perf", nil },
+				{ "🎬 Tour", "tour", nil },
+				{ "📸 Photo", "photo", nil },
+				{ "RESET DATA", "reset", nil },
+			},
+		},
 	}
 	local remote = Remotes.get(Remotes.Names.AdminCmd)
 	local perf = UI.label({
@@ -595,16 +634,62 @@ local function buildAdmin(parent: Instance)
 		Parent = parent,
 	})
 	UI.textStroke(DARK, 2).Parent = perf
-	for _, c in cmds do
+	local order = 0
+	local function section(title: string, count: number): Frame
+		order += 1
+		Panel.text("note", title, {
+			LayoutOrder = order,
+			Size = UDim2.new(1, -6, 0, 20),
+			Parent = panel.body,
+		})
+		order += 1
+		local rows = math.ceil(count / 4)
+		local box: Frame = UI.new("Frame", {
+			LayoutOrder = order,
+			Size = UDim2.new(1, -6, 0, rows * 48),
+			BackgroundTransparency = 1,
+			Parent = panel.body,
+		}, {
+			UI.new("UIGridLayout", {
+				CellSize = UDim2.new(0.25, -6, 0, 44),
+				CellPadding = UDim2.fromOffset(6, 4),
+				SortOrder = Enum.SortOrder.LayoutOrder,
+			}),
+		})
+		return box
+	end
+	local all: { { any } } = {}
+	for _, sec in sections do
+		local box = section(sec.title, #sec.cmds)
+		for i, c in sec.cmds do
+			table.insert(all, { c, box, i })
+		end
+	end
+	for _, entry in all do
+		local c, box, i = entry[1], entry[2], entry[3]
+		local danger = c[2] == "reset"
 		local b = Panel.button(
-			{ Size = UDim2.fromOffset(122, 40) },
-			Color3.fromRGB(255, 120, 120),
+			{ LayoutOrder = i },
+			if danger then Color3.fromRGB(200, 40, 40) else Color3.fromRGB(255, 120, 120),
 			Color3.fromRGB(120, 20, 30),
 			c[1] :: string
 		)
-		b.Parent = panel.body
+		b.Parent = box
+		local armedUntil = 0
 		b.Activated:Connect(function()
 			Sound.play("Click")
+			if danger and os.clock() > armedUntil then
+				-- wiping your data takes two taps
+				armedUntil = os.clock() + 2.5
+				local label = b:FindFirstChildOfClass("TextLabel")
+				if label then
+					label.Text = "TAP AGAIN"
+					task.delay(2.5, function()
+						label.Text = c[1] :: string
+					end)
+				end
+				return
+			end
 			if c[2] == "tour" then
 				panel.setOpen(false)
 				if HUD.replayTour then

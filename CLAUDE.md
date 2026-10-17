@@ -32,7 +32,8 @@ upgrade -> punch harder -> new zone. The punch and the crumble must feel amazing
 6. After every change: update STATUS.md in Swedish (klart / hur du testar på iPhone / saknas).
 7. Mobile first: big thumb buttons in the lower half, nothing needs hover or keyboard. Must run smoothly on
    an iPhone 11: at most ~3000 voxel parts and 150 debris cubes per client, 50+ fps.
-8. Admin commands (admins only) for phone testing: ADMIN button in the HUD (and `!cmd` in chat): give
+8. Admin commands (admins only) for phone testing: ALL of them are buttons in the ADMIN dashboard in the
+   HUD (no chat commands; every new command gets a button there): give
    Noodles, set strength, jump to zone N, force day/night, reset my tunnel, stress dig, guard
    inspection, events.
 

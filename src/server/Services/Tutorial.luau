@@ -2,13 +2,15 @@
 -- Onboarding: the first-join TOUR (client/Controllers/Tour: a short camera tour of everything that
 -- matters, TourDone in the profile, "TourDone" attribute) and the onboarding funnel logged to
 -- AnalyticsService (PUNCH -> VACUUM -> DUMP -> SELL -> UPGRADE, TutorialStep in the profile).
--- Nothing is shown during play: no arrows, no step boxes.
+-- During play: no arrows, no step boxes. Only one-time TIPS (Config/Tips), each shown once per
+-- prisoner the moment it matters (Tutorial.tip, saved in the profile's TipsSeen).
 
 local AnalyticsService = game:GetService("AnalyticsService")
 
 local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
 local Remotes = require(game:GetService("ReplicatedStorage").Shared.Remotes)
+local Tips = require(game:GetService("ReplicatedStorage").Shared.Config.Tips)
 
 local Tutorial = {}
 
@@ -85,6 +87,26 @@ function Tutorial.did(player: Player, what: string)
 	d.TutorialStep = step
 	sync(player, step)
 	Tutorial.funnel(player, step, if step >= DONE then "TutorialDone" else Tutorial.Steps[step])
+end
+
+-- A one-time tip (Config/Tips) for this prisoner; false if already seen / unknown.
+function Tutorial.tip(player: Player, id: string): boolean
+	local s = State.get(player)
+	if not s or not Tips[id] then
+		return false
+	end
+	local d = s.data :: any
+	local seen = d.TipsSeen
+	if typeof(seen) ~= "table" then
+		seen = {}
+		d.TipsSeen = seen
+	end
+	if seen[id] then
+		return false
+	end
+	seen[id] = true
+	Net.fire(player, Remotes.Names.Tip, id)
+	return true
 end
 
 function Tutorial.onJoin(player: Player)

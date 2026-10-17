@@ -64,6 +64,7 @@ Remotes.Names = {
 	Raid = "Raid", -- (kind: "alarm" | "stolen" | "carry" | "home" | "dropped", text, userId?)
 	Boom = "Boom", -- (owner: number, x, y, z) dynamite went off
 	Crit = "Crit", -- (x, y, z, owner) your punch was a CRIT (owner = whose tunnel)
+	Tip = "Tip", -- (id: string) a one-time tip (Config/Tips)
 	PassTier = "PassTier", -- (tier: number) you reached a new Prison Pass tier
 	PassClaimed = "PassClaimed", -- (tier: number, premium: boolean) a pass reward was given
 	CrewInvited = "CrewInvited", -- (hostId: number, hostName: string, friend: boolean) an invite

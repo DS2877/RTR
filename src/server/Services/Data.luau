@@ -64,6 +64,7 @@ export type PlayerData = {
 	StarterBought: boolean, -- the one-time Starter Pack
 	Pity: { [string]: number }, -- duplicate finds in a row per zone ("1".."10")
 	ReferredBy: number, -- the friend whose invite brought you here (0 = none; rewarded once)
+	TipsSeen: { [string]: boolean }, -- one-time tips already shown (Config/Tips)
 	BuffsAt: number, -- when Buffs was written
 	-- PRISON PASS: this season's XP, premium, claimed tiers ("1".."30" -> true)
 	Pass: {
@@ -148,6 +149,7 @@ local TEMPLATE: PlayerData = {
 	StarterBought = false,
 	Pity = {},
 	ReferredBy = 0,
+	TipsSeen = {},
 	BuffsAt = 0,
 	Pass = { Season = 0, Xp = 0, Premium = false, Free = {}, Paid = {} },
 	Locker = { FP = 0, Earned = 0, Perks = {}, RunStart = 0 },

@@ -134,6 +134,7 @@ Events.startService()
 Market.start(world)
 Dig.onPiles = Loot.sendPiles
 Dig.onFind = function(player, id, firstTime)
+	Tutorial.tip(player, "FirstFind")
 	Collection.onFound(player, id, firstTime)
 	Missions.count(player, "Finds", 1)
 end
@@ -162,6 +163,15 @@ Loot.canFlush = function(): boolean
 end
 DayNight.onPhase = function(p)
 	Loot.setFlush(p == "Night" or p == "LightsOut")
+	if p == "Night" then
+		-- first lockdown: what night is for; the one after: the cell catalog
+		for player, s in State.all() do
+			local seen = (s.data :: any).TipsSeen
+			if not Tutorial.tip(player, "Night") and seen and seen.Night then
+				Tutorial.tip(player, "Catalog")
+			end
+		end
+	end
 end
 Events.onRiot = function(on)
 	DayNight.setRiot(on)
@@ -272,9 +282,14 @@ Gym.onLift = function(player, q)
 end
 Loot.onVacuum = function(player)
 	Tutorial.did(player, "Vacuum")
+	local s = State.get(player)
+	if s and s.data.Bag >= Stats.capacity(s) then
+		Tutorial.tip(player, "BagFull")
+	end
 end
 Loot.onDump = function(player, pay)
 	Tutorial.did(player, "Dump")
+	Tutorial.tip(player, "FirstDump")
 	Tutorial.event(player, "Dump", pay)
 	if pay > 0 then
 		Missions.count(player, "Dumps", 1)
@@ -286,6 +301,9 @@ Loot.onSell = function(player, total, count)
 	Tutorial.event(player, "Sell", total)
 end
 Dig.onZone = function(player, zone)
+	if zone >= 2 then
+		Tutorial.tip(player, "Zone2")
+	end
 	Tutorial.zone(player, zone)
 	if zone >= 5 then
 		Badges.award(player, "Zone5")

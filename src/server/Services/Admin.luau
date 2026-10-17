@@ -1,8 +1,7 @@
 --!strict
--- Admin commands for phone testing. The ADMIN button in the HUD (admins only) sends AdminCmd;
--- the same commands work in chat with "!": !noodles 1e6  !strength 500  !zone 3  !resettunnel
--- !stress  !reset  !day  !night  !inspect  !blackout !riot !inspection !treasure  !dynamite 5  !bottom
--- !fp 10 (Freedom Points for the Lifer's Locker)  !cart 5 (cart level)
+-- Admin commands for phone testing: the ADMIN dashboard in the HUD (admins only, Controllers/HUD
+-- buildAdmin) sends AdminCmd (cmd, arg); every command has a button there. There are no chat
+-- commands.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -32,6 +31,8 @@ local Market = require(script.Parent.Market)
 local Locker = require(script.Parent.Locker)
 local Upgrades = require(Shared.Config.Upgrades)
 local Rewards = require(script.Parent.Rewards)
+local Pass = require(script.Parent.Pass)
+local PassConfig = require(Shared.Config.Pass)
 
 local Admin = {}
 
@@ -122,6 +123,8 @@ function Admin.run(player: Player, cmd: string, arg: number?): boolean
 	elseif cmd == "cart" then
 		s.data.Levels.Cart = math.clamp(math.floor(arg or #Upgrades.Cart), 1, #Upgrades.Cart)
 		Stats.sync(player)
+	elseif cmd == "passtier" then
+		Pass.addXp(player, PassConfig.TierXp)
 	elseif cmd == "daily" then
 		-- the next day of the streak now (as if you'd claimed yesterday): tests the calendar card
 		s.data.Daily.Day = Rewards.today() - 1
@@ -156,19 +159,9 @@ function Admin.start()
 			Admin.run(player, cmd, arg)
 		end
 	end)
+	-- (the attribute shows the ADMIN dashboard button on that player's HUD)
 	local function hook(player: Player)
-		local admin = Admin.isAdmin(player)
-		player:SetAttribute("Admin", admin)
-		if not admin then
-			return
-		end
-		player.Chatted:Connect(function(message)
-			local parts = string.split(message, " ")
-			local first = parts[1] or ""
-			if string.sub(first, 1, 1) == "!" then
-				Admin.run(player, string.sub(first, 2), tonumber(parts[2]))
-			end
-		end)
+		player:SetAttribute("Admin", Admin.isAdmin(player))
 	end
 	Players.PlayerAdded:Connect(hook)
 	for _, p in Players:GetPlayers() do

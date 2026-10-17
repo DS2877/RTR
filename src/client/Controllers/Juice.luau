@@ -3,6 +3,8 @@
 --  * NEW TOOL / BRUSH / BACKPACK: the item pops big in the middle for a beat with what it changes
 --    ("BRICK  18 → 9 hits"), and your first punch with a new tool lands extra hard (DigFX).
 --  * "+N 🍜" floats up from the vacuum while rubble flies in: what the backpack is worth now.
+--  * One-time TIPS (Config/Tips, sent once per prisoner by Services/Tutorial): a slim card under
+--    the toasts, tap to dismiss; they wait while the first-join tour plays.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,6 +12,8 @@ local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage.Shared
 local Upgrades = require(Shared.Config.Upgrades)
+local Tips = require(Shared.Config.Tips)
+local Remotes = require(Shared.Remotes)
 local Zones = require(Shared.Config.Zones)
 local Format = require(Shared.Format)
 
@@ -183,8 +187,116 @@ local function flushWorth()
 	pending = 0
 end
 
+-- ===== one-time tips =====
+
+local tipQueue: { string } = {}
+local tipShowing = false
+local tipCard: TextButton
+
+local function buildTip()
+	tipCard = UI.new("TextButton", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 156),
+		Size = UDim2.fromOffset(460, 58),
+		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
+		BackgroundTransparency = 0.12,
+		AutoButtonColor = false,
+		Text = "",
+		Visible = false,
+		Parent = gui,
+	}, { UI.corner(14), UI.stroke(Color3.fromRGB(255, 210, 110), 1.5, 0.35) })
+	UI.scaleObject(tipCard)
+	UI.new("TextLabel", {
+		Name = "Icon",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(10, 9),
+		Size = UDim2.fromOffset(40, 40),
+		TextScaled = true,
+		Font = Enum.Font.GothamBold,
+		Text = "",
+		Parent = tipCard,
+	})
+	UI.new("TextLabel", {
+		Name = "Title",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(60, 7),
+		Size = UDim2.new(1, -70, 0, 20),
+		Font = Enum.Font.GothamBlack,
+		TextSize = 17,
+		TextColor3 = Color3.fromRGB(255, 215, 120),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Text = "",
+		Parent = tipCard,
+	})
+	UI.new("TextLabel", {
+		Name = "Body",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(60, 28),
+		Size = UDim2.new(1, -70, 0, 22),
+		Font = Enum.Font.GothamMedium,
+		TextSize = 15,
+		TextScaled = true,
+		TextColor3 = Color3.fromRGB(235, 236, 242),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Text = "",
+		Parent = tipCard,
+	}, { UI.new("UITextSizeConstraint", { MaxTextSize = 15, MinTextSize = 10 }) })
+end
+
+local tipToken = 0
+local function nextTip()
+	if tipShowing or #tipQueue == 0 then
+		return
+	end
+	if Juice.isTouring and Juice.isTouring() then
+		task.delay(1, nextTip)
+		return
+	end
+	local tip = Tips[table.remove(tipQueue, 1)]
+	if not tip then
+		nextTip()
+		return
+	end
+	tipShowing = true
+	tipToken += 1
+	local mine = tipToken;
+	(tipCard:FindFirstChild("Icon") :: TextLabel).Text = tip.icon;
+	(tipCard:FindFirstChild("Title") :: TextLabel).Text = tip.title;
+	(tipCard:FindFirstChild("Body") :: TextLabel).Text = tip.text
+	tipCard.Position = UDim2.new(0.5, 0, 0, 140)
+	tipCard.Visible = true
+	TweenService:Create(tipCard, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
+		Position = UDim2.new(0.5, 0, 0, 156),
+	}):Play()
+	Sound.play("Open", 0.4)
+	local function done()
+		if tipToken ~= mine then
+			return
+		end
+		tipToken += 1
+		tipCard.Visible = false
+		tipShowing = false
+		task.delay(0.6, nextTip)
+	end
+	task.delay(6.5, done)
+	local conn
+	conn = tipCard.Activated:Connect(function()
+		conn:Disconnect()
+		done()
+	end)
+end
+
+-- set by init (the tour holds tips back while it plays)
+Juice.isTouring = nil :: (() -> boolean)?
+
 function Juice.start()
 	build()
+	buildTip()
+	Remotes.get(Remotes.Names.Tip).OnClientEvent:Connect(function(id: string)
+		table.insert(tipQueue, id)
+		nextTip()
+	end)
 	local levels: { [string]: number } = {}
 	for _, track in { "Tools", "Brushes", "Backpack" } do
 		levels[track] = attr(track, 1)

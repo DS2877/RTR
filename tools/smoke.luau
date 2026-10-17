@@ -71,6 +71,7 @@ local Rewards = req(Services, "Rewards")
 local Guards = req(Services, "Guards")
 local Hideout = req(Services, "Hideout")
 local Missions = req(Services, "Missions")
+local Tutorial = req(Services, "Tutorial")
 local Events = req(Services, "Events")
 local Market = req(Services, "Market")
 local Crew = req(Services, "Crew")
@@ -1169,6 +1170,13 @@ do
 	check("the uniform was announced once", granted == 1, granted)
 	s.data.Daily, s.data.Dynamite, s.data.Uniform = saved.daily, saved.dynamite, saved.look
 	s.data.Uniforms[uniform] = nil
+end
+do
+	-- one-time tips: once each, unknown ids ignored
+	local tips = count("Tip")
+	check("tip shows once", Tutorial.tip(fake, "BagFull") and not Tutorial.tip(fake, "BagFull"))
+	check("unknown tip ignored", not Tutorial.tip(fake, "NoSuchTip"))
+	check("tip sent", count("Tip") == tips + 1, count("Tip") - tips)
 end
 do
 	-- an invite: the new prisoner and the friend (on this server) both get dynamite, once

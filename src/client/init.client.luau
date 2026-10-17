@@ -80,6 +80,9 @@ end
 require(Controllers.Moments).start()
 local Tour = require(Controllers.Tour)
 Tour.start()
+require(Controllers.Juice).isTouring = function()
+	return Tour.active
+end
 require(Controllers.HUD).replayTour = Tour.play
 require(Controllers.GymController).start()
 require(Controllers.GuardController).start()
