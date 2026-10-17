@@ -14,8 +14,8 @@ export type Job = {
 
 local Missions = {
 	PerDay = 3,
-	TierMult = { 1, 1.6, 2.4 },
-	BonusBlocks = 450, -- all three jobs done
+	TierMult = { 3, 5, 8 },
+	BonusBlocks = 3000, -- all three jobs done
 	Pool = {
 		{
 			id = "Blocks",

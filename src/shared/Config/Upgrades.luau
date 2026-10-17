@@ -41,10 +41,11 @@ local Upgrades = {
 		{ name = "Shovel", emoji = "⚒️", cost = 300, value = 4 },
 		{ name = "Pickaxe", emoji = "⛏️", cost = 3000, value = 10 },
 		{ name = "Jackhammer", emoji = "🔨", cost = 20000, value = 30 },
-		{ name = "Drill", emoji = "🔩", cost = 250000, value = 100 },
+		{ name = "Drill", emoji = "⚙️", cost = 250000, value = 100 },
 		{ name = "Laser", emoji = "🔦", cost = 3000000, value = 400 },
 		{ name = "Plasma Cutter", emoji = "⚡", cost = 30000000, value = 1600 },
-		{ name = "Quantum Fist", emoji = "🌀", cost = 300000000, value = 7000 },
+		{ name = "Quantum Fist", emoji = "⚛️", cost = 300000000, value = 7000 },
+		{ name = "Freedom Fist", emoji = "🗽", cost = 2500000000, value = 30000 },
 	} :: { Level },
 
 	Brushes = {
@@ -56,29 +57,30 @@ local Upgrades = {
 	} :: { Brush },
 
 	Backpack = {
-		{ name = "Pockets", emoji = "👖", cost = 0, value = 20 },
-		{ name = "Sock", emoji = "🧦", cost = 60, value = 60 },
+		{ name = "Pockets", emoji = "👖", cost = 0, value = 40 },
+		{ name = "Sock", emoji = "🧦", cost = 80, value = 120 },
 		{ name = "Pillowcase", emoji = "🛏️", cost = 400, value = 130 },
 		{ name = "Laundry Bag", emoji = "🧺", cost = 2200, value = 280 },
 		{ name = "Duffel Bag", emoji = "👜", cost = 12000, value = 600 },
 		{ name = "Mail Cart", emoji = "🛒", cost = 150000, value = 1300 },
 		{ name = "Dumpster", emoji = "🗑️", cost = 1500000, value = 3000 },
 		{ name = "Garbage Truck", emoji = "🚛", cost = 40000000, value = 8000 },
+		{ name = "Cargo Train", emoji = "🚂", cost = 1500000000, value = 20000 },
 	} :: { Level },
 
 	FindSlots = {
-		{ name = "3 Slots", emoji = "🎒", cost = 0, value = 3 },
-		{ name = "5 Slots", emoji = "🎒", cost = 200, value = 5 },
-		{ name = "8 Slots", emoji = "🎒", cost = 1500, value = 8 },
-		{ name = "12 Slots", emoji = "🎒", cost = 12000, value = 12 },
-		{ name = "20 Slots", emoji = "🎒", cost = 300000, value = 20 },
-		{ name = "30 Slots", emoji = "🎒", cost = 8000000, value = 30 },
+		{ name = "Shirt Pocket", emoji = "👕", cost = 0, value = 3 },
+		{ name = "Fanny Pack", emoji = "👝", cost = 200, value = 5 },
+		{ name = "Briefcase", emoji = "💼", cost = 1500, value = 8 },
+		{ name = "Suitcase", emoji = "🧳", cost = 12000, value = 12 },
+		{ name = "Filing Cabinet", emoji = "🗃️", cost = 300000, value = 20 },
+		{ name = "Smuggler's Crate", emoji = "📦", cost = 8000000, value = 30 },
 	} :: { Level },
 
 	Vacuum = {
 		{ name = "Straw", emoji = "🥤", cost = 0, value = 10 },
-		{ name = "Hand Vac", emoji = "🌀", cost = 100, value = 14 },
-		{ name = "Shop Vac", emoji = "🌪️", cost = 900, value = 19 },
+		{ name = "Hand Vac", emoji = "🧹", cost = 100, value = 14 },
+		{ name = "Shop Vac", emoji = "🔌", cost = 900, value = 19 },
 		{ name = "Turbo Vac", emoji = "💨", cost = 6000, value = 26 },
 		{ name = "Black Hole", emoji = "🕳️", cost = 200000, value = 36 },
 		{ name = "Tornado", emoji = "🌪️", cost = 8000000, value = 50 },
@@ -104,11 +106,11 @@ local Upgrades = {
 
 	-- highest buyable level per track (raised with the milestones; M4 = everything)
 	Open = {
-		Tools = 9,
+		Tools = 10,
 		Brushes = 5,
-		Backpack = 8,
-		FindSlots = 7,
-		Vacuum = 7,
+		Backpack = 9,
+		FindSlots = 6,
+		Vacuum = 6,
 		Lock = 4,
 		Trap = 2,
 		Alarm = 2,

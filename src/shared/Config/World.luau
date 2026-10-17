@@ -51,8 +51,8 @@ local World = {
 	-- of that zone's rubble, with every Noodles multiplier. A JACKPOT is announced to the server.
 	GoldChance = 1 / 220,
 	GoldBlocks = 14,
-	JackpotChance = 1 / 2600,
-	JackpotBlocks = 220,
+	JackpotChance = 1 / 5000,
+	JackpotBlocks = 420,
 	-- CAVE-IN: each broken block may bring down the exposed rock around it (within CaveInRadius
 	-- blocks, at most CaveInMax blocks); CaveInExpected = the average extra blocks (balance sim)
 	CaveInChance = 0.012,

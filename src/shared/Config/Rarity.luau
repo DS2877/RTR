@@ -17,7 +17,7 @@ local Rarity = {
 		Epic = { id = "Epic", rank = 4, color = { 185, 90, 255 }, glow = true },
 		Legendary = { id = "Legendary", rank = 5, color = { 255, 190, 40 }, glow = true },
 		Mythic = { id = "Mythic", rank = 6, color = { 255, 70, 140 }, glow = true },
-		Secret = { id = "Secret", rank = 7, color = { 40, 40, 45 }, glow = true },
+		Secret = { id = "Secret", rank = 7, color = { 235, 235, 240 }, glow = true },
 		Cosmic = { id = "Cosmic", rank = 8, color = { 80, 230, 255 }, glow = true },
 		Divine = { id = "Divine", rank = 9, color = { 255, 250, 200 }, glow = true },
 	} :: { [string]: Tier },

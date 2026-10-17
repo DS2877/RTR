@@ -1114,6 +1114,12 @@ local today = Rewards.today()
 check("daily reward", Rewards.daily(fake, today) > 0 and s.data.Daily.Streak == 1)
 check("daily only once", Rewards.daily(fake, today) == 0)
 check("daily streak", Rewards.daily(fake, today + 1) > 0 and s.data.Daily.Streak == 2)
+check("daily streak to 3", Rewards.daily(fake, today + 2) > 0 and s.data.Daily.Streak == 3)
+check(
+	"a missed day halves the streak",
+	Rewards.daily(fake, today + 4) > 0 and s.data.Daily.Streak == 2,
+	s.data.Daily.Streak
+)
 do
 	local before = s.data.Noodles
 	local paid = Rewards.cellmate(fake, 3600)

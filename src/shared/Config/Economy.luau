@@ -85,7 +85,7 @@ local Economy = {
 			name = "Washing Machine",
 			emoji = "🧺",
 			gain = 150,
-			minStrength = 25000,
+			minStrength = 15000,
 			meter = 1.4,
 			zone = 0.22,
 			perfect = 0.055,
@@ -96,7 +96,7 @@ local Economy = {
 			name = "Warden's Desk",
 			emoji = "🗄️",
 			gain = 600,
-			minStrength = 150000,
+			minStrength = 60000,
 			meter = 1.55,
 			zone = 0.2,
 			perfect = 0.05,
@@ -107,7 +107,7 @@ local Economy = {
 			name = "Prison Bus",
 			emoji = "🚌",
 			gain = 2500,
-			minStrength = 1000000,
+			minStrength = 250000,
 			meter = 1.7,
 			zone = 0.18,
 			perfect = 0.045,
@@ -138,10 +138,10 @@ local Economy = {
 	},
 
 	-- retention
-	DailyBlocks = 60, -- daily reward = this many blocks of rubble from your deepest zone x streak (max 7)
+	DailyBlocks = 300, -- daily reward = this many blocks of rubble from your deepest zone x streak (max 7)
 	DailyMaxStreak = 7,
 	GiftMinutes = 10, -- a playtime gift every N minutes
-	GiftBlocks = 40,
+	GiftBlocks = 200,
 	-- WHILE YOU SLEPT: your bunkmate digs while you're offline (at least CellmateMinMinutes away)
 	-- and pays you CellmatePerMinute blocks of your deepest zone's rubble per minute, x
 	-- CellmateValue, for up to CellmateMaxHours

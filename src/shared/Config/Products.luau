@@ -79,7 +79,15 @@ local Products = {
 			name = "Noodle Truck",
 			emoji = "🚚",
 			price = 149,
-			desc = "A truck full of Noodles (5x a crate). The exact amount is shown in the Store.",
+			desc = "A truck full of Noodles (6x a crate). The exact amount is shown in the Store.",
+		},
+		{
+			key = "NoodlesHuge",
+			id = 0,
+			name = "Noodle Train",
+			emoji = "🚂",
+			price = 449,
+			desc = "A whole train of Noodles (24x a crate). The exact amount is shown in the Store.",
 		},
 		{
 			key = "PrisonPass",
@@ -102,8 +110,9 @@ local Products = {
 	-- what the developer products give
 	DynamiteRadius = 4, -- blocks
 	-- Noodle packs = this many blocks of rubble from your deepest zone (shown in the Store)
-	NoodlesSmallBlocks = 400,
-	NoodlesBigBlocks = 2000,
+	NoodlesSmallBlocks = 2500,
+	NoodlesBigBlocks = 15000,
+	NoodlesHugeBlocks = 60000,
 }
 
 return Products

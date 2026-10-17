@@ -10,7 +10,7 @@ local Format = require("../src/shared/Format")
 local simulate = require("./simcore")
 
 -- minutes from the start until a free player first reaches each zone (11 = the bottom / escape)
-local TARGET = { 0, 4, 9, 15, 23, 33, 46, 62, 82, 104, 126 }
+local TARGET = { 0, 4, 9, 15, 23, 32, 43, 56, 71, 88, 106 }
 local LIMIT = 60 * 60 * 24
 
 local function reachTime(zone: number): number

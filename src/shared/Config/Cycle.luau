@@ -7,7 +7,7 @@ local Cycle = {
 	DaySeconds = 200,
 	RollCallSeconds = 25,
 	LightsOutWarning = 10, -- "LIGHTS OUT!" countdown before the doors lock
-	RollCallBlocks = 25, -- in your cell when roll call ends: this many blocks of rubble (deepest zone)
+	RollCallBlocks = 60, -- in your cell when roll call ends: this many blocks of rubble (deepest zone)
 
 	-- THE PRISON SCHEDULE: the phases in order. Phase ids are what the code checks ("Day" = Yard
 	-- Time: doors open, fights on). clock = prison time (Lighting.ClockTime) at the start and end.
@@ -101,11 +101,11 @@ local Cycle = {
 		Night = { "BLACKOUT", "RIOT", "TREASURE", "GOLDRUSH", "PAYDAY", "EARTHQUAKE" },
 	} :: { [string]: { string } },
 	InspectionDayBlocks = 80, -- reward for a tidy cell
-	TreasureBlocks = 600, -- treasure prize (plus the best find of your zone)
+	TreasureBlocks = 2000, -- treasure prize (plus the best find of your zone)
 	GoldRushBonus = 2, -- extra finds in plain blocks: oreChance x this (like the night bonus)
 	PaydayMult = 2, -- dump / flush pay
 	QuakeBlocks = 24, -- blocks the earthquake breaks at the front of every tunnel
-	SupplyBlocks = 400, -- supply crate prize: this many blocks of rubble of the winner's zone
+	SupplyBlocks = 1500, -- supply crate prize: this many blocks of rubble of the winner's zone
 }
 
 return Cycle

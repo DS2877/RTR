@@ -89,6 +89,8 @@ function Dig.saveTunnel(s: State.PlayerState)
 	end
 end
 
+local lastJackpotNews = -math.huge -- os.clock() of the last server-wide jackpot message
+
 local function damageList(s: State.PlayerState): { number }
 	local out = {}
 	for idx, hp in s.damage do
@@ -718,11 +720,19 @@ function Dig.applyHits(
 			end
 			if kind == "jackpot" then
 				data.Stats.Jackpots += 1
-				Net.announce(
-					string.format("💎 %s hit a JACKPOT VEIN! +%s Noodles", player.Name, Format.number(paid)),
-					{ 120, 230, 255 },
-					"Rare"
-				)
+				-- (server-wide at most once a minute: deep diggers would spam it)
+				if os.clock() - lastJackpotNews >= 60 then
+					lastJackpotNews = os.clock()
+					Net.announce(
+						string.format(
+							"💎 %s hit a JACKPOT VEIN! +%s Noodles",
+							player.Name,
+							Format.number(paid)
+						),
+						{ 120, 230, 255 },
+						"Rare"
+					)
+				end
 			else
 				data.Stats.Gold += 1
 			end

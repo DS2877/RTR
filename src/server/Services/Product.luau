@@ -48,7 +48,10 @@ end
 
 -- Noodles a pack gives this player right now (shown in the Store before buying).
 function Product.packAmount(s: State.PlayerState, key: string): number
-	local blocks = if key == "NoodlesBig" then Products.NoodlesBigBlocks else Products.NoodlesSmallBlocks
+	local blocks = if key == "NoodlesHuge"
+		then Products.NoodlesHugeBlocks
+		elseif key == "NoodlesBig" then Products.NoodlesBigBlocks
+		else Products.NoodlesSmallBlocks
 	local zone = Zones[math.clamp(s.data.Zone, 1, #Zones)]
 	return blocks * zone.rubble
 end
@@ -58,6 +61,7 @@ function Product.syncPackAttributes(player: Player)
 	if s and typeof(player) == "Instance" then
 		player:SetAttribute("PackSmall", Product.packAmount(s, "NoodlesSmall"))
 		player:SetAttribute("PackBig", Product.packAmount(s, "NoodlesBig"))
+		player:SetAttribute("PackHuge", Product.packAmount(s, "NoodlesHuge"))
 		player:SetAttribute("Dynamite", s.data.Dynamite)
 	end
 end
@@ -71,7 +75,7 @@ function Product.grant(player: Player, key: string): boolean
 	if key == "Dynamite" then
 		s.data.Dynamite += 1
 		Net.notice(player, "🧨 +1 Dynamite! Tap the 🧨 button in your tunnel.", "upgrade")
-	elseif key == "NoodlesSmall" or key == "NoodlesBig" then
+	elseif key == "NoodlesSmall" or key == "NoodlesBig" or key == "NoodlesHuge" then
 		local amount = Product.packAmount(s, key)
 		Loot.addNoodles(player, amount)
 		Net.notice(player, "+" .. Format.noodles(amount), "cash")

@@ -26,7 +26,7 @@ local List: { Find } = {
 	{
 		id = "Marble",
 		name = "Lost Marble",
-		emoji = "🔮",
+		emoji = "⚪",
 		zone = 1,
 		rarity = "Common",
 		weight = 30,
@@ -201,7 +201,7 @@ local List: { Find } = {
 	{
 		id = "PirateCoin",
 		name = "Pirate Coin",
-		emoji = "🏴‍☠️",
+		emoji = "☠️",
 		zone = 5,
 		rarity = "Rare",
 		weight = 9,
@@ -394,7 +394,7 @@ local List: { Find } = {
 	{
 		id = "FireOpal",
 		name = "Fire Opal",
-		emoji = "🔥",
+		emoji = "🟠",
 		zone = 9,
 		rarity = "Common",
 		weight = 30,
@@ -430,7 +430,7 @@ local List: { Find } = {
 	{
 		id = "MoltenCrown",
 		name = "Molten Crown",
-		emoji = "👑",
+		emoji = "🌋",
 		zone = 9,
 		rarity = "Legendary",
 		weight = 1.5,
@@ -451,14 +451,14 @@ local List: { Find } = {
 		emoji = "🗿",
 		zone = 9,
 		rarity = "Secret",
-		weight = 0.1,
+		weight = 0.25,
 		value = 2600000000,
 	},
 	-- 10 Ancient Ruins
 	{
 		id = "AncientCoin",
 		name = "Ancient Coin",
-		emoji = "💰",
+		emoji = "🏅",
 		zone = 10,
 		rarity = "Common",
 		weight = 38,
@@ -467,7 +467,7 @@ local List: { Find } = {
 	{
 		id = "ClayTablet",
 		name = "Clay Tablet",
-		emoji = "📜",
+		emoji = "🧱",
 		zone = 10,
 		rarity = "Common",
 		weight = 30,
@@ -476,7 +476,7 @@ local List: { Find } = {
 	{
 		id = "GoldenIdol",
 		name = "Golden Idol",
-		emoji = "🗿",
+		emoji = "🏆",
 		zone = 10,
 		rarity = "Uncommon",
 		weight = 18,
@@ -512,7 +512,7 @@ local List: { Find } = {
 	{
 		id = "AncientCrown",
 		name = "Ancient Crown",
-		emoji = "👑",
+		emoji = "🏵️",
 		zone = 10,
 		rarity = "Mythic",
 		weight = 0.4,
@@ -521,10 +521,10 @@ local List: { Find } = {
 	{
 		id = "PrisonKey",
 		name = "Lost Key of the Prison",
-		emoji = "🗝️",
+		emoji = "🔑",
 		zone = 10,
 		rarity = "Secret",
-		weight = 0.1,
+		weight = 0.25,
 		value = 10000000000,
 	},
 	{
@@ -533,16 +533,16 @@ local List: { Find } = {
 		emoji = "🌟",
 		zone = 10,
 		rarity = "Cosmic",
-		weight = 0.03,
+		weight = 0.1,
 		value = 40000000000,
 	},
 	{
 		id = "GoldenSpoon",
 		name = "The First Golden Spoon",
-		emoji = "🥄",
+		emoji = "🍴",
 		zone = 10,
 		rarity = "Divine",
-		weight = 0.01,
+		weight = 0.05,
 		value = 160000000000,
 	},
 }

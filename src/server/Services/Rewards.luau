@@ -39,7 +39,10 @@ function Rewards.daily(player: Player, day: number?): number
 	if d.Day >= today then
 		return 0
 	end
-	d.Streak = if d.Day == today - 1 then math.min(d.Streak + 1, Economy.DailyMaxStreak) else 1
+	-- a missed day halves the streak instead of wiping it
+	d.Streak = if d.Day == today - 1
+		then math.min(d.Streak + 1, Economy.DailyMaxStreak)
+		else math.max(1, math.floor(d.Streak / 2) + 1)
 	d.Day = today
 	local amount = Economy.DailyBlocks * zoneValue(s) * d.Streak
 	Loot.addNoodles(player, amount)
