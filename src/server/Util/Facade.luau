@@ -607,7 +607,7 @@ local function mainBlock(f: Instance)
 		slab(f, "Pilaster", F, 0.8, -0.66, z - 1, z + 1, 0, 55.8, CONCRETE_DK, Enum.Material.Concrete)
 	end
 	for _, s in { -1, 1 } do
-		local a, b = s * 48, s * 13.8
+		local a, b = s * 48.3, s * 13.8
 		slab(f, "Plinth", F, 0.42, -0.9, math.min(a, b), math.max(a, b), 0, 2.6, PLINTH, Enum.Material.Slate)
 	end
 	slab(f, "BeltCourse", F, 0.6, -0.78, -53.2, 53.2, 24.6, 27.4, CONCRETE_HI, Enum.Material.Concrete)
@@ -894,7 +894,7 @@ local function gateTower(f: Instance)
 			)
 		end
 	end
-	slab(f, "PortHeader", F, 1.1, 0, -14.2, 14.2, 14.0, 16.2, DARK_STEEL, Enum.Material.Metal)
+	slab(f, "PortHeader", F, 1.1, 0, -14.35, 14.35, 14.0, 16.2, DARK_STEEL, Enum.Material.Metal)
 	for k = 0, 9 do
 		Build.part(
 			f,
@@ -952,7 +952,7 @@ local function messWing(f: Instance)
 		f,
 		"CornerPier",
 		Vector3.new(F - 0.9, 0, 110.4),
-		Vector3.new(-244, MESS_TOP + 3.6, 113.4),
+		Vector3.new(-244, MESS_TOP + 4.2, 113.4),
 		CONCRETE_DK,
 		{
 			Material = Enum.Material.Concrete,
@@ -1004,9 +1004,16 @@ local function wingB(f: Instance)
 		slab(f, "Band", fx, 0.5, -0.7, -95.5, -54.5, y, y + 1.0, CONCRETE_HI, Enum.Material.Concrete)
 	end
 	slab(f, "Cornice", fx, 0.95, -1.02, -95.6, -54.4, 44.5, 46.3, CONCRETE_HI, Enum.Material.Concrete)
-	local parapet =
-		slab(f, "Parapet", fx, 0.3, -1.8, -95.2, -54.8, top, 49.6, CONCRETE, Enum.Material.Concrete)
-	Build.sign(parapet, Enum.NormalId.Left, "CELL BLOCK B", Color3.fromRGB(40, 40, 42))
+	slab(f, "Parapet", fx, 0.3, -1.8, -95.2, -54.8, top, 49.6, CONCRETE, Enum.Material.Concrete)
+	plate(
+		f,
+		"BlockSign",
+		CFrame.new(fx - 0.36, 47.8, -75) * CFrame.Angles(0, math.pi / 2, 0),
+		Vector3.new(18, 2.9, 0.12),
+		Color3.fromRGB(40, 42, 46),
+		"CELL BLOCK B",
+		YELLOW
+	)
 	razor(f, Vector3.new(fx + 0.9, 49.6, -95), Vector3.new(fx + 0.9, 49.6, -55))
 	local bays = { { -95.2, -87.6 }, { -85.6, -76 }, { -74, -64.4 }, { -62.4, -54.8 } }
 	windowRows(f, fx, bays, { 8.5, 18.0, 27.5, 37.0 }, 5.6, true)
