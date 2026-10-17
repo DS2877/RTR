@@ -10,7 +10,8 @@ export type Item = {
 	desc: string,
 	cost: number?, -- fixed price
 	blocks: number?, -- or: price in blocks of your zone's rubble
-	pass: boolean?, -- PRISON PASS exclusive: never sold, only earned on the pass
+	pass: boolean?, -- PRISON PASS reward: never sold
+	starter: boolean?, -- STARTER PACK exclusive: never sold -- PRISON PASS exclusive: never sold, only earned on the pass
 	color: { number }?,
 	buff: string?, -- buff id it gives
 	seconds: number?, -- buff length (nil = until the next morning)
@@ -74,6 +75,15 @@ local Extras = {
 			desc = "Shine bright.",
 			cost = 25000000,
 			color = { 255, 200, 40 },
+		},
+		{
+			id = "FreshFish",
+			name = "Fresh Fish",
+			emoji = "🐟",
+			desc = "Starter Pack exclusive. Bright new-arrival blue.",
+			cost = 0,
+			color = { 60, 150, 230 },
+			starter = true,
 		},
 		{
 			id = "Riot",
@@ -217,7 +227,10 @@ local Extras = {
 		Charm = { finds = 0.5 },
 		Coffee = { speed = 0.15 },
 		Magnet = { vacuum = true },
-	} :: { [string]: { power: number?, finds: number?, speed: number?, vacuum: boolean? } },
+		Rush = { noodles = 1 }, -- NOODLE RUSH (Robux, known duration): +100% Noodles
+	} :: {
+		[string]: { power: number?, finds: number?, speed: number?, vacuum: boolean?, noodles: number? },
+	},
 
 	-- DECOR: show off your tunnel (bought at the Workshop, placed with the 💡 button in your tunnel)
 	Decor = {

@@ -179,6 +179,8 @@ Escape.onEscaped = function(player)
 	Pets.sync(player) -- escapes open pet slots
 end
 Product.isActive = Data.isActive
+Product.addBuff = Market.addBuff
+Product.onStarter = Market.sync
 Product.save = Data.save
 Data.onSave = function(player)
 	Market.saveBuffs(player)

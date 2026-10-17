@@ -141,6 +141,9 @@ function ExtraShops.start()
 			)
 		end
 		for _, p in Products.Items do
+			if p.key == "StarterPack" and player:GetAttribute("StarterBought") == true then
+				continue -- (once per prisoner)
+			end
 			order += 1
 			local desc = p.desc
 			if p.key == "NoodlesSmall" then
@@ -195,6 +198,7 @@ function ExtraShops.start()
 				then "WEARING"
 				elseif have then "WEAR"
 				elseif it.pass then "🎫 PASS"
+				elseif it.starter then "🎁 PACK"
 				else Format.noodles(Progression.itemPrice(it, zone()))
 			row(body, order, it.emoji .. " " .. it.name, it.desc, text, current ~= it.id, function()
 				if have then
@@ -211,6 +215,7 @@ function ExtraShops.start()
 				then "TAKE OFF"
 				elseif have then "EQUIP"
 				elseif it.pass then "🎫 PASS"
+				elseif it.starter then "🎁 PACK"
 				else Format.noodles(Progression.itemPrice(it, zone()))
 			row(body, order, it.emoji .. " " .. it.name, it.desc, text, true, function()
 				if have then
@@ -343,7 +348,9 @@ function ExtraShops.start()
 	for name, p in panels do
 		p.onOpen = renders[name]
 	end
-	for _, attr in { "Noodles", "UniformsOwned", "Uniform", "Fist", "Buffs", "DecorOwned", "PackSmall" } do
+	for _, attr in
+		{ "Noodles", "UniformsOwned", "Uniform", "Fist", "Buffs", "DecorOwned", "PackSmall", "StarterBought" }
+	do
 		player:GetAttributeChangedSignal(attr):Connect(function()
 			for name in panels do
 				rerender(name)

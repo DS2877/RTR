@@ -132,6 +132,19 @@ function Market.loadBuffs(player: Player)
 	syncBuffs(player)
 end
 
+-- A bought buff for `seconds` more (Robux products: NOODLE RUSH); stacks onto time left.
+function Market.addBuff(player: Player, id: string, seconds: number)
+	local s = State.get(player)
+	if not s then
+		return
+	end
+	local now = os.time()
+	local ends = s.buffs[id]
+	local from = if ends and ends ~= math.huge and ends > now then ends else now
+	s.buffs[id] = from + seconds
+	syncBuffs(player)
+end
+
 -- DayNight hook: meals last until the morning.
 function Market.morning()
 	for player, s in State.all() do
@@ -580,6 +593,10 @@ function Market.buy(player: Player, shop: string, id: string): string?
 	if item.pass then
 		Net.notice(player, "🎫 Earn it on the Prison Pass!", "info")
 		return "pass only"
+	end
+	if item.starter then
+		Net.notice(player, "🎁 Comes with the Starter Pack (Store)!", "info")
+		return "starter only"
 	end
 	local price = Progression.itemPrice(item, s.data.Zone)
 	if s.data.Noodles < price then

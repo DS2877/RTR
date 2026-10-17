@@ -61,6 +61,7 @@ export type PlayerData = {
 	Week: { Id: number, Blocks: number }, -- the weekly race (Services/TopDog): blocks since Monday
 	-- bought buffs that outlive a rejoin: id -> os.time() it ends (0 = "until the morning")
 	Buffs: { [string]: number },
+	StarterBought: boolean, -- the one-time Starter Pack
 	BuffsAt: number, -- when Buffs was written
 	-- PRISON PASS: this season's XP, premium, claimed tiers ("1".."30" -> true)
 	Pass: {
@@ -134,6 +135,7 @@ local TEMPLATE: PlayerData = {
 	Pets = { Owned = {}, Equipped = {} },
 	Week = { Id = 0, Blocks = 0 },
 	Buffs = {},
+	StarterBought = false,
 	BuffsAt = 0,
 	Pass = { Season = 0, Xp = 0, Premium = false, Free = {}, Paid = {} },
 	Stats = {

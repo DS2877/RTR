@@ -27,6 +27,8 @@ local MAX_RECEIPTS = 60
 Product.onPasses = nil :: ((player: Player) -> ())?
 Product.isActive = nil :: ((player: Player) -> boolean)? -- Data.isActive
 Product.save = nil :: ((player: Player) -> ())? -- Data.save
+Product.addBuff = nil :: ((player: Player, id: string, seconds: number) -> ())? -- Market.addBuff
+Product.onStarter = nil :: ((player: Player) -> ())? -- Market.sync (the new uniform)
 
 local function byKey(list: { Products.Product }, key: string): Products.Product?
 	for _, p in list do
@@ -63,6 +65,7 @@ function Product.syncPackAttributes(player: Player)
 		player:SetAttribute("PackBig", Product.packAmount(s, "NoodlesBig"))
 		player:SetAttribute("PackHuge", Product.packAmount(s, "NoodlesHuge"))
 		player:SetAttribute("Dynamite", s.data.Dynamite)
+		player:SetAttribute("StarterBought", s.data.StarterBought == true)
 	end
 end
 
@@ -84,6 +87,30 @@ function Product.grant(player: Player, key: string): boolean
 		Net.notice(player, "💨 Backpack emptied: +" .. Format.noodles(pay), "cash")
 	elseif key == "PrisonPass" then
 		Pass.grantPremium(player)
+	elseif key == "NoodleRush" then
+		if Product.addBuff then
+			Product.addBuff(player, "Rush", Products.RushSeconds)
+		end
+		Net.notice(player, "⚡ NOODLE RUSH: 2x Noodles for 30 minutes!", "upgrade")
+	elseif key == "StarterPack" then
+		s.data.StarterBought = true
+		s.data.Dynamite += Products.StarterDynamite
+		s.data.Uniforms.FreshFish = true
+		if Product.addBuff then
+			Product.addBuff(player, "Rush", Products.RushSeconds)
+		end
+		Loot.addNoodles(player, Product.packAmount(s, "NoodlesSmall"))
+		if typeof(player) == "Instance" then
+			player:SetAttribute("StarterBought", true)
+		end
+		if Product.onStarter then
+			Product.onStarter(player)
+		end
+		Net.notice(
+			player,
+			"🎁 Starter Pack: 3 Dynamite, NOODLE RUSH, the Fresh Fish uniform and Noodles!",
+			"upgrade"
+		)
 	else
 		return false
 	end
@@ -182,6 +209,10 @@ function Product.start()
 			return
 		end
 		local st = State.get(player)
+		if key == "StarterPack" and st and st.data.StarterBought then
+			Net.notice(player, "🎁 You already have the Starter Pack!", "info")
+			return
+		end
 		if key == "InstantEmpty" and st and st.data.Bag <= 0 and st.loose <= 0 then
 			Net.notice(player, "Your backpack is already empty!", "info")
 			return

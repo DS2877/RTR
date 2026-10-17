@@ -1117,6 +1117,27 @@ check(
 	"grant noodle crate",
 	Product.grant(fake, "NoodlesSmall") and s.data.Noodles == before4 + Product.packAmount(s, "NoodlesSmall")
 )
+do
+	-- NOODLE RUSH doubles Noodles from rubble for a known time; the Starter Pack is once only
+	local base = Loot.multiplier(s)
+	Market.addBuff(fake, "Rush", 60)
+	check(
+		"noodle rush doubles Noodles",
+		math.abs(Loot.multiplier(s) - base * 2) < 1e-6,
+		Loot.multiplier(s) / base
+	)
+	s.buffs.Rush = nil
+	local dyn = s.data.Dynamite
+	check(
+		"starter pack",
+		Product.grant(fake, "StarterPack")
+			and s.data.StarterBought
+			and s.data.Uniforms.FreshFish
+			and s.data.Dynamite == dyn + 3
+	)
+	s.data.Uniforms.FreshFish, s.data.StarterBought, s.data.Dynamite = nil, false, dyn
+	s.buffs = {}
+end
 s.data.Bag, s.data.BagValue = 10, 50
 s.piles = { { id = 99, pos = Vector3.zero, rubble = 3, value = 9 } }
 s.loose = 3

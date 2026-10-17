@@ -16,6 +16,17 @@ local Finds = require(Shared.Config.Finds)
 local Rarity = require(Shared.Config.Rarity)
 local World = require(Shared.Config.World)
 local Upgrades = require(Shared.Config.Upgrades)
+local Extras = require(Shared.Config.Extras)
+
+-- buff id -> the emoji of the meal / item that gives it (HUD boost line)
+local BUFF_ICON: { [string]: string } = { Rush = "⚡2x NOODLES" }
+for _, list in { Extras.Meals, Extras.Market } do
+	for _, it in list :: { any } do
+		if it.buff and not BUFF_ICON[it.buff] then
+			BUFF_ICON[it.buff] = it.emoji
+		end
+	end
+end
 local Progression = require(Shared.Progression)
 local Remotes = require(Shared.Remotes)
 local Format = require(Shared.Format)
@@ -1105,7 +1116,11 @@ function HUD.start()
 		end
 		local buffs = tostring(player:GetAttribute("Buffs") or "")
 		if buffs ~= "" then
-			table.insert(parts, "Buffs: " .. buffs)
+			local icons = {}
+			for _, id in string.split(buffs, ",") do
+				table.insert(icons, BUFF_ICON[id] or id)
+			end
+			table.insert(parts, table.concat(icons, " "))
 		end
 		boost.Text = table.concat(parts, " · ")
 		local minutes = attr("PlayMinutes", 0)

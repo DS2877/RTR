@@ -82,6 +82,22 @@ local Products = {
 			desc = "A truck full of Noodles (6x a crate). The exact amount is shown in the Store.",
 		},
 		{
+			key = "StarterPack",
+			id = 0,
+			name = "Starter Pack",
+			emoji = "🎁",
+			price = 79,
+			desc = "Once per prisoner: 3 Dynamite, 30 minutes of NOODLE RUSH (2x Noodles), the Fresh Fish uniform and a Noodle Crate.",
+		},
+		{
+			key = "NoodleRush",
+			id = 0,
+			name = "Noodle Rush",
+			emoji = "⚡",
+			price = 49,
+			desc = "2x Noodles from rubble for 30 minutes (adds up if you buy more).",
+		},
+		{
 			key = "NoodlesHuge",
 			id = 0,
 			name = "Noodle Train",
@@ -109,6 +125,8 @@ local Products = {
 
 	-- what the developer products give
 	DynamiteRadius = 4, -- blocks
+	RushSeconds = 30 * 60, -- NOODLE RUSH length (Starter Pack + the Noodle Rush product)
+	StarterDynamite = 3,
 	-- Noodle packs = this many blocks of rubble from your deepest zone (shown in the Store)
 	NoodlesSmallBlocks = 2500,
 	NoodlesBigBlocks = 15000,

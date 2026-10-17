@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Economy = require(Shared.Config.Economy)
 local World = require(Shared.Config.World)
+local Extras = require(Shared.Config.Extras)
 local Progression = require(Shared.Progression)
 local Remotes = require(Shared.Remotes)
 local Format = require(Shared.Format)
@@ -37,7 +38,17 @@ function Loot.multiplier(s: State.PlayerState): number
 	local crew = 1 + (if Loot.crewBonus then Loot.crewBonus(s) else 0)
 	local pets = s.data.Pets
 	local pet = 1 + (if pets then Pets.bonus(pets.Owned, pets.Equipped, "value") else 0)
+	-- NOODLE RUSH and other timed Noodles buffs
+	local rush = 1
+	local t = os.time()
+	for id, ends in s.buffs do
+		local b = Extras.Buffs[id]
+		if b and b.noodles and (ends == math.huge or t < ends) then
+			rush += b.noodles
+		end
+	end
 	return pass
+		* rush
 		* Progression.collectionMultiplier(s.data.Found)
 		* Progression.rebirthMultiplier(s.data.Rebirths)
 		* group
