@@ -7,6 +7,7 @@ local Rarity = require("../src/shared/Config/Rarity")
 local Upgrades = require("../src/shared/Config/Upgrades")
 local World = require("../src/shared/Config/World")
 local Economy = require("../src/shared/Config/Economy")
+local Extras = require("../src/shared/Config/Extras")
 
 local function check(cond: boolean, msg: string)
 	if not cond then
@@ -151,6 +152,28 @@ return function()
 	check(differs, "stock rotates")
 	check(Progression.itemPrice({ cost = 5 }, 9) == 5, "fixed price")
 	check(Progression.itemPrice({ blocks = 10 }, 2) == 10 * Zones[2].rubble, "zone price")
+	-- daily streak
+	check(Progression.dailyStreak(0, 0, 100) == 1, "first daily = day 1")
+	check(Progression.dailyStreak(99, 3, 100) == 4, "next day: streak +1")
+	check(Progression.dailyStreak(99, Economy.DailyMaxStreak, 100) == Economy.DailyMaxStreak, "streak capped")
+	check(Progression.dailyStreak(97, 6, 100) == 4, "a missed day halves the streak")
+	check(Progression.dailyNoodles(3, 2) == Economy.DailyBlocks * Zones[2].rubble * 3, "daily noodles")
+	local cal = Progression.dailyCalendar(1, false)
+	check(#cal == Economy.DailyMaxStreak, "a pip per streak day")
+	check(
+		cal[#cal].uniform == Economy.DailyUniform and cal[#cal].dynamite > 0,
+		"last day: uniform + dynamite"
+	)
+	check(cal[1].uniform == nil and cal[1].dynamite == 0, "day 1: only Noodles")
+	check(cal[2].noodles == 2 * cal[1].noodles, "day 2 pays twice day 1")
+	check(Progression.dailyCalendar(1, true)[Economy.DailyMaxStreak].uniform == nil, "uniform only once")
+	local daily: any = nil
+	for _, it in Extras.Uniforms do
+		if it.id == Economy.DailyUniform then
+			daily = it
+		end
+	end
+	check(daily ~= nil and daily.daily == true, "the daily uniform exists and is never sold")
 	-- unique find ids
 	local seen = {}
 	for _, f in Finds.List do

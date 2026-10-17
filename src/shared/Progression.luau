@@ -452,4 +452,39 @@ function Progression.marketStock(day: number): { string }
 	return out
 end
 
+-- ===== daily streak =====
+
+-- The streak after claiming on `today` (days since 1970) when the last claim was on `lastDay`
+-- with `streak`: +1 on the next day (capped), a missed day halves it instead of wiping it.
+function Progression.dailyStreak(lastDay: number, streak: number, today: number): number
+	if lastDay == today - 1 then
+		return math.min(streak + 1, Economy.DailyMaxStreak)
+	end
+	return math.max(1, math.floor(streak / 2) + 1)
+end
+
+-- Noodles for day `streak` of the streak for someone whose deepest zone is `zone`.
+function Progression.dailyNoodles(streak: number, zone: number): number
+	local z = Zones[math.clamp(zone, 1, #Zones)]
+	return Economy.DailyBlocks * z.rubble * math.clamp(streak, 1, Economy.DailyMaxStreak)
+end
+
+export type DailyDay = { day: number, noodles: number, dynamite: number, uniform: string? }
+
+-- The prizes of every day of the streak (known up front): day N = N x the daily Noodles; the last
+-- day adds dynamite and, until you own it, the exclusive uniform.
+function Progression.dailyCalendar(zone: number, hasUniform: boolean): { DailyDay }
+	local out: { DailyDay } = {}
+	for day = 1, Economy.DailyMaxStreak do
+		local last = day == Economy.DailyMaxStreak
+		table.insert(out, {
+			day = day,
+			noodles = Progression.dailyNoodles(day, zone),
+			dynamite = if last then Economy.DailyMaxDynamite else 0,
+			uniform = if last and not hasUniform then Economy.DailyUniform else nil,
+		})
+	end
+	return out
+end
+
 return Progression

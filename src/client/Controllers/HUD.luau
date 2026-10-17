@@ -1,6 +1,6 @@
 --!strict
 -- Heads-up display in the slim simulator style: icon tiles with tiny labels on the left (Store,
--- Event, Index, Gift + a Music switch), stat lines without boxes in the lower left, a hotbar in the
+-- Jobs, Pass / Index, Crew + a Music switch; the playtime gift + daily streak live in Jobs), stat lines without boxes in the lower left, a hotbar in the
 -- bottom middle, translucent round PUNCH / VACUUM / LIFT buttons next to the jump button, the zone
 -- + depth on top, toasts, banners, a small FULL chip, find popups, ADMIN.
 
@@ -10,7 +10,6 @@ local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 
 local Shared = ReplicatedStorage.Shared
-local Economy = require(Shared.Config.Economy)
 local Zones = require(Shared.Config.Zones)
 local Finds = require(Shared.Config.Finds)
 local Rarity = require(Shared.Config.Rarity)
@@ -42,6 +41,7 @@ local DigFX = require(script.Parent.DigFX)
 local VoxelRender = require(script.Parent.VoxelRender)
 local CameraController = require(script.Parent.CameraController)
 local ExtraShops = require(script.Parent.ExtraShops)
+local Daily = require(script.Parent.Daily)
 local Music = require(script.Parent.Music)
 
 local HUD = {}
@@ -308,7 +308,7 @@ local function buildJobs(): Panel.Panel
 		"📋 WORK DETAIL",
 		Color3.fromRGB(255, 170, 60),
 		Color3.fromRGB(110, 60, 0),
-		Vector2.new(540, 300)
+		Vector2.new(560, 350)
 	)
 	UI.new(
 		"UIListLayout",
@@ -320,6 +320,47 @@ local function buildJobs(): Panel.Panel
 			if not c:IsA("UIListLayout") then
 				c:Destroy()
 			end
+		end
+		-- the daily streak on top, then the playtime gift (both handed out by the server on their
+		-- own: shown here so the HUD needs no tiles for them)
+		Daily.strip(panel.body, -2)
+		local info = Daily.info()
+		if info then
+			local every = info.giftEvery
+			local played = attr("PlayMinutes", 0) % every
+			local g = Panel.row(panel.body, -1, 58)
+			Panel.text("title", "🎁  Playtime gift: +" .. Format.noodles(info.gift), {
+				Position = UDim2.fromOffset(12, 9),
+				Size = UDim2.new(0.7, -12, 0, 18),
+				Parent = g,
+			})
+			local bar = UI.new("Frame", {
+				Position = UDim2.fromOffset(12, 36),
+				Size = UDim2.new(0.5, -12, 0, 5),
+				BackgroundColor3 = Color3.new(1, 1, 1),
+				BackgroundTransparency = 0.88,
+				Parent = g,
+			}, { UI.corner(3) })
+			UI.new("Frame", {
+				Size = UDim2.fromScale(math.clamp(played / every, 0, 1), 1),
+				BackgroundColor3 = Color3.fromRGB(140, 240, 120),
+				Parent = bar,
+			}, { UI.corner(3) })
+			Panel.text("desc", "every " .. every .. " min you play", {
+				Position = UDim2.new(0.5, 6, 0, 30),
+				Size = UDim2.new(0.22, 0, 0, 16),
+				TextSize = 12,
+				Parent = g,
+			})
+			-- (it lands by itself: the pill is a countdown, not a button)
+			local pill = Panel.button({
+				AnchorPoint = Vector2.new(1, 0.5),
+				Position = UDim2.new(1, -10, 0.5, 0),
+				Size = UDim2.new(0.28, 0, 0, 44),
+				Active = false,
+				AutoButtonColor = false,
+			}, Color3.fromRGB(190, 190, 190), Color3.fromRGB(30, 80, 40), "in " .. (every - played) .. "m")
+			pill.Parent = g
 		end
 		local data = readJobs()
 		if not data then
@@ -412,11 +453,13 @@ local function buildJobs(): Panel.Panel
 		end)
 	end
 	panel.onOpen = render
-	player:GetAttributeChangedSignal("Missions"):Connect(function()
-		if panel.isOpen() then
-			render()
-		end
-	end)
+	for _, name in { "Missions", "DailyInfo", "PlayMinutes" } do
+		player:GetAttributeChangedSignal(name):Connect(function()
+			if panel.isOpen() then
+				render()
+			end
+		end)
+	end
 	return panel
 end
 
@@ -533,6 +576,7 @@ local function buildAdmin(parent: Instance)
 		{ "🌋 Quake", "earthquake", nil },
 		{ "📦 Supply", "supplydrop", nil },
 		{ "🧨 x5", "dynamite", 5 },
+		{ "📅 Next day", "daily", nil },
 		{ "Perf", "perf", nil },
 		{ "🎬 Tour", "tour", nil },
 		{ "📸 Photo", "photo", nil },
@@ -629,7 +673,7 @@ function HUD.start()
 		Parent = player:WaitForChild("PlayerGui"),
 	})
 
-	-- ===== LEFT: icon tiles (Store / Jobs / Pass, Index / Gift / Crew) =====
+	-- ===== LEFT: icon tiles (Store / Jobs / Pass, Index / Crew) =====
 	-- (a bit bigger than the rest of the HUD: these are tap targets; the Music switch is a small
 	-- chip in the top-left corner so the column clears the stat lines below it)
 	local left = UI.new("Frame", {
@@ -680,6 +724,14 @@ function HUD.start()
 		Sound.play("Click")
 		jobsPanel.toggle()
 	end)
+	-- the playtime gift + the daily streak live in Jobs now: the tile nods when one lands
+	-- (attributes, not the Reward remote: Moments owns that listener)
+	player:GetAttributeChangedSignal("PlayMinutes"):Connect(function()
+		local info = Daily.info()
+		if info and attr("PlayMinutes", 0) % info.giftEvery == 0 then
+			UI.bump(jobsTile, 0.2)
+		end
+	end)
 	Remotes.get(Remotes.Names.MissionDone).OnClientEvent:Connect(function(i: number)
 		local data = readJobs()
 		local it = data and data.items[i]
@@ -700,13 +752,10 @@ function HUD.start()
 		UI.tile(row2, "Index", "📖", "Index", Color3.fromRGB(110, 200, 255), Color3.fromRGB(40, 90, 220))
 	indexTile.LayoutOrder = 1
 	UI.badge(indexTile, "")
-	local giftTile =
-		UI.tile(row2, "Gift", "🎁", "10m", Color3.fromRGB(140, 240, 120), Color3.fromRGB(30, 160, 80))
-	giftTile.LayoutOrder = 2
 	-- CREW: dig with friends (Controllers/Crew opens the panel)
 	local crewTile =
 		UI.tile(row2, "Crew", "👥", "Crew", Color3.fromRGB(120, 230, 255), Color3.fromRGB(40, 120, 220))
-	crewTile.LayoutOrder = 3
+	crewTile.LayoutOrder = 2
 	HUD.crewTile = crewTile
 	-- MUSIC: a small round 🎵 chip in the top-left corner (the now-playing chip slides in right of it)
 	local musicOn = true
@@ -754,9 +803,6 @@ function HUD.start()
 		newFinds = 0
 		UI.badge(indexTile, "")
 		indexPanel.toggle()
-	end)
-	giftTile.Activated:Connect(function()
-		toast("🎁 A free gift every " .. Economy.GiftMinutes .. " minutes you play!", "info")
 	end)
 	Remotes.get(Remotes.Names.Found).OnClientEvent:Connect(function()
 		newFinds += 1
@@ -1117,9 +1163,6 @@ function HUD.start()
 			end
 		end
 		boost.Text = table.concat(parts, "  ")
-		local minutes = attr("PlayMinutes", 0)
-		local label = giftTile:FindFirstChild("Label") :: TextLabel
-		label.Text = (Economy.GiftMinutes - minutes % Economy.GiftMinutes) .. "m"
 	end
 	for _, name in
 		{
@@ -1135,7 +1178,6 @@ function HUD.start()
 			"VIP",
 			"PremiumBonus",
 			"Buffs",
-			"PlayMinutes",
 			"TopDog",
 		}
 	do

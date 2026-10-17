@@ -32,6 +32,7 @@ local DigFX = require(script.Parent.DigFX)
 local VoxelRender = require(script.Parent.VoxelRender)
 local CameraController = require(script.Parent.CameraController)
 local DigController = require(script.Parent.DigController)
+local Daily = require(script.Parent.Daily)
 
 local Moments = {}
 
@@ -716,7 +717,11 @@ function Moments.start()
 	end)
 
 	-- rewards
-	Remotes.get(Remotes.Names.Reward).OnClientEvent:Connect(function(_kind: string, text: string)
+	Remotes.get(Remotes.Names.Reward).OnClientEvent:Connect(function(kind: string, text: string)
+		if kind == "daily" then
+			Daily.show(text) -- the streak card instead of a toast
+			return
+		end
 		LootToast.show({ icon = "🎁", title = text, tag = "Reward", color = Color3.fromRGB(240, 180, 50) })
 		Sound.play("Dump", 0.6)
 	end)

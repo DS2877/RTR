@@ -144,6 +144,7 @@ Dig.powerBoost = Market.powerBoost
 Dig.findBoost = Market.findBoost
 Dig.speedBoost = Market.speedBoost
 Loot.magnet = Market.magnet
+Rewards.onUniform = Market.equip
 Dig.onPiles = Loot.sendPiles
 Dig.onFind = Collection.onFound
 local function isDay(): boolean
@@ -1080,6 +1081,75 @@ check(
 	Rewards.daily(fake, today + 4) > 0 and s.data.Daily.Streak == 2,
 	s.data.Daily.Streak
 )
+-- the streak calendar the client shows (DailyInfo) + the day-7 uniform, once
+do
+	local uniform = Economy.DailyUniform
+	local saved = { daily = table.clone(s.data.Daily), dynamite = s.data.Dynamite, look = s.data.Uniform }
+	s.data.Uniforms[uniform] = nil
+	local cal = Rewards.calendar(fake, today + 4)
+	check(
+		"calendar: every day's prize known",
+		cal ~= nil
+			and #cal.days == Economy.DailyMaxStreak
+			and cal.claimed
+			and cal.streak == 2
+			and cal.tomorrow == 3,
+		cal and cal.streak
+	)
+	check(
+		"calendar: day N pays N x day 1",
+		cal.days[3].noodles == 3 * cal.days[1].noodles
+			and cal.days[1].noodles == Progression.dailyNoodles(1, s.data.Zone)
+	)
+	check(
+		"calendar: day 7 = dynamite + the uniform",
+		cal.days[Economy.DailyMaxStreak].dynamite > 0 and cal.days[Economy.DailyMaxStreak].uniform == uniform
+	)
+	local unclaimed = Rewards.calendar(fake, today + 5)
+	check(
+		"calendar: before claiming, today = the day you'd get",
+		not unclaimed.claimed and unclaimed.streak == 3
+	)
+	check(
+		"calendar: what it promised is what you get",
+		Rewards.daily(fake, today + 5) == unclaimed.days[3].noodles and s.data.Daily.Streak == 3
+	)
+	fake.Position = world.shops.Laundry.Position
+	check("the streak uniform is never sold", Market.buy(fake, "Laundry", uniform) == "daily only")
+	for d = 6, 9 do
+		Rewards.daily(fake, today + d)
+	end
+	check(
+		"7-day streak: the uniform, worn",
+		s.data.Daily.Streak == Economy.DailyMaxStreak
+			and s.data.Uniforms[uniform] == true
+			and s.data.Uniform == uniform,
+		s.data.Daily.Streak
+	)
+	check("calendar drops the uniform once owned", Rewards.calendar(fake, today + 9).days[7].uniform == nil)
+	local dyn = s.data.Dynamite
+	s.data.Uniform = ""
+	check(
+		"another full-streak day: dynamite, no second uniform",
+		Rewards.daily(fake, today + 10) > 0
+			and s.data.Daily.Streak == Economy.DailyMaxStreak
+			and s.data.Dynamite == dyn + Economy.DailyMaxDynamite
+			and s.data.Uniform == ""
+	)
+	local granted = 0
+	for _, m in sent do
+		if
+			m.name == Remotes.Names.Reward
+			and m.args[1] == "daily"
+			and string.find(tostring(m.args[2]), "Lifer", 1, true)
+		then
+			granted += 1
+		end
+	end
+	check("the uniform was announced once", granted == 1, granted)
+	s.data.Daily, s.data.Dynamite, s.data.Uniform = saved.daily, saved.dynamite, saved.look
+	s.data.Uniforms[uniform] = nil
+end
 do
 	local before = s.data.Noodles
 	local paid = Rewards.cellmate(fake, 3600)
@@ -1183,6 +1253,18 @@ fake.Position = world.shops.BlackMarket.Position
 local stock = Progression.marketStock(os.time() // 86400)
 check("black market", Market.buy(fake, "BlackMarket", stock[1]) == nil)
 check("black market sells only today's stock", Market.buy(fake, "BlackMarket", "Nope") == "not sold")
+-- THE CANTEEN: one panel with tabs, so every canteen tab sells at every canteen counter
+s.data.Noodles += 1e7
+check(
+	"canteen: Laundry from the Black Market counter",
+	Market.buy(fake, "Laundry", "Blue") == nil and s.data.Uniforms.Blue == true
+)
+fake.Position = world.shops.Laundry.Position
+check("canteen: a meal from the Laundry counter", Market.buy(fake, "MessHall", "Coffee") == nil)
+fake.Position = world.shops.MessHall.Position
+check("canteen: the Black Market from the Mess Hall", Market.buy(fake, "BlackMarket", stock[2]) == nil)
+fake.Position = world.shops.MessHall.Position + Vector3.new(0, 200, 0)
+check("canteen: too far from every counter", Market.buy(fake, "Laundry", "Pink") == "too far")
 Market.morning()
 check(
 	"meals end in the morning",
