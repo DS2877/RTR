@@ -1326,7 +1326,7 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 	Build.box(
 		parent,
 		"VIPGlass",
-		Vector3.new(vx0 - 0.4, 3.5, vz0),
+		Vector3.new(vx0 - 0.4, 3.6, vz0),
 		Vector3.new(vx0 - 0.2, 10, vz1),
 		Color3.fromRGB(40, 34, 30),
 		smoked
@@ -1334,7 +1334,7 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 	Build.box(
 		parent,
 		"VIPGlass",
-		Vector3.new(vx0 - 0.4, 3.5, vz0 - 0.4),
+		Vector3.new(vx0 - 0.4, 3.6, vz0 - 0.4),
 		Vector3.new(doorX0, 10, vz0 - 0.2),
 		Color3.fromRGB(40, 34, 30),
 		smoked
