@@ -31,6 +31,23 @@ local function shopFor(track: string): string?
 end
 
 -- Returns the new level, or nil (with the reason) when the purchase is refused.
+-- CELL CATALOG: during LOCKDOWN the shops are out of reach, so the catalog in your cell sells
+-- every upgrade at Economy.CatalogMarkup x the price (init: night + in your own cell).
+Shop.catalogOpen = nil :: ((player: Player) -> boolean)?
+
+function Shop.price(player: Player, track: string, level: number): (number?, boolean)
+	local cost = Progression.nextCost(track, level)
+	local root = State.root(player)
+	local counter = world and world.shops[shopFor(track) or ""]
+	local near = root ~= nil
+		and counter ~= nil
+		and (root - counter.Position).Magnitude <= Economy.ShopRange + 6
+	if cost and not near and Shop.catalogOpen and Shop.catalogOpen(player) then
+		return math.ceil(cost * Economy.CatalogMarkup), true
+	end
+	return cost, false
+end
+
 function Shop.buy(player: Player, track: string): (number?, string?)
 	local s = State.get(player)
 	if not s then
@@ -42,12 +59,12 @@ function Shop.buy(player: Player, track: string): (number?, string?)
 	end
 	local root = State.root(player)
 	local counter = world.shops[shop]
-	if not root or (root - counter.Position).Magnitude > Economy.ShopRange + 6 then
-		return nil, "too far"
-	end
 	local levels = s.data.Levels :: any
 	local level = levels[track]
-	local cost = Progression.nextCost(track, level)
+	local cost, catalog = Shop.price(player, track, level)
+	if not root or (not catalog and (root - counter.Position).Magnitude > Economy.ShopRange + 6) then
+		return nil, "too far"
+	end
 	if not cost then
 		Net.notice(player, "Maxed out for now!", "info")
 		return nil, "maxed"

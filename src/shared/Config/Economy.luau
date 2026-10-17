@@ -138,6 +138,7 @@ local Economy = {
 	},
 
 	-- retention
+	CatalogMarkup = 1.2, -- the CELL CATALOG (upgrades from your cell during LOCKDOWN) costs this x
 	DailyBlocks = 300, -- daily reward = this many blocks of rubble from your deepest zone x streak (max 7)
 	DailyMaxStreak = 7,
 	GiftMinutes = 10, -- a playtime gift every N minutes

@@ -40,6 +40,7 @@ local Breakout = require(Services.Breakout)
 local Crew = require(Services.Crew)
 local Pets = require(Services.Pets)
 local Pass = require(Services.Pass)
+local Travel = require(Services.Travel)
 
 Remotes.setup()
 
@@ -70,6 +71,7 @@ Breakout.start()
 Crew.start()
 Pets.start()
 Pass.start()
+Travel.start()
 -- PRISON PASS XP from everything you do
 Missions.onClaim = function(player, index)
 	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
@@ -96,6 +98,14 @@ Pass.onReward = function(player, kind)
 	elseif kind == "pet" then
 		Pets.sync(player)
 	end
+end
+Shop.catalogOpen = function(player)
+	local s = State.get(player)
+	local pos = State.root(player)
+	return DayNight.phase() == "Night" and s ~= nil and pos ~= nil and DayNight.inOwnCell(s, pos)
+end
+Travel.busy = function(player)
+	return Breakout.running(player) or Gym.lifting(player) ~= nil
 end
 Crew.busy = function(player)
 	return Breakout.running(player) or Gym.lifting(player) ~= nil
@@ -328,6 +338,7 @@ local function leave(player: Player)
 	Breakout.leaving(player)
 	Crew.onLeaving(player)
 	Pass.onLeaving(player)
+	Travel.onLeaving(player)
 	TopDog.onLeaving(player)
 	Events.onLeaving(player)
 	Market.clearRender(player)

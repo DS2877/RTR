@@ -75,6 +75,7 @@ local Market = req(Services, "Market")
 local Crew = req(Services, "Crew")
 local PetService = req(Services, "Pets")
 local PassService = req(Services, "Pass")
+local Travel = req(Services, "Travel")
 
 local sent: { { name: string, args: { any } } } = {}
 Net.sink = function(_player: any, name: string, args: { any })
@@ -139,6 +140,7 @@ end)
 step("Crew.start", Crew.start)
 step("Pets.start", PetService.start)
 step("Pass.start", PassService.start)
+step("Travel.start", Travel.start)
 DayNight.riot = Events.riot
 Events.onRiot = DayNight.setRiot
 Events.phase = DayNight.phase
@@ -658,6 +660,37 @@ do
 	s.data.Pets = { Owned = {}, Equipped = {} }
 	s.data.Zone, s.data.Noodles = 1, 0
 	s.lastHit = nil
+end
+
+-- ===== QUICK TRIP =====
+do
+	local home = fake.Position
+	-- from inside the tunnel: to the dig face, then back to the cell
+	standAt(9, 1, 1)
+	local spot = Travel.faceSpot(s)
+	if Voxel.depth(s.grid) < World.TravelMinDepth then
+		check("quick trip: too shallow", spot == nil and Travel.begin(fake, "face") == "too shallow")
+		Travel.onLeaving(fake)
+		check("quick trip: starts", Travel.begin(fake, "cell") == nil)
+		Travel.tick(os.clock() + 10)
+	else
+		check("quick trip: starts", Travel.begin(fake, "face") == nil)
+		Travel.tick(os.clock() + 10)
+		check(
+			"quick trip: at the dig face",
+			spot ~= nil and (fake.Position - spot.Position).Magnitude < 1,
+			spot and (fake.Position - spot.Position).Magnitude
+		)
+	end
+	check("quick trip: cooldown", Travel.begin(fake, "cell") == "cooldown")
+	Travel.onLeaving(fake) -- (clears the cooldown)
+	s.carrying = { id = "OldCoin", owner = fake } :: any
+	check("quick trip: not while carrying", Travel.begin(fake, "cell") == "busy")
+	s.carrying = nil
+	fake.Position = Vector3.new(0, 3, 0)
+	check("quick trip: only from home", Travel.begin(fake, "face") == "not home")
+	fake.Position = home
+	Travel.onLeaving(fake)
 end
 
 -- ===== PRISON PASS =====
