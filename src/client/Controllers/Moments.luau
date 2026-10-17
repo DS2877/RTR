@@ -188,7 +188,7 @@ local function escapeCinematic(rebirths: number, prison: string)
 		end)
 		task.wait(4)
 		sub.Text = "...but the guards caught you!"
-		Sound.play("Full", 0.6)
+		Sound.play("Alarm", 0.6)
 		UI.tween(o, 0.6, { BackgroundTransparency = 0.2 })
 		task.wait(1.4)
 		title.Text = "WELCOME TO " .. prison
@@ -540,7 +540,7 @@ function Moments.start()
 					),
 					"bad"
 				)
-				Sound.play("Full", 0.4, 0.6)
+				Sound.play("Alarm", 0.4)
 				local cell = player:GetAttribute("Cell")
 				if typeof(cell) == "number" and cell > 0 then
 					local frame = Tunnel.frame(cell)
@@ -566,7 +566,7 @@ function Moments.start()
 					task.delay(i - 1, function()
 						-- (bribed / over early: the footsteps stop)
 						if inspectEnds == ends and os.clock() < inspectEnds then
-							Sound.play("Punch", 0.25, 0.5)
+							Sound.play("Step", 0.5, 0.95)
 						end
 					end)
 				end
@@ -579,7 +579,7 @@ function Moments.start()
 				end
 				if phase == "caught" then
 					Shake.kick(0.6)
-					Sound.play("Full", 0.6)
+					Sound.play("Alarm", 0.6)
 				end
 			end
 		end)

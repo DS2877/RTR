@@ -452,7 +452,7 @@ local function onStart(_serverT: number, practice: boolean)
 	buildLights()
 	siren = Sound.loop(Assets.Sounds.Siren)
 	siren.set(0.12)
-	Sound.play("Full", 0.5, 0.7)
+	Sound.play("Alarm", 0.5)
 	Shake.kick(0.5)
 	shout(if practice then "PRACTICE RUN" else "RUN!", RED, 1.6)
 end
@@ -473,7 +473,7 @@ local function onReset(reason: string, cp: number, n: number)
 		flash.BackgroundTransparency = 0.35
 		UI.tween(flash, 0.8, { BackgroundTransparency = 1 })
 		shout(text, RED, 1.2)
-		Sound.play("Full", 0.7, 0.9)
+		Sound.play("Alarm", 0.6)
 		Shake.kick(0.7)
 	end
 end

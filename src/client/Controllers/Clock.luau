@@ -254,7 +254,7 @@ function Clock.start()
 			warning.Text = "LIGHTS OUT! " .. s
 			if s ~= lastSecond then
 				lastSecond = s
-				Sound.play("Siren", 0.35, 0.9)
+				Sound.play("Alarm", 0.35)
 				UI.bump(warning :: any, 0.2)
 			end
 		end

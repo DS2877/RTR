@@ -4,19 +4,22 @@
 -- any experience. The smoke test re-checks every id with MarketplaceService:GetProductInfo.
 
 local Assets = {
+	-- one-shots by name (Sound.play); gain/trim per name in Config/Audio.Single. ProSoundEffects
+	-- unless marked APM. Stings stay musical; everything else is short with an instant attack.
 	Sounds = {
-		Click = "rbxassetid://9119717529", -- Switch Click On Or Off Toggle Button 1
-		Open = "rbxassetid://9112872058", -- Small Bubbles Pop 3
-		Punch = "rbxassetid://9113510797", -- Body Hit Slap 3 (played low and fast = a thud)
-		Crumble = "rbxassetid://9125444889", -- Coins Drop Metal Hits (played low = rubble)
-		Find = "rbxassetid://9114369623", -- Fairy Dust 1
-		Dump = "rbxassetid://9113728049", -- Cash Register 2
-		Coin = "rbxassetid://9113849651", -- Coin Throws 3
-		Upgrade = "rbxassetid://9116422213", -- Magic Transformation 17
-		Purchase = "rbxassetid://9117244567", -- Pay Phone Dropping Dimes
-		Vacuum = "rbxassetid://9126229255", -- Whoosh By Fast Airy
-		Full = "rbxassetid://9113087543", -- Alarm Buzzer 2
-		Siren = "rbxassetid://9113087543", -- Alarm Buzzer 2 (LIGHTS OUT)
+		Click = "rbxassetid://9120917609", -- Wood Impacts Soft Impacts On Temple Blocks 2 (soft tok)
+		Open = "rbxassetid://9112751536", -- Bubble Bloop High Pitched Cute 1
+		Punch = "rbxassetid://9113564874", -- Boxing Hits 6 (brawls)
+		Crumble = "rbxassetid://9118586709", -- Rock Debris 3
+		Find = "rbxassetid://9125446692", -- Computer Melody Melodic Blitz Electronic Game (item get)
+		Dump = "rbxassetid://9113728639", -- Cash Register 2
+		Coin = "rbxassetid://9113728625", -- Cash Register 1 (short ching)
+		Upgrade = "rbxassetid://9116421827", -- Magic Transformation 10
+		Purchase = "rbxassetid://9113728756", -- Cash Register 5
+		Vacuum = "rbxassetid://9120704978", -- Whooshes Fast Wipes Quick Airy Slices 3
+		Full = "rbxassetid://9114382946", -- Fat Beeps Deep Bubble Like Bursts 1 (soft "nope")
+		Alarm = "rbxassetid://9119160581", -- Siren Blat 4 (spotted / caught / countdown)
+		Siren = "rbxassetid://9119662934", -- Submarine Alarm Klaxon 6 (LIGHTS OUT, raids, breakout)
 		Zone = "rbxassetid://1836473422", -- Victory Fanfare Sting (APM)
 		Announce = "rbxassetid://1841390412", -- Bouncy Bouncy Sting 1 (APM)
 		Rare = "rbxassetid://1841173427", -- Magical (c) (APM)
