@@ -119,7 +119,7 @@ end
 
 function Rewards.referral(player: Player, referrerId: number?)
 	local s = State.get(player)
-	if not s or not referrerId or referrerId <= 0 or referrerId == player.UserId then
+	if not s or not referrerId or referrerId == 0 or referrerId == player.UserId then
 		return false
 	end
 	-- only for a new prisoner, once
