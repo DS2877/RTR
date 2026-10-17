@@ -533,11 +533,17 @@ do
 	task.wait(World.ComboWindow + 0.25)
 	landPunch()
 	check("combo resets after a pause", s.comboHits == 1, s.comboHits)
-	s.vacuuming = true
+	s.vacuuming, s.vacuumAt = true, os.clock()
 	task.wait(World.ComboWindow + 0.25)
 	landPunch()
 	s.vacuuming = false
 	check("vacuuming holds the combo", s.comboHits == 2, s.comboHits)
+	-- ...but only for a while: holding VACUUM forever never keeps a chain alive
+	s.vacuuming, s.vacuumAt = true, os.clock() - World.ComboVacuumPause - 1
+	s.comboLast = os.clock() - World.ComboWindow - 1
+	landPunch()
+	s.vacuuming = false
+	check("a long vacuum lets the combo go", s.comboHits == 1, s.comboHits)
 	-- a tier multiplies the rubble's worth
 	local tier = World.ComboTiers[3]
 	s.comboHits, s.comboLast = tier.hits, os.clock()

@@ -17,6 +17,7 @@ local World = require(Shared.Config.World)
 local Tunnel = require(Shared.Tunnel)
 local Remotes = require(Shared.Remotes)
 local Format = require(Shared.Format)
+local Progression = require(Shared.Progression)
 
 local Client = script.Parent.Parent
 local UI = require(Client.Util.UI)
@@ -405,9 +406,87 @@ function Moments.start()
 	-- ESCAPE shows in your own tunnel when you can escape (not while lifting); after a tap it
 	-- waits for the server, and comes back if nothing happened
 	local escapeSent = 0
+	-- one tap would wipe a run: a panel says exactly what you keep and what you leave behind
+	local escapePanel = Panel.new(
+		"EscapeConfirm",
+		"🚨 ESCAPE?",
+		Color3.fromRGB(255, 110, 80),
+		Color3.fromRGB(110, 20, 10),
+		Vector2.new(560, 310)
+	)
+	UI.new("UIListLayout", {
+		Padding = UDim.new(0, 6),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = escapePanel.body,
+	})
+	escapePanel.onOpen = function()
+		for _, c in escapePanel.body:GetChildren() do
+			if not c:IsA("UIListLayout") then
+				c:Destroy()
+			end
+		end
+		local rebirths = (player:GetAttribute("Rebirths") or 0) :: number
+		local nextMult = Progression.rebirthMultiplier(rebirths + 1)
+		escapePanel.subtitle.Text = "then run for it: THE BREAKOUT"
+		local function line(order: number, kind: string, text: string, color: Color3?)
+			local r = Panel.row(escapePanel.body, order, 54)
+			Panel.text(kind, text, {
+				Position = UDim2.fromOffset(12, 0),
+				Size = UDim2.new(1, -24, 1, 0),
+				TextColor3 = color,
+				Parent = r,
+			})
+		end
+		line(
+			1,
+			"title",
+			string.format(
+				"✅ KEEP: x%s power & Noodles forever, depth record, collection, pets, decor, outfits, Prison Pass",
+				tostring(nextMult)
+			),
+			Color3.fromRGB(140, 240, 150)
+		)
+		local used = (player:GetAttribute("SlotsUsed") or 0) :: number
+		local stash = (player:GetAttribute("StashUsed") or 0) :: number
+		line(
+			2,
+			"title",
+			string.format(
+				"❌ LEAVE BEHIND: %s Noodles, strength, tools & bags%s",
+				Format.noodles((player:GetAttribute("Noodles") or 0) :: number),
+				if used + stash > 0
+					then string.format(", %d unsold finds (sell them at The Fence first!)", used + stash)
+					else ""
+			),
+			Color3.fromRGB(255, 150, 130)
+		)
+		local r = Panel.row(escapePanel.body, 3, 58)
+		r.BackgroundTransparency = 1
+		local go = Panel.button({
+			Position = UDim2.new(0, 4, 0.5, 0),
+			AnchorPoint = Vector2.new(0, 0.5),
+			Size = UDim2.new(0.5, -8, 0, 48),
+			Parent = r,
+		}, Color3.fromRGB(240, 70, 50), Color3.fromRGB(110, 20, 10), "🚨 ESCAPE NOW")
+		local notYet = Panel.button({
+			Position = UDim2.new(1, -4, 0.5, 0),
+			AnchorPoint = Vector2.new(1, 0.5),
+			Size = UDim2.new(0.5, -8, 0, 48),
+			Parent = r,
+		}, Color3.fromRGB(128, 128, 128), Color3.fromRGB(60, 60, 60), "Not yet")
+		go.Activated:Connect(function()
+			escapePanel.setOpen(false)
+			Remotes.get(Remotes.Names.Escape):FireServer()
+			escapeSent = os.clock()
+		end)
+		notYet.Activated:Connect(function()
+			Sound.play("Click")
+			escapePanel.setOpen(false)
+		end)
+	end
 	escapeBtn.Activated:Connect(function()
-		Remotes.get(Remotes.Names.Escape):FireServer()
-		escapeSent = os.clock()
+		Sound.play("Click")
+		escapePanel.setOpen(true)
 	end)
 	decorPanel = Panel.new(
 		"DecorPlacePanel",

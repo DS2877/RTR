@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Upgrades = require(Shared.Config.Upgrades)
+local Economy = require(Shared.Config.Economy)
 local Finds = require(Shared.Config.Finds)
 local Rarity = require(Shared.Config.Rarity)
 local Progression = require(Shared.Progression)
@@ -22,6 +23,19 @@ local Shops = {}
 
 -- the Workshop's DECOR button (ExtraShops opens the panel)
 Shops.openDecor = nil :: (() -> ())?
+
+-- CELL CATALOG: the upgrade panels opened from your cell at night show (and charge) the catalog
+-- price; opened at a counter they're the normal shop
+local catalog = false
+local upgradePanels: { [string]: any } = {}
+
+local function price(track: string, level: number): number?
+	local cost = Progression.nextCost(track, level)
+	if cost and catalog then
+		return math.ceil(cost * Economy.CatalogMarkup)
+	end
+	return cost
+end
 
 local player = Players.LocalPlayer
 
@@ -101,7 +115,7 @@ local function upgradePanel(shop: string, title: string, color: Color3, dark: Co
 		local money = player:GetAttribute("Noodles") or 0
 		local key = ""
 		for _, track in Upgrades.Shops[shop] do
-			local cost = Progression.nextCost(track, (player:GetAttribute(track) or 1) :: number)
+			local cost = price(track, (player:GetAttribute(track) or 1) :: number)
 			key ..= if cost and money >= cost then "1" else "0"
 		end
 		return key
@@ -111,13 +125,18 @@ local function upgradePanel(shop: string, title: string, color: Color3, dark: Co
 		clear(panel.body)
 		renderedKey = affordKey()
 		panel.subtitle.Text = Format.noodles(player:GetAttribute("Noodles") or 0)
+			.. (
+				if catalog
+					then "  ·  📦 cell catalog +" .. math.floor((Economy.CatalogMarkup - 1) * 100 + 0.5) .. "%"
+					else ""
+			)
 		for i, track in Upgrades.Shops[shop] do
 			local list = (Upgrades :: any)[track]
 			local level = (player:GetAttribute(track) or 1) :: number
 			local info = TRACK_INFO[track]
 			local cur = list[level]
 			local nxt = list[level + 1]
-			local cost = Progression.nextCost(track, level)
+			local cost = price(track, level)
 			local r = row(panel.body, i, 60)
 			Panel.text("note", info.title .. " · LV " .. level, {
 				Position = UDim2.fromOffset(12, 5),
@@ -164,7 +183,26 @@ local function upgradePanel(shop: string, title: string, color: Color3, dark: Co
 				end
 			end)
 		end
-		if shop == "Workshop" then
+		if catalog then
+			-- flip between the two catalog pages
+			local other = if shop == "Workshop" then "Commissary" else "Workshop"
+			local r = row(panel.body, 99, 54)
+			local go = Panel.button(
+				{
+					Position = UDim2.fromOffset(6, 5),
+					Size = UDim2.new(1, -12, 0, 44),
+				},
+				Color3.fromRGB(255, 200, 110),
+				Color3.fromRGB(110, 60, 0),
+				if other == "Workshop" then "🔨 TOOL CRIB PAGE →" else "🎒 COMMISSARY PAGE →"
+			)
+			go.Parent = r
+			go.Activated:Connect(function()
+				Sound.play("Click")
+				Shops.openCatalog(other)
+			end)
+		end
+		if shop == "Workshop" and not catalog then
 			local r = row(panel.body, 100, 50)
 			local decor = Panel.button({
 				Position = UDim2.fromOffset(6, 6),
@@ -288,6 +326,31 @@ local function fencePanel()
 	return panel, render
 end
 
+-- Opens a catalog page (Trips' 📦 button; the server checks night + your cell).
+function Shops.openCatalog(shop: string)
+	local p = upgradePanels[shop]
+	if p then
+		catalog = true
+		p.setOpen(true)
+		if p.onOpen then
+			p.onOpen() -- (re-render when flipping pages: prices change with the mode)
+		end
+	end
+end
+
+-- Morning: the catalog pages close.
+function Shops.closeCatalog()
+	if not catalog then
+		return
+	end
+	catalog = false
+	for _, p in upgradePanels do
+		if p.isOpen() then
+			p.setOpen(false)
+		end
+	end
+end
+
 function Shops.start()
 	local panels = {
 		Workshop = upgradePanel(
@@ -320,9 +383,11 @@ function Shops.start()
 			table.insert(finds, id)
 		end
 	end)
+	upgradePanels.Workshop, upgradePanels.Commissary = panels.Workshop, panels.Commissary
 	Remotes.get(Remotes.Names.OpenShop).OnClientEvent:Connect(function(name)
 		local p = (panels :: any)[name]
 		if p then
+			catalog = false
 			p.setOpen(true)
 		end
 	end)
@@ -333,7 +398,7 @@ function Shops.start()
 			local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 			if r and r:IsA("BasePart") then
 				for name, p in panels :: any do
-					if p.isOpen() then
+					if p.isOpen() and not (catalog and upgradePanels[name]) then
 						local counter = workspace:FindFirstChild("Prison")
 							and workspace.Prison:FindFirstChild("CommonRoom")
 							and workspace.Prison.CommonRoom:FindFirstChild(name)

@@ -151,6 +151,10 @@ function ExtraShops.start()
 				desc = "You get "
 					.. Format.noodles(player:GetAttribute("PackBig") or 0)
 					.. " (based on your zone)"
+			elseif p.key == "NoodlesHuge" then
+				desc = "You get "
+					.. Format.noodles(player:GetAttribute("PackHuge") or 0)
+					.. " (based on your zone)"
 			end
 			row(body, order, p.emoji .. " " .. p.name, desc, "R$ " .. p.price, true, function()
 				robux:FireServer(p.key)
