@@ -24,6 +24,8 @@ local LootToast = require(Client.Util.LootToast)
 local Panel = require(Client.Util.Panel)
 local Sound = require(Client.Util.Sound)
 local Shake = require(Client.Util.Shake)
+local Cinematic = require(Client.Util.Cinematic)
+local Clock = require(script.Parent.Clock)
 local HUD = require(script.Parent.HUD)
 local DigFX = require(script.Parent.DigFX)
 local VoxelRender = require(script.Parent.VoxelRender)
@@ -99,95 +101,127 @@ end
 
 -- ===== escape cinematic =====
 
+local escaping = false
 local function escapeCinematic(rebirths: number, prison: string)
 	local cam = workspace.CurrentCamera
-	if not cam then
+	if not cam or escaping then
 		return
 	end
-	local yard = Vector3.new(World.Yard.x, 0, World.Yard.z)
-	local wallTop = Vector3.new(World.Yard.x - World.Yard.sx / 2, 18, 0)
-	cam.CameraType = Enum.CameraType.Scriptable
-	local overlay = UI.new("Frame", {
-		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.new(0, 0, 0),
-		BackgroundTransparency = 1,
-		ZIndex = 50,
-		Parent = gui,
-	})
-	local title = UI.bigText({
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.4),
-		Size = UDim2.fromScale(0.8, 0.14),
-		Text = "YOU ESCAPED!",
-		TextColor3 = Color3.fromRGB(255, 220, 80),
-		ZIndex = 51,
-		Parent = gui,
-	}, DARK, 4)
-	local sub = UI.bigText({
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.55),
-		Size = UDim2.fromScale(0.7, 0.07),
-		Text = "",
-		ZIndex = 51,
-		Parent = gui,
-	}, DARK, 3)
-	-- searchlights sweeping the yard at night
-	local beams = {}
-	for i = 1, 3 do
-		local p = Instance.new("Part")
-		p.Anchored = true
-		p.CanCollide = false
-		p.CanQuery = false
-		p.Material = Enum.Material.Neon
-		p.Color = Color3.fromRGB(255, 255, 220)
-		p.Transparency = 0.7
-		p.Size = Vector3.new(4, 80, 4)
-		p.Parent = folder
-		beams[i] = p
-	end
+	escaping = true
+	-- everything the cinematic makes or changes, so the restore path can undo it whatever happens
+	local made: { Instance } = {}
+	local conn: RBXScriptConnection? = nil
 	local oldClock = Lighting.ClockTime
-	Sound.play("Siren", 0.6)
-	local t0 = os.clock()
-	local conn = RunService.RenderStepped:Connect(function()
-		local t = os.clock() - t0
-		Lighting.ClockTime = 0.5
-		for i, p in beams do
-			local a = t * 0.9 + i * 2.1
-			p.CFrame = CFrame.new(yard + Vector3.new(math.cos(a) * 40, 30, math.sin(a) * 40))
-				* CFrame.Angles(math.sin(a) * 0.5, 0, math.cos(a) * 0.5)
+	-- its own layer on top, so every HUD layer (this controller's buttons too) can hide
+	local cineGui: ScreenGui = UI.new("ScreenGui", {
+		Name = "EscapeCinematic",
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		DisplayOrder = 40,
+		Parent = player:WaitForChild("PlayerGui"),
+	})
+	local hidden = Cinematic.hideHud(cineGui)
+	Clock.setOverride(true)
+	local overlay: Frame? = nil
+	local ok, err = xpcall(function()
+		local yard = Vector3.new(World.Yard.x, 0, World.Yard.z)
+		local wallTop = Vector3.new(World.Yard.x - World.Yard.sx / 2, 18, 0)
+		cam.CameraType = Enum.CameraType.Scriptable
+		local o = UI.new("Frame", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundColor3 = Color3.new(0, 0, 0),
+			BackgroundTransparency = 1,
+			ZIndex = 50,
+			Parent = cineGui,
+		})
+		overlay = o
+		local title = UI.bigText({
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.4),
+			Size = UDim2.fromScale(0.8, 0.14),
+			Text = "YOU ESCAPED!",
+			TextColor3 = Color3.fromRGB(255, 220, 80),
+			ZIndex = 51,
+			Parent = cineGui,
+		}, DARK, 4)
+		table.insert(made, title)
+		local sub = UI.bigText({
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.55),
+			Size = UDim2.fromScale(0.7, 0.07),
+			Text = "",
+			ZIndex = 51,
+			Parent = cineGui,
+		}, DARK, 3)
+		table.insert(made, sub)
+		-- searchlights sweeping the yard at night
+		local beams = {}
+		for i = 1, 3 do
+			local p = Instance.new("Part")
+			p.Anchored = true
+			p.CanCollide = false
+			p.CanQuery = false
+			p.Material = Enum.Material.Neon
+			p.Color = Color3.fromRGB(255, 255, 220)
+			p.Transparency = 0.7
+			p.Size = Vector3.new(4, 80, 4)
+			p.Parent = folder
+			beams[i] = p
+			table.insert(made, p)
 		end
-		-- fly over the yard, up the wall and over it
-		local k = math.clamp(t / 4, 0, 1)
-		local from = yard + Vector3.new(50, 8, 30)
-		local to = wallTop + Vector3.new(-25, 10, 0)
-		cam.CFrame = CFrame.lookAt(from:Lerp(to, k), wallTop:Lerp(wallTop + Vector3.new(-80, 0, 0), k))
-	end)
-	task.wait(4)
-	sub.Text = "...but the guards caught you!"
-	Sound.play("Full", 0.6)
-	UI.tween(overlay, 0.6, { BackgroundTransparency = 0.2 })
-	task.wait(1.4)
-	title.Text = "WELCOME TO " .. prison
-	sub.Text = string.format(
-		"Escape #%d · x%s punch, gym and Noodles forever",
-		rebirths,
-		Format.number(1 + rebirths * 0.5)
-	)
-	Sound.play("Zone", 0.8)
-	DigFX.confetti()
-	task.wait(3)
-	conn:Disconnect()
-	for _, p in beams do
-		p:Destroy()
+		Sound.play("Siren", 0.6)
+		local t0 = os.clock()
+		conn = RunService.RenderStepped:Connect(function()
+			local t = os.clock() - t0
+			Lighting.ClockTime = 0.5
+			for i, p in beams do
+				local a = t * 0.9 + i * 2.1
+				p.CFrame = CFrame.new(yard + Vector3.new(math.cos(a) * 40, 30, math.sin(a) * 40))
+					* CFrame.Angles(math.sin(a) * 0.5, 0, math.cos(a) * 0.5)
+			end
+			-- fly over the yard, up the wall and over it
+			local k = math.clamp(t / 4, 0, 1)
+			local from = yard + Vector3.new(50, 8, 30)
+			local to = wallTop + Vector3.new(-25, 10, 0)
+			cam.CFrame = CFrame.lookAt(from:Lerp(to, k), wallTop:Lerp(wallTop + Vector3.new(-80, 0, 0), k))
+		end)
+		task.wait(4)
+		sub.Text = "...but the guards caught you!"
+		Sound.play("Full", 0.6)
+		UI.tween(o, 0.6, { BackgroundTransparency = 0.2 })
+		task.wait(1.4)
+		title.Text = "WELCOME TO " .. prison
+		sub.Text = string.format(
+			"Escape #%d · x%s punch, gym and Noodles forever",
+			rebirths,
+			Format.number(1 + rebirths * 0.5)
+		)
+		Sound.play("Zone", 0.8)
+		DigFX.confetti()
+		task.wait(3)
+	end, debug.traceback)
+	if not ok then
+		warn("[Moments] escape cinematic failed: " .. tostring(err))
+	end
+	-- the restore path: always runs
+	if conn then
+		conn:Disconnect()
+	end
+	for _, inst in made do
+		inst:Destroy()
 	end
 	Lighting.ClockTime = oldClock
+	Clock.setOverride(false)
 	cam.CameraType = Enum.CameraType.Custom
-	UI.tween(overlay, 0.5, { BackgroundTransparency = 1 })
-	title:Destroy()
-	sub:Destroy()
+	Cinematic.showHud(hidden)
+	local o = overlay
+	if o then
+		UI.tween(o, 0.5, { BackgroundTransparency = 1 })
+	end
 	task.delay(0.6, function()
-		overlay:Destroy()
+		cineGui:Destroy()
 	end)
+	escaping = false
 end
 
 -- ===== decor panel (placing) =====
@@ -213,7 +247,7 @@ local function renderDecorPlace()
 		if n > 0 then
 			any = true
 			local b = Panel.button(
-				{ Size = UDim2.fromOffset(168, 40) },
+				{ Size = UDim2.fromOffset(168, 44) },
 				Color3.fromRGB(255, 220, 140),
 				Color3.fromRGB(110, 60, 0),
 				string.format("%s %s x%d", it.emoji, it.name, n)
@@ -226,7 +260,7 @@ local function renderDecorPlace()
 		end
 	end
 	local clearB = Panel.button(
-		{ Size = UDim2.fromOffset(168, 40) },
+		{ Size = UDim2.fromOffset(168, 44) },
 		Color3.fromRGB(255, 150, 150),
 		Color3.fromRGB(110, 20, 20),
 		"Pick all up"
@@ -338,10 +372,14 @@ function Moments.start()
 		"Bribe",
 		"💰 BRIBE",
 		Color3.fromRGB(255, 210, 70),
-		UDim2.new(0.5, 110, 1, -140), -- (not on top of ESCAPE)
-		Vector2.new(220, 46)
+		-- left of ESCAPE (same row): the right edge 8 px left of ESCAPE's scaled left edge
+		UDim2.new(0.5, 110 - math.floor(220 * 1.1 * UI.screenScale()) - 8, 1, -84),
+		Vector2.new(220, 52)
 	)
 
+	-- no sticks: the first tap only says so ("x0 · tap again to buy"), a second tap within 2 s opens
+	-- the Robux purchase (no accidental buy prompt mid-dig)
+	local buyArmedUntil = 0
 	dynamiteBtn.Activated:Connect(function()
 		local n = player:GetAttribute("Dynamite")
 		if typeof(n) == "number" and n > 0 then
@@ -352,8 +390,16 @@ function Moments.start()
 			else
 				HUD.toast("Aim at the wall first!", "info")
 			end
-		else
+		elseif os.clock() < buyArmedUntil then
+			buyArmedUntil = 0
 			Remotes.get(Remotes.Names.RobuxBuy):FireServer("Dynamite")
+		else
+			buyArmedUntil = os.clock() + 2
+			Sound.play("Click", 0.5)
+			UI.bump(dynamiteBtn, 0.1)
+			local label = dynamiteBtn:FindFirstChild("Label") :: TextLabel
+			label.Text = "TAP AGAIN"
+			HUD.toast("🧨 No dynamite left · tap again to buy", "info")
 		end
 	end)
 	-- ESCAPE shows in your own tunnel when you can escape (not while lifting); after a tap it
@@ -371,7 +417,7 @@ function Moments.start()
 		Vector2.new(580, 300)
 	)
 	UI.new("UIGridLayout", {
-		CellSize = UDim2.fromOffset(168, 40),
+		CellSize = UDim2.fromOffset(168, 44),
 		CellPadding = UDim2.fromOffset(8, 8),
 		Parent = decorPanel.body,
 	})
@@ -436,9 +482,13 @@ function Moments.start()
 					p.Parent = folder
 					doorLight = p
 				end
+				local ends = inspectEnds
 				for i = 1, seconds do
 					task.delay(i - 1, function()
-						Sound.play("Punch", 0.25, 0.5)
+						-- (bribed / over early: the footsteps stop)
+						if inspectEnds == ends and os.clock() < inspectEnds then
+							Sound.play("Punch", 0.25, 0.5)
+						end
 					end)
 				end
 			else
@@ -460,18 +510,18 @@ function Moments.start()
 	-- while an event runs: icon, name, what it does, time left
 	local eventCard = UI.new("Frame", {
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -14, 0, 10 + 70 * UI.screenScale()),
-		Size = UDim2.fromOffset(240, 44),
+		Size = UDim2.fromOffset(270, 66),
 		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
 		BackgroundTransparency = 0.18,
 		Visible = false,
 		Parent = gui,
 	}, { UI.corner(12), UI.stroke(Color3.fromRGB(255, 170, 70), 1, 0.5) })
 	UI.scaleObject(eventCard)
+	UI.placeRight(eventCard, UI.RIGHT_EVENT_Y)
 	local eventIcon = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(8, 6),
-		Size = UDim2.fromOffset(32, 32),
+		Position = UDim2.fromOffset(8, 8),
+		Size = UDim2.fromOffset(36, 36),
 		Text = "",
 		TextScaled = true,
 		Font = Enum.Font.GothamBold,
@@ -479,11 +529,11 @@ function Moments.start()
 	})
 	local eventName = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(46, 5),
-		Size = UDim2.new(1, -104, 0, 18),
+		Position = UDim2.fromOffset(50, 4),
+		Size = UDim2.new(1, -112, 0, 20),
 		Text = "",
 		Font = Enum.Font.GothamBlack,
-		TextSize = 14,
+		TextSize = 17,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		TextColor3 = Color3.fromRGB(255, 190, 90),
 		TextXAlignment = Enum.TextXAlignment.Left,
@@ -491,24 +541,26 @@ function Moments.start()
 	})
 	local eventText = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(46, 23),
-		Size = UDim2.new(1, -104, 0, 15),
+		Position = UDim2.fromOffset(50, 24),
+		Size = UDim2.new(1, -112, 0, 34),
 		Text = "",
 		Font = Enum.Font.GothamMedium,
-		TextSize = 11,
-		TextColor3 = Color3.fromRGB(200, 204, 214),
+		TextSize = 15,
+		TextScaled = true,
+		TextWrapped = true,
+		TextColor3 = Color3.fromRGB(205, 209, 219),
 		TextXAlignment = Enum.TextXAlignment.Left,
-		TextTruncate = Enum.TextTruncate.AtEnd,
+		TextYAlignment = Enum.TextYAlignment.Top,
 		Parent = eventCard,
-	})
+	}, { UI.new("UITextSizeConstraint", { MaxTextSize = 15, MinTextSize = 11 }) })
 	local eventTime = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -12, 0.5, 0),
-		Size = UDim2.fromOffset(56, 20),
+		Position = UDim2.new(1, -10, 0.5, 0),
+		Size = UDim2.fromOffset(56, 22),
 		Text = "",
 		Font = Enum.Font.GothamBold,
-		TextSize = 15,
+		TextSize = 18,
 		TextColor3 = Color3.new(1, 1, 1),
 		TextXAlignment = Enum.TextXAlignment.Right,
 		Parent = eventCard,
@@ -629,7 +681,10 @@ function Moments.start()
 		dynamiteBtn.Visible = inTunnel
 		local n = player:GetAttribute("Dynamite")
 		local label = dynamiteBtn:FindFirstChild("Label") :: TextLabel
-		label.Text = if typeof(n) == "number" and n > 0 then "x" .. n else "BUY"
+		label.Text = if typeof(n) == "number" and n > 0
+			then "x" .. n
+			elseif os.clock() < buyArmedUntil then "TAP AGAIN"
+			else "BUY"
 		decorBtn.Visible = inTunnel
 		escapeBtn.Visible = player:GetAttribute("CanEscape") == true
 			and inTunnel
@@ -660,6 +715,8 @@ function Moments.start()
 		else
 			eventCard.Visible = false
 		end
+		-- the loot cards sit under the event card while it shows, else they move up
+		LootToast.setTop(if eventCard.Visible then UI.RIGHT_LOOT_Y else UI.RIGHT_EVENT_Y)
 	end)
 end
 

@@ -146,7 +146,9 @@ function CameraController.start()
 		if tint then
 			tint.TintColor = tint.TintColor:Lerp(targetTint, k)
 		end
-		Lighting.Ambient = Lighting.Ambient:Lerp(if inTunnel then tunnelAmbient else Clock.ambient(), k)
+		if not Clock.override then -- (a cinematic owns the sky)
+			Lighting.Ambient = Lighting.Ambient:Lerp(if inTunnel then tunnelAmbient else Clock.ambient(), k)
+		end
 	end)
 	player.CharacterAdded:Connect(function(c)
 		inTunnel = false

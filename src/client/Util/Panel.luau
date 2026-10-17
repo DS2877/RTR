@@ -1,7 +1,8 @@
 --!strict
 -- Slim modal panel in the same look as the loot cards and the schedule widget: dark translucent
--- glass, a thin colored accent line under a small title, a small round close button, a scrolling
--- list of slim rows. Only one panel is open at a time.
+-- glass, a thin colored accent line under a small title, the subtitle on a line of its own under
+-- it, a round close button big enough for a thumb, a scrolling list of slim rows. Only one panel
+-- is open at a time.
 -- No dimmed backdrop: the world stays visible and the joystick keeps working; X closes.
 -- Kit: Panel.new / Panel.row / Panel.text / Panel.button (all menus build rows with these).
 
@@ -76,8 +77,8 @@ function Panel.new(name: string, title: string, color: Color3, dark: Color3, siz
 	})
 	UI.new("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(16, 10),
-		Size = UDim2.new(0.6, -16, 0, 24),
+		Position = UDim2.fromOffset(16, 8),
+		Size = UDim2.new(1, -76, 0, 24),
 		Text = title,
 		Font = Enum.Font.GothamBlack,
 		TextSize = 19,
@@ -88,7 +89,7 @@ function Panel.new(name: string, title: string, color: Color3, dark: Color3, siz
 	})
 	-- accent line under the title
 	UI.new("Frame", {
-		Position = UDim2.fromOffset(16, 38),
+		Position = UDim2.fromOffset(16, 34),
 		Size = UDim2.fromOffset(34, 3),
 		BackgroundColor3 = color,
 		BorderSizePixel = 0,
@@ -96,14 +97,13 @@ function Panel.new(name: string, title: string, color: Color3, dark: Color3, siz
 	}, { UI.corner(2) })
 	local subtitle: TextLabel = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -50, 0, 13),
-		Size = UDim2.new(0.4, -50, 0, 18),
+		Position = UDim2.fromOffset(58, 28),
+		Size = UDim2.new(1, -120, 0, 18),
 		Text = "",
 		Font = Enum.Font.GothamBold,
 		TextSize = 14,
 		TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.45),
-		TextXAlignment = Enum.TextXAlignment.Right,
+		TextXAlignment = Enum.TextXAlignment.Left,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		Parent = frame,
 	})
@@ -111,23 +111,23 @@ function Panel.new(name: string, title: string, color: Color3, dark: Color3, siz
 	local close: TextButton = UI.new("TextButton", {
 		Name = "Close",
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -10, 0, 8),
-		Size = UDim2.fromOffset(30, 30),
+		Position = UDim2.new(1, -8, 0, 6),
+		Size = UDim2.fromOffset(44, 44),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		BackgroundTransparency = 0.88,
 		Text = "✕",
 		Font = Enum.Font.GothamBold,
-		TextSize = 15,
+		TextSize = 20,
 		TextColor3 = Panel.TEXT,
 		AutoButtonColor = true,
 		ZIndex = 5,
 		Parent = frame,
-	}, { UI.corner(15) })
+	}, { UI.corner(22) })
 
 	local body: ScrollingFrame = UI.new("ScrollingFrame", {
 		Name = "Body",
-		Position = UDim2.fromOffset(12, 50),
-		Size = UDim2.new(1, -24, 1, -60),
+		Position = UDim2.fromOffset(12, 54),
+		Size = UDim2.new(1, -24, 1, -64),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 3,

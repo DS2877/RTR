@@ -157,10 +157,13 @@ local function release(p: Part)
 	table.insert(pool, p)
 end
 
-local function crackGui(p: Part, face: Enum.NormalId, stage: number, seed: number)
+-- cracks are built once per (stage, variant) and cloned: 8 looks per stage are plenty, and a
+-- clone is far cheaper than ~40 new Frames per face on every hit
+local crackTemplates: { [number]: SurfaceGui } = {}
+
+local function buildCrack(stage: number, seed: number): SurfaceGui
 	local gui = Instance.new("SurfaceGui")
 	gui.Name = "Crack"
-	gui.Face = face
 	gui.LightInfluence = 1
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
 	gui.CanvasSize = Vector2.new(64, 64)
@@ -186,6 +189,19 @@ local function crackGui(p: Part, face: Enum.NormalId, stage: number, seed: numbe
 			angle += r:NextNumber(-0.9, 0.9)
 		end
 	end
+	return gui
+end
+
+local function crackGui(p: Part, face: Enum.NormalId, stage: number, seed: number)
+	local s = math.clamp(stage, 1, 3)
+	local key = s * 8 + seed % 8
+	local template = crackTemplates[key]
+	if not template then
+		template = buildCrack(s, key * 7919)
+		crackTemplates[key] = template
+	end
+	local gui = (template :: SurfaceGui):Clone()
+	gui.Face = face
 	gui.Parent = p
 end
 
@@ -335,6 +351,7 @@ local function styleBlock(t: T, idx: number, p: Part)
 		color = applyFeature(t, x, y, z, p) or color
 	end
 	local stage = t.damage[idx]
+	p:SetAttribute("Stage", stage) -- (the delta skips the restyle while this stays the same)
 	if stage then
 		color = color:Lerp(Color3.new(0, 0, 0), 0.08 * stage)
 		for f, n in Voxel.Faces do
@@ -709,10 +726,13 @@ function VoxelRender.start()
 			table.insert(damagedIdx, idx)
 			local p = t.parts[idx]
 			if p then
-				for _, c in p:GetChildren() do
-					c:Destroy()
+				-- same crack stage as drawn: no rebuild, the jolt alone shows the hit
+				if p:GetAttribute("Stage") ~= stage then
+					for _, c in p:GetChildren() do
+						c:Destroy()
+					end
+					styleBlock(t, idx, p)
 				end
-				styleBlock(t, idx, p)
 				-- the block jolts from the hit (your own punches already jolted it locally)
 				if puncher ~= Players.LocalPlayer.UserId then
 					jolt(p, 1)

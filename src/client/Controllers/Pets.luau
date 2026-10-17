@@ -39,6 +39,9 @@ type Live = {
 	look: Vector3,
 	leapTo: Vector3?,
 	leapAt: number,
+	groundY: number?, -- the ground under its spot (raycast ~5 times a second, staggered)
+	rayAt: number,
+	parked: boolean, -- owner far from the camera: parked out of sight, not stepped
 }
 
 -- ===== models =====
@@ -401,6 +404,9 @@ local function refresh(p: Player)
 			look = Vector3.new(0, 0, -1),
 			leapTo = nil,
 			leapAt = 0,
+			groundY = nil,
+			rayAt = os.clock() - math.random() * 0.2,
+			parked = false,
 		})
 	end
 	live[p] = list
@@ -408,20 +414,41 @@ end
 
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
+-- the ray filter (pets + every character) is rebuilt only when characters come and go
+local filterDirty = true
+local FAR = 120 -- owners farther than this from the camera: their pets are parked
+
+local function markFilter()
+	filterDirty = true
+end
 
 local function step(dt: number)
 	local now = os.clock()
-	local filter: { Instance } = { folder }
-	for _, p in Players:GetPlayers() do
-		if p.Character then
-			table.insert(filter, p.Character)
+	if filterDirty then
+		filterDirty = false
+		local filter: { Instance } = { folder }
+		for _, p in Players:GetPlayers() do
+			if p.Character then
+				table.insert(filter, p.Character)
+			end
 		end
+		rayParams.FilterDescendantsInstances = filter
 	end
-	rayParams.FilterDescendantsInstances = filter
+	local cam = workspace.CurrentCamera
+	local camPos = if cam then cam.CFrame.Position else Vector3.zero
 	for p, list in live do
 		local character = p.Character
 		local hrp = character and character:FindFirstChild("HumanoidRootPart")
 		if not hrp or not hrp:IsA("BasePart") then
+			continue
+		end
+		if (hrp.Position - camPos).Magnitude > FAR then
+			for _, l in list do
+				if not l.parked then
+					l.parked = true
+					l.built.root.CFrame = CFrame.new(0, -500, 0)
+				end
+			end
 			continue
 		end
 		local base = hrp.CFrame
@@ -432,9 +459,14 @@ local function step(dt: number)
 		for i, l in list do
 			local b = l.built
 			local target = (yaw * CFrame.new(SLOTS[i] or SLOTS[1])).Position
-			-- the ground under the target (characters and pets ignored)
-			local hit = workspace:Raycast(target + Vector3.new(0, 3, 0), Vector3.new(0, -12, 0), rayParams)
-			local groundY = if hit then hit.Position.Y else base.Position.Y - 3
+			-- the ground under the target (characters and pets ignored), refreshed every ~0.2 s
+			if l.groundY == nil or now - l.rayAt >= 0.2 then
+				l.rayAt = now
+				local hit =
+					workspace:Raycast(target + Vector3.new(0, 3, 0), Vector3.new(0, -12, 0), rayParams)
+				l.groundY = if hit then hit.Position.Y else base.Position.Y - 3
+			end
+			local groundY = l.groundY :: number
 			local goal = Vector3.new(target.X, groundY, target.Z)
 			if b.flies then
 				goal += Vector3.new(0, 3 + math.sin(now * 2.2 + i) * 0.35, 0)
@@ -446,6 +478,11 @@ local function step(dt: number)
 				goal = l.pos:Lerp(l.leapTo, arc) + Vector3.new(0, arc * 1.2, 0)
 			elseif l.leapTo then
 				l.leapTo = nil
+			end
+			-- far off (a new character, back from parking, a teleport): snap, no streak across the map
+			if l.parked or (goal - l.pos).Magnitude > 30 then
+				l.parked = false
+				l.pos = goal
 			end
 			local moved = goal - l.pos
 			l.pos = l.pos:Lerp(goal, 1 - math.exp(-dt * 9))
@@ -537,6 +574,7 @@ local function buildPanel(): Panel.Panel
 				}, { UI.corner(2) })
 			end
 			local text, color, action
+			local locked: string? = nil -- why it can't be bought yet (said on tap)
 			if owned then
 				text = if isOut then "Out ✓" else "Take out"
 				color = if isOut then Color3.fromRGB(128, 128, 128) else Color3.fromRGB(80, 170, 255)
@@ -547,10 +585,12 @@ local function buildPanel(): Panel.Panel
 				text = "🎫 PASS"
 				color = Color3.fromRGB(128, 128, 128)
 				action = nil
+				locked = "Comes with the Prison Pass"
 			elseif (d.zone or 1) < pet.zone then
 				text = "🔒 Zone " .. pet.zone
 				color = Color3.fromRGB(128, 128, 128)
 				action = nil
+				locked = "Reach zone " .. pet.zone .. " first"
 			else
 				text = Format.noodles(PetMath.price(pet.id))
 				color = Color3.fromRGB(80, 210, 110)
@@ -561,13 +601,19 @@ local function buildPanel(): Panel.Panel
 			local b = Panel.button({
 				AnchorPoint = Vector2.new(1, 0.5),
 				Position = UDim2.new(1, -10, 0.5, 0),
-				Size = UDim2.new(0.3, 0, 0, 36),
+				Size = UDim2.new(0.3, 0, 0, 44),
 				Parent = r,
 			}, color, color, text)
 			if action then
 				b.Activated:Connect(function()
 					Sound.play("Click")
 					action()
+				end)
+			elseif locked then
+				local why = locked
+				b.Activated:Connect(function()
+					Sound.play("Click", 0.4, 0.8)
+					HUD.toast("🔒 " .. why, "info")
 				end)
 			end
 		end
@@ -589,6 +635,8 @@ function Pets.start()
 		p:GetAttributeChangedSignal("Pets"):Connect(function()
 			refresh(p)
 		end)
+		p.CharacterAdded:Connect(markFilter)
+		p.CharacterRemoving:Connect(markFilter)
 		p.CharacterAdded:Connect(function()
 			live[p] = live[p] or {}
 			for _, l in live[p] do
@@ -602,6 +650,7 @@ function Pets.start()
 	end
 	Players.PlayerAdded:Connect(watch)
 	Players.PlayerRemoving:Connect(function(p)
+		markFilter()
 		for _, l in live[p] or {} do
 			l.built.model:Destroy()
 		end

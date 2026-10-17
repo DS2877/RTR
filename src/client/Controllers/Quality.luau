@@ -19,6 +19,10 @@ local Quality = {}
 local level = #Config.Levels
 local baseRate: { [ParticleEmitter]: number } = {}
 local baseShadows: { [Instance]: boolean } = {}
+-- every light / emitter in the workspace (collected once, then kept up to date), so a level change
+-- doesn't walk the whole workspace again
+local tracked: { [Instance]: true } = {}
+local applyToken = 0
 
 function Quality.level(): (number, string)
 	return level, Config.Levels[level].name
@@ -38,13 +42,34 @@ local function applyLight(l: Instance)
 	end
 end
 
+local function isTracked(d: Instance): boolean
+	return d:IsA("PointLight") or d:IsA("SpotLight") or d:IsA("SurfaceLight") or d:IsA("ParticleEmitter")
+end
+
 local function apply()
 	local q = Config.Levels[level]
 	VoxelRender.setBudget(q.stream, q.lights, q.shadows)
 	DigFX.setMaxDebris(q.debris)
-	for _, d in workspace:GetDescendants() do
-		applyLight(d)
+	-- the lights in batches of 200 per frame (a step down happens exactly when frames are slow)
+	applyToken += 1
+	local mine = applyToken
+	local list = {}
+	for d in tracked do
+		table.insert(list, d)
 	end
+	task.spawn(function()
+		for i, d in list do
+			if applyToken ~= mine then
+				return
+			end
+			if d.Parent then
+				applyLight(d)
+			end
+			if i % 200 == 0 then
+				task.wait()
+			end
+		end
+	end)
 	for _, e in Lighting:GetChildren() do
 		if e:IsA("BloomEffect") then
 			e.Enabled = q.bloom
@@ -53,14 +78,21 @@ local function apply()
 end
 
 function Quality.start()
+	for _, d in workspace:GetDescendants() do
+		if isTracked(d) then
+			tracked[d] = true
+		end
+	end
 	apply()
 	workspace.DescendantAdded:Connect(function(d)
-		if d:IsA("PointLight") or d:IsA("SpotLight") or d:IsA("SurfaceLight") or d:IsA("ParticleEmitter") then
+		if isTracked(d) then
+			tracked[d] = true
 			-- (one frame later: the creator sets its properties after parenting sometimes)
 			task.defer(applyLight, d)
 		end
 	end)
 	workspace.DescendantRemoving:Connect(function(d)
+		tracked[d] = nil
 		baseRate[d :: any] = nil
 		baseShadows[d] = nil
 	end)

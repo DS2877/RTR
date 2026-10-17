@@ -199,6 +199,8 @@ end
 -- ===== raid beams =====
 
 local beam: Beam? = nil
+local beamHolder: BasePart? = nil
+local beamA0: Attachment? = nil
 local beamTarget: () -> Vector3? = function()
 	return nil
 end
@@ -212,6 +214,16 @@ local function setBeam(color: Color3, seconds: number, getTarget: () -> Vector3?
 		return
 	end
 	if not beam or not beam.Parent or beam.Parent ~= r then
+		-- the old set (a previous character's) goes first: no stray holders / attachments pile up
+		if beam then
+			beam:Destroy()
+		end
+		if beamA0 then
+			beamA0:Destroy()
+		end
+		if beamHolder then
+			beamHolder:Destroy()
+		end
 		local a0 = Instance.new("Attachment")
 		a0.Parent = r
 		local holder = Instance.new("Part")
@@ -234,6 +246,8 @@ local function setBeam(color: Color3, seconds: number, getTarget: () -> Vector3?
 		b.Segments = 16
 		b.Parent = r
 		beam = b
+		beamA0 = a0
+		beamHolder = holder
 	end
 	(beam :: Beam).Color = ColorSequence.new(color)
 end
@@ -409,20 +423,29 @@ function PvPController.start()
 		stashPanel.setOpen(true)
 	end)
 
-	-- stamina bar above the buttons
+	-- stamina bar above the hotbar
 	local gui = UI.new(
 		"ScreenGui",
 		{ Name = "PvP", ResetOnSpawn = false, DisplayOrder = 2, Parent = player:WaitForChild("PlayerGui") }
 	)
 	local bar = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -76),
+		-- just above the hotbar (58 px * scale + 8), under the ESCAPE / BRIBE pills
+		Position = UDim2.new(0.5, 0, 1, -50),
 		Size = UDim2.fromOffset(220, 12),
 		BackgroundColor3 = Color3.fromRGB(40, 40, 50),
 		Visible = false,
 		Parent = gui,
 	}, { UI.corner(6), UI.stroke(UI.INK, 1.5) })
 	UI.scaleObject(bar)
+	local function placeBar()
+		bar.Position = UDim2.new(0.5, 0, 1, -(8 + 58 * UI.screenScale() + 6))
+	end
+	placeBar()
+	local cam = workspace.CurrentCamera
+	if cam then
+		cam:GetPropertyChangedSignal("ViewportSize"):Connect(placeBar)
+	end
 	local fill = UI.new(
 		"Frame",
 		{ Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(90, 220, 110), Parent = bar },
@@ -482,7 +505,7 @@ function PvPController.start()
 		if beam then
 			local pos = if os.clock() < beamUntil then beamTarget() else nil
 			beam.Enabled = pos ~= nil
-			local holder = folder:FindFirstChild("RaidBeamTarget") :: BasePart?
+			local holder = beamHolder
 			if pos and holder then
 				holder.Position = pos
 			end

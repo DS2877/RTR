@@ -17,8 +17,12 @@ local Remotes = require(Shared.Remotes)
 local Client = script.Parent.Parent
 local UI = require(Client.Util.UI)
 local Sound = require(Client.Util.Sound)
+local LootToast = require(Client.Util.LootToast)
 
 local Tour = {}
+
+-- true while the tour plays (loot cards wait until it's over)
+Tour.active = false
 
 local player = Players.LocalPlayer
 local playing = false
@@ -127,7 +131,7 @@ local function card(parent: Instance)
 	local box = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(0.5, 0, 1, -24),
-		Size = UDim2.fromOffset(420, 112),
+		Size = UDim2.fromOffset(460, 152),
 		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
 		BackgroundTransparency = 0.12,
 		Parent = parent,
@@ -148,7 +152,7 @@ local function card(parent: Instance)
 		Position = UDim2.fromOffset(16, 26),
 		Size = UDim2.new(1, -32, 0, 22),
 		Font = Enum.Font.GothamBlack,
-		TextSize = 18,
+		TextSize = 20,
 		TextColor3 = Color3.fromRGB(245, 246, 250),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Text = "",
@@ -156,40 +160,44 @@ local function card(parent: Instance)
 	})
 	local body = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(16, 50),
-		Size = UDim2.new(1, -32, 0, 34),
+		Position = UDim2.fromOffset(16, 52),
+		Size = UDim2.new(1, -32, 0, 44),
 		Font = Enum.Font.GothamMedium,
-		TextSize = 13,
+		TextSize = 16,
+		TextScaled = true,
 		TextWrapped = true,
 		TextColor3 = Color3.fromRGB(190, 194, 206),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Top,
 		Text = "",
 		Parent = box,
-	})
+	}, { UI.new("UITextSizeConstraint", { MaxTextSize = 16, MinTextSize = 12 }) })
+	-- thumb-sized buttons: Skip as a faint pill, Next as the bright one
 	local skip = UI.new("TextButton", {
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 10, 1, -8),
-		Size = UDim2.fromOffset(70, 26),
-		BackgroundTransparency = 1,
+		Position = UDim2.new(0, 12, 1, -10),
+		Size = UDim2.fromOffset(100, 44),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundTransparency = 0.88,
 		Font = Enum.Font.GothamBold,
-		TextSize = 13,
-		TextColor3 = Color3.fromRGB(150, 154, 168),
+		TextSize = 16,
+		TextColor3 = Color3.fromRGB(200, 204, 216),
 		Text = "Skip",
+		AutoButtonColor = true,
 		Parent = box,
-	})
+	}, { UI.corner(12), UI.stroke(Color3.new(1, 1, 1), 1, 0.8) })
 	local nextBtn = UI.new("TextButton", {
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, -12, 1, -10),
-		Size = UDim2.fromOffset(110, 30),
+		Size = UDim2.fromOffset(150, 44),
 		BackgroundColor3 = Color3.fromRGB(255, 170, 60),
 		Font = Enum.Font.GothamBold,
-		TextSize = 14,
+		TextSize = 18,
 		TextColor3 = UI.INK,
 		Text = "Next ›",
 		AutoButtonColor = true,
 		Parent = box,
-	}, { UI.corner(9) })
+	}, { UI.corner(12) })
 	return box, dots, title, body, skip, nextBtn
 end
 
@@ -198,6 +206,8 @@ function Tour.play()
 		return
 	end
 	playing = true
+	Tour.active = true
+	LootToast.setPaused(true)
 	local camera = workspace.CurrentCamera
 	local playerGui = player:WaitForChild("PlayerGui")
 	-- a clean screen: hide the HUD while touring
@@ -237,6 +247,8 @@ function Tour.play()
 		end
 		Remotes.get(Remotes.Names.TourDone):FireServer()
 		playing = false
+		Tour.active = false
+		LootToast.setPaused(false)
 	end
 	local function show(i: number)
 		local stop = STOPS[i]

@@ -107,6 +107,15 @@ end
 
 -- Quick scale "bump" on a GuiObject that has a UIScale child named "Bump".
 function UI.bump(gui: GuiObject, amount: number?)
+	-- a screen-scaled object (UI.scaleObject): bump that scale (two UIScales don't stack)
+	local screen = gui:FindFirstChild("ScreenScale")
+	if screen and screen:IsA("UIScale") then
+		local factor = screen:GetAttribute("Factor")
+		local base = UI.screenScale() * (if typeof(factor) == "number" then factor else 1)
+		screen.Scale = base * (1 + (amount or 0.15))
+		UI.tween(screen, 0.25, { Scale = base }, Enum.EasingStyle.Back)
+		return
+	end
 	local scale = gui:FindFirstChild("Bump") :: UIScale?
 	if not scale then
 		scale = UI.new("UIScale", { Name = "Bump", Parent = gui })
@@ -153,13 +162,37 @@ UI.PANEL_SCALE = 1.2
 -- Scales one GuiObject (and its children) with UI.screenScale() * factor. Use this for boxes
 -- in a full-screen layer, so full-screen backdrops stay full-screen.
 function UI.scaleObject(obj: GuiObject, factor: number?)
-	local scale: UIScale = UI.new("UIScale", { Parent = obj })
 	local f = factor or 1
+	local scale: UIScale = UI.new("UIScale", { Name = "ScreenScale", Parent = obj })
+	scale:SetAttribute("Factor", f)
 	scale.Scale = UI.screenScale() * f
 	local camera = workspace.CurrentCamera
 	if camera then
-		camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+		local conn = camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
 			scale.Scale = UI.screenScale() * f
+		end)
+		obj.Destroying:Connect(function()
+			conn:Disconnect()
+		end)
+	end
+end
+
+-- The top-right column (schedule clock, event card, loot cards), in HUD units from the top: each
+-- piece is placed at 10 + y * screenScale() px, kept right when the viewport changes, so pieces in
+-- different ScreenGuis never drift onto each other. Units are pre-scale (like their sizes).
+UI.RIGHT_CLOCK_Y = 0 -- Controllers/Clock (card 260 x 76)
+UI.RIGHT_EVENT_Y = 84 -- Controllers/Moments (card 270 x 66)
+UI.RIGHT_LOOT_Y = 158 -- Util/LootToast
+function UI.placeRight(obj: GuiObject, y: number)
+	local function place()
+		obj.Position = UDim2.new(1, -14, 0, 10 + y * UI.screenScale())
+	end
+	place()
+	local camera = workspace.CurrentCamera
+	if camera then
+		local conn = camera:GetPropertyChangedSignal("ViewportSize"):Connect(place)
+		obj.Destroying:Connect(function()
+			conn:Disconnect()
 		end)
 	end
 end

@@ -42,6 +42,7 @@ type Debris = {
 local debris: { Debris } = {}
 local maxDebris = World.MaxDebris -- Controllers/Quality lowers it on slow devices
 local free: { Part } = {}
+local confettiLive = 0 -- confetti bits in the air (they count toward the debris budget)
 
 -- the server's loose piles (truth for vacuuming): id -> { pos, n }
 type Pile = { pos: Vector3, n: number }
@@ -68,7 +69,7 @@ function DigFX.setMaxDebris(n: number)
 end
 
 function DigFX.debrisCount(): number
-	return #debris
+	return #debris + confettiLive
 end
 
 local function zoneMaterial(z: number): Enum.Material
@@ -102,7 +103,7 @@ end
 
 -- oldest chips go first, then the oldest resting chunks
 local function makeRoom()
-	if #debris < maxDebris then
+	if #debris + confettiLive < maxDebris or #debris == 0 then
 		return
 	end
 	for i, d in debris do
@@ -584,7 +585,11 @@ function DigFX.confetti(at: Vector3?)
 		Color3.fromRGB(120, 230, 120),
 		Color3.fromRGB(200, 120, 255),
 	}
-	for i = 1, 50 do
+	-- fewer on a slower device (Controllers/Quality lowered the cap), and within the debris budget
+	local count = if maxDebris < World.MaxDebris then 25 else 50
+	count = math.min(count, math.max(10, maxDebris - #debris - confettiLive))
+	confettiLive += count
+	for i = 1, count do
 		local p = Instance.new("Part")
 		p.Size = Vector3.new(0.4, 0.06, 0.25)
 		p.Color = colors[i % #colors + 1]
@@ -599,6 +604,7 @@ function DigFX.confetti(at: Vector3?)
 			Vector3.new((math.random() - 0.5) * 40, 25 + math.random() * 25, (math.random() - 0.5) * 40)
 		p.AssemblyAngularVelocity = Vector3.new(math.random() * 10, math.random() * 10, 0)
 		task.delay(3 + math.random(), function()
+			confettiLive -= 1
 			p:Destroy()
 		end)
 	end

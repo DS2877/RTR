@@ -1,6 +1,8 @@
 --!strict
 -- Slim loot notifications (finds, treasure, rewards): a dark translucent bar with a glossy
--- rarity tile, a tiny rarity tag, the name and the value. Slides + fades in at the top right, stacks (newest on top, max 3), then glides up and fades out. Rare+ gets a light sweep.
+-- rarity tile, a tiny rarity tag, the name and the value. Slides + fades in at the top right, stacks
+-- (newest on top, max 3; 2 on a phone), then glides up and fades out. Rare+ gets a light sweep.
+-- While the first-join tour runs (Controllers/Tour pauses us) cards wait and show afterwards.
 
 local Players = game:GetService("Players")
 
@@ -25,6 +27,22 @@ local MAX = 3
 
 local holder: Frame? = nil
 local stack: { CanvasGroup } = {}
+local top = UI.RIGHT_LOOT_Y -- where the stack starts in the right column (Moments moves it)
+local paused = false
+local queue: { Spec } = {}
+
+-- phones (screen scale under 0.75) have room for two cards above the action buttons; one while
+-- the event card pushes the stack down
+local function maxCards(): number
+	if UI.screenScale() >= 0.75 then
+		return MAX
+	end
+	return if top > UI.RIGHT_EVENT_Y then 1 else 2
+end
+
+local function place(h: Frame)
+	h.Position = UDim2.new(1, -14, 0, 10 + top * UI.screenScale())
+end
 
 local function root(): Frame
 	if holder and holder.Parent then
@@ -40,12 +58,18 @@ local function root(): Frame
 	local h = UI.new("Frame", {
 		AnchorPoint = Vector2.new(1, 0),
 		-- under the clock + event card column (Controllers/Clock, Moments)
-		Position = UDim2.new(1, -14, 0, 10 + 124 * UI.screenScale()),
 		Size = UDim2.fromOffset(WIDTH, (HEIGHT + GAP) * MAX),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	})
 	UI.scaleObject(h)
+	place(h)
+	local camera = workspace.CurrentCamera
+	if camera then
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+			place(h)
+		end)
+	end
 	holder = h
 	return h
 end
@@ -73,7 +97,46 @@ local function dismiss(card: CanvasGroup)
 	relayout()
 end
 
+-- The top of the stack in right-column units (UI.RIGHT_LOOT_Y with the event card showing,
+-- UI.RIGHT_EVENT_Y without it).
+function LootToast.setTop(y: number)
+	if y == top then
+		return
+	end
+	top = y
+	local h = holder
+	if h and h.Parent then
+		local old = h.Position
+		place(h)
+		local want = h.Position
+		h.Position = old
+		UI.tween(h, 0.3, { Position = want }, Enum.EasingStyle.Quint)
+	end
+	while #stack > maxCards() do
+		dismiss(stack[#stack])
+	end
+end
+
+-- Hold cards back (the tour is talking); unpausing shows what waited, newest last.
+function LootToast.setPaused(on: boolean)
+	paused = on
+	if not on then
+		local waiting = queue
+		queue = {}
+		for i, spec in waiting do
+			task.delay((i - 1) * 0.5, LootToast.show, spec)
+		end
+	end
+end
+
 function LootToast.show(spec: Spec)
+	if paused then
+		table.insert(queue, spec)
+		if #queue > 4 then
+			table.remove(queue, 1)
+		end
+		return
+	end
 	local parent = root()
 	local c = spec.color
 	local card: CanvasGroup = UI.new("CanvasGroup", {
@@ -130,19 +193,20 @@ function LootToast.show(spec: Spec)
 	local x = HEIGHT + 2
 	UI.new("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(x, 9),
-		Size = UDim2.new(1, -x - 70, 0, 12),
+		Position = UDim2.fromOffset(x, 5),
+		Size = UDim2.new(1, -x - 70, 0, 16),
 		Text = string.upper(spec.tag or ""),
 		TextColor3 = c:Lerp(Color3.new(1, 1, 1), 0.25),
 		Font = Enum.Font.GothamBold,
-		TextSize = 11,
+		TextSize = 14,
+		TextTruncate = Enum.TextTruncate.AtEnd,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Parent = card,
 	})
 	UI.new("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(x, 23),
-		Size = UDim2.new(1, -x - 70, 0, 24),
+		Position = UDim2.fromOffset(x, 22),
+		Size = UDim2.new(1, -x - 70, 0, 28),
 		Text = spec.title,
 		TextColor3 = Color3.new(1, 1, 1),
 		Font = Enum.Font.GothamBold,
@@ -160,7 +224,7 @@ function LootToast.show(spec: Spec)
 			Text = spec.value,
 			TextColor3 = Color3.fromRGB(255, 214, 90),
 			Font = Enum.Font.GothamBold,
-			TextSize = 15,
+			TextSize = 17,
 			TextXAlignment = Enum.TextXAlignment.Right,
 			Parent = card,
 		})
@@ -190,7 +254,7 @@ function LootToast.show(spec: Spec)
 	end
 
 	table.insert(stack, 1, card)
-	while #stack > MAX do
+	while #stack > maxCards() do
 		dismiss(stack[#stack])
 	end
 	relayout()

@@ -22,7 +22,9 @@ local Client = script.Parent.Parent
 local UI = require(Client.Util.UI)
 local Sound = require(Client.Util.Sound)
 local Shake = require(Client.Util.Shake)
+local Cinematic = require(Client.Util.Cinematic)
 local DigFX = require(script.Parent.DigFX)
+local Clock = require(script.Parent.Clock)
 
 local Breakout = {}
 
@@ -54,6 +56,8 @@ local beams: { { at: Attachment, disc: BasePart, spot: BasePart } } = {}
 local hidden: { ScreenGui } = {}
 local savedLighting: { [string]: any } = {}
 local siren: any = nil
+local finishing = false -- the getaway cinematic is playing
+local finishLabels: { Instance } = {} -- its texts (gone in the restore path, whatever happens)
 
 local function world(x: number, y: number, z: number): Vector3
 	return O + Vector3.new(x, y, z)
@@ -80,7 +84,7 @@ local function buildGui()
 	card = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 58),
-		Size = UDim2.fromOffset(330, 66),
+		Size = UDim2.fromOffset(400, 92),
 		BackgroundColor3 = DARK,
 		BackgroundTransparency = 0.2,
 		ZIndex = 5,
@@ -90,9 +94,9 @@ local function buildGui()
 	UI.new("TextLabel", {
 		BackgroundTransparency = 1,
 		Position = UDim2.fromOffset(14, 8),
-		Size = UDim2.fromOffset(160, 20),
+		Size = UDim2.fromOffset(220, 22),
 		Font = Enum.Font.GothamBlack,
-		TextSize = 15,
+		TextSize = 18,
 		TextColor3 = RED,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Text = "🚨 THE BREAKOUT",
@@ -103,9 +107,9 @@ local function buildGui()
 		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, -14, 0, 6),
-		Size = UDim2.fromOffset(90, 24),
+		Size = UDim2.fromOffset(100, 26),
 		Font = Enum.Font.GothamBlack,
-		TextSize = 20,
+		TextSize = 22,
 		TextColor3 = Color3.new(1, 1, 1),
 		TextXAlignment = Enum.TextXAlignment.Right,
 		Text = "0:00",
@@ -114,24 +118,27 @@ local function buildGui()
 	})
 	goal = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(14, 30),
-		Size = UDim2.new(1, -28, 0, 16),
-		Font = Enum.Font.GothamMedium,
-		TextSize = 13,
-		TextColor3 = Color3.fromRGB(220, 222, 230),
+		Position = UDim2.fromOffset(14, 32),
+		Size = UDim2.new(1, -28, 0, 36),
+		Font = Enum.Font.GothamBold,
+		TextSize = 17,
+		TextScaled = true,
+		TextWrapped = true,
+		TextColor3 = Color3.fromRGB(230, 232, 238),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Text = "",
 		ZIndex = 6,
 		Parent = card,
 	})
+	UI.new("UITextSizeConstraint", { MaxTextSize = 17, MinTextSize = 11, Parent = goal })
 	spottedText = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -14, 0, 46),
-		Size = UDim2.fromOffset(120, 14),
+		Position = UDim2.new(1, -14, 0, 70),
+		Size = UDim2.fromOffset(200, 18),
 		Font = Enum.Font.GothamBold,
-		TextSize = 11,
-		TextColor3 = Color3.fromRGB(170, 174, 186),
+		TextSize = 15,
+		TextColor3 = Color3.fromRGB(190, 194, 206),
 		TextXAlignment = Enum.TextXAlignment.Right,
 		Text = "",
 		ZIndex = 6,
@@ -139,8 +146,8 @@ local function buildGui()
 	})
 	for i = 1, 3 do
 		dots[i] = UI.new("Frame", {
-			Position = UDim2.fromOffset(14 + (i - 1) * 30, 52),
-			Size = UDim2.fromOffset(24, 4),
+			Position = UDim2.fromOffset(14 + (i - 1) * 34, 77),
+			Size = UDim2.fromOffset(28, 5),
 			BackgroundColor3 = Color3.new(1, 1, 1),
 			BackgroundTransparency = 0.75,
 			ZIndex = 6,
@@ -198,6 +205,7 @@ local function nightOn()
 	for k in NIGHT do
 		savedLighting[k] = (Lighting :: any)[k]
 	end
+	Clock.setOverride(true)
 	RunService:BindToRenderStep("BreakoutNight", Enum.RenderPriority.Last.Value, function()
 		for k, v in NIGHT do
 			(Lighting :: any)[k] = v
@@ -213,6 +221,7 @@ local function nightOff()
 		(Lighting :: any)[k] = v
 	end
 	savedLighting = {}
+	Clock.setOverride(false)
 end
 
 -- ===== searchlights =====
@@ -270,7 +279,7 @@ local function newBeam(head: Vector3)
 	sl.Range = 40
 	sl.Brightness = 6
 	sl.Color = LIGHT
-	sl.Shadows = true
+	sl.Shadows = #beams == 0 -- (one shadow-casting light is plenty on a phone)
 	sl.Parent = spot
 	table.insert(beams, { at = a1, disc = disc, spot = spot })
 end
@@ -400,25 +409,17 @@ local function root(): BasePart?
 end
 
 local function hideHud()
-	hidden = {}
-	for _, g in player.PlayerGui:GetChildren() do
-		-- (never the touch controls: the joystick is how you run on a phone)
-		if g:IsA("ScreenGui") and g.Enabled and g ~= gui and g.Name ~= "TouchGui" and g.Name ~= "Chat" then
-			g.Enabled = false
-			table.insert(hidden, g)
-		end
-	end
+	Cinematic.showHud(hidden) -- (a second start never strands the first list)
+	hidden = Cinematic.hideHud(gui)
 end
 
 local function showHud()
-	for _, g in hidden do
-		g.Enabled = true
-	end
-	hidden = {}
+	Cinematic.showHud(hidden)
 end
 
 local function stop()
 	running = false
+	finishing = false
 	clearChasers()
 	for _, b in beams do
 		b.at:Destroy()
@@ -487,7 +488,7 @@ local function onCheckpoint(cp: number)
 end
 
 -- the getaway: into the car, down the road, the medal, then the roadblock
-local function onFinish(
+local function finishBody(
 	seconds: number,
 	medalId: string,
 	cash: number,
@@ -564,6 +565,7 @@ local function onFinish(
 		ZIndex = 8,
 		Parent = gui,
 	}, DARK, 2)
+	table.insert(finishLabels, line)
 	local sub = UI.bigText({
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.6),
@@ -576,6 +578,7 @@ local function onFinish(
 		ZIndex = 8,
 		Parent = gui,
 	}, DARK, 2)
+	table.insert(finishLabels, sub)
 	task.wait(3.4)
 	if not practice then
 		-- ...the roadblock
@@ -595,13 +598,20 @@ local function onFinish(
 	else
 		task.wait(1.5)
 	end
-	line:Destroy()
-	sub:Destroy()
-	flash.BackgroundColor3 = RED
-	flash.BackgroundTransparency = 1
 	if car and car:IsA("Model") and start then
 		car:PivotTo(start)
 	end
+end
+
+-- Whatever goes wrong in the cinematic, the camera, your character, the HUD and the sky come back.
+local function restoreAfterFinish()
+	for _, l in finishLabels do
+		l:Destroy()
+	end
+	finishLabels = {}
+	flash.BackgroundColor3 = RED
+	flash.BackgroundTransparency = 1
+	local character = player.Character
 	if character then
 		for _, d in character:GetDescendants() do
 			if d:IsA("BasePart") then
@@ -609,10 +619,20 @@ local function onFinish(
 			end
 		end
 	end
+	local cam = workspace.CurrentCamera
 	if cam then
 		cam.CameraType = Enum.CameraType.Custom
 	end
 	stop()
+end
+
+local function onFinish(...: any)
+	finishing = true
+	local ok, err = xpcall(finishBody, debug.traceback, ...)
+	if not ok then
+		warn("[Breakout] finish cinematic failed: " .. tostring(err))
+	end
+	restoreAfterFinish()
 end
 
 function Breakout.start()
@@ -632,6 +652,17 @@ function Breakout.start()
 		elseif kind == "finish" then
 			task.spawn(onFinish, ...)
 		end
+	end)
+	-- failsafe: the run is over on the server but no finish arrived (lost event, server error)
+	player:GetAttributeChangedSignal("Breakout"):Connect(function()
+		if player:GetAttribute("Breakout") ~= nil or not running then
+			return
+		end
+		task.delay(10, function()
+			if running and not finishing and player:GetAttribute("Breakout") == nil then
+				restoreAfterFinish()
+			end
+		end)
 	end)
 	RunService.RenderStepped:Connect(function()
 		if not running then

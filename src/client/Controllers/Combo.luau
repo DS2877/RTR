@@ -41,7 +41,7 @@ function Combo.start()
 		Name = "Combo",
 		AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(1, -205, 1, -138),
-		Size = UDim2.fromOffset(150, 74),
+		Size = UDim2.fromOffset(136, 74),
 		BackgroundTransparency = 1,
 		Visible = false,
 		Parent = parent,
@@ -52,20 +52,28 @@ function Combo.start()
 		Size = UDim2.new(1, 0, 0, 40),
 		Font = Enum.Font.GothamBlack,
 		TextSize = 36,
+		TextScaled = true, -- ("COMBO 123" shrinks to the box instead of running onto VACUUM)
 		TextColor3 = TIER_COLORS[1],
 		Text = "",
 		Parent = box,
-	}, { UI.stroke(Color3.fromRGB(20, 12, 4), 2.5, 0) })
+	}, {
+		UI.textStroke(Color3.fromRGB(20, 12, 4), 2.5),
+		UI.new("UITextSizeConstraint", { MaxTextSize = 36 }),
+	})
 	local tierText: TextLabel = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
 		Position = UDim2.fromOffset(0, 40),
-		Size = UDim2.new(1, 0, 0, 16),
+		Size = UDim2.new(1, 0, 0, 19),
 		Font = Enum.Font.GothamBlack,
-		TextSize = 13,
+		TextSize = 16,
+		TextScaled = true,
 		TextColor3 = TIER_COLORS[1],
 		Text = "",
 		Parent = box,
-	}, { UI.stroke(Color3.fromRGB(20, 12, 4), 1.5, 0) })
+	}, {
+		UI.textStroke(Color3.fromRGB(20, 12, 4), 1.5),
+		UI.new("UITextSizeConstraint", { MaxTextSize = 16 }),
+	})
 	local track = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 62),

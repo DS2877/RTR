@@ -59,33 +59,89 @@ end
 
 -- ===== pieces =====
 
--- press-and-hold helper that works for touch, mouse and gamepad-select
-local function holdable(b: TextButton, onDown: () -> (), onUp: () -> ())
+-- Press-and-hold helper for touch and mouse. The hold belongs to the input that started it: it
+-- ends when THAT finger lifts or is cancelled (even after sliding off the button, where the button
+-- itself never hears the end), not when another finger lets go. Returns release() to end it from
+-- outside (the buttons got hidden mid-hold).
+local function holdable(b: TextButton, onDown: () -> (), onUp: () -> ()): () -> ()
+	local active: InputObject? = nil
+	local watch: RBXScriptConnection? = nil
+	local function release()
+		if watch then
+			watch:Disconnect()
+			watch = nil
+		end
+		if active then
+			active = nil
+			onUp()
+		end
+	end
 	b.InputBegan:Connect(function(input)
 		if
-			input.UserInputType == Enum.UserInputType.Touch
-			or input.UserInputType == Enum.UserInputType.MouseButton1
+			active == nil
+			and (
+				input.UserInputType == Enum.UserInputType.Touch
+				or input.UserInputType == Enum.UserInputType.MouseButton1
+			)
 		then
+			active = input
+			watch = input.Changed:Connect(function(prop)
+				if
+					prop == "UserInputState"
+					and (
+						input.UserInputState == Enum.UserInputState.End
+						or input.UserInputState == Enum.UserInputState.Cancel
+					)
+				then
+					release()
+				end
+			end)
 			UI.bump(b, -0.08)
 			onDown()
 		end
 	end)
 	b.InputEnded:Connect(function(input)
-		if
-			input.UserInputType == Enum.UserInputType.Touch
-			or input.UserInputType == Enum.UserInputType.MouseButton1
-		then
-			onUp()
+		if input == active then
+			release()
 		end
 	end)
-	b.MouseLeave:Connect(onUp)
+	-- the mouse leaving ends a mouse hold (a finger sliding off keeps holding until it lifts)
+	b.MouseLeave:Connect(function()
+		local a = active
+		if a and a.UserInputType == Enum.UserInputType.MouseButton1 then
+			release()
+		end
+	end)
+	return release
 end
 
 -- ===== toasts / banners =====
 
 local toastHolder: Frame
+local toastCount = 0
+-- Toasts live in their own layer above the panels: under the zone line normally, at the bottom
+-- of the screen while a panel is open (so they never hide behind or on top of the menu).
+local function placeToasts()
+	if Panel.anyOpen() then
+		toastHolder.AnchorPoint = Vector2.new(0.5, 1)
+		toastHolder.Position = UDim2.new(0.5, 0, 1, -4)
+		local layout = toastHolder:FindFirstChildOfClass("UIListLayout")
+		if layout then
+			layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+		end
+	else
+		toastHolder.AnchorPoint = Vector2.new(0.5, 0)
+		toastHolder.Position = UDim2.new(0.5, 0, 0, 118)
+		local layout = toastHolder:FindFirstChildOfClass("UIListLayout")
+		if layout then
+			layout.VerticalAlignment = Enum.VerticalAlignment.Top
+		end
+	end
+end
 -- Slim notice pill: dark translucent, a colored dot, clean text. Fades + slides in, fades out.
 local function toast(text: string, kind: string?)
+	placeToasts()
+	toastCount += 1
 	local colors = {
 		good = Color3.fromRGB(90, 220, 110),
 		bad = Color3.fromRGB(255, 90, 90),
@@ -96,13 +152,14 @@ local function toast(text: string, kind: string?)
 	local color = colors[kind or "info"] or colors.info
 	local pill: CanvasGroup = UI.new("CanvasGroup", {
 		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.fromOffset(0, 28),
+		Size = UDim2.fromOffset(0, 32),
 		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
 		BackgroundTransparency = 0.25,
 		GroupTransparency = 1,
+		LayoutOrder = toastCount,
 		Parent = toastHolder,
 	}, {
-		UI.corner(14),
+		UI.corner(16),
 		UI.stroke(Color3.new(1, 1, 1), 1, 0.85),
 		UI.new("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 14) }),
 		UI.new("UIListLayout", {
@@ -118,16 +175,17 @@ local function toast(text: string, kind: string?)
 	}, { UI.corner(4) })
 	UI.new("TextLabel", {
 		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.fromOffset(0, 28),
+		Size = UDim2.fromOffset(0, 32),
 		BackgroundTransparency = 1,
 		Text = text,
 		TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.55),
 		Font = Enum.Font.GothamMedium,
-		TextSize = 14,
+		TextSize = 17,
 		Parent = pill,
 	})
 	UI.tween(pill, 0.22, { GroupTransparency = 0 })
-	task.delay(2.6, function()
+	-- longer texts stay longer (time to read them)
+	task.delay(math.clamp(2.2 + #text * 0.04, 2.6, 6), function()
 		UI.tween(pill, 0.35, { GroupTransparency = 1 })
 		task.wait(0.4)
 		pill:Destroy()
@@ -294,7 +352,7 @@ local function buildJobs(): Panel.Panel
 				{
 					AnchorPoint = Vector2.new(1, 0.5),
 					Position = UDim2.new(1, -10, 0.5, 0),
-					Size = UDim2.new(0.28, 0, 0, 36),
+					Size = UDim2.new(0.28, 0, 0, 44),
 				},
 				if done and not it.claimed
 					then Color3.fromRGB(90, 220, 110)
@@ -307,11 +365,14 @@ local function buildJobs(): Panel.Panel
 				if done and not it.claimed then
 					Sound.play("Coin")
 					claim:FireServer(i)
+				elseif not it.claimed then
+					Sound.play("Click", 0.4, 0.8)
+					toast("Finish the job first", "info")
 				end
 			end)
 		end
 		-- the bonus for all three
-		local r = Panel.row(panel.body, 10, 50)
+		local r = Panel.row(panel.body, 10, 56)
 		Panel.text("note", "🎁  Finish all three jobs", {
 			Position = UDim2.fromOffset(12, 0),
 			Size = UDim2.new(0.66, -12, 1, 0),
@@ -323,7 +384,7 @@ local function buildJobs(): Panel.Panel
 			{
 				AnchorPoint = Vector2.new(1, 0.5),
 				Position = UDim2.new(1, -10, 0.5, 0),
-				Size = UDim2.new(0.28, 0, 0, 32),
+				Size = UDim2.new(0.28, 0, 0, 44),
 			},
 			if ready then Color3.fromRGB(255, 200, 70) else Color3.fromRGB(190, 190, 190),
 			Color3.fromRGB(110, 70, 0),
@@ -334,6 +395,9 @@ local function buildJobs(): Panel.Panel
 			if ready then
 				Sound.play("Coin")
 				claim:FireServer(4)
+			elseif not data.bonus then
+				Sound.play("Click", 0.4, 0.8)
+				toast("Claim all three jobs first", "info")
 			end
 		end)
 	end
@@ -371,17 +435,18 @@ local function buildIndex(): Panel.Panel
 		local have, total = 0, 0
 		for zone, z in Zones do
 			local list = Finds.ByZone[zone] or {}
-			local row = Panel.row(panel.body, zone, 44)
+			local row = Panel.row(panel.body, zone, 72)
 			local complete = #list > 0
 			for _, f in list do
 				if not found[f.id] then
 					complete = false
 				end
 			end
+			-- the zone's name on its own line, its finds on the line under it
 			Panel.text("title", z.name .. (if complete then " ✅" else ""), {
-				Position = UDim2.fromOffset(12, 0),
-				Size = UDim2.new(0.3, -12, 1, 0),
-				TextSize = 14,
+				Position = UDim2.fromOffset(12, 4),
+				Size = UDim2.new(1, -24, 0, 22),
+				TextSize = 16,
 				Parent = row,
 			})
 			for i, f in list do
@@ -392,8 +457,8 @@ local function buildIndex(): Panel.Panel
 				end
 				local tier = Rarity.Tiers[f.rarity]
 				UI.new("TextLabel", {
-					Position = UDim2.new(0.3, (i - 1) * 38, 0, 5),
-					Size = UDim2.fromOffset(34, 34),
+					Position = UDim2.fromOffset(12 + (i - 1) * 40, 30),
+					Size = UDim2.fromOffset(36, 36),
 					BackgroundColor3 = if got then rgb(tier.color) else Color3.new(1, 1, 1),
 					BackgroundTransparency = if got then 0.45 else 0.92,
 					Text = if got then f.emoji else "?",
@@ -554,7 +619,9 @@ function HUD.start()
 		Parent = player:WaitForChild("PlayerGui"),
 	})
 
-	-- ===== LEFT: icon tiles (Store / Event, Index / Gift) + Music switch =====
+	-- ===== LEFT: icon tiles (Store / Jobs / Pass, Index / Gift, Crew / Pets) =====
+	-- (a bit bigger than the rest of the HUD: these are tap targets; the Music switch is a small
+	-- chip in the top-left corner so the column clears the stat lines below it)
 	local left = UI.new("Frame", {
 		Name = "Left",
 		AnchorPoint = Vector2.new(0, 0.5),
@@ -563,7 +630,7 @@ function HUD.start()
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, { UI.new("UIListLayout", { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder }) })
-	UI.scaleObject(left)
+	UI.scaleObject(left, 1.15)
 	local function tileRow(order: number): Frame
 		return UI.new("Frame", {
 			LayoutOrder = order,
@@ -636,9 +703,40 @@ function HUD.start()
 		UI.tile(row3, "Pets", "🐀", "Pets", Color3.fromRGB(255, 200, 120), Color3.fromRGB(190, 110, 40))
 	petsTile.LayoutOrder = 2
 	HUD.petsTile = petsTile
-	left.Size = UDim2.fromOffset(210, 264)
-	UI.toggle(left, 4, "Music", true, function(on)
-		Music.setEnabled(on)
+	left.Size = UDim2.fromOffset(210, 210)
+	-- MUSIC: a small round 🎵 chip in the top-left corner (the now-playing chip slides in right of it)
+	local musicOn = true
+	local musicBtn: TextButton = UI.new("TextButton", {
+		Name = "Music",
+		Position = UDim2.fromOffset(12, 6),
+		Size = UDim2.fromOffset(46, 46),
+		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
+		BackgroundTransparency = 0.3,
+		Text = "🎵",
+		TextSize = 24,
+		Font = Enum.Font.GothamBold,
+		TextColor3 = Color3.new(1, 1, 1),
+		AutoButtonColor = true,
+		Parent = gui,
+	}, { UI.corner(23), UI.stroke(Color3.new(1, 1, 1), 1, 0.8) })
+	UI.scaleObject(musicBtn)
+	local musicSlash = UI.new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(0.75, 0, 0, 3),
+		Rotation = -45,
+		BackgroundColor3 = Color3.fromRGB(255, 90, 90),
+		BorderSizePixel = 0,
+		Visible = false,
+		Parent = musicBtn,
+	})
+	musicBtn.Activated:Connect(function()
+		musicOn = not musicOn
+		musicSlash.Visible = not musicOn
+		musicBtn.TextTransparency = if musicOn then 0 else 0.5
+		Sound.play("Click")
+		Music.setEnabled(musicOn)
+		toast(if musicOn then "🎵 Music on" else "🎵 Music off", "info")
 	end)
 	storeTile.Activated:Connect(function()
 		Sound.play("Click")
@@ -677,7 +775,15 @@ function HUD.start()
 		}),
 	})
 	UI.scaleObject(stats)
-	local boost = UI.slimText({ LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 15), Text = "", Parent = stats })
+	local boost = UI.slimText({
+		LayoutOrder = 1,
+		Size = UDim2.new(1, 0, 0, 19),
+		Text = "",
+		TextScaled = false,
+		TextSize = 16,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = stats,
+	})
 	local strength = UI.statLine(stats, 2, "💪", Color3.fromRGB(255, 120, 110), 24)
 	local bagText = UI.statLine(stats, 3, "🧱", Color3.fromRGB(235, 205, 150), 24)
 	local slots = UI.statLine(stats, 4, "💎", Color3.fromRGB(205, 160, 255), 24)
@@ -696,7 +802,7 @@ function HUD.start()
 	local goal = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 34),
-		Size = UDim2.fromOffset(220, 18),
+		Size = UDim2.fromOffset(240, 24),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	})
@@ -715,10 +821,10 @@ function HUD.start()
 	local goalText: TextLabel = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
 		Position = UDim2.fromOffset(0, 5),
-		Size = UDim2.new(1, 0, 0, 13),
+		Size = UDim2.new(1, 0, 0, 19),
 		Text = "",
 		Font = Enum.Font.GothamBold,
-		TextSize = 11,
+		TextSize = 16,
 		TextColor3 = Color3.fromRGB(236, 238, 244),
 		Parent = goal,
 	}, { UI.textStroke(UI.INK, 1) })
@@ -754,17 +860,25 @@ function HUD.start()
 	player:GetAttributeChangedSignal("MaxDepth"):Connect(updateGoal)
 	task.defer(updateGoal)
 
+	-- toasts: their own layer above the panels (placeToasts moves them while a panel is open)
+	local toastGui = UI.new("ScreenGui", {
+		Name = "Toasts",
+		ResetOnSpawn = false,
+		DisplayOrder = 7,
+		Parent = player:WaitForChild("PlayerGui"),
+	})
 	toastHolder = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 118),
-		Size = UDim2.fromOffset(460, 140),
+		Size = UDim2.fromOffset(460, 160),
 		BackgroundTransparency = 1,
-		Parent = gui,
+		Parent = toastGui,
 	}, {
-		UI.new(
-			"UIListLayout",
-			{ Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center }
-		),
+		UI.new("UIListLayout", {
+			Padding = UDim.new(0, 5),
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
 	})
 	UI.scaleObject(toastHolder)
 
@@ -805,9 +919,10 @@ function HUD.start()
 		Text = "",
 		Font = Enum.Font.GothamBlack,
 		TextSize = 40,
+		TextScaled = true, -- (long zone names shrink instead of spilling out)
 		TextColor3 = Color3.new(1, 1, 1),
 		Parent = banner,
-	}, { UI.textStroke(UI.INK, 1) })
+	}, { UI.textStroke(UI.INK, 1), UI.new("UITextSizeConstraint", { MaxTextSize = 40 }) })
 	UI.new("TextLabel", {
 		Name = "Sub",
 		Position = UDim2.fromOffset(0, 58),
@@ -815,7 +930,7 @@ function HUD.start()
 		BackgroundTransparency = 1,
 		Text = "",
 		Font = Enum.Font.GothamMedium,
-		TextSize = 14,
+		TextSize = 17,
 		TextColor3 = Color3.fromRGB(215, 220, 228),
 		Parent = banner,
 	})
@@ -826,7 +941,7 @@ function HUD.start()
 		Name = "Full",
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 58),
-		Size = UDim2.fromOffset(0, 28),
+		Size = UDim2.fromOffset(0, 30),
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
 		BackgroundTransparency = 0.2,
@@ -847,17 +962,25 @@ function HUD.start()
 	}, { UI.corner(4) })
 	local fullText: TextLabel = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(0, 28),
+		Size = UDim2.fromOffset(0, 30),
 		AutomaticSize = Enum.AutomaticSize.X,
 		Text = "",
 		RichText = true,
 		Font = Enum.Font.GothamBold,
-		TextSize = 13,
+		TextSize = 16,
 		TextColor3 = Color3.fromRGB(240, 242, 248),
 		Parent = fullBox,
 	})
 	local shownKind: string? = nil
 	local shownAt = 0
+	-- PUNCH with a full backpack: the chip comes back (with a bump) for another few seconds
+	DigController.onBagFull = function()
+		shownAt = os.clock()
+		if attr("Bag", 0) >= attr("BagCap", 20) then
+			fullBox.Visible = true
+			UI.bump(fullBox, 0.15)
+		end
+	end
 
 	-- ===== BOTTOM CENTER: hotbar (Moments puts 🧨 / 💡 here) =====
 	local hotbar: Frame = UI.new("Frame", {
@@ -893,7 +1016,7 @@ function HUD.start()
 	punchBtn.Position = UDim2.new(1, -205, 1, -80)
 	local vacBtn = UI.actionButton(buttons, "Vacuum", "🌀", "VACUUM", 76)
 	vacBtn.Position = UDim2.new(1, -96, 1, -178)
-	holdable(punchBtn, function()
+	local releasePunch = holdable(punchBtn, function()
 		DigController.setHolding(true)
 	end, function()
 		DigController.setHolding(false)
@@ -908,22 +1031,29 @@ function HUD.start()
 			vacBtn.BackgroundTransparency = if on then 0.15 else 0.45
 		end
 	end
-	holdable(vacBtn, function()
+	local releaseVac = holdable(vacBtn, function()
 		setVac(true)
 	end, function()
 		setVac(false)
 	end)
 
 	-- ===== RIGHT: admin tile =====
+	-- (left of the top-right column: never under the loot cards or the clock)
 	local right = UI.new("Frame", {
 		Name = "Right",
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -12, 0.4, 0),
+		AnchorPoint = Vector2.new(1, 0),
 		Size = UDim2.fromOffset(56, 130),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, { UI.new("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder }) })
 	UI.scaleObject(right)
+	local function placeRight()
+		right.Position = UDim2.new(1, -(14 + 310 * UI.screenScale()), 0, 10)
+	end
+	placeRight()
+	if workspace.CurrentCamera then
+		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(placeRight)
+	end
 	HUD.right = right
 	local adminPanel = nil
 	local adminBtn = UI.tile(
@@ -1042,6 +1172,7 @@ function HUD.start()
 
 	-- context: zone label, full prompt, auto-vacuum (the gym has its own LIFT: GymController)
 	local fullKind: string? = nil
+	local buttonsLive = true
 	local acc = 0
 	RunService.Heartbeat:Connect(function(dt)
 		acc += dt
@@ -1049,6 +1180,7 @@ function HUD.start()
 			return
 		end
 		acc = 0
+		placeToasts()
 		local cell, z = CameraController.where()
 		if cell then
 			local zone = Zones[CameraController.zone()]
@@ -1057,6 +1189,17 @@ function HUD.start()
 			zoneText.Text = string.format("⛏️ Record %dm", attr("MaxDepth", 0))
 		end
 		vacBtn.Visible = player:GetAttribute("AutoVacuum") ~= true
+		-- buttons hidden (gym, bed, cinematic) mid-hold: let go, or PUNCH / VACUUM stay stuck on
+		local live = buttons.Visible and gui.Enabled
+		if not live then
+			releasePunch()
+			releaseVac()
+			setVac(false)
+			if buttonsLive then
+				DigController.setHolding(false)
+			end
+		end
+		buttonsLive = live
 		-- full prompt
 		local bag, cap, loose = attr("Bag", 0), attr("BagCap", 20), attr("Loose", 0)
 		local kind: string? = nil

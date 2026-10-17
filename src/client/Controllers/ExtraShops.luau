@@ -51,7 +51,7 @@ local function row(
 	good: boolean,
 	onTap: () -> ()
 )
-	local r = Panel.row(body, order, 60)
+	local r = Panel.row(body, order, 64)
 	Panel.text("title", title, {
 		Position = UDim2.fromOffset(12, 8),
 		Size = UDim2.new(0.66, -12, 0, 18),
@@ -59,8 +59,8 @@ local function row(
 	})
 	Panel.text("desc", desc, {
 		Position = UDim2.fromOffset(12, 27),
-		Size = UDim2.new(0.66, -12, 0, 28),
-		TextSize = 12,
+		Size = UDim2.new(0.66, -12, 0, 30),
+		TextSize = 13,
 		TextYAlignment = Enum.TextYAlignment.Top,
 		Parent = r,
 	})
@@ -68,7 +68,7 @@ local function row(
 		{
 			AnchorPoint = Vector2.new(1, 0.5),
 			Position = UDim2.new(1, -10, 0.5, 0),
-			Size = UDim2.new(0.28, 0, 0, 38),
+			Size = UDim2.new(0.28, 0, 0, 44),
 		},
 		if good then Color3.fromRGB(90, 220, 110) else Color3.fromRGB(190, 190, 190),
 		Color3.fromRGB(30, 80, 40),

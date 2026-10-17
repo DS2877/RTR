@@ -47,6 +47,7 @@ local function buildPanel(): Panel.Panel
 		{ Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = panel.body }
 	)
 	local invite = Remotes.get(Remotes.Names.CrewInvite)
+	local sentAt: { [number]: number } = {}
 	local leave = Remotes.get(Remotes.Names.CrewLeave)
 	local function render()
 		for _, c in panel.body:GetChildren() do
@@ -72,14 +73,14 @@ local function buildPanel(): Panel.Panel
 			Panel.text("desc", table.concat(me.members, " · "), {
 				Position = UDim2.fromOffset(12, 30),
 				Size = UDim2.new(0.66, -12, 0, 24),
-				TextSize = 12,
+				TextSize = 14,
 				Parent = r,
 			})
 			local b = Panel.button(
 				{
 					AnchorPoint = Vector2.new(1, 0.5),
 					Position = UDim2.new(1, -10, 0.5, 0),
-					Size = UDim2.new(0.28, 0, 0, 36),
+					Size = UDim2.new(0.28, 0, 0, 44),
 					Parent = r,
 				},
 				Color3.fromRGB(230, 90, 80),
@@ -94,7 +95,7 @@ local function buildPanel(): Panel.Panel
 				for _, name in me.members do
 					local other = Players:FindFirstChild(name)
 					if other and other ~= player and other:IsA("Player") then
-						local kr = Panel.row(panel.body, nextOrder(), 44)
+						local kr = Panel.row(panel.body, nextOrder(), 54)
 						Panel.text("desc", "⛏️  " .. name .. " digs with you", {
 							Position = UDim2.fromOffset(12, 0),
 							Size = UDim2.new(0.66, -12, 1, 0),
@@ -103,7 +104,7 @@ local function buildPanel(): Panel.Panel
 						local kb = Panel.button({
 							AnchorPoint = Vector2.new(1, 0.5),
 							Position = UDim2.new(1, -10, 0.5, 0),
-							Size = UDim2.new(0.22, 0, 0, 30),
+							Size = UDim2.new(0.24, 0, 0, 44),
 							Parent = kr,
 						}, GREY, GREY, "Send home")
 						kb.Activated:Connect(function()
@@ -116,20 +117,20 @@ local function buildPanel(): Panel.Panel
 		else
 			panel.subtitle.Text =
 				string.format("dig together: +%d%% Noodles each", math.floor(Economy.CrewBonus * 100))
-			local r = Panel.row(panel.body, nextOrder(), 54)
+			local r = Panel.row(panel.body, nextOrder(), 64)
 			Panel.text(
 				"desc",
 				"Invite players to dig in YOUR tunnel. Everyone keeps their own rubble, finds and gold, and the whole crew earns more (friends even more).",
 				{
 					Position = UDim2.fromOffset(12, 0),
 					Size = UDim2.new(1, -24, 1, 0),
-					TextSize = 12,
+					TextSize = 14,
 					Parent = r,
 				}
 			)
 		end
 		-- invite Roblox friends into this server
-		local fr = Panel.row(panel.body, nextOrder(), 48)
+		local fr = Panel.row(panel.body, nextOrder(), 56)
 		Panel.text("title", "📨 Bring your friends", {
 			Position = UDim2.fromOffset(12, 0),
 			Size = UDim2.new(0.6, -12, 1, 0),
@@ -138,7 +139,7 @@ local function buildPanel(): Panel.Panel
 		local fb = Panel.button({
 			AnchorPoint = Vector2.new(1, 0.5),
 			Position = UDim2.new(1, -10, 0.5, 0),
-			Size = UDim2.new(0.34, 0, 0, 34),
+			Size = UDim2.new(0.34, 0, 0, 44),
 			Parent = fr,
 		}, CYAN, BLUE, "Invite friends")
 		fb.Activated:Connect(function()
@@ -155,43 +156,80 @@ local function buildPanel(): Panel.Panel
 			if other ~= player then
 				local busy = typeof(other:GetAttribute("Crew")) == "string"
 					and other:GetAttribute("Crew") ~= ""
-				local r = Panel.row(panel.body, nextOrder(), 44)
+				local r = Panel.row(panel.body, nextOrder(), 54)
 				Panel.text("title", other.DisplayName, {
 					Position = UDim2.fromOffset(12, 0),
 					Size = UDim2.new(0.6, -12, 1, 0),
 					Parent = r,
 				})
-				local can = not busy and not guest
+				-- an invite just sent: "Sent ✓" (no spamming) for 30 s
+				local sent = os.clock() - (sentAt[other.UserId] or -math.huge) < 30
+				local can = not busy and not guest and not sent
 				local b = Panel.button(
 					{
 						AnchorPoint = Vector2.new(1, 0.5),
 						Position = UDim2.new(1, -10, 0.5, 0),
-						Size = UDim2.new(0.26, 0, 0, 30),
+						Size = UDim2.new(0.26, 0, 0, 44),
 						Parent = r,
 					},
 					if can then GREEN else GREY,
 					if can then Color3.fromRGB(20, 90, 40) else GREY,
-					if busy then "In a crew" else "Invite"
+					if busy then "In a crew" elseif sent then "Sent ✓" else "Invite"
 				)
 				if can then
 					b.Activated:Connect(function()
 						Sound.play("Click")
 						invite:FireServer(other.UserId)
+						sentAt[other.UserId] = os.clock()
+						render()
+						task.delay(30.1, function()
+							if panel.isOpen() then
+								render()
+							end
+						end)
+					end)
+				elseif guest and not busy then
+					b.Activated:Connect(function()
+						Sound.play("Click", 0.4, 0.8)
+						HUD.toast("Only the crew's host can invite", "info")
 					end)
 				end
 			end
 		end
 	end
 	panel.onOpen = render
-	player:GetAttributeChangedSignal("Crew"):Connect(function()
-		if panel.isOpen() then
-			render()
+	-- live while open: players joining / leaving, anyone's crew changing (one render per frame)
+	local queued = false
+	local function rerender()
+		if panel.isOpen() and not queued then
+			queued = true
+			task.defer(function()
+				queued = false
+				if panel.isOpen() then
+					render()
+				end
+			end)
 		end
+	end
+	local function watch(p: Player)
+		p:GetAttributeChangedSignal("Crew"):Connect(rerender)
+	end
+	for _, p in Players:GetPlayers() do
+		watch(p)
+	end
+	Players.PlayerAdded:Connect(function(p)
+		watch(p)
+		rerender()
+	end)
+	Players.PlayerRemoving:Connect(function(p)
+		sentAt[p.UserId] = nil
+		rerender()
 	end)
 	return panel
 end
 
--- the invite card: slim, bottom center, runs out
+-- the invite card: bottom center, above the hotbar and the ESCAPE / BRIBE row, runs out; hidden
+-- while the HUD's buttons are (gym, bed, cinematics)
 local function buildInviteCard(): (string, number, boolean) -> ()
 	local gui = UI.new("ScreenGui", {
 		Name = "CrewInvite",
@@ -199,22 +237,31 @@ local function buildInviteCard(): (string, number, boolean) -> ()
 		DisplayOrder = 12,
 		Parent = player:WaitForChild("PlayerGui"),
 	})
+	local function dockY(): number
+		return -(84 + math.floor(52 * 1.1 * UI.screenScale()) + 8)
+	end
 	local box: Frame = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -150),
-		Size = UDim2.fromOffset(380, 74),
+		Position = UDim2.new(0.5, 0, 1, dockY()),
+		Size = UDim2.fromOffset(400, 80),
 		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
 		BackgroundTransparency = 0.1,
 		Visible = false,
 		Parent = gui,
 	}, { UI.corner(14), UI.stroke(CYAN, 1, 0.4) })
-	UI.scaleObject(box)
+	UI.scaleObject(box, 1.2)
+	local buttons = HUD.buttons
+	if buttons then
+		buttons:GetPropertyChangedSignal("Visible"):Connect(function()
+			gui.Enabled = buttons.Visible
+		end)
+	end
 	local title: TextLabel = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(14, 10),
-		Size = UDim2.new(1, -150, 0, 20),
+		Position = UDim2.fromOffset(14, 8),
+		Size = UDim2.new(1, -172, 0, 22),
 		Font = Enum.Font.GothamBlack,
-		TextSize = 15,
+		TextSize = 17,
 		TextColor3 = CYAN,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextTruncate = Enum.TextTruncate.AtEnd,
@@ -224,9 +271,9 @@ local function buildInviteCard(): (string, number, boolean) -> ()
 	local body: TextLabel = UI.new("TextLabel", {
 		BackgroundTransparency = 1,
 		Position = UDim2.fromOffset(14, 32),
-		Size = UDim2.new(1, -150, 0, 32),
+		Size = UDim2.new(1, -172, 0, 40),
 		Font = Enum.Font.GothamMedium,
-		TextSize = 12,
+		TextSize = 14,
 		TextWrapped = true,
 		TextColor3 = Color3.fromRGB(205, 208, 218),
 		TextXAlignment = Enum.TextXAlignment.Left,
@@ -236,14 +283,14 @@ local function buildInviteCard(): (string, number, boolean) -> ()
 	})
 	local join = Panel.button({
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -54, 0.5, 0),
-		Size = UDim2.fromOffset(78, 36),
+		Position = UDim2.new(1, -62, 0.5, 0),
+		Size = UDim2.fromOffset(96, 44),
 		Parent = box,
 	}, GREEN, Color3.fromRGB(20, 90, 40), "JOIN")
 	local no = Panel.button({
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, -10, 0.5, 0),
-		Size = UDim2.fromOffset(38, 36),
+		Size = UDim2.fromOffset(44, 44),
 		Parent = box,
 	}, GREY, GREY, "✕")
 	local timer = UI.new("Frame", {
@@ -282,8 +329,8 @@ local function buildInviteCard(): (string, number, boolean) -> ()
 			if friend then " (you're friends: extra!)" else ""
 		)
 		box.Visible = true
-		box.Position = UDim2.new(0.5, 0, 1, -130)
-		UI.tween(box, 0.3, { Position = UDim2.new(0.5, 0, 1, -150) }, Enum.EasingStyle.Back)
+		box.Position = UDim2.new(0.5, 0, 1, dockY() + 20)
+		UI.tween(box, 0.3, { Position = UDim2.new(0.5, 0, 1, dockY()) }, Enum.EasingStyle.Back)
 		Sound.play("Announce", 0.4)
 		timer.Size = UDim2.new(1, -28, 0, 2)
 		UI.tween(timer, Economy.CrewInviteSeconds, { Size = UDim2.new(0, 0, 0, 2) }, Enum.EasingStyle.Linear)

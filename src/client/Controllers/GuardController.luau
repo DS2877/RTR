@@ -232,13 +232,16 @@ function GuardController.start()
 			end
 		end
 	end)
-	local said = ReplicatedStorage:WaitForChild("Patrol", 30)
+	-- the speech bubbles wait for the server's Patrol folder in the background (start() must not
+	-- block the controllers after it)
+	local said: Instance? = nil
 	local function show(i: number)
 		local g = guards[i]
-		if not g or not said then
+		local src = said
+		if not g or not src then
 			return
 		end
-		local text = said:GetAttribute("Say" .. i)
+		local text = src:GetAttribute("Say" .. i)
 		if typeof(text) ~= "string" then
 			return
 		end
@@ -252,13 +255,18 @@ function GuardController.start()
 		g.scale.Scale = 0.9
 		TweenService:Create(g.scale, TweenInfo.new(0.2, Enum.EasingStyle.Quint), { Scale = 1 }):Play()
 	end
-	if said then
+	task.spawn(function()
+		local folderPatrol = ReplicatedStorage:WaitForChild("Patrol", 30)
+		if not folderPatrol then
+			return
+		end
+		said = folderPatrol
 		for i in Config.Guards do
-			said:GetAttributeChangedSignal("SayAt" .. i):Connect(function()
+			folderPatrol:GetAttributeChangedSignal("SayAt" .. i):Connect(function()
 				show(i)
 			end)
 		end
-	end
+	end)
 
 	RunService.RenderStepped:Connect(function()
 		local p = ReplicatedStorage:GetAttribute("Phase")

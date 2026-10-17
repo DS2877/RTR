@@ -95,8 +95,21 @@ local function upgradePanel(shop: string, title: string, color: Color3, dark: Co
 		{ Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = panel.body }
 	)
 	local buy = Remotes.get(Remotes.Names.Buy)
+	-- which buttons were affordable at the last render ("101"): a Noodles change that doesn't flip
+	-- any of them only updates the subtitle
+	local function affordKey(): string
+		local money = player:GetAttribute("Noodles") or 0
+		local key = ""
+		for _, track in Upgrades.Shops[shop] do
+			local cost = Progression.nextCost(track, (player:GetAttribute(track) or 1) :: number)
+			key ..= if cost and money >= cost then "1" else "0"
+		end
+		return key
+	end
+	local renderedKey = ""
 	local function render()
 		clear(panel.body)
+		renderedKey = affordKey()
 		panel.subtitle.Text = Format.noodles(player:GetAttribute("Noodles") or 0)
 		for i, track in Upgrades.Shops[shop] do
 			local list = (Upgrades :: any)[track]
@@ -107,9 +120,9 @@ local function upgradePanel(shop: string, title: string, color: Color3, dark: Co
 			local cost = Progression.nextCost(track, level)
 			local r = row(panel.body, i, 60)
 			Panel.text("note", info.title .. " · LV " .. level, {
-				Position = UDim2.fromOffset(12, 7),
-				Size = UDim2.new(0.64, -12, 0, 13),
-				TextSize = 11,
+				Position = UDim2.fromOffset(12, 5),
+				Size = UDim2.new(0.64, -12, 0, 15),
+				TextSize = 13,
 				TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.35),
 				Parent = r,
 			})
@@ -137,7 +150,7 @@ local function upgradePanel(shop: string, title: string, color: Color3, dark: Co
 				{
 					AnchorPoint = Vector2.new(1, 0.5),
 					Position = UDim2.new(1, -10, 0.5, 0),
-					Size = UDim2.new(0.3, 0, 0, 38),
+					Size = UDim2.new(0.3, 0, 0, 44),
 				},
 				if afford then Color3.fromRGB(90, 220, 110) else Color3.fromRGB(190, 190, 190),
 				Color3.fromRGB(30, 80, 40),
@@ -174,10 +187,28 @@ local function upgradePanel(shop: string, title: string, color: Color3, dark: Co
 			end
 		end)
 	end
+	local pending = false
+	local lastRender = 0
 	player:GetAttributeChangedSignal("Noodles"):Connect(function()
-		if panel.isOpen() then
-			render()
+		if not panel.isOpen() then
+			return
 		end
+		if affordKey() == renderedKey then
+			panel.subtitle.Text = Format.noodles(player:GetAttribute("Noodles") or 0)
+			return
+		end
+		-- a button flips: rebuild, at most twice a second (Noodles tick fast while you dump)
+		if pending then
+			return
+		end
+		pending = true
+		task.delay(math.max(0, 0.5 - (os.clock() - lastRender)), function()
+			pending = false
+			lastRender = os.clock()
+			if panel.isOpen() then
+				render()
+			end
+		end)
 	end)
 	return panel
 end
@@ -225,7 +256,7 @@ local function fencePanel()
 			local f = Finds.ById[id]
 			if f then
 				local tier = Rarity.Tiers[f.rarity]
-				local r = row(panel.body, i, 46)
+				local r = row(panel.body, i, 54)
 				Panel.text("title", f.emoji .. " " .. f.name, {
 					Position = UDim2.fromOffset(12, 0),
 					Size = UDim2.new(0.66, -12, 1, 0),
@@ -234,8 +265,8 @@ local function fencePanel()
 				Panel.text("note", string.upper(f.rarity), {
 					AnchorPoint = Vector2.new(1, 0.5),
 					Position = UDim2.new(0.7, -8, 0.5, 0),
-					Size = UDim2.fromOffset(90, 14),
-					TextSize = 11,
+					Size = UDim2.fromOffset(90, 16),
+					TextSize = 13,
 					TextXAlignment = Enum.TextXAlignment.Right,
 					TextColor3 = UI.rgb(tier.color):Lerp(Color3.new(1, 1, 1), 0.2),
 					Parent = r,
@@ -243,7 +274,7 @@ local function fencePanel()
 				local b = Panel.button({
 					AnchorPoint = Vector2.new(1, 0.5),
 					Position = UDim2.new(1, -8, 0.5, 0),
-					Size = UDim2.new(0.28, 0, 0, 32),
+					Size = UDim2.new(0.28, 0, 0, 44),
 				}, Color3.fromRGB(90, 220, 110), Color3.fromRGB(30, 80, 40), Format.noodles(f.value))
 				b.Parent = r
 				b.Activated:Connect(function()
@@ -281,7 +312,13 @@ function Shops.start()
 		end
 	end)
 	Remotes.get(Remotes.Names.Found).OnClientEvent:Connect(function(id)
-		table.insert(finds, id)
+		-- only while there's a free slot (a find with full slots goes to the Stash, not the Fence
+		-- list; the server's Finds list stays the truth)
+		local slotsAttr = player:GetAttribute("Slots")
+		local cap = if typeof(slotsAttr) == "number" then slotsAttr else 3
+		if #finds < cap then
+			table.insert(finds, id)
+		end
 	end)
 	Remotes.get(Remotes.Names.OpenShop).OnClientEvent:Connect(function(name)
 		local p = (panels :: any)[name]

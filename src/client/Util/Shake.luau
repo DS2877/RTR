@@ -38,7 +38,11 @@ function Shake.start()
 		t += dt
 		camera.FieldOfView = baseFov + fovValue.Value - punch
 		punch = math.max(0, punch - dt * punch * 10 - dt)
-		if trauma > 0 then
+		-- a scripted camera (cinematics) sets its CFrame every frame: shaking it would add up and
+		-- the leftover trauma would jolt the camera when control comes back, so drop it there
+		if camera.CameraType ~= Enum.CameraType.Custom then
+			trauma = 0
+		elseif trauma > 0 then
 			local s = trauma * trauma
 			local rx = math.noise(t * 25, 1) * s * 0.06
 			local ry = math.noise(t * 25, 2) * s * 0.06

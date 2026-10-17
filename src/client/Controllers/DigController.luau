@@ -22,6 +22,8 @@ local VoxelRender = require(script.Parent.VoxelRender)
 local Shake = require(Client.Util.Shake)
 local PunchAnim = require(Client.Util.PunchAnim)
 local DigAudio = require(script.Parent.DigAudio)
+local DigFX = require(script.Parent.DigFX)
+local Sound = require(Client.Util.Sound)
 
 local DigController = {}
 
@@ -34,6 +36,7 @@ export type Aim = { x: number, y: number, z: number, face: number }
 local aim: Aim? = nil
 local holding = false
 local lastPunch = 0
+local lastFullNag = 0
 local outlines: { Part } = {}
 local outlineFolder: Folder
 local punchRemote: RemoteEvent
@@ -42,6 +45,8 @@ local punchRemote: RemoteEvent
 DigController.onPunch = nil :: ((aim: Aim, targets: { { number } }) -> ())?
 -- PUNCH with no block in reach: PvPController tries to punch a player (returns true if it did)
 DigController.onEmptyPunch = nil :: (() -> boolean)?
+-- PUNCH at a block with a full backpack (HUD flashes its FULL chip; HUD requires us, so a hook)
+DigController.onBagFull = nil :: (() -> ())?
 
 local function root(): BasePart?
 	local c = player.Character
@@ -223,6 +228,29 @@ local function punch()
 		if DigController.onEmptyPunch and DigController.onEmptyPunch() then
 			lastPunch = now
 			PunchAnim.play(player.Character)
+		end
+		return
+	end
+	-- backpack full: the server would refuse the punch anyway, so say so instead of a dead hit
+	local bag, cap = player:GetAttribute("Bag"), player:GetAttribute("BagCap")
+	if typeof(bag) == "number" and typeof(cap) == "number" and bag >= cap then
+		lastPunch = now
+		if now - lastFullNag >= 1.5 then
+			lastFullNag = now
+			Sound.play("Full", 0.5)
+			local r = root()
+			if r then
+				DigFX.popText(
+					r.Position + Vector3.new(0, 3.5, 0),
+					"BAG FULL",
+					Color3.fromRGB(255, 90, 90),
+					6,
+					1.2
+				)
+			end
+			if DigController.onBagFull then
+				DigController.onBagFull()
+			end
 		end
 		return
 	end

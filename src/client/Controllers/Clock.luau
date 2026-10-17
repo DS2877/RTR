@@ -39,6 +39,13 @@ function Clock.ambient(): Color3
 	return baseAmbient
 end
 
+-- A cinematic (the Breakout night, the escape) owns the sky while this is set: the schedule
+-- doesn't write Lighting and CameraController leaves Ambient alone.
+Clock.override = false
+function Clock.setOverride(on: boolean)
+	Clock.override = on
+end
+
 function Clock.phase(): string
 	local p = ReplicatedStorage:GetAttribute("Phase")
 	return if typeof(p) == "string" then p else "Day"
@@ -85,7 +92,7 @@ function Clock.start()
 	local card: Frame = UI.new("Frame", {
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, -14, 0, 10),
-		Size = UDim2.fromOffset(240, 62),
+		Size = UDim2.fromOffset(260, 76),
 		BackgroundColor3 = Color3.fromRGB(16, 17, 22),
 		BackgroundTransparency = 0.3,
 		Parent = gui,
@@ -94,12 +101,13 @@ function Clock.start()
 		UI.stroke(Color3.new(1, 1, 1), 1, 0.85),
 	})
 	UI.scaleObject(card)
+	UI.placeRight(card, UI.RIGHT_CLOCK_Y)
 	local function text(props: { [string]: any }): TextLabel
 		local base: { [string]: any } = {
 			BackgroundTransparency = 1,
 			TextColor3 = Color3.new(1, 1, 1),
 			Font = Enum.Font.GothamBold,
-			TextSize = 13,
+			TextSize = 16,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Parent = card,
 		}
@@ -108,18 +116,23 @@ function Clock.start()
 		end
 		return UI.new("TextLabel", base)
 	end
-	local title = text({ Position = UDim2.fromOffset(10, 6), Size = UDim2.new(1, -70, 0, 16), Text = "" })
+	local title = text({
+		Position = UDim2.fromOffset(10, 5),
+		Size = UDim2.new(1, -74, 0, 20),
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Text = "",
+	})
 	local clockText = text({
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -10, 0, 6),
-		Size = UDim2.fromOffset(60, 16),
+		Position = UDim2.new(1, -10, 0, 5),
+		Size = UDim2.fromOffset(62, 20),
 		Font = Enum.Font.GothamMedium,
 		TextColor3 = Color3.fromRGB(200, 205, 214),
 		TextXAlignment = Enum.TextXAlignment.Right,
 		Text = "",
 	})
 	local track = UI.new("Frame", {
-		Position = UDim2.fromOffset(10, 25),
+		Position = UDim2.fromOffset(10, 28),
 		Size = UDim2.new(1, -20, 0, 3),
 		BackgroundColor3 = Color3.fromRGB(60, 62, 70),
 		BorderSizePixel = 0,
@@ -131,31 +144,69 @@ function Clock.start()
 		BorderSizePixel = 0,
 		Parent = track,
 	}, { UI.corner(2) })
+	-- (the rules shrink a little rather than run off the card)
 	local rules = text({
-		Position = UDim2.fromOffset(10, 31),
-		Size = UDim2.new(1, -20, 0, 13),
+		Position = UDim2.fromOffset(10, 34),
+		Size = UDim2.new(1, -20, 0, 18),
 		Font = Enum.Font.GothamMedium,
-		TextSize = 11,
+		TextSize = 16,
+		TextScaled = true,
 		TextColor3 = Color3.fromRGB(215, 220, 228),
 		Text = "",
 	})
+	UI.new("UITextSizeConstraint", { MaxTextSize = 16, MinTextSize = 11, Parent = rules })
 	local nextText = text({
-		Position = UDim2.fromOffset(10, 45),
-		Size = UDim2.new(1, -20, 0, 12),
+		Position = UDim2.fromOffset(10, 54),
+		Size = UDim2.new(1, -20, 0, 17),
 		Font = Enum.Font.GothamMedium,
-		TextSize = 10,
-		TextColor3 = Color3.fromRGB(150, 155, 165),
+		TextSize = 15,
+		TextColor3 = Color3.fromRGB(170, 175, 186),
+		TextTruncate = Enum.TextTruncate.AtEnd,
 		Text = "",
 	})
+	-- the LIGHTS OUT countdown: between the FULL chip (top) and the toasts, never over either
+	-- (a holder carries the screen scale, so the label's own bump scale doesn't fight it)
+	local warningHolder = UI.new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 80),
+		Size = UDim2.fromOffset(420, 52),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	})
+	UI.scaleObject(warningHolder)
 	local warning = UI.bigText({
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.22),
-		Size = UDim2.fromScale(0.7, 0.1),
+		Size = UDim2.fromScale(1, 1),
 		Text = "",
 		TextColor3 = Color3.fromRGB(255, 80, 80),
 		Visible = false,
-		Parent = gui,
+		Parent = warningHolder,
 	}, DARK, 2)
+	-- tagged parts, cached (refreshed when tags come and go) instead of looked up every frame
+	local windows: { BasePart } = {}
+	local windowDark = -1 -- the darkness the windows were last painted for (-1: repaint)
+	local searchlights: { BasePart } = {}
+	local function trackTag(tag: string, list: { BasePart })
+		for _, inst in CollectionService:GetTagged(tag) do
+			if inst:IsA("BasePart") then
+				table.insert(list, inst)
+			end
+		end
+		CollectionService:GetInstanceAddedSignal(tag):Connect(function(inst)
+			if inst:IsA("BasePart") and not table.find(list, inst) then
+				table.insert(list, inst)
+				windowDark = -1
+			end
+		end)
+		CollectionService:GetInstanceRemovedSignal(tag):Connect(function(inst)
+			local i = table.find(list, inst :: any)
+			if i then
+				table.remove(list, i)
+			end
+		end)
+	end
+	trackTag("SkyWindow", windows)
+	trackTag("Searchlight", searchlights)
+	local textAcc = 1
 
 	local lastPhase = ""
 	local lastSecond = -1
@@ -177,19 +228,24 @@ function Clock.start()
 
 		-- prison time moves through the phase's clock range
 		local h = (e.clock[1] + (e.clock[2] - e.clock[1]) * progress) % 24
-		title.Text = e.emoji .. "  " .. e.name
-		title.TextColor3 = color
-		clockText.Text = hhmm(h)
-		fill.Size = UDim2.fromScale(progress, 1)
-		fill.BackgroundColor3 = color
-		rules.Text = e.rules
-		local mins, secs = math.floor(left / 60), math.floor(left % 60)
-		nextText.Text = string.format(
-			"Next: %s %s in %s",
-			nxt.emoji,
-			nxt.name,
-			if mins > 0 then string.format("%d:%02d", mins, secs) else string.format("%ds", secs)
-		)
+		-- the card's text ~4 times a second (it only changes by the second anyway)
+		textAcc += dt
+		if textAcc >= 0.25 or phase ~= lastPhase then
+			textAcc = 0
+			title.Text = e.emoji .. "  " .. e.name
+			title.TextColor3 = color
+			clockText.Text = hhmm(h)
+			fill.Size = UDim2.fromScale(progress, 1)
+			fill.BackgroundColor3 = color
+			rules.Text = e.rules
+			local mins, secs = math.floor(left / 60), math.floor(left % 60)
+			nextText.Text = string.format(
+				"Next: %s %s in %s",
+				nxt.emoji,
+				nxt.name,
+				if mins > 0 then string.format("%d:%02d", mins, secs) else string.format("%ds", secs)
+			)
+		end
 
 		-- LIGHTS OUT countdown
 		warning.Visible = phase == "LightsOut"
@@ -220,26 +276,29 @@ function Clock.start()
 		end
 
 		-- the sky follows prison time (eased so a forced phase change doesn't snap)
-		Lighting.ClockTime = h
 		shownDark += (darkness(h) - shownDark) * math.min(1, dt * 1.5)
 		local k = shownDark
 		local day, night = Cycle.Look.Day, Cycle.Look.Night
-		Lighting.Brightness = day.brightness + (night.brightness - day.brightness) * k
-		Lighting.OutdoorAmbient = rgb(day.outdoor):Lerp(rgb(night.outdoor), k)
+		if not Clock.override then
+			Lighting.ClockTime = h
+			Lighting.Brightness = day.brightness + (night.brightness - day.brightness) * k
+			Lighting.OutdoorAmbient = rgb(day.outdoor):Lerp(rgb(night.outdoor), k)
+		end
 		baseAmbient = rgb(day.ambient):Lerp(rgb(night.ambient), k)
 
 		-- frosted windows go dark at night; the tower searchlight sweeps the Yard
-		for _, w in CollectionService:GetTagged("SkyWindow") do
-			local part = w :: BasePart
-			part.Color = Color3.fromRGB(210, 222, 235):Lerp(Color3.fromRGB(28, 32, 44), k)
-			local sl = part:FindFirstChildOfClass("SurfaceLight")
-			if sl then
-				sl.Brightness = 1.2 * (1 - k)
+		if math.abs(k - windowDark) > 0.01 then
+			windowDark = k
+			for _, part in windows do
+				part.Color = Color3.fromRGB(210, 222, 235):Lerp(Color3.fromRGB(28, 32, 44), k)
+				local sl = part:FindFirstChildOfClass("SurfaceLight")
+				if sl then
+					sl.Brightness = 1.2 * (1 - k)
+				end
 			end
 		end
 		local t = workspace:GetServerTimeNow()
-		for _, s in CollectionService:GetTagged("Searchlight") do
-			local part = s :: BasePart
+		for _, part in searchlights do
 			local base = searchBase[part]
 			if not base then
 				base = part.CFrame
