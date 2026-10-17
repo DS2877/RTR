@@ -1,12 +1,89 @@
 # STATUS – Dig Out! (fängelseflykt-grävspel)
 
-Senast uppdaterad: 2026-10-16 · Milstolpe: **M5 POLISH** (M1–M4 publicerade)
+Senast uppdaterad: 2026-10-17 · Milstolpe: **LANSERING** (slutgenomgången klar)
 
 Det gamla spelet (Rob the Rich!) är raderat från koden och arkiverat i git-taggen
 `archive/rob-the-rich` (sista commit `374cd1d`). Ny spelardata sparas i `DigOut_v1`, så gammal
 data blandas aldrig in.
 
 ## ✅ Klart
+
+### Slutgenomgången inför lansering (17 okt)
+Tre granskningar gick igenom hela spelet: servern (säkerhet och buggar), klienten (mobil-UX)
+och speldesignen (tempo, ekonomi, retention, intäkter). Allt viktigt är åtgärdat:
+
+**Nytt innehåll**
+- **VALVDÖRRAR:** varje zons kammare vaktas av en nitad ståldörr med hälsomätare. Slå sönder
+  den för en belöning, sedan öppnas kammaren. Crew-gäster får sin andel av skadan.
+- **THIS WEEK:** veckotavla (alla servrar, nollställs måndag 00:00 UTC). Den räknar bara block
+  vid din egen front, så att farma mjuka lager vinner inte. Förra veckans topp 10 bär en krona.
+- **PRISON PASS:** säsonger på 28 dagar med 30 nivåer. Varje nivå har en gratisbelöning och en
+  premiumbelöning, och allt syns innan man köper. Pass-XP får man av grävning, jobb, daglig
+  belöning, valvdörrar, breakouts och guld. Premium (399 R$) ger +25 % XP. Exklusiva saker:
+  Riot Gear, Spark/Lightning Fists och husdjuret Jailbird. Öppnas med 🎫-rutan.
+- **SNABBRESA:** ⏬ DIG FACE / ⏫ CELL (håll still i 2,5 s i din cell eller tunnel, 15 s
+  cooldown). Promenaderna åt annars 40 % av speltiden.
+- **CELLKATALOG:** 📦 CATALOG i cellen på natten. Där kan du köpa alla uppgraderingar för +20 %
+  (nya spelare som kommer in mitt i natten fastnar inte längre).
+- **Verktyg i handen:** sked, spade, hacka, tryckluftsborr, borr, laser, plasmaskärare, Quantum
+  Fist och Freedom Fist syns i höger hand på alla spelare.
+- **Ragdoll vid knockout** i gården.
+- **Rymningsbekräftelse:** en panel visar exakt vad du behåller och vad du lämnar kvar.
+- **🏃 Escapes** i spelarlistan. Tavlan LONGEST TUNNEL heter nu **ESCAPE ARTISTS** (antal
+  rymningar först, sedan djup).
+- **Sena verktyg:** Freedom Fist och Cargo Train, så att det alltid finns något att spara till.
+- **Kortare rundtur** (6 stopp, förklarar VACUUM). En favorit-fråga ⭐ dyker upp efter första
+  valvet.
+
+**Ekonomi och tempo** (om-simulerad)
+- Belöningarna betyder något nu: daglig ×5, gåvor ×5, jobb ×3, roll call, skatt och leveranslåda
+  höjda, och passets nudlar ×10.
+- En missad dag halverar streaken i stället för att nollställa den.
+- Nudelpaketen ger 6× mer (Crate 2 500 block, Truck 15 000) och det finns ett nytt paket,
+  **Noodle Train** (449 R$, 60 000 block).
+- **Starter Pack** (79 R$, en gång): 3 dynamit, 30 min Noodle Rush, uniformen Fresh Fish och en
+  Noodle Crate.
+- **Noodle Rush** (49 R$): 2x nudlar i 30 min.
+- **VIP** ger nu +10 % nudlar, och Roblox Premium ger också +10 %.
+- Större första ryggsäckar, tidigare gymstationer och husdjur som kostar ×4 (de var för billiga).
+- Jackpot är mer sällsynt men lika mycket värd, och nyheten visas max en gång per minut.
+- Secret-, Cosmic- och Divine-fynden går nu att få.
+- Zonerna är omkalibrerade till jämna 4–18 minuter (ingen vägg på 25 min i zon 8 längre).
+- Zon 1 heter **CELL WALL** (blekgrön fängelsefärg), så att den inte ser ut som zon 3.
+- Inga dubbla emojis, läsbar Secret-färg och namngivna väskor för fyndplatser.
+
+**Serverfixar**
+- Att hålla VACUUM håller inte längre kombon vid liv för evigt (max 4 s paus).
+- Offline-belöningen ("din cellkamrat grävde medan du var borta") betalade aldrig ut. Nu gör
+  den det, i nudlar och mer än förut.
+- Dagens jobb byts inte mitt på dagen längre.
+- Ingen teleport ur sängen (fastfrusen gubbe), mitt i Breakout eller med ett stulet fynd. Att
+  rymma med ett stulet fynd lämnar tillbaka det.
+- Robux-köp går bara in i en aktiv profil och sparas direkt. Tunneln sparas vid varje
+  profilsparning (inga dubbla fynd efter en krasch).
+- Inget "data öppnad på annan server"-meddelande vid avstängning.
+- Varje serverloop överlever ett fel.
+- Okända husdjur rensas bort. Mutan dras aldrig två gånger. Stashen kan inte svämma över.
+- Inga slagsmål på Breakout-banan eller mot helt nya spelare. Teleport-fusk i Breakout stoppas.
+- Köpta buffar finns kvar efter omstart.
+- Små minnesläckor fixade.
+- Fynd från knockouts och skattjakten hamnar på hyllan.
+- Tapeten kan bara rullas ner från din egen cell.
+- Varje rymning ger en ny sten (nya fyndplatser).
+- Inspektionerna på natten är rättvisa (max en per spelare och natt, nya spelare skonas).
+- **Djup per runda:** efter en rymning följer målstapeln, djupjobben och cellskylten den nya
+  tunneln. Rekordet ligger kvar.
+
+**Klientfixar (mobil)**
+- Notiser hamnar ovanför öppna menyer.
+- PUNCH fortsätter när du rör joysticken och fastnar inte längre.
+- Alla knappar är minst 44 pt och texten går att läsa på iPhone.
+- Filmsekvenserna kan inte låsa kameran eller HUD:en, och ljuset flimrar inte.
+- Sprickor byggs inte om i onödan, och husdjuren är billigare att rita.
+- "BAG FULL" visas i stället för falska träffar.
+- Inga överlappande kort, knappar eller banners. Undertitlar står på egen rad.
+- Musik-chipet döljs när det är tyst. Lugnare skakningar. Låsta knappar förklarar varför.
+- Dynamit kräver två tryck innan köp. Lättare konfetti.
 
 ### Steg 0 – nystart
 - All Rob the Rich-kod, config, tester och dokumentation borttagen. Verktygen är kvar (rokit,
@@ -550,26 +627,25 @@ buggar. Åtgärdat:
 ### Balans (`lune run tools/simulate all`)
 | | Gratis-spelare | Med alla pass |
 |---|---|---|
-| Första uppgraderingen | 38 s | 34 s |
-| Zon 2 (Brick) | 4:11 | 3:51 |
-| Zon 3 (Concrete) | 8:52 | 7:50 |
-| Zon 4 (Reinforced) | 14:52 | 11:55 |
-| Zon 5 (Clay & Pipes) | 22:53 | 16:47 |
-| Zon 6 (Sewer) | 33:57 | 27:36 |
-| Zon 7 (Bedrock) | 45:13 | 32:16 |
-| Zon 8 (Crystal Cave) | 1:01:59 | 47:38 |
-| Zon 9 (Magma) | 1:21:15 | 54:03 |
-| Zon 10 (Ancient Ruins) | 1:55:42 | 1:02:01 |
-| Första flykten (600 m) | ~2:04 h | ~1:23 h |
+| Första uppgraderingen | 37 s | 34 s |
+| Zon 2 (Brick) | 3:21 | 3:42 |
+| Zon 3 (Concrete) | 8:49 | 8:01 |
+| Zon 4 (Reinforced) | 14:13 | 12:17 |
+| Zon 5 (Clay & Pipes) | 22:52 | 17:55 |
+| Zon 6 (Sewer) | 32:33 | 24:16 |
+| Zon 7 (Bedrock) | 42:21 | 30:21 |
+| Zon 8 (Crystal Cave) | 55:59 | 40:00 |
+| Zon 9 (Magma) | 1:08:50 | 52:01 |
+| Zon 10 (Ancient Ruins) | 1:27:27 | 1:06:40 |
+| Första flykten (600 m) | ~1:45 h | ~1:14 h |
 
 Mål: första uppgradering < 60 s ✅, zon 2 < 6 min ✅, zon 3 < 17 min ✅, flykt < 2:30 ✅,
-snitt ≤ 15 slag per block i varje zon ✅ (simulatorn varnar om något av detta spricker).
-När nästa lager kräver fler än ~15 slag "farmar" spelaren bredare i en grundare zon för Noodles och
-köper nästa verktyg – det är tänkt så (som i andra simulatorspel), inte en vägg.
+snitt ≤ 15 slag per block i varje zon ✅. Simulatorn räknar inte med natten, så i spelet tar
+flykten ungefär 2–2:15 h.
 
 ### Kontroller
 - CI: StyLua, Selene, Lune-tester, balanssimulering, Rojo-bygge och **smoke-test i den riktiga
-  platsen: 169 godkända, 0 fel** (hela M1-loopen spelas av en simulerad spelare: slag, sönderslaget
+  platsen: 520+ godkända, 0 fel** (hela M1-loopen spelas av en simulerad spelare: slag, sönderslaget
   block, dammsugning, dump, köp, gym, fynd + försäljning, kammare + zon 2, samlingshylla, dag/natt med låsta dörrar, sparning, stresstest).
 
 ### Prestanda
@@ -626,6 +702,18 @@ köper nästa verktyg – det är tänkt så (som i andra simulatorspel), inte e
     hoppar, gör 10 i rad (SET!) och bygg combo. Gå förbi vakterna och läs de nya replikerna.
 18. Prestanda: ADMIN → Stress dig → Perf. Gå runt i tunneln och kolla FPS.
 19. Lämna och gå in igen: tunneln, Noodles och uppgraderingar ska finnas kvar.
+20. Slutgenomgången:
+    - Tryck 🎫 Pass och titta på nivåerna. ADMIN → +noodles och gräv lite: XP-stapeln växer,
+      hämta en nivå.
+    - Gräv en bit och tryck ⏬ DIG FACE (stå still tills stapeln är full), sedan ⏫ CELL.
+    - ADMIN → 🌙 Night och tryck 📦 CATALOG i cellen: priserna är +20 % och du kan bläddra mellan
+      sidorna.
+    - Köp en Spoon/Shovel och titta på handen.
+    - ADMIN → Zone 2 och slå på kammaren: valvdörren har en mätare och välter när den går sönder.
+    - Titta på tavlan THIS WEEK i Common Room och på ESCAPE ARTISTS.
+    - Två spelare: slå ut den andra i gården, så ska hen flaxa ihop som en trasdocka.
+    - Tryck ESCAPE längst ner i tunneln: panelen ska visa vad du behåller och vad du förlorar.
+    - Gå ut och vänta minst 10 min, gå in igen: "💤 While you were away …" ska ge nudlar.
 
 ## ⏳ Saknas (kommande milstolpar)
 - UI:t (knappar, menyer) har inte kunnat renderas i visaren än – där är jag fortfarande blind.
@@ -644,3 +732,5 @@ Ops-workflowen försöker göra detta automatiskt – se `tools/ops/ops-log.md` 
 - [ ] **Ikoner för passen/produkterna** (de har Robloxs standardikon – ladda upp bilder i Creator Hub).
 - [ ] **Ny ikon och thumbnails** (kan inte göras via API:t – ladda upp manuellt).
 - [ ] Genre/kategori och åldersenkät (Experience Questionnaire) uppdaterade för det nya spelet.
+- [ ] Nya produkter (Prison Pass Premium, Noodle Train, Starter Pack, Noodle Rush) skapas av
+      ops-workflowen. Se `tools/ops/ops-log.md`. De behöver också ikoner.
