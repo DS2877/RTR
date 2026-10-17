@@ -20,9 +20,7 @@ och speldesignen (tempo, ekonomi, retention, intäkter). Allt viktigt är åtgä
 - **PRISON PASS:** säsonger på 28 dagar med 30 nivåer. Varje nivå har en gratisbelöning och en
   premiumbelöning, och allt syns innan man köper. Pass-XP får man av grävning, jobb, daglig
   belöning, valvdörrar, breakouts och guld. Premium (399 R$) ger +25 % XP. Exklusiva saker:
-  Riot Gear, Spark/Lightning Fists och husdjuret Jailbird. Öppnas med 🎫-rutan.
-- **SNABBRESA:** ⏬ DIG FACE / ⏫ CELL (håll still i 2,5 s i din cell eller tunnel, 15 s
-  cooldown). Promenaderna åt annars 40 % av speltiden.
+  Riot Gear, Spark/Lightning Fists och uniformen Kingpin. Öppnas med 🎫-rutan.
 - **CELLKATALOG:** 📦 CATALOG i cellen på natten. Där kan du köpa alla uppgraderingar för +20 %
   (nya spelare som kommer in mitt i natten fastnar inte längre).
 - **Verktyg i handen:** sked, spade, hacka, tryckluftsborr, borr, laser, plasmaskärare, Quantum
@@ -45,7 +43,7 @@ och speldesignen (tempo, ekonomi, retention, intäkter). Allt viktigt är åtgä
   Noodle Crate.
 - **Noodle Rush** (49 R$): 2x nudlar i 30 min.
 - **VIP** ger nu +10 % nudlar, och Roblox Premium ger också +10 %.
-- Större första ryggsäckar, tidigare gymstationer och husdjur som kostar ×4 (de var för billiga).
+- Större första ryggsäckar och tidigare gymstationer.
 - Jackpot är mer sällsynt men lika mycket värd, och nyheten visas max en gång per minut.
 - Secret-, Cosmic- och Divine-fynden går nu att få.
 - Zonerna är omkalibrerade till jämna 4–18 minuter (ingen vägg på 25 min i zon 8 längre).
@@ -63,7 +61,7 @@ och speldesignen (tempo, ekonomi, retention, intäkter). Allt viktigt är åtgä
   profilsparning (inga dubbla fynd efter en krasch).
 - Inget "data öppnad på annan server"-meddelande vid avstängning.
 - Varje serverloop överlever ett fel.
-- Okända husdjur rensas bort. Mutan dras aldrig två gånger. Stashen kan inte svämma över.
+- Mutan dras aldrig två gånger. Stashen kan inte svämma över.
 - Inga slagsmål på Breakout-banan eller mot helt nya spelare. Teleport-fusk i Breakout stoppas.
 - Köpta buffar finns kvar efter omstart.
 - Små minnesläckor fixade.
@@ -79,7 +77,7 @@ och speldesignen (tempo, ekonomi, retention, intäkter). Allt viktigt är åtgä
 - PUNCH fortsätter när du rör joysticken och fastnar inte längre.
 - Alla knappar är minst 44 pt och texten går att läsa på iPhone.
 - Filmsekvenserna kan inte låsa kameran eller HUD:en, och ljuset flimrar inte.
-- Sprickor byggs inte om i onödan, och husdjuren är billigare att rita.
+- Sprickor byggs inte om i onödan.
 - "BAG FULL" visas i stället för falska träffar.
 - Inga överlappande kort, knappar eller banners. Undertitlar står på egen rad.
 - Musik-chipet döljs när det är tyst. Lugnare skakningar. Låsta knappar förklarar varför.
@@ -263,34 +261,6 @@ och speldesignen (tempo, ekonomi, retention, intäkter). Allt viktigt är åtgä
   skatt och belöningar.
 - **Notiser** är smala mörka "piller" med färgad prick, och zon-bannern är en tunn filmisk remsa
   (hårfina linjer, bred titel, liten undertext) som tonar in och ut.
-
-### CELLMATES: husdjur som följer dig och hjälper till
-- Tryck på **🐀 Pets** (bredvid Crew). Där finns 8 cellkamrater med **kända priser** och inga
-  slumpade lådor, eftersom Noodles kan köpas för Robux och då får inget slumpmässigt säljas.
-  Varje husdjur låses upp när du har nått en viss zon. Rekordet räknas, så upplåsningen finns
-  kvar efter en rymning.
-  | Husdjur | Förmåga | Zon |
-  |---|---|---|
-  | 🐀 Sewer Rat | +6–15 % Noodles från grus | 1 |
-  | 🪳 Roach Swarm | dammsuger själv, +5–50 % räckvidd | 2 |
-  | 🐈 Alley Cat | +6–15 % slagkraft | 3 |
-  | 🐦 Carrier Pigeon | +10–28 % chans till fynd | 4 |
-  | 🦡 Tunnel Badger | **gräver själv** ett block bredvid ditt var 2,5 s | 5 |
-  | 🦜 Pirate Parrot | +25–70 % guldutbetalning | 6 |
-  | 🐶 Warden's Bulldog | +12–26 % slagkraft | 7 |
-  | 🐀 Golden Rat (glittrar) | +15–33 % Noodles | 8 |
-- **Nivåer:** husdjuren får XP för varje block du bryter medan de är ute, upp till nivå 10.
-  Förmågan växer med nivån. Nivå-upp ger ett kort och ljud. Panelen visar nivå, XP-mätare och
-  vad förmågan ger just nu.
-- **Platser:** du kan ha 1 husdjur ute, 2 efter din första rymning och 3 efter den tredje.
-- **I världen:** husdjuren följer efter dig. De på marken hoppar fram, fåglarna flaxar ovanför,
-  och alla har en liten namnskylt med nivå. Grävlingen gör ett skutt mot stenen när den gräver.
-  Alla spelare ser varandras husdjur.
-- **Balans:** simulatorn köper och använder husdjur. Rymningen tar 2:07 (mål 2:30), och alla
-  zoner ligger på högst 15 slag per block.
-- **Testa på iPhone:** ADMIN → Noodles, öppna 🐀 Pets, köp Sewer Rat och se den följa dig. Gräv
-  en stund så går den upp i nivå. ADMIN → Zone 5, köp grävlingen och se den skutta mot väggen
-  medan du slår.
 
 ### CREW: gräv tillsammans med kompisar
 - Tryck på **👥 Crew** (ny ruta under Index/Gift) för att se din crew och alla andra på servern.
@@ -705,7 +675,6 @@ flykten ungefär 2–2:15 h.
 20. Slutgenomgången:
     - Tryck 🎫 Pass och titta på nivåerna. ADMIN → +noodles och gräv lite: XP-stapeln växer,
       hämta en nivå.
-    - Gräv en bit och tryck ⏬ DIG FACE (stå still tills stapeln är full), sedan ⏫ CELL.
     - ADMIN → 🌙 Night och tryck 📦 CATALOG i cellen: priserna är +20 % och du kan bläddra mellan
       sidorna.
     - Köp en Spoon/Shovel och titta på handen.
