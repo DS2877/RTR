@@ -160,7 +160,7 @@ end
 local function digPet(player: any, s: State.PlayerState, now: number)
 	local mult = PetMath.bonus(data(s).Owned, data(s).Equipped, "dig")
 	local hit = s.lastHit
-	if mult <= 0 or not hit or now - s.lastPunch > Config.DigActive or now < s.petDigAt then
+	if mult <= 0 or not hit or s.hidden or now - s.lastPunch > Config.DigActive or now < s.petDigAt then
 		return
 	end
 	s.petDigAt = now + Config.DigInterval
@@ -180,7 +180,8 @@ local function digPet(player: any, s: State.PlayerState, now: number)
 	-- the punched block if it still stands, else an exposed one right around it
 	local target: { number }? = nil
 	local hx, hy, hz = hit[1], hit[2], hit[3]
-	if Voxel.isSolid(ts.grid, hx, hy, hz) and hz < maxZ then
+	-- (never a vault chamber block: only punches crack the doors)
+	if Voxel.isSolid(ts.grid, hx, hy, hz) and hz < maxZ and not Progression.chamberAt(hx, hy, hz) then
 		target = { hx, hy, hz }
 	else
 		local best = math.huge
@@ -194,6 +195,7 @@ local function digPet(player: any, s: State.PlayerState, now: number)
 						and z < maxZ
 						and Voxel.inBounds(ts.grid, x, y, z)
 						and Voxel.isExposed(ts.grid, x, y, z)
+						and not Progression.chamberAt(x, y, z)
 					then
 						best, target = d, { x, y, z }
 					end
@@ -244,10 +246,16 @@ function Pets.start()
 	end)
 	task.spawn(function()
 		while true do
-			task.wait(0.25)
-			local now = os.clock()
-			for player, s in State.all() do
-				digPet(player, s, now)
+			local ok, err = pcall(function()
+				task.wait(0.25)
+				local now = os.clock()
+				for player, s in State.all() do
+					digPet(player, s, now)
+				end
+			end)
+			if not ok then
+				warn("[Pets] loop:", err)
+				task.wait(1)
 			end
 		end
 	end)

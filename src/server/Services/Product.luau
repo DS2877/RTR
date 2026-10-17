@@ -25,6 +25,8 @@ local MAX_RECEIPTS = 60
 
 -- hooks (set in init)
 Product.onPasses = nil :: ((player: Player) -> ())?
+Product.isActive = nil :: ((player: Player) -> boolean)? -- Data.isActive
+Product.save = nil :: ((player: Player) -> ())? -- Data.save
 
 local function byKey(list: { Products.Product }, key: string): Products.Product?
 	for _, p in list do
@@ -130,7 +132,8 @@ function Product.start()
 	MarketplaceService.ProcessReceipt = function(info)
 		local player = Players:GetPlayerByUserId(info.PlayerId)
 		local s = player and State.get(player)
-		if not player or not s then
+		-- only into a profile this server still owns (never into data that won't be saved)
+		if not player or not s or (Product.isActive and not Product.isActive(player)) then
 			return Enum.ProductPurchaseDecision.NotProcessedYet
 		end
 		local receipts = s.data.Receipts
@@ -144,6 +147,9 @@ function Product.start()
 		table.insert(receipts, info.PurchaseId)
 		while #receipts > MAX_RECEIPTS do
 			table.remove(receipts, 1)
+		end
+		if Product.save then
+			Product.save(player)
 		end
 		return Enum.ProductPurchaseDecision.PurchaseGranted
 	end

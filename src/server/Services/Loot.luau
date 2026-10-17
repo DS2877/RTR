@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Economy = require(Shared.Config.Economy)
+local World = require(Shared.Config.World)
 local Progression = require(Shared.Progression)
 local Remotes = require(Shared.Remotes)
 local Format = require(Shared.Format)
@@ -259,9 +260,13 @@ function Loot.start(w: any)
 	Net.on(Remotes.Names.Vacuum, function(player, on)
 		local s = State.get(player)
 		if s and typeof(on) == "boolean" and vacLimit(player) then
-			if s.vacuuming and not on then
+			local now = os.clock()
+			if s.vacuuming and not on and now - s.vacuumAt <= World.ComboVacuumPause then
 				-- vacuuming pauses the combo chain: its clock restarts when you let go
-				s.comboLast = os.clock()
+				s.comboLast = now
+			elseif on and not s.vacuuming then
+				-- the pause only counts while the chain is alive
+				s.vacuumAt = if now - s.comboLast <= World.ComboWindow then now else -math.huge
 			end
 			s.vacuuming = on
 		end
@@ -287,12 +292,18 @@ function Loot.start(w: any)
 	-- vacuum tick
 	task.spawn(function()
 		while true do
-			task.wait(0.2)
-			for player, s in State.all() do
-				local magnet = (Loot.magnet ~= nil and Loot.magnet(player)) or vacuumPet(s) >= 0
-				if (s.vacuuming or s.passes.AutoVacuum or magnet) and #s.piles > 0 then
-					Loot.vacuum(player)
+			local ok, err = pcall(function()
+				task.wait(0.2)
+				for player, s in State.all() do
+					local magnet = (Loot.magnet ~= nil and Loot.magnet(player)) or vacuumPet(s) >= 0
+					if (s.vacuuming or s.passes.AutoVacuum or magnet) and #s.piles > 0 then
+						Loot.vacuum(player)
+					end
 				end
+			end)
+			if not ok then
+				warn("[Loot] loop:", err)
+				task.wait(1)
 			end
 		end
 	end)

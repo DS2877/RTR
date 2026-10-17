@@ -156,6 +156,9 @@ function Guards.bribe(player: Player): boolean
 	if not s or not active[player] or not s.snitched then
 		return false
 	end
+	if s.bribed then
+		return true -- (a double tap never pays twice)
+	end
 	local cost = Guards.bribeCost(s)
 	if s.data.Noodles < cost then
 		Net.notice(player, "Not enough Noodles to bribe the guard!", "bad")
@@ -236,28 +239,43 @@ function Guards.start()
 		end
 	end)
 	task.spawn(function()
+		local visited: { [any]: boolean } = {} -- inspected tonight (one visit per prisoner a night)
 		while true do
-			task.wait(Cycle.InspectEvery)
-			if Guards.isNight() then
-				-- one guard, one visit at a time: snitched prisoners first
-				local pick: Player? = nil
-				for player, s in State.all() do
-					if s.snitched then
-						pick = player
-						break
-					end
-				end
-				if not pick then
-					for player in State.all() do
-						if math.random() < Cycle.InspectChance then
+			local ok, err = pcall(function()
+				task.wait(Cycle.InspectEvery)
+				if Guards.isNight() then
+					-- one guard, one visit at a time: snitched prisoners first
+					local pick: Player? = nil
+					for player, s in State.all() do
+						if s.snitched then
 							pick = player
 							break
 						end
 					end
+					if not pick then
+						-- a fair draw among everyone not visited yet tonight (brand-new prisoners are left alone);
+						-- the odds of a visit grow with the number of prisoners, like a roll for each of them
+						local pool = {}
+						for player, ps in State.all() do
+							if not visited[player] and ps.data.PlayMinutes >= Cycle.InspectNewbieMinutes then
+								table.insert(pool, player)
+							end
+						end
+						if #pool > 0 and math.random() < 1 - (1 - Cycle.InspectChance) ^ #pool then
+							pick = pool[math.random(1, #pool)]
+						end
+					end
+					if pick then
+						visited[pick] = true
+						Guards.inspect(pick)
+					end
+				else
+					table.clear(visited)
 				end
-				if pick then
-					Guards.inspect(pick)
-				end
+			end)
+			if not ok then
+				warn("[Guards] loop:", err)
+				task.wait(1)
 			end
 		end
 	end)

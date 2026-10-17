@@ -27,6 +27,9 @@ Brawl.isDay = function(): boolean
 	return true
 end
 Brawl.onCarrierHit = nil :: ((thief: Player) -> ())?
+Brawl.onFind = nil :: ((player: Player, id: string, firstTime: boolean) -> ())? -- the collection
+-- somewhere fights don't happen (init: on THE BREAKOUT course)
+Brawl.noFight = nil :: ((player: Player) -> boolean)?
 
 export type Drop = { id: number, pos: Vector3, rubble: number, value: number, finds: { string }, born: number }
 local drops: { Drop } = {}
@@ -96,14 +99,19 @@ function Brawl.drops(): { Drop }
 	return drops
 end
 
-local function knockout(victim: Player, vs: State.PlayerState, pos: Vector3)
+local function deepestZone(data: any): number
+	return math.max(data.Zone, Progression.zoneAt(math.max(0, data.MaxDepth - 1)))
+end
+
+-- `as` = the attacker: a veteran knocking out a much newer prisoner gets no find out of it
+local function knockout(victim: Player, vs: State.PlayerState, pos: Vector3, as: State.PlayerState)
 	local data = vs.data
 	local rubble = math.floor(data.Bag * PvP.KnockoutDropShare)
 	local value = if data.Bag > 0 then data.BagValue * rubble / data.Bag else 0
 	data.Bag -= rubble
 	data.BagValue -= value
 	local finds = {}
-	if PvP.KnockoutDropsFind and #data.Finds > 0 then
+	if PvP.KnockoutDropsFind and #data.Finds > 0 and deepestZone(as.data) <= deepestZone(data) + 1 then
 		-- the most valuable find falls out of your pockets
 		local best, bestValue = 1, -1
 		for i, id in data.Finds do
@@ -144,6 +152,16 @@ function Brawl.punch(attacker: Player, userId: any): string?
 	if not Brawl.isDay() then
 		return "night"
 	end
+	if Brawl.noFight and (Brawl.noFight(attacker) or Brawl.noFight(victim)) then
+		return "no fights here"
+	end
+	-- newbie protection (a thief carrying your find is always fair game)
+	if as.data.PlayMinutes < PvP.NewbieMinutes then
+		return "newbie"
+	end
+	if vs.carrying == nil and vs.data.PlayMinutes < PvP.NewbieMinutes then
+		return "newbie victim"
+	end
 	local t = now()
 	if t - as.lastBrawl < PvP.PunchCooldown * 0.85 then
 		return "too fast"
@@ -173,7 +191,7 @@ function Brawl.punch(attacker: Player, userId: any): string?
 		Brawl.onCarrierHit(victim)
 	end
 	if out then
-		knockout(victim, vs, vpos)
+		knockout(victim, vs, vpos, as)
 		Net.notice(victim, "KNOCKED OUT by " .. attacker.Name .. "!", "bad")
 		Net.notice(attacker, "You knocked out " .. victim.Name .. "!", "good")
 	end
@@ -214,6 +232,11 @@ local function pickups()
 					while #d.finds > 0 and #s.data.Finds < slots do
 						local id = table.remove(d.finds) :: string
 						table.insert(s.data.Finds, id)
+						local first = not s.data.Found[id]
+						s.data.Found[id] = true
+						if Brawl.onFind then
+							Brawl.onFind(player, id, first)
+						end
 						local f = Finds.ById[id]
 						Net.notice(
 							player,
@@ -249,17 +272,23 @@ function Brawl.start(w: any)
 	end)
 	task.spawn(function()
 		while true do
-			local dt = task.wait(0.25)
-			local t = now()
-			for player, s in State.all() do
-				if s.stamina < PvP.MaxStamina and t - s.lastHitAt >= PvP.RegenDelay then
-					s.stamina = math.min(PvP.MaxStamina, s.stamina + PvP.StaminaRegen * dt)
-					if typeof(player) == "Instance" then
-						player:SetAttribute("Stamina", s.stamina)
+			local ok, err = pcall(function()
+				local dt = task.wait(0.25)
+				local t = now()
+				for player, s in State.all() do
+					if s.stamina < PvP.MaxStamina and t - s.lastHitAt >= PvP.RegenDelay then
+						s.stamina = math.min(PvP.MaxStamina, s.stamina + PvP.StaminaRegen * dt)
+						if typeof(player) == "Instance" then
+							player:SetAttribute("Stamina", s.stamina)
+						end
 					end
 				end
+				pickups()
+			end)
+			if not ok then
+				warn("[Brawl] loop:", err)
+				task.wait(1)
 			end
-			pickups()
 		end
 	end)
 	Players.PlayerAdded:Connect(function(p)

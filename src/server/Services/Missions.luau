@@ -22,7 +22,14 @@ local Loot = require(script.Parent.Loot)
 
 local Missions = {}
 
-export type Data = { Day: number, Progress: { number }, Claimed: { boolean }, Bonus: boolean }
+export type Data = {
+	Day: number,
+	Progress: { number },
+	Claimed: { boolean },
+	Bonus: boolean,
+	Seed: number?, -- the day's jobs are picked with this (fixed at the day reset)
+	NoDepth: boolean?,
+}
 
 local function today(): number
 	return os.time() // 86400
@@ -45,13 +52,21 @@ local function ensure(s: State.PlayerState): Data
 		m.Progress = { 0, 0, 0 }
 		m.Claimed = { false, false, false }
 		m.Bonus = false
+		-- the day's jobs are fixed when the day starts (progress and claims stay with their slot,
+		-- so nothing may reshuffle them mid-day: reaching the bottom or a new seed after an escape)
+		m.Seed = d.Seed
+		m.NoDepth = s.data.MaxDepth >= Progression.diggableDepth() - 20
+	end
+	if m.Seed == nil then
+		m.Seed = d.Seed
+		m.NoDepth = s.data.MaxDepth >= Progression.diggableDepth() - 20
 	end
 	return m
 end
 
 function Missions.list(s: State.PlayerState): { Pick.Picked }
-	local atBottom = s.data.MaxDepth >= Progression.diggableDepth() - 20
-	return Pick.pick(today(), s.data.Seed, atBottom)
+	local m = ensure(s)
+	return Pick.pick(today(), m.Seed, m.NoDepth == true)
 end
 
 function Missions.sync(player: Player)

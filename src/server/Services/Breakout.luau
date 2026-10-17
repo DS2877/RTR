@@ -19,6 +19,7 @@ local Net = require(script.Parent.Parent.Net)
 local Course = require(script.Parent.Parent.Util.BreakoutCourse)
 local Loot = require(script.Parent.Loot)
 local Cells = require(script.Parent.Cells)
+local Hideout = require(script.Parent.Hideout)
 local Stats = require(script.Parent.Stats)
 
 local Breakout = {}
@@ -35,6 +36,8 @@ export type Run = {
 	rebirths: number,
 	prison: string,
 	done: boolean,
+	lastPos: Vector3?, -- where the last check saw you (a jump faster than running = teleport)
+	lastAt: number,
 }
 
 local runs: { [any]: Run } = {}
@@ -83,8 +86,11 @@ function Breakout.begin(player: Player, practice: boolean, rebirths: number?, pr
 		rebirths = rebirths or s.data.Rebirths,
 		prison = prison or "",
 		done = false,
+		lastPos = nil,
+		lastAt = 0,
 	}
 	s.vacuuming = false
+	Hideout.wake(player)
 	setFlag(player, true)
 	place(player, Course.spawn(1))
 	Net.fire(player, Remotes.Names.Breakout, "start", workspace:GetServerTimeNow(), practice)
@@ -102,6 +108,7 @@ function Breakout.reset(player: Player, reason: string)
 	end
 	r.grace = os.clock() + Config.Grace
 	r.trail = {}
+	r.lastPos = nil
 	place(player, Course.spawn(r.checkpoint))
 	Net.fire(player, Remotes.Names.Breakout, "reset", reason, r.checkpoint, r.spotted)
 end
@@ -181,6 +188,17 @@ function Breakout.check(player: Player, t: number)
 		finish(player, r, true)
 		return
 	end
+	-- moved across the yard faster than anyone can run (a teleport exploit): back to the checkpoint
+	local last, lastAt = r.lastPos, r.lastAt
+	r.lastPos, r.lastAt = root, now
+	if last then
+		local dt = math.max(now - lastAt, 0.05)
+		local flat = Vector3.new(root.X - last.X, 0, root.Z - last.Z).Magnitude
+		if flat > Config.MaxJump + Config.MaxSpeed * dt then
+			Breakout.reset(player, "respawn")
+			return
+		end
+	end
 	local lp = Course.toLocal(root)
 	local x, y, z = lp.X, lp.Y, lp.Z
 	-- wandered off the course entirely (teleported, glitched): back to the checkpoint
@@ -248,10 +266,16 @@ function Breakout.start()
 	Course.build()
 	task.spawn(function()
 		while true do
-			task.wait(0.1)
-			local t = workspace:GetServerTimeNow()
-			for player in runs do
-				Breakout.check(player, t)
+			local ok, err = pcall(function()
+				task.wait(0.1)
+				local t = workspace:GetServerTimeNow()
+				for player in runs do
+					Breakout.check(player, t)
+				end
+			end)
+			if not ok then
+				warn("[Breakout] loop:", err)
+				task.wait(1)
 			end
 		end
 	end)

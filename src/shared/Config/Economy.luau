@@ -142,11 +142,13 @@ local Economy = {
 	DailyMaxStreak = 7,
 	GiftMinutes = 10, -- a playtime gift every N minutes
 	GiftBlocks = 40,
-	-- the Cellmate digs while you're away: CellmatePerMinute rubble/min, never more than your free
-	-- backpack space, at half the rubble value
-	CellmatePerMinute = 2,
-	CellmateMaxHours = 8,
-	CellmateValue = 0.5,
+	-- WHILE YOU SLEPT: your bunkmate digs while you're offline (at least CellmateMinMinutes away)
+	-- and pays you CellmatePerMinute blocks of your deepest zone's rubble per minute, x
+	-- CellmateValue, for up to CellmateMaxHours
+	CellmatePerMinute = 8,
+	CellmateMinMinutes = 10,
+	CellmateMaxHours = 12,
+	CellmateValue = 1,
 
 	DumpRange = 14, -- studs from the Yard dump
 	FlushRate = 0.6, -- at night (doors locked) your cell toilet takes rubble for this share of its value

@@ -27,11 +27,14 @@ local Crew = {}
 Crew.canVisit = function(): boolean
 	return true
 end
+-- the guest is somewhere a teleport would break (init: lifting, on THE BREAKOUT)
+Crew.busy = nil :: ((player: any) -> boolean)?
 
 local hostOf: { [any]: any } = {} -- guest -> host
 local guestsOf: { [any]: { any } } = {} -- host -> guests
 local invites: { [any]: { host: any, at: number } } = {} -- guest -> pending invite
 local friendCache: { [string]: boolean } = {}
+local friendCacheSize = 0
 
 local function byId(id: number): any
 	for p in State.all() do
@@ -54,8 +57,16 @@ local function friends(a: any, b: any): boolean
 			return a:IsFriendsWith(b.UserId)
 		end)
 	end
-	friendCache[key] = ok and yes == true
-	return friendCache[key]
+	if ok then
+		-- (a failed lookup is asked again next time; the cache never grows without bound)
+		if friendCacheSize > 500 then
+			table.clear(friendCache)
+			friendCacheSize = 0
+		end
+		friendCache[key] = yes == true
+		friendCacheSize += 1
+	end
+	return ok and yes == true
 end
 
 -- The host of whoever's crew this player is in (themselves if they host one), or nil.
@@ -213,9 +224,14 @@ function Crew.answer(guest: any, hostId: any, accept: any): string?
 			"good"
 		)
 	end
-	-- straight to the host's cell (by day; at night the doors are locked)
+	-- straight to the host's cell (by day; at night the doors are locked), unless the guest is busy
+	-- (in bed, carrying a stolen find, lifting, on THE BREAKOUT): then they walk over
 	local hs = State.get(host)
-	if typeof(guest) == "Instance" and hs and hs.cell and Crew.canVisit() then
+	local gs = State.get(guest)
+	local busy = gs == nil or gs.hidden or gs.carrying ~= nil or (Crew.busy ~= nil and Crew.busy(guest))
+	if busy and typeof(guest) == "Instance" then
+		Net.notice(guest, "👥 Walk over to " .. host.Name .. "'s cell to dig together!", "info")
+	elseif typeof(guest) == "Instance" and hs and hs.cell and Crew.canVisit() then
 		local cell = Cells.record(hs.cell)
 		local character = guest.Character
 		if cell and character then
@@ -265,6 +281,11 @@ end
 
 function Crew.onLeaving(player: any)
 	invites[player] = nil
+	for guest, inv in invites do
+		if inv.host == player then
+			invites[guest] = nil
+		end
+	end
 	Crew.leave(player)
 	guestsOf[player] = nil
 end

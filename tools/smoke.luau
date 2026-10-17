@@ -943,6 +943,10 @@ local function brawl(a: any, b: any): string?
 end
 fake.Position = yard
 raider.Position = yard + Vector3.new(4, 0, 0)
+-- brand-new prisoners are protected
+s.data.PlayMinutes, r.data.PlayMinutes = 0, 0
+check("newbies can't brawl", brawl(fake, raider) == "newbie")
+s.data.PlayMinutes, r.data.PlayMinutes = 60, 60
 check("yard is not safe", not Brawl.isSafe(yard))
 check("cells are safe", Brawl.isSafe(world.cells[1].spawn.Position))
 check("shops are safe", Brawl.isSafe(world.shops.Workshop.Position))
@@ -959,6 +963,7 @@ fake.Position = yard
 raider.Position = yard + Vector3.new(4, 0, 0)
 r.data.Bag, r.data.BagValue = 20, 40
 r.data.Finds = { "OldCoin" }
+r.data.Zone, r.data.MaxDepth = s.data.Zone, s.data.MaxDepth -- (as deep: the find drops)
 r.stamina = 1
 check("knockout", brawl(fake, raider) == nil and r.data.Bag == 14 and #r.data.Finds == 0, r.data.Bag)
 check("drop on the floor", #Brawl.drops() == 1 and Brawl.drops()[1].rubble == 6)
@@ -1109,10 +1114,13 @@ local today = Rewards.today()
 check("daily reward", Rewards.daily(fake, today) > 0 and s.data.Daily.Streak == 1)
 check("daily only once", Rewards.daily(fake, today) == 0)
 check("daily streak", Rewards.daily(fake, today + 1) > 0 and s.data.Daily.Streak == 2)
-s.data.Bag = 0
-local dug = Rewards.cellmate(fake, 3600)
-check("cellmate digs while away", dug > 0 and s.data.Bag == dug and s.data.Bag <= Stats.capacity(s), dug)
-check("cellmate capped by the backpack", Rewards.cellmate(fake, 999999) <= Stats.capacity(s))
+do
+	local before = s.data.Noodles
+	local paid = Rewards.cellmate(fake, 3600)
+	check("bunkmate pays while away", paid > 0 and s.data.Noodles == before + paid, paid)
+	check("bunkmate: not for a short break", Rewards.cellmate(fake, 120) == 0)
+	check("bunkmate: capped", Rewards.cellmate(fake, 999999) == Rewards.cellmate(fake, 12 * 3600 + 5))
+end
 -- guard inspection: hide = safe, caught = unsold finds gone
 s.data.Finds = { "OldCoin" }
 check("every cell has a cover", world.cells[1].model:FindFirstChild("Cover") ~= nil)
@@ -1234,6 +1242,10 @@ do
 	local Y = Rules.YardY
 	local function at(x: number, y: number, z: number)
 		fake.Position = O + Vector3.new(x, y, z)
+		local rr = Breakout._run(fake)
+		if rr then
+			rr.lastPos = nil -- (the test teleports on purpose)
+		end
 	end
 	check("escape starts THE BREAKOUT", Breakout.running(fake))
 	check("breakout course built", workspace:FindFirstChild("Breakout") ~= nil)
@@ -1258,6 +1270,15 @@ do
 	at(100, Y + 3, 0)
 	Breakout.check(fake, 1000.3)
 	check("checkpoint 2 out of the manhole", run.checkpoint == 2, run.checkpoint)
+	-- a teleport (way farther than running in one tick) goes back to the checkpoint
+	at(130, Y + 3, 0)
+	run.lastPos, run.lastAt = fake.Position - Vector3.new(150, 0, 0), os.clock()
+	Breakout.check(fake, 1000.3)
+	check(
+		"a teleport is sent back",
+		math.abs((fake.Position - O).X - 101) < 1 and run.checkpoint == 2,
+		fake.Position - O
+	)
 	-- a searchlight
 	run.grace = 0
 	local lx, lz = Rules.light(1, 12.5)

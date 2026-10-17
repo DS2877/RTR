@@ -38,6 +38,7 @@ local World = {
 	-- COMBO: punches that land with less than ComboWindow seconds between them build a chain
 	-- (holding VACUUM pauses the clock). The tier multiplies the Noodles the broken rubble is worth.
 	ComboWindow = 1.6,
+	ComboVacuumPause = 4, -- holding VACUUM pauses the chain clock for at most this long
 	ComboTiers = {
 		{ hits = 0, mult = 1, name = "" },
 		{ hits = 12, mult = 1.25, name = "ON A ROLL" },

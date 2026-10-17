@@ -149,16 +149,22 @@ function DayNight.start(w: any)
 	setPhase("Day")
 	task.spawn(function()
 		while true do
-			task.wait(0.25)
-			if forced then
-				local f = forced
-				forced = nil
-				setPhase(if f == "night" then "Night" elseif f == "rollcall" then "RollCall" else "Day")
-			elseif now() >= endsAt then
-				setPhase(NEXT[phase] or "Day")
-			elseif phase == "Night" and not DayNight.riot() then
-				-- nobody wanders the halls at night
-				sendEveryoneHome()
+			local ok, err = pcall(function()
+				task.wait(0.25)
+				if forced then
+					local f = forced
+					forced = nil
+					setPhase(if f == "night" then "Night" elseif f == "rollcall" then "RollCall" else "Day")
+				elseif now() >= endsAt then
+					setPhase(NEXT[phase] or "Day")
+				elseif phase == "Night" and not DayNight.riot() then
+					-- nobody wanders the halls at night
+					sendEveryoneHome()
+				end
+			end)
+			if not ok then
+				warn("[DayNight] loop:", err)
+				task.wait(1)
 			end
 		end
 	end)

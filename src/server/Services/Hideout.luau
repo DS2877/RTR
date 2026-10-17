@@ -336,6 +336,24 @@ function Hideout.setHidden(player: Player, on: boolean, force: boolean?): boolea
 	return true
 end
 
+-- Out of bed on the spot (before any teleport: an anchored sleeper can't walk anywhere).
+function Hideout.wake(player: Player)
+	local s = State.get(player)
+	if not s or not s.hidden then
+		return
+	end
+	s.hidden = false
+	if typeof(player) ~= "Instance" then
+		return
+	end
+	player:SetAttribute("Hidden", false)
+	local character = player.Character
+	local hrp = character and character:FindFirstChild("HumanoidRootPart")
+	if hrp and hrp:IsA("BasePart") then
+		hrp.Anchored = false
+	end
+end
+
 -- Dig hook: no punching from bed; punching the wall rolls the cover up.
 function Hideout.beforePunch(player: Player, s: State.PlayerState): boolean
 	if s.hidden then
@@ -411,7 +429,8 @@ function Hideout.start(w: any)
 	Net.on(Remotes.Names.Cover, function(player, down)
 		if limit(player) and (down == nil or typeof(down) == "boolean") then
 			local s = State.get(player)
-			if s then
+			-- only from your own cell (or your bed in it): never across the prison
+			if s and (s.hidden or inOwnCell(player, s)) then
 				Hideout.setCover(player, if down == nil then not s.coverDown else down)
 			end
 		end

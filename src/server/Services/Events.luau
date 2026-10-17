@@ -37,6 +37,7 @@ Events.phase = function(): string
 	return "Day"
 end
 Events.onRiot = nil :: ((on: boolean) -> ())?
+Events.onFind = nil :: ((player: Player, id: string, firstTime: boolean) -> ())? -- the collection
 
 local current: string? = nil
 local endsAt = 0
@@ -319,9 +320,10 @@ function Events.stop()
 end
 
 -- Dig hook: did someone break their treasure?
-function Events.onBroken(player: Player, broken: { number })
+function Events.onBroken(player: Player, broken: { number }, owner: Player?)
 	local idx = treasure[player]
-	if current ~= "TREASURE" or not idx or not table.find(broken, idx) then
+	-- (the treasure sits in your own tunnel: a crew guest's hits land in the host's grid)
+	if current ~= "TREASURE" or not idx or (owner and owner ~= player) or not table.find(broken, idx) then
 		return
 	end
 	local s = State.get(player)
@@ -340,7 +342,11 @@ function Events.onBroken(player: Player, broken: { number })
 		end
 	end
 	if best then
+		local first = not s.data.Found[best]
 		s.data.Found[best] = true
+		if Events.onFind then
+			Events.onFind(player, best, first)
+		end
 		if #s.data.Stash < PvP.StashSize then
 			table.insert(s.data.Stash, best)
 			Net.fire(player, Remotes.Names.Stash, s.data.Stash)
@@ -362,19 +368,25 @@ function Events.startService()
 	task.spawn(function()
 		local nextAt = os.clock() + math.random(Cycle.EventMin, Cycle.EventMax)
 		while true do
-			task.wait(1)
-			if current and os.clock() >= endsAt then
-				finish()
-			end
-			if not current and os.clock() >= nextAt then
-				nextAt = os.clock() + math.random(Cycle.EventMin, Cycle.EventMax)
-				local phase = Events.phase()
-				local pool = table.clone(Cycle.EventPools[if phase == "Night" then "Night" else "Day"])
-				local i = table.find(pool, last or "")
-				if i and #pool > 1 then
-					table.remove(pool, i)
+			local ok, err = pcall(function()
+				task.wait(1)
+				if current and os.clock() >= endsAt then
+					finish()
 				end
-				Events.trigger(pool[math.random(1, #pool)])
+				if not current and os.clock() >= nextAt then
+					nextAt = os.clock() + math.random(Cycle.EventMin, Cycle.EventMax)
+					local phase = Events.phase()
+					local pool = table.clone(Cycle.EventPools[if phase == "Night" then "Night" else "Day"])
+					local i = table.find(pool, last or "")
+					if i and #pool > 1 then
+						table.remove(pool, i)
+					end
+					Events.trigger(pool[math.random(1, #pool)])
+				end
+			end)
+			if not ok then
+				warn("[Events] loop:", err)
+				task.wait(1)
 			end
 		end
 	end)

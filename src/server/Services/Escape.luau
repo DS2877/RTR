@@ -20,6 +20,8 @@ local Stats = require(script.Parent.Stats)
 local Dig = require(script.Parent.Dig)
 local Cells = require(script.Parent.Cells)
 local Breakout = require(script.Parent.Breakout)
+local Raid = require(script.Parent.Raid)
+local Gym = require(script.Parent.Gym)
 
 local Escape = {}
 
@@ -53,6 +55,9 @@ function Escape.escape(player: Player): string?
 	if not s.escapeReady or Voxel.depth(s.grid) < World.TunnelDepth then
 		return "not at the bottom"
 	end
+	-- a stolen find never rides along into the next prison
+	Raid.returnCarry(player, "escaped")
+	Gym.stop(player)
 	local d = s.data
 	d.Rebirths += 1
 	table.insert(d.Escapes, os.time())
@@ -76,6 +81,8 @@ function Escape.escape(player: Player): string?
 		player:SetAttribute("CanEscape", false)
 		player:SetAttribute("Rebirths", d.Rebirths)
 	end
+	-- a new prison, a new rock: finds, gold and jackpots sit somewhere else
+	d.Seed = Random.new():NextInteger(1, 2 ^ 31 - 1)
 	Dig.resetTunnel(player)
 	-- the rebirth is done (leaving mid-run never loses it): now run for it. THE BREAKOUT ends at
 	-- the getaway car and brings you to your new cell (Services/Breakout).

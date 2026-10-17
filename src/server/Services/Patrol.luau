@@ -130,11 +130,17 @@ function Patrol.start()
 		task.spawn(function()
 			task.wait(2 + i * 3)
 			while true do
-				local phase = Patrol.phase()
-				local pose = PatrolMath.guard(i, phase, workspace:GetServerTimeNow())
-				local kind, name = Patrol.situation(Vector3.new(pose.x, 3, pose.z), phase)
-				say(i, pick(kind, name, i))
-				task.wait(math.random(Config.SayEvery[1] * 10, Config.SayEvery[2] * 10) / 10)
+				local ok, err = pcall(function()
+					local phase = Patrol.phase()
+					local pose = PatrolMath.guard(i, phase, workspace:GetServerTimeNow())
+					local kind, name = Patrol.situation(Vector3.new(pose.x, 3, pose.z), phase)
+					say(i, pick(kind, name, i))
+					task.wait(math.random(Config.SayEvery[1] * 10, Config.SayEvery[2] * 10) / 10)
+				end)
+				if not ok then
+					warn("[Patrol] loop:", err)
+					task.wait(1)
+				end
 			end
 		end)
 	end

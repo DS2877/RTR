@@ -53,7 +53,8 @@ local Cycle = {
 
 	-- guard inspections at night: every InspectEvery seconds a prisoner may get a visit
 	InspectEvery = 40,
-	InspectChance = 0.3, -- per check, per prisoner (snitched prisoners: always)
+	InspectChance = 0.3, -- per check, per prisoner (snitched prisoners: always); one visit a night each
+	InspectNewbieMinutes = 15, -- prisoners with less play time than this are never inspected
 	InspectWarning = 15, -- seconds from the footsteps to the guard at your door: get in bed + cover up
 	InspectWarningMax = 75, -- ...plus the walk back from deep in your tunnel, up to this
 	SleepHold = 1.2, -- seconds to hold the bed prompt (getting under the blanket takes a moment)

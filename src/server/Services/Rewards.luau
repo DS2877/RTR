@@ -70,37 +70,44 @@ function Rewards.rollCall(player: Player): number
 	return amount
 end
 
--- Returns the rubble the Cellmate dug.
+-- WHILE YOU SLEPT: your bunkmate keeps digging while you're offline and sells it for you.
+-- Returns the Noodles paid.
 function Rewards.cellmate(player: Player, awaySeconds: number): number
 	local s = State.get(player)
-	if not s or awaySeconds < 60 then
+	if not s or awaySeconds < Economy.CellmateMinMinutes * 60 then
 		return 0
 	end
 	local minutes = math.min(awaySeconds, Economy.CellmateMaxHours * 3600) / 60
-	local room = Stats.capacity(s) - s.data.Bag
-	local rubble = math.max(0, math.min(room, math.floor(minutes * Economy.CellmatePerMinute)))
-	if rubble <= 0 then
+	local amount = math.floor(minutes * Economy.CellmatePerMinute * zoneValue(s) * Economy.CellmateValue)
+	if amount <= 0 then
 		return 0
 	end
-	s.data.Bag += rubble
-	s.data.BagValue += rubble * zoneValue(s) * Economy.CellmateValue
+	Loot.addNoodles(player, amount)
 	Stats.sync(player)
+	local hours = minutes / 60
 	Net.fire(
 		player,
 		Remotes.Names.Reward,
 		"cellmate",
-		string.format("Your cellmate dug %d rubble while you were away! 🧱", rubble)
+		string.format(
+			"💤 While you were away (%s) your bunkmate kept digging: +%s",
+			if hours >= 1
+				then string.format("%.1f h", hours)
+				else string.format("%d min", math.floor(minutes)),
+			Format.noodles(amount)
+		)
 	)
-	return rubble
+	return amount
 end
 
-function Rewards.onJoin(player: Player)
+-- `lastOnline` = when this player was last seen (before this join overwrote it).
+function Rewards.onJoin(player: Player, lastOnline: number?)
 	local s = State.get(player)
 	if not s then
 		return
 	end
-	if s.data.LastOnline > 0 then
-		Rewards.cellmate(player, os.time() - s.data.LastOnline)
+	if lastOnline and lastOnline > 0 then
+		Rewards.cellmate(player, os.time() - lastOnline)
 	end
 	if typeof(player) == "Instance" then
 		if game.CreatorType == Enum.CreatorType.Group then
@@ -122,22 +129,28 @@ function Rewards.start()
 	-- playtime gifts
 	task.spawn(function()
 		while true do
-			task.wait(60)
-			for player, s in State.all() do
-				s.data.PlayMinutes += 1
-				if typeof(player) == "Instance" then
-					player:SetAttribute("PlayMinutes", s.data.PlayMinutes)
+			local ok, err = pcall(function()
+				task.wait(60)
+				for player, s in State.all() do
+					s.data.PlayMinutes += 1
+					if typeof(player) == "Instance" then
+						player:SetAttribute("PlayMinutes", s.data.PlayMinutes)
+					end
+					if s.data.PlayMinutes % Economy.GiftMinutes == 0 then
+						local amount = Economy.GiftBlocks * zoneValue(s)
+						Loot.addNoodles(player, amount)
+						Net.fire(
+							player,
+							Remotes.Names.Reward,
+							"gift",
+							"🎁 Playtime gift: +" .. Format.noodles(amount)
+						)
+					end
 				end
-				if s.data.PlayMinutes % Economy.GiftMinutes == 0 then
-					local amount = Economy.GiftBlocks * zoneValue(s)
-					Loot.addNoodles(player, amount)
-					Net.fire(
-						player,
-						Remotes.Names.Reward,
-						"gift",
-						"🎁 Playtime gift: +" .. Format.noodles(amount)
-					)
-				end
+			end)
+			if not ok then
+				warn("[Rewards] loop:", err)
+				task.wait(1)
 			end
 		end
 	end)

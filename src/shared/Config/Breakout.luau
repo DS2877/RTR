@@ -8,6 +8,9 @@ local Breakout = {
 	Origin = { x = 0, y = 420, z = 0 },
 	TimeLimit = 240, -- seconds: after this the run ends anyway (FREE, no medal)
 	MinTime = 20, -- a finish faster than this is not believed (teleport exploits)
+	-- moving farther than MaxJump + MaxSpeed x dt studs (sideways) between two checks is a teleport
+	MaxSpeed = 60,
+	MaxJump = 6,
 	Grace = 2.5, -- seconds after a (re)spawn before lights and chasers can get you
 	-- searchlights: circles on the yard floor
 	LightRadius = 7.5,

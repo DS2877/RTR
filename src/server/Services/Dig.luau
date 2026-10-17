@@ -39,7 +39,7 @@ Dig.eventBonus = 0 -- GOLD RUSH (Services/Events)
 -- per-player boosts (buffs) and event hooks, set in init
 Dig.powerBoost = nil :: ((player: Player) -> number)?
 Dig.findBoost = nil :: ((player: Player) -> number)?
-Dig.onBroken = nil :: ((player: Player, broken: { number }) -> ())?
+Dig.onBroken = nil :: ((player: Player, broken: { number }, owner: Player) -> ())? -- owner = whose tunnel
 Dig.onBottom = nil :: ((player: Player) -> ())?
 Dig.speedBoost = nil :: ((player: Player) -> number)?
 Dig.onZone = nil :: ((player: Player, zone: number) -> ())?
@@ -291,8 +291,9 @@ local function bossHit(player: Player, owner: Player, ts: State.PlayerState, zon
 	if not b then
 		return
 	end
+	local dealt = math.min(power, math.max(0, b.hp))
 	b.hp -= power
-	b.hitters[player] = true
+	b.hitters[player] = (b.hitters[player] or 0) + dealt
 	if b.door then
 		VaultDoor.setHp(b.door, b.hp, b.max)
 	end
@@ -302,13 +303,18 @@ local function bossHit(player: Player, owner: Player, ts: State.PlayerState, zon
 	if b.hp > 0 then
 		return
 	end
-	-- cracked: everyone who hit it gets paid, the chamber opens
+	-- cracked, the chamber opens. The tunnel's owner gets the full reward; crew guests who helped
+	-- get their share of the damage (so extra hitters never multiply the payout)
 	ts.bosses[zone] = nil
 	local reward = Progression.bossReward(zone)
-	for hitter in b.hitters do
+	if not b.hitters[owner] then
+		b.hitters[owner] = 0
+	end
+	for hitter, dealt in b.hitters do
 		local hs = State.get(hitter)
-		if hs then
-			local pay = math.floor(reward * Loot.multiplier(hs) + 0.5)
+		local share = if hitter == owner then 1 else math.clamp(dealt / math.max(1, b.max), 0, 1)
+		if hs and share >= 0.05 then
+			local pay = math.floor(reward * share * Loot.multiplier(hs) + 0.5)
 			Loot.addNoodles(hitter, pay)
 			Net.fire(hitter, Remotes.Names.Boss, "reward", owner.UserId, zone, pay)
 			if Dig.onBoss then
@@ -355,7 +361,11 @@ Dig.clearDoors = clearDoors
 
 -- The chain's multiplier right now (1 once it ran out: vacuuming pauses the clock).
 local function comboAlive(s: State.PlayerState, now: number): boolean
-	return s.vacuuming or now - s.comboLast <= World.ComboWindow
+	-- vacuuming pauses the clock, but only for a while (holding VACUUM forever never keeps it)
+	if s.vacuuming and now - s.vacuumAt <= World.ComboVacuumPause then
+		return true
+	end
+	return now - s.comboLast <= World.ComboWindow
 end
 
 local function comboMult(s: State.PlayerState): number
@@ -445,8 +455,12 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any, ownerId: a
 	if (center - root).Magnitude > World.Reach + World.ReachSlack then
 		return "out of reach"
 	end
-	-- (after every other check: a refused punch must not roll the cover up)
-	if Dig.beforePunch and not Dig.beforePunch(player, s) then
+	-- (after every other check: a refused punch must not roll the cover up; a crew guest's punch
+	-- in the host's tunnel leaves the guest's own cover alone)
+	if s.hidden then
+		return "in bed"
+	end
+	if host == nil and Dig.beforePunch and not Dig.beforePunch(player, s) then
 		return "in bed"
 	end
 	-- a full backpack never stops you: the rubble just stays on the floor (worth nothing until
@@ -685,7 +699,7 @@ function Dig.applyHits(
 			Dig.onPiles(player)
 		end
 		if Dig.onBroken then
-			Dig.onBroken(player, broken)
+			Dig.onBroken(player, broken, owner)
 		end
 		if Dig.onPetXp then
 			Dig.onPetXp(player, #broken)
@@ -843,16 +857,28 @@ function Dig.start()
 	end)
 	task.spawn(function()
 		while true do
-			task.wait(0.5)
-			updateWatching()
+			local ok, err = pcall(function()
+				task.wait(0.5)
+				updateWatching()
+			end)
+			if not ok then
+				warn("[Dig] loop:", err)
+				task.wait(1)
+			end
 		end
 	end)
 	-- save tunnels into the profile now and then (ProfileStore writes the profile on its own)
 	task.spawn(function()
 		while true do
-			task.wait(15)
-			for _, s in State.all() do
-				Dig.saveTunnel(s)
+			local ok, err = pcall(function()
+				task.wait(15)
+				for _, s in State.all() do
+					Dig.saveTunnel(s)
+				end
+			end)
+			if not ok then
+				warn("[Dig] loop:", err)
+				task.wait(1)
 			end
 		end
 	end)

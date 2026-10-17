@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ProfileStore = require(script.Parent.Parent.Packages.ProfileStore)
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local Finds = require(ReplicatedStorage.Shared.Config.Finds)
+local PetMath = require(ReplicatedStorage.Shared.Pets)
 
 export type PlayerData = {
 	Version: number,
@@ -46,10 +47,20 @@ export type PlayerData = {
 	Placed: { { number } }, -- placed decor { kindIndex, x, y, z }
 	TutorialStep: number, -- 1..5 = current step, 6 = done (analytics funnel only)
 	TourDone: boolean, -- saw the first-join tour (Controllers/Tour)
-	Missions: { Day: number, Progress: { number }, Claimed: { boolean }, Bonus: boolean }, -- WORK DETAIL
+	Missions: {
+		Day: number,
+		Progress: { number },
+		Claimed: { boolean },
+		Bonus: boolean,
+		Seed: number?,
+		NoDepth: boolean?,
+	}, -- WORK DETAIL
 	LastOnline: number,
 	Pets: { Owned: { [string]: number }, Equipped: { string } }, -- CELLMATES: id -> XP, equipped ids
 	Week: { Id: number, Blocks: number }, -- the weekly race (Services/TopDog): blocks since Monday
+	-- bought buffs that outlive a rejoin: id -> os.time() it ends (0 = "until the morning")
+	Buffs: { [string]: number },
+	BuffsAt: number, -- when Buffs was written
 	-- PRISON PASS: this season's XP, premium, claimed tiers ("1".."30" -> true)
 	Pass: {
 		Season: number,
@@ -120,6 +131,8 @@ local TEMPLATE: PlayerData = {
 	LastOnline = 0,
 	Pets = { Owned = {}, Equipped = {} },
 	Week = { Id = 0, Blocks = 0 },
+	Buffs = {},
+	BuffsAt = 0,
 	Pass = { Season = 0, Xp = 0, Premium = false, Free = {}, Paid = {} },
 	Stats = {
 		Punches = 0,
@@ -181,6 +194,23 @@ function Data.sanitize(data: PlayerData)
 		end
 		(data :: any)[key] = kept
 	end
+	-- cellmates that no longer exist in Config/Pets (renamed / removed) are dropped
+	local pets = (data :: any).Pets
+	if typeof(pets) == "table" then
+		local owned = {}
+		for id, xp in pets.Owned or {} do
+			if PetMath.get(id) and typeof(xp) == "number" then
+				owned[id] = xp
+			end
+		end
+		local out = {}
+		for _, id in pets.Equipped or {} do
+			if owned[id] ~= nil and not table.find(out, id) then
+				table.insert(out, id)
+			end
+		end
+		pets.Owned, pets.Equipped = owned, out
+	end
 	data.Noodles = math.max(0, data.Noodles)
 end
 
@@ -198,6 +228,11 @@ end
 
 local store = ProfileStore.New(Economy.DataStoreName, TEMPLATE)
 local profiles: { [Player]: any } = {}
+local releasing: { [Player]: boolean } = {} -- we end the session ourselves (leaving, shutdown)
+
+-- Called right before every save of a player's profile (init: write the live tunnel into it, so
+-- the saved Noodles / finds never get ahead of the saved tunnel).
+Data.onSave = nil :: ((player: Player) -> ())?
 
 -- Yields. Returns the data, or nil if the player left or the profile could not be loaded.
 function Data.load(player: Player): PlayerData?
@@ -219,9 +254,19 @@ function Data.load(player: Player): PlayerData?
 	profile:Reconcile()
 	Data.migrate(profile.Data)
 	Data.sanitize(profile.Data)
+	profile.OnSave:Connect(function()
+		if Data.onSave and profiles[player] == profile then
+			local ok, err = pcall(Data.onSave, player)
+			if not ok then
+				warn("[Data] onSave", err)
+			end
+		end
+	end)
 	profile.OnSessionEnd:Connect(function()
 		profiles[player] = nil
-		if player.Parent == Players then
+		if releasing[player] then
+			releasing[player] = nil
+		elseif player.Parent == Players then
 			player:Kick("Your data was opened on another server. Please rejoin.")
 		end
 	end)
@@ -252,11 +297,26 @@ function Data.reset(player: Player): PlayerData?
 	return fresh
 end
 
+-- The player's profile is loaded and still owned by this server (purchases go only into a live one).
+function Data.isActive(player: Player): boolean
+	local profile = profiles[player]
+	return profile ~= nil and profile:IsActive()
+end
+
+-- Save now (after a Robux purchase); no-op without a live profile.
+function Data.save(player: Player)
+	local profile = profiles[player]
+	if profile and profile:IsActive() then
+		profile:Save()
+	end
+end
+
 function Data.release(player: Player)
 	local profile = profiles[player]
 	if profile then
+		releasing[player] = true
+		profile:EndSession() -- (OnSessionEnd clears the flag)
 		profiles[player] = nil
-		profile:EndSession()
 	end
 end
 

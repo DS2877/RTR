@@ -3,6 +3,7 @@
 -- next morning), BLACK MARKET (3 items a day, rotating at 00:00 UTC) and DECOR (placed in your
 -- tunnel for everyone to see). Buffs feed Dig (power, finds, speed) and Loot (magnet).
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
@@ -22,6 +23,8 @@ local Build = require(script.Parent.Parent.Util.Build)
 local Stats = require(script.Parent.Stats)
 
 local Market = {}
+
+local restoring: { [Player]: boolean } = {} -- "Own" is re-applying the avatar
 
 local world: any = nil
 local decorFolder: Folder? = nil
@@ -93,6 +96,40 @@ local function syncBuffs(player: Player)
 	player:SetAttribute("Buffs", table.concat(list, ","))
 	player:SetAttribute("FastPunch", Market.speedBoost(player))
 	player:SetAttribute("Magnet", Market.magnet(player))
+end
+
+-- Buffs cost Noodles: they survive a rejoin / server hop. Timed ones keep their end time; an
+-- "until the morning" meal comes back if you return within MorningKeepSeconds.
+local MORNING_KEEP = 10 * 60
+
+function Market.saveBuffs(player: Player)
+	local s = State.get(player)
+	if not s then
+		return
+	end
+	local out = {}
+	for id, ends in s.buffs do
+		out[id] = if ends == math.huge then 0 else ends
+	end
+	s.data.Buffs, s.data.BuffsAt = out, os.time()
+end
+
+function Market.loadBuffs(player: Player)
+	local s = State.get(player)
+	if not s then
+		return
+	end
+	local t = os.time()
+	for id, ends in s.data.Buffs or {} do
+		if Extras.Buffs[id] and typeof(ends) == "number" then
+			if ends == 0 and t - (s.data.BuffsAt or 0) < MORNING_KEEP then
+				s.buffs[id] = math.huge
+			elseif ends > t then
+				s.buffs[id] = ends
+			end
+		end
+	end
+	syncBuffs(player)
 end
 
 -- DayNight hook: meals last until the morning.
@@ -248,9 +285,15 @@ function Market.onCharacter(player: Player)
 	task.wait(0.5)
 	applyLooks(player)
 	-- the avatar's own clothes can arrive later: put the jumpsuit back on once they're in
-	if typeof(player) == "Instance" and not player:HasAppearanceLoaded() then
-		player.CharacterAppearanceLoaded:Wait()
-		applyLooks(player)
+	-- (gives up after 15 s or when the player left)
+	if typeof(player) == "Instance" then
+		local t0 = os.clock()
+		while player.Parent and not player:HasAppearanceLoaded() and os.clock() - t0 < 15 do
+			task.wait(0.5)
+		end
+		if player.Parent then
+			applyLooks(player)
+		end
 	end
 end
 
@@ -575,11 +618,29 @@ function Market.equip(player: Player, id: string)
 		return
 	end
 	if id == "Own" then
-		-- back to your own avatar clothes
+		if s.data.Uniform == "" then
+			return
+		end
+		-- back to the classic jumpsuit: undo a recolored uniform by re-applying the avatar in place
+		-- (no respawn, no trip back to the cell), then the jumpsuit goes on again
 		s.data.Uniform = ""
 		Market.sync(player)
-		if typeof(player) == "Instance" and player.Character then
-			player:LoadCharacter()
+		if typeof(player) == "Instance" and not restoring[player] then
+			restoring[player] = true
+			task.spawn(function()
+				local ok, desc = pcall(function()
+					return Players:GetHumanoidDescriptionFromUserId(player.UserId)
+				end)
+				local character = player.Character
+				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+				if ok and desc and humanoid and s.data.Uniform == "" then
+					pcall(function()
+						humanoid:ApplyDescription(desc)
+					end)
+					applyLooks(player)
+				end
+				restoring[player] = nil
+			end)
 		end
 		return
 	elseif find(Extras.Uniforms, id) and (s.data.Uniforms[id] or id == "Orange") then
@@ -621,26 +682,38 @@ function Market.start(w: any)
 	-- timed buffs run out
 	task.spawn(function()
 		while true do
-			task.wait(5)
-			for player, s in State.all() do
-				local changed = false
-				for id, ends in table.clone(s.buffs) do
-					if ends ~= math.huge and os.time() >= ends then
-						s.buffs[id] = nil
-						changed = true
+			local ok, err = pcall(function()
+				task.wait(5)
+				for player, s in State.all() do
+					local changed = false
+					for id, ends in table.clone(s.buffs) do
+						if ends ~= math.huge and os.time() >= ends then
+							s.buffs[id] = nil
+							changed = true
+						end
+					end
+					if changed then
+						syncBuffs(player)
 					end
 				end
-				if changed then
-					syncBuffs(player)
-				end
+			end)
+			if not ok then
+				warn("[Market] loop:", err)
+				task.wait(1)
 			end
 		end
 	end)
 	ReplicatedStorage:SetAttribute("MarketDay", today())
 	task.spawn(function()
 		while true do
-			task.wait(30)
-			ReplicatedStorage:SetAttribute("MarketDay", today())
+			local ok, err = pcall(function()
+				task.wait(30)
+				ReplicatedStorage:SetAttribute("MarketDay", today())
+			end)
+			if not ok then
+				warn("[Market] loop:", err)
+				task.wait(1)
+			end
 		end
 	end)
 end

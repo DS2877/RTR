@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Zones = require(ReplicatedStorage.Shared.Config.Zones)
 local State = require(script.Parent.Parent.State)
+local Hideout = require(script.Parent.Hideout)
 
 local Cells = {}
 
@@ -69,6 +70,7 @@ function Cells.toCell(player: Player)
 	if not s or not s.cell or not character then
 		return
 	end
+	Hideout.wake(player)
 	character:PivotTo(world.cells[s.cell].spawn)
 end
 

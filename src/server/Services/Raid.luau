@@ -14,12 +14,14 @@ local Finds = require(Shared.Config.Finds)
 local Progression = require(Shared.Progression)
 local Tunnel = require(Shared.Tunnel)
 local Remotes = require(Shared.Remotes)
+local Format = require(Shared.Format)
 
 local State = require(script.Parent.Parent.State)
 local Net = require(script.Parent.Parent.Net)
 local RateLimit = require(script.Parent.Parent.Util.RateLimit)
 local Stats = require(script.Parent.Stats)
 local Cells = require(script.Parent.Cells)
+local Loot = require(script.Parent.Loot)
 
 local Raid = {}
 
@@ -120,6 +122,18 @@ local function setCarrying(thief: Player, on: boolean)
 	end
 end
 
+-- Into the Stash chest; a full chest pays the find's value instead (it never grows past StashSize).
+local function stashOrPay(player: Player, s: State.PlayerState, id: string)
+	if #s.data.Stash < PvP.StashSize then
+		table.insert(s.data.Stash, id)
+		Raid.sendStash(player)
+	else
+		local value = Progression.findValue(id)
+		Loot.addNoodles(player, value)
+		Net.notice(player, "Stash full: the Fence paid " .. Format.noodles(value) .. " for it", "cash")
+	end
+end
+
 local function deliver(thief: Player, ts: State.PlayerState)
 	local c = ts.carrying :: any
 	ts.carrying = nil
@@ -129,8 +143,7 @@ local function deliver(thief: Player, ts: State.PlayerState)
 		table.insert(ts.data.Finds, c.id)
 		Net.fire(thief, Remotes.Names.Finds, ts.data.Finds)
 	else
-		table.insert(ts.data.Stash, c.id)
-		Raid.sendStash(thief)
+		stashOrPay(thief, ts, c.id)
 	end
 	ts.data.Found[c.id] = true
 	ts.data.Stats.Steals += 1
@@ -159,8 +172,7 @@ function Raid.returnCarry(thief: Player, why: string)
 	ts.carrying = nil
 	setCarrying(thief, false)
 	do
-		table.insert(os_.data.Stash, c.id)
-		Raid.sendStash(c.owner)
+		stashOrPay(c.owner, os_, c.id)
 		Net.fire(
 			c.owner,
 			Remotes.Names.Raid,
@@ -325,8 +337,14 @@ function Raid.start(w: any)
 	end)
 	task.spawn(function()
 		while true do
-			task.wait(0.25)
-			Raid.tick()
+			local ok, err = pcall(function()
+				task.wait(0.25)
+				Raid.tick()
+			end)
+			if not ok then
+				warn("[Raid] loop:", err)
+				task.wait(1)
+			end
 		end
 	end)
 end

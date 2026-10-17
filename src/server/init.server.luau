@@ -97,6 +97,9 @@ Pass.onReward = function(player, kind)
 		Pets.sync(player)
 	end
 end
+Crew.busy = function(player)
+	return Breakout.running(player) or Gym.lifting(player) ~= nil
+end
 Crew.canVisit = function()
 	local phase = DayNight.phase()
 	return phase == "Day" or phase == "RollCall"
@@ -119,10 +122,14 @@ Dig.onFind = function(player, id, firstTime)
 	Collection.onFound(player, id, firstTime)
 	Missions.count(player, "Finds", 1)
 end
+-- finds that arrive another way (a knockout drop, the treasure prize) still go on the shelf
+Brawl.onFind = Collection.onFound
+Events.onFind = Collection.onFound
 local function isDay(): boolean
 	return DayNight.phase() == "Day"
 end
 Brawl.isDay = isDay
+Brawl.noFight = Breakout.running
 Raid.isDay = isDay
 Brawl.onCarrierHit = function(thief)
 	Raid.returnCarry(thief, "you got hit")
@@ -159,6 +166,15 @@ Escape.onEscaped = function(player)
 	Market.renderDecor(player)
 	Pets.sync(player) -- escapes open pet slots
 end
+Product.isActive = Data.isActive
+Product.save = Data.save
+Data.onSave = function(player)
+	Market.saveBuffs(player)
+	local s = State.get(player)
+	if s and s.grid then
+		Dig.saveTunnel(s)
+	end
+end
 Product.onPasses = function(player)
 	task.spawn(Market.onCharacter, player)
 end
@@ -171,9 +187,9 @@ Shop.onBought = function(player, track)
 end
 -- tutorial + analytics (first punch, vacuum, sale, upgrade, zones, session length)
 local eventsOnBroken = Dig.onBroken
-Dig.onBroken = function(player, broken)
+Dig.onBroken = function(player, broken, owner)
 	if eventsOnBroken then
-		eventsOnBroken(player, broken)
+		eventsOnBroken(player, broken, owner)
 	end
 	Tutorial.did(player, "Punch")
 	Missions.count(player, "Blocks", #broken)
@@ -261,6 +277,7 @@ local function onPlayerAdded(player: Player)
 		return
 	end
 	Dig.loadTunnel(player)
+	local lastOnline = data.LastOnline
 	data.LastOnline = os.time()
 	Stats.sync(player)
 	Loot.sendFinds(player)
@@ -271,7 +288,8 @@ local function onPlayerAdded(player: Player)
 	Product.loadPasses(player)
 	Product.syncPackAttributes(player)
 	Escape.check(player)
-	Rewards.onJoin(player)
+	Market.loadBuffs(player)
+	Rewards.onJoin(player, lastOnline)
 	Tutorial.onJoin(player)
 	Missions.sync(player)
 	Pets.sync(player)
@@ -302,6 +320,7 @@ local function leave(player: Player)
 			Tutorial.event(player, "SessionMinutes", math.floor((os.time() - joined) / 60))
 		end
 		Dig.saveTunnel(s)
+		Market.saveBuffs(player)
 		s.data.LastOnline = os.time()
 	end
 	Raid.onLeaving(player)

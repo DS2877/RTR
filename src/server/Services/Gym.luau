@@ -244,18 +244,24 @@ function Gym.start(w: any)
 	-- walked away / teleported / died: put it down
 	task.spawn(function()
 		while true do
-			task.wait(0.5)
-			for player, l in table.clone(lifting) do
-				local pos = State.root(player)
-				local part = stationPart(l.station)
-				if
-					not State.get(player)
-					or not pos
-					or not part
-					or (part.Position - pos).Magnitude > Economy.GymRange + 8
-				then
-					Gym.stop(player)
+			local ok, err = pcall(function()
+				task.wait(0.5)
+				for player, l in table.clone(lifting) do
+					local pos = State.root(player)
+					local part = stationPart(l.station)
+					if
+						not State.get(player)
+						or not pos
+						or not part
+						or (part.Position - pos).Magnitude > Economy.GymRange + 8
+					then
+						Gym.stop(player)
+					end
 				end
+			end)
+			if not ok then
+				warn("[Gym] loop:", err)
+				task.wait(1)
 			end
 		end
 	end)

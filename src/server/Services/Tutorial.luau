@@ -104,7 +104,7 @@ function Tutorial.onJoin(player: Player)
 end
 
 function Tutorial.start()
-	local seen: { [any]: boolean } = {}
+	local seen: { [any]: boolean } = setmetatable({}, { __mode = "k" }) :: any
 	Net.on(Remotes.Names.TourDone, function(player)
 		if seen[player] then
 			return

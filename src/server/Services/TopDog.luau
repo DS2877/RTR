@@ -336,6 +336,8 @@ end
 function TopDog.onLeaving(player: Player)
 	saveDepth(player)
 	saveWeek(player)
+	lastSaved[player.UserId] = nil
+	weekSaved[player.UserId] = nil
 	if current == player then
 		current = nil
 	end
@@ -350,23 +352,29 @@ function TopDog.start(w: any)
 	task.spawn(function()
 		local tick = 0
 		while true do
-			pcall(TopDog.update)
-			tick += 1
-			if tick % 24 == 1 then -- every ~2 minutes
+			local ok, err = pcall(function()
+				pcall(TopDog.update)
+				tick += 1
+				if tick % 24 == 1 then -- every ~2 minutes
+					for player in State.all() do
+						saveDepth(player)
+						saveWeek(player)
+					end
+					refreshAllTime()
+					pcall(refreshWeek)
+				end
+				pcall(paintWeek)
 				for player in State.all() do
-					saveDepth(player)
-					saveWeek(player)
+					if typeof(player) == "Instance" then
+						pcall(crown, player)
+					end
 				end
-				refreshAllTime()
-				pcall(refreshWeek)
+				task.wait(5)
+			end)
+			if not ok then
+				warn("[TopDog] loop:", err)
+				task.wait(1)
 			end
-			pcall(paintWeek)
-			for player in State.all() do
-				if typeof(player) == "Instance" then
-					pcall(crown, player)
-				end
-			end
-			task.wait(5)
 		end
 	end)
 end

@@ -16,6 +16,7 @@ export type PlayerState = {
 	tunnelDirty: boolean,
 	lastPunch: number,
 	vacuuming: boolean,
+	vacuumAt: number, -- when VACUUM went on (the combo pause runs from here)
 	piles: { Pile },
 	pileSeq: number,
 	loose: number, -- rubble lying around in piles
@@ -63,6 +64,7 @@ function State.add(player: Player, data: Data.PlayerData): PlayerState
 		tunnelDirty = false,
 		lastPunch = 0,
 		vacuuming = false,
+		vacuumAt = -math.huge,
 		piles = {},
 		pileSeq = 0,
 		loose = 0,
