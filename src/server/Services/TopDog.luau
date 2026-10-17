@@ -306,7 +306,7 @@ local function paintWeek()
 	end
 	local left = math.max(0, TopDog.weekEnds() - os.time())
 	local lines = {
-		string.format("BLOCKS BROKEN · new week in %dd %dh", left // 86400, (left % 86400) // 3600),
+		string.format("FRONT-LINE BLOCKS · new week in %dd %dh", left // 86400, (left % 86400) // 3600),
 	}
 	if #thisWeek == 0 then
 		table.insert(lines, "be the first!")

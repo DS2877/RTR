@@ -39,6 +39,7 @@ local World = {
 	-- (holding VACUUM pauses the clock). The tier multiplies the Noodles the broken rubble is worth.
 	ComboWindow = 1.6,
 	ComboVacuumPause = 4,
+	CrewAssist = 0.5, -- a crew guest punches at least this share of the host's power in the host's tunnel
 	-- QUICK TRIP: hold still TravelChannel seconds in your cell or tunnel to jump to the dig face
 	-- (or back to your cell); then TravelCooldown seconds before the next one. Walking stays faster
 	-- for short hops; deep tunnels stop being a long walk.

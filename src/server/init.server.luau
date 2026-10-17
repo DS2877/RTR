@@ -8,6 +8,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Remotes = require(Shared.Remotes)
 local Economy = require(Shared.Config.Economy)
+local Progression = require(Shared.Progression)
+local Voxel = require(Shared.Voxel)
 
 local State = require(script.State)
 local Services = script.Services
@@ -196,6 +198,23 @@ Shop.onBought = function(player, track)
 	Tutorial.event(player, "Upgrade_" .. track)
 end
 -- tutorial + analytics (first punch, vacuum, sale, upgrade, zones, session length)
+-- THIS WEEK counts the blocks you break at your own front line (your deepest zone and the one
+-- before it): farming the soft top layers with a big brush doesn't win the race. Admins don't race.
+local function weekBlocks(player: Player, broken: { number }, owner: Player): number
+	local ts = State.get(owner)
+	if not ts or not ts.grid or Admin.isAdmin(player) then
+		return 0
+	end
+	local front = Progression.zoneAt(math.max(0, ts.data.RunDepth - 1))
+	local n = 0
+	for _, idx in broken do
+		local _, _, z = Voxel.unindex(ts.grid, idx)
+		if Progression.zoneAt(z) >= front - 1 then
+			n += 1
+		end
+	end
+	return n
+end
 local eventsOnBroken = Dig.onBroken
 Dig.onBroken = function(player, broken, owner)
 	if eventsOnBroken then
@@ -203,7 +222,7 @@ Dig.onBroken = function(player, broken, owner)
 	end
 	Tutorial.did(player, "Punch")
 	Missions.count(player, "Blocks", #broken)
-	TopDog.countBlocks(player, #broken)
+	TopDog.countBlocks(player, weekBlocks(player, broken, owner))
 	Pass.countBlocks(player, #broken)
 end
 Dig.onCrit = function(player)

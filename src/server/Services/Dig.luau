@@ -478,7 +478,13 @@ function Dig.punch(player: Player, x: any, y: any, z: any, face: any, ownerId: a
 	comboHit(player, s, now)
 	local data = s.data
 	s.lastHit = { x, y, z, (host or player).UserId }
-	local power = Stats.power(s)
+	-- CREW ASSIST: in a crew host's tunnel a guest hits at least half as hard as the host, so a
+	-- veteran can bring a brand-new friend deep
+	local base = Stats.power(s)
+	if host and ts ~= s then
+		base = math.max(base, Stats.power(ts) * World.CrewAssist)
+	end
+	local power = base
 		* Dig.globalBoost
 		* (if Dig.powerBoost then Dig.powerBoost(player) else 1)
 		* (1 + petBonus(s, "power"))

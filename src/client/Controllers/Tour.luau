@@ -62,67 +62,40 @@ local function cellView(eye: Vector3, at: Vector3): () -> CFrame?
 	end
 end
 
+-- short on purpose: the rest (Fence, Gym, Mess Hall, Pets, Crew...) explains itself as you meet it
 local STOPS: { Stop } = {
 	{
-		title = "Welcome to Dig Out!",
-		body = "You're a prisoner. The back wall of your cell is your way out.",
+		title = "Welcome, inmate!",
+		body = "That back wall is your way out. Hold 👊 PUNCH to smash it: keep hitting for a COMBO.",
 		view = cellView(Vector3.new(9, 10, 19), Vector3.new(0, 5, 0)),
 	},
 	{
-		title = "👊 Punch & dig",
-		body = "Hold PUNCH to break blocks: keep going for a COMBO. Glowing veins hide finds, gold blocks pay on the spot.",
+		title = "🌀 Vacuum",
+		body = "Hold VACUUM to suck the rubble (and any finds) into your backpack.",
 		view = cellView(Vector3.new(-3, 6, 8), Vector3.new(2, 4, -2)),
 	},
 	{
 		title = "🧱 Rubble Dump",
-		body = "Carry rubble out to the Yard and dump it for 🍜 Noodles. Full? Keep digging, it waits on the floor.",
+		body = "Backpack full? Dump it here in the Yard for 🍜 Noodles. Sell finds at The Fence next door.",
 		view = function()
 			return lookAt(CollectionService:GetTagged("Dump")[1] :: BasePart?, 20, 12)
 		end,
 	},
 	{
-		title = "💰 The Fence",
-		body = "Sell your finds here. Unsold finds can be stolen during the day!",
-		view = function()
-			return lookAt(shop("Fence"), 16, 7)
-		end,
-	},
-	{
 		title = "🔨 Tool Crib",
-		body = "Spend Noodles on tools that hit harder and brushes that break more blocks per punch.",
+		body = "Buy a 🥄 Spoon first: it punches twice as hard! Then better tools, bags and vacuums.",
 		view = function()
 			return lookAt(shop("Workshop"), 16, 7)
 		end,
 	},
 	{
-		title = "🎒 Commissary",
-		body = "Bigger backpacks, more find slots and a stronger vacuum.",
-		view = function()
-			return lookAt(shop("Commissary"), 16, 7)
-		end,
-	},
-	{
-		title = "💪 Yard Gym",
-		body = "Lift ridiculous things for Strength. Stronger prisoners punch harder.",
-		view = function()
-			return lookAt(CollectionService:GetTagged("GymStation")[1] :: BasePart?, 22, 10)
-		end,
-	},
-	{
-		title = "🍲 Mess Hall",
-		body = "Meals give you buffs until the morning.",
-		view = function()
-			return lookAt(shop("MessHall"), 20, 8)
-		end,
-	},
-	{
 		title = "🌙 Lights out",
-		body = "At night the doors lock and guards check the cells. Cover the hole and get in bed in time!",
+		body = "At night the doors lock and guards check the cells: cover the hole and get in bed in time!",
 		view = cellView(Vector3.new(-12, 8, 16), Vector3.new(-6, 2, 9)),
 	},
 	{
-		title = "🏃 Escape",
-		body = "Dig through 10 zones to the bottom and ESCAPE. Tap 📋 Jobs for daily work that pays extra. Good luck!",
+		title = "🏃 600 m to freedom",
+		body = "Break through 10 zones to the bottom and ESCAPE. Good luck!",
 		view = cellView(Vector3.new(0, 7, 12), Vector3.new(0, 4, -6)),
 	},
 }
