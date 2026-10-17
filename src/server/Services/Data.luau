@@ -29,6 +29,7 @@ export type PlayerData = {
 	Seed: number, -- decides where the finds are in your tunnel
 	Tunnel: string, -- Voxel.serialize of your tunnel
 	MaxDepth: number, -- deepest layer reached (record, kept on rebirth)
+	RunDepth: number, -- deepest layer of this run's tunnel (0 again after an escape)
 	Zone: number, -- deepest zone reached in this tunnel
 	Bag: number, -- rubble in the backpack
 	BagValue: number, -- Noodles that rubble pays at the dump
@@ -109,6 +110,7 @@ local TEMPLATE: PlayerData = {
 	Seed = 0, -- set on first load
 	Tunnel = "",
 	MaxDepth = 0,
+	RunDepth = 0,
 	Zone = 1,
 	Bag = 0,
 	BagValue = 0,

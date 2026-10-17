@@ -60,7 +60,7 @@ function Cells.updateSign(player: Player)
 	end
 	local zone = Zones[s.data.Zone] or Zones[1]
 	world.cells[s.cell].sign.Text =
-		string.format("%s\n⛏️ %dm · %s", player.Name, s.data.MaxDepth, zone.name)
+		string.format("%s\n⛏️ %dm · %s", player.Name, s.data.RunDepth, zone.name)
 end
 
 -- Puts the character inside its cell, facing the back wall.

@@ -20,6 +20,16 @@ local world: any = nil
 local current: Player? = nil
 local depthStore: OrderedDataStore? = nil
 local allTime: { { name: string, depth: number } } = {}
+
+-- the ESCAPE ARTISTS score: escapes rank first, this run's depth breaks ties
+local function escapeScore(s: State.PlayerState): number
+	return s.data.Rebirths * 1000 + math.min(999, s.data.RunDepth)
+end
+
+local function scoreText(score: number): string
+	local escapes, depth = score // 1000, score % 1000
+	return if escapes > 0 then string.format("🏃%d · %dm", escapes, depth) else string.format("%dm", depth)
+end
 local lastSaved: { [number]: number } = {}
 
 local GOLD = Color3.fromRGB(232, 178, 52)
@@ -114,21 +124,22 @@ function TopDog.update()
 	top.Text = if current
 		then string.format("%s\n🍜 %s", current.Name, Format.number(bestNoodles))
 		else "nobody yet"
-	-- LONGEST TUNNEL: this server + all time
+	-- ESCAPE ARTISTS: escapes first, then this run's depth (score = escapes * 1000 + depth);
+	-- this server + all time
 	local here = {}
 	for player, s in State.all() do
-		table.insert(here, { name = (player :: any).Name, depth = s.data.MaxDepth })
+		table.insert(here, { name = (player :: any).Name, depth = escapeScore(s) })
 	end
 	table.sort(here, function(a, b)
 		return a.depth > b.depth
 	end)
 	local lines = { "THIS PRISON" }
 	for i = 1, math.min(3, #here) do
-		table.insert(lines, string.format("%d. %s  %dm", i, here[i].name, here[i].depth))
+		table.insert(lines, string.format("%d. %s  %s", i, here[i].name, scoreText(here[i].depth)))
 	end
 	table.insert(lines, "ALL TIME")
 	for i = 1, math.min(5, #allTime) do
-		table.insert(lines, string.format("%d. %s  %dm", i, allTime[i].name, allTime[i].depth))
+		table.insert(lines, string.format("%d. %s  %s", i, allTime[i].name, scoreText(allTime[i].depth)))
 	end
 	local depthBody = world.boards.Depth:FindFirstChild("Body") :: TextLabel
 	depthBody.Text = table.concat(lines, "\n")
@@ -139,7 +150,7 @@ local function saveDepth(player: Player)
 	if not s or not depthStore or typeof(player) ~= "Instance" then
 		return
 	end
-	local depth = s.data.MaxDepth
+	local depth = escapeScore(s)
 	if depth <= 0 or lastSaved[player.UserId] == depth then
 		return
 	end
@@ -346,7 +357,7 @@ end
 function TopDog.start(w: any)
 	world = w
 	local ok, store = pcall(function()
-		return DataStoreService:GetOrderedDataStore("DigOut_Depth_v1")
+		return DataStoreService:GetOrderedDataStore("DigOut_Escapes_v1")
 	end)
 	depthStore = if ok then store else nil
 	task.spawn(function()

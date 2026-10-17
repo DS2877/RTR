@@ -42,6 +42,7 @@ function Stats.sync(player: Player)
 	player:SetAttribute("Slots", Progression.findSlots(d.Levels.FindSlots))
 	player:SetAttribute("SlotsUsed", #d.Finds)
 	player:SetAttribute("MaxDepth", d.MaxDepth)
+	player:SetAttribute("RunDepth", d.RunDepth)
 	player:SetAttribute("Zone", d.Zone)
 	player:SetAttribute("Cell", s.cell or 0)
 	player:SetAttribute("AutoVacuum", s.passes.AutoVacuum == true)
@@ -49,11 +50,15 @@ function Stats.sync(player: Player)
 	if ls then
 		local n = ls:FindFirstChild("🍜 Noodles") :: IntValue?
 		local depth = ls:FindFirstChild("⛏️ Depth") :: IntValue?
+		local escapes = ls:FindFirstChild("🏃 Escapes") :: IntValue?
+		if escapes then
+			escapes.Value = d.Rebirths
+		end
 		if n then
 			n.Value = math.floor(math.min(d.Noodles, 2 ^ 53))
 		end
 		if depth then
-			depth.Value = d.MaxDepth
+			depth.Value = d.RunDepth
 		end
 	end
 end
@@ -64,6 +69,9 @@ function Stats.setupLeaderstats(player: Player)
 	end
 	local ls = Instance.new("Folder")
 	ls.Name = "leaderstats"
+	local escapes = Instance.new("IntValue")
+	escapes.Name = "🏃 Escapes"
+	escapes.Parent = ls
 	local n = Instance.new("IntValue")
 	n.Name = "🍜 Noodles"
 	n.Parent = ls

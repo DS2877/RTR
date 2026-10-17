@@ -1167,7 +1167,7 @@ local function buildCommonRoom(parent: Instance, boards: { [string]: Frame }): {
 	)
 	boards.Depth = board(
 		"DepthBoard",
-		"⛏️ LONGEST TUNNEL",
+		"🏃 ESCAPE ARTISTS",
 		CFrame.new(x0 + 0.3, 13, -30) * CFrame.Angles(0, -math.pi / 2, 0),
 		Color3.fromRGB(120, 200, 255)
 	)

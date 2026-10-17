@@ -830,7 +830,7 @@ function HUD.start()
 	}, { UI.textStroke(UI.INK, 1) })
 	local lastGoalZone = 0
 	local function updateGoal()
-		local depth = attr("MaxDepth", 0)
+		local depth = attr("RunDepth", 0) -- this run's tunnel (the record stays after an escape)
 		local zi = Progression.zoneAt(depth)
 		local nextZone = Zones[zi + 1]
 		local from = Progression.zoneStart(zi)
@@ -857,7 +857,7 @@ function HUD.start()
 			lastGoalZone = zi
 		end
 	end
-	player:GetAttributeChangedSignal("MaxDepth"):Connect(updateGoal)
+	player:GetAttributeChangedSignal("RunDepth"):Connect(updateGoal)
 	task.defer(updateGoal)
 
 	-- toasts: their own layer above the panels (placeToasts moves them while a panel is open)

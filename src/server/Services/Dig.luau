@@ -80,6 +80,8 @@ function Dig.loadTunnel(player: Player)
 	s.grid = Voxel.deserialize(s.data.Tunnel, W, H, D, CS)
 	s.damage = {}
 	s.tunnelDirty = false
+	-- (profiles from before RunDepth existed: the tunnel itself says how deep this run is)
+	s.data.RunDepth = math.max(s.data.RunDepth or 0, Voxel.depth(s.grid))
 end
 
 function Dig.saveTunnel(s: State.PlayerState)
@@ -243,6 +245,7 @@ local function openChamber(player: Player, s: State.PlayerState, zone: number)
 	if c then
 		Net.notice(player, "You broke into the " .. string.upper(c.name) .. "!", "good")
 	end
+	s.data.RunDepth = math.max(s.data.RunDepth, b.z1 + 1)
 	if b.z1 + 1 > s.data.MaxDepth then
 		s.data.MaxDepth = b.z1 + 1
 	end
@@ -683,11 +686,13 @@ function Dig.applyHits(
 			end
 		end
 		local td = ts.data
-		if deepest + 1 > td.MaxDepth then
+		-- deeper than ever in this run (jobs count it again after an escape); MaxDepth is the record
+		if deepest + 1 > td.RunDepth then
 			if Dig.onDeeper then
-				Dig.onDeeper(owner, deepest + 1 - td.MaxDepth)
+				Dig.onDeeper(owner, deepest + 1 - td.RunDepth)
 			end
-			td.MaxDepth = deepest + 1
+			td.RunDepth = deepest + 1
+			td.MaxDepth = math.max(td.MaxDepth, td.RunDepth)
 			Cells.updateSign(owner)
 		end
 		reachZone(owner, ts, Progression.zoneAt(deepest))
@@ -820,6 +825,7 @@ function Dig.digBox(player: Player, x0: number, y0: number, z0: number, x1: numb
 	s.damage = {}
 	s.tunnelDirty = true
 	local depth = Voxel.depth(s.grid)
+	s.data.RunDepth = math.max(s.data.RunDepth, depth)
 	s.data.MaxDepth = math.max(s.data.MaxDepth, depth)
 	reachZone(player, s, Progression.zoneAt(math.max(0, depth - 1)))
 	Dig.resync(player)
@@ -837,6 +843,7 @@ function Dig.resetTunnel(player: Player)
 	s.loose = 0
 	s.data.Tunnel = ""
 	s.data.Zone = 1
+	s.data.RunDepth = 0
 	s.tunnelDirty = false
 	Dig.resync(player)
 	if Dig.onPiles then

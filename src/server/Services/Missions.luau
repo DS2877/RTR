@@ -55,11 +55,11 @@ local function ensure(s: State.PlayerState): Data
 		-- the day's jobs are fixed when the day starts (progress and claims stay with their slot,
 		-- so nothing may reshuffle them mid-day: reaching the bottom or a new seed after an escape)
 		m.Seed = d.Seed
-		m.NoDepth = s.data.MaxDepth >= Progression.diggableDepth() - 20
+		m.NoDepth = s.data.RunDepth >= Progression.diggableDepth() - 20
 	end
 	if m.Seed == nil then
 		m.Seed = d.Seed
-		m.NoDepth = s.data.MaxDepth >= Progression.diggableDepth() - 20
+		m.NoDepth = s.data.RunDepth >= Progression.diggableDepth() - 20
 	end
 	return m
 end
