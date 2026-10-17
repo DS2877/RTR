@@ -28,6 +28,7 @@ local Guards = require(script.Parent.Guards)
 local Escape = require(script.Parent.Escape)
 local Breakout = require(script.Parent.Breakout)
 local Market = require(script.Parent.Market)
+local Rewards = require(script.Parent.Rewards)
 
 local Admin = {}
 
@@ -113,6 +114,10 @@ function Admin.run(player: Player, cmd: string, arg: number?): boolean
 	elseif cmd == "dynamite" then
 		s.data.Dynamite += math.floor(arg or 5)
 		player:SetAttribute("Dynamite", s.data.Dynamite)
+	elseif cmd == "daily" then
+		-- the next day of the streak now (as if you'd claimed yesterday): tests the calendar card
+		s.data.Daily.Day = Rewards.today() - 1
+		Rewards.daily(player)
 	elseif cmd == "breakout" then
 		-- practice THE BREAKOUT (no rebirth, no reward)
 		Breakout.begin(player, true)

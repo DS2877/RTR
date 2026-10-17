@@ -144,6 +144,8 @@ local Economy = {
 	CatalogMarkup = 1.2, -- the CELL CATALOG (upgrades from your cell during LOCKDOWN) costs this x
 	DailyBlocks = 300, -- daily reward = this many blocks of rubble from your deepest zone x streak (max 7)
 	DailyMaxStreak = 7,
+	DailyMaxDynamite = 1, -- sticks of dynamite on top at a full streak (every day of it)
+	DailyUniform = "Lifer", -- Laundry exclusive given once, the first time you reach a full streak
 	GiftMinutes = 10, -- a playtime gift every N minutes
 	GiftBlocks = 200,
 	-- WHILE YOU SLEPT: your bunkmate digs while you're offline (at least CellmateMinMinutes away)

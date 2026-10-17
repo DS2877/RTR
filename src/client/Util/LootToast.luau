@@ -129,6 +129,10 @@ function LootToast.setPaused(on: boolean)
 	end
 end
 
+function LootToast.isPaused(): boolean
+	return paused
+end
+
 function LootToast.show(spec: Spec)
 	if paused then
 		table.insert(queue, spec)

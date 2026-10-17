@@ -76,6 +76,7 @@ Missions.onClaim = function(player, index)
 	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
 	Pass.addXp(player, if index == 4 then PassCfg.Xp.MissionBonus else PassCfg.Xp.Mission)
 end
+Rewards.onUniform = Market.equip -- the 7-day streak uniform goes on right away
 Rewards.onDaily = function(player)
 	local PassCfg = require(game:GetService("ReplicatedStorage").Shared.Config.Pass)
 	Pass.addXp(player, PassCfg.Xp.Daily)
@@ -276,6 +277,7 @@ Dig.onZone = function(player, zone)
 	if zone >= 10 then
 		Badges.award(player, "Zone10")
 	end
+	Rewards.syncCalendar(player) -- the daily prizes + gifts follow your deepest zone
 end
 
 local function onCharacter(player: Player, character: Model)

@@ -1,7 +1,10 @@
 --!strict
--- Panels for the STORE (Robux, known contents), LAUNDRY, MESS HALL, BLACK MARKET (+ snitch) and
--- the DECOR list (opened from the Workshop panel). All opened by counter prompts.
+-- Panels for the STORE (Robux, known contents), THE CANTEEN (one panel, three tabs: LAUNDRY,
+-- MESS HALL, BLACK MARKET + snitch) and the DECOR list (opened from the Workshop panel).
+-- Each canteen counter opens the canteen on its own tab; every tab sells at every canteen counter
+-- (the server checks you're near one of them). It closes when you walk away from all of them.
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -94,6 +97,16 @@ end
 local panels: { [string]: Panel.Panel } = {}
 local renders: { [string]: () -> () } = {}
 
+-- THE CANTEEN's tabs (ids = the counters' shop names)
+local TABS = {
+	{ id = "Laundry", label = "🧺 Laundry", color = Color3.fromRGB(120, 210, 230) },
+	{ id = "MessHall", label = "🍲 Mess Hall", color = Color3.fromRGB(255, 160, 90) },
+	{ id = "BlackMarket", label = "🕶️ Black Market", color = Color3.fromRGB(170, 140, 220) },
+}
+local TAB_HEIGHT = 60 -- pre-scale: ~46 pt on a landscape iPhone 11 (UI.PANEL_SCALE)
+local tab = "Laundry"
+local setTab: (id: string) -> () = function(_id: string) end
+
 local function rerender(name: string)
 	local p = panels[name]
 	if p and p.isOpen() then
@@ -102,6 +115,13 @@ local function rerender(name: string)
 end
 
 function ExtraShops.open(name: string): boolean
+	for _, t in TABS do
+		if t.id == name then
+			setTab(name)
+			panels.Canteen.setOpen(true)
+			return true
+		end
+	end
 	local p = panels[name]
 	if p then
 		p.setOpen(true)
@@ -165,13 +185,8 @@ function ExtraShops.start()
 		end
 	end
 
-	-- ===== LAUNDRY =====
-	panels.Laundry =
-		listPanel("LaundryPanel", "🧺 LAUNDRY", Color3.fromRGB(120, 210, 230), Color3.fromRGB(10, 70, 90))
-	renders.Laundry = function()
-		local body = panels.Laundry.body
-		clear(body)
-		panels.Laundry.subtitle.Text = Format.noodles(noodles())
+	-- ===== THE CANTEEN: LAUNDRY tab =====
+	local function renderLaundry(body: Instance)
 		local owned: { [string]: boolean } = {}
 		for _, id in string.split(tostring(player:GetAttribute("UniformsOwned") or ""), ",") do
 			owned[id] = true
@@ -199,14 +214,25 @@ function ExtraShops.start()
 				elseif have then "WEAR"
 				elseif it.pass then "🎫 PASS"
 				elseif it.starter then "🎁 PACK"
+				elseif it.daily then "📅 DAY 7"
 				else Format.noodles(Progression.itemPrice(it, zone()))
-			row(body, order, it.emoji .. " " .. it.name, it.desc, text, current ~= it.id, function()
-				if have then
-					equip:FireServer("uniform", it.id)
-				else
-					buyItem:FireServer("Laundry", it.id)
+			-- (exclusives you don't own yet are earned elsewhere: a muted button)
+			local exclusive = not have and (it.pass or it.starter or it.daily) == true
+			row(
+				body,
+				order,
+				it.emoji .. " " .. it.name,
+				it.desc,
+				text,
+				current ~= it.id and not exclusive,
+				function()
+					if have then
+						equip:FireServer("uniform", it.id)
+					else
+						buyItem:FireServer("Laundry", it.id)
+					end
 				end
-			end)
+			)
 		end
 		for _, it in Extras.Fists do
 			order += 1
@@ -216,6 +242,7 @@ function ExtraShops.start()
 				elseif have then "EQUIP"
 				elseif it.pass then "🎫 PASS"
 				elseif it.starter then "🎁 PACK"
+				elseif it.daily then "📅 DAY 7"
 				else Format.noodles(Progression.itemPrice(it, zone()))
 			row(body, order, it.emoji .. " " .. it.name, it.desc, text, true, function()
 				if have then
@@ -227,13 +254,8 @@ function ExtraShops.start()
 		end
 	end
 
-	-- ===== MESS HALL =====
-	panels.MessHall =
-		listPanel("MessPanel", "🍲 MESS HALL", Color3.fromRGB(255, 160, 90), Color3.fromRGB(110, 50, 10))
-	renders.MessHall = function()
-		local body = panels.MessHall.body
-		clear(body)
-		panels.MessHall.subtitle.Text = Format.noodles(noodles())
+	-- ===== THE CANTEEN: MESS HALL tab =====
+	local function renderMess(body: Instance)
 		local buffs = tostring(player:GetAttribute("Buffs") or "")
 		for i, it in Extras.Meals do
 			local active = string.find("," .. buffs .. ",", "," .. (it.buff or "?") .. ",", 1, true) ~= nil
@@ -253,19 +275,15 @@ function ExtraShops.start()
 		end
 	end
 
-	-- ===== BLACK MARKET (+ snitch) =====
-	panels.BlackMarket = listPanel(
-		"BlackMarketPanel",
-		"🕶️ BLACK MARKET",
-		Color3.fromRGB(110, 90, 140),
-		Color3.fromRGB(30, 10, 50)
-	)
-	renders.BlackMarket = function()
-		local body = panels.BlackMarket.body
-		clear(body)
+	-- ===== THE CANTEEN: BLACK MARKET tab (+ snitch) =====
+	local function renderMarket(body: Instance)
 		local now = workspace:GetServerTimeNow()
 		local left = 86400 - (now % 86400)
-		panels.BlackMarket.subtitle.Text = "new stock in " .. Format.duration(left)
+		Panel.text("note", "🕶️ Today's deals · new stock in " .. Format.duration(left), {
+			LayoutOrder = 0,
+			Size = UDim2.new(1, -6, 0, 22),
+			Parent = body,
+		})
 		local day = ReplicatedStorage:GetAttribute("MarketDay")
 		local stock =
 			Progression.marketStock(if typeof(day) == "number" then day else math.floor(now / 86400))
@@ -314,6 +332,94 @@ function ExtraShops.start()
 			end
 		end
 	end
+
+	-- ===== THE CANTEEN: one panel, a big segmented control on top =====
+	local canteen = Panel.new(
+		"CanteenPanel",
+		"🏪 THE CANTEEN",
+		Color3.fromRGB(120, 210, 230),
+		Color3.fromRGB(10, 70, 90),
+		Vector2.new(580, 380)
+	)
+	panels.Canteen = canteen
+	UI.new(
+		"UIListLayout",
+		{ Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = canteen.body }
+	)
+	local segTop = 54
+	canteen.body.Position = UDim2.fromOffset(12, segTop + TAB_HEIGHT + 8)
+	canteen.body.Size = UDim2.new(1, -24, 1, -(segTop + TAB_HEIGHT + 16))
+	local seg = UI.new("Frame", {
+		Name = "Tabs",
+		Position = UDim2.fromOffset(12, segTop),
+		Size = UDim2.new(1, -24, 0, TAB_HEIGHT),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundTransparency = 0.94,
+		Parent = canteen.frame,
+	}, {
+		UI.corner(14),
+		UI.stroke(Color3.new(1, 1, 1), 1, 0.9),
+		UI.new("UIPadding", {
+			PaddingTop = UDim.new(0, 4),
+			PaddingBottom = UDim.new(0, 4),
+			PaddingLeft = UDim.new(0, 4),
+			PaddingRight = UDim.new(0, 4),
+		}),
+		UI.new("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			Padding = UDim.new(0, 4),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	})
+	local tabButtons: { [string]: TextButton } = {}
+	for i, t in TABS do
+		local b: TextButton = UI.new("TextButton", {
+			Name = t.id,
+			LayoutOrder = i,
+			Size = UDim2.new(1 / #TABS, -3, 1, 0),
+			BackgroundColor3 = t.color,
+			BackgroundTransparency = 1,
+			AutoButtonColor = false,
+			Text = t.label,
+			Font = Enum.Font.GothamBold,
+			TextSize = 16,
+			TextColor3 = Panel.MUTED,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			Parent = seg,
+		}, { UI.corner(11) })
+		b.Activated:Connect(function()
+			if tab ~= t.id then
+				Sound.play("Click")
+				setTab(t.id)
+			end
+		end)
+		tabButtons[t.id] = b
+	end
+	renders.Canteen = function()
+		local body = canteen.body
+		clear(body)
+		canteen.subtitle.Text = Format.noodles(noodles())
+		if tab == "MessHall" then
+			renderMess(body)
+		elseif tab == "BlackMarket" then
+			renderMarket(body)
+		else
+			renderLaundry(body)
+		end
+	end
+	setTab = function(id: string)
+		tab = id
+		for _, t in TABS do
+			local b = tabButtons[t.id]
+			local on = t.id == id
+			b.BackgroundTransparency = if on then 0 else 1
+			b.TextColor3 = if on then UI.INK else Panel.MUTED
+			b.Font = if on then Enum.Font.GothamBlack else Enum.Font.GothamBold
+		end
+		canteen.body.CanvasPosition = Vector2.zero
+		rerender("Canteen")
+	end
+	setTab(tab)
 
 	-- ===== DECOR (from the Workshop) =====
 	panels.Decor =
@@ -364,6 +470,29 @@ function ExtraShops.start()
 	end
 	Remotes.get(Remotes.Names.OpenShop).OnClientEvent:Connect(function(name)
 		ExtraShops.open(name)
+	end)
+	-- walk away from every canteen counter: the canteen closes (like the upgrade counters)
+	task.spawn(function()
+		while true do
+			task.wait(0.5)
+			local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			if canteen.isOpen() and r and r:IsA("BasePart") then
+				local near = false
+				for _, counter in CollectionService:GetTagged("Shop") do
+					local name = counter:GetAttribute("Shop")
+					if
+						counter:IsA("BasePart")
+						and (name == "Laundry" or name == "MessHall" or name == "BlackMarket")
+						and (counter.Position - r.Position).Magnitude <= 26
+					then
+						near = true
+					end
+				end
+				if not near then
+					canteen.setOpen(false)
+				end
+			end
+		end
 	end)
 end
 
