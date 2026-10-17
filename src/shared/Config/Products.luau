@@ -83,7 +83,7 @@ local Products = {
 		},
 		{
 			key = "StarterPack",
-			id = 0,
+			id = 3719132943,
 			name = "Starter Pack",
 			emoji = "🎁",
 			price = 79,
@@ -91,7 +91,7 @@ local Products = {
 		},
 		{
 			key = "NoodleRush",
-			id = 0,
+			id = 3719132947,
 			name = "Noodle Rush",
 			emoji = "⚡",
 			price = 49,
@@ -99,7 +99,7 @@ local Products = {
 		},
 		{
 			key = "NoodlesHuge",
-			id = 0,
+			id = 3719132950,
 			name = "Noodle Train",
 			emoji = "🚂",
 			price = 449,
@@ -107,7 +107,7 @@ local Products = {
 		},
 		{
 			key = "PrisonPass",
-			id = 0,
+			id = 3719132958,
 			name = "Prison Pass Premium",
 			emoji = "🎫",
 			price = 399,

@@ -1,29 +1,28 @@
-# Creator Hub setup – 2026-10-15 12:05 UTC
+# Creator Hub setup – 2026-10-17 05:56 UTC
 
-Catalog: 9 entries in Products.luau
+Catalog: 13 entries in Products.luau
 
 ## Listing existing
-- LIST pass: HTTP 200 {"gamePasses":[{"gamePassId":2025284943,"name":"Rainbow Trail","description":"A rainbow trail behind you while you run. Equip it in the Trails shop.","isForSale":false,"iconAssetId":133448903949274,"createdTimestamp":"2026-10-11T17:20:03.108Z","updatedTimestamp":"2026-10-15T11:31:14.092Z","priceInfo…
-- LIST product: HTTP 200 {"developerProducts":[{"productId":3717980845,"name":"Gift: Rainbow Trail","description":"Gift the Rainbow Trail pass to a friend. A rainbow trail behind you while you run. Equip it in the Trails shop.","iconImageAssetId":88963008124478,"universeId":10770392871,"isForSale":false,"priceInformation":{…
+- LIST pass: HTTP 200 {"gamePasses":[{"gamePassId":2038340615,"name":"VIP Prisoner","description":"Gold fists, a VIP chat tag and the VIP corner in the Common Room.","isForSale":true,"iconAssetId":133448903949274,"createdTimestamp":"2026-10-15T12:05:27.8Z","updatedTimestamp":"2026-10-15T12:05:27.8Z","priceInformation":{"…
+- LIST product: HTTP 200 {"developerProducts":[{"productId":3718744929,"name":"Instant Backpack Empty","description":"Dump your whole backpack right where you stand, for full Noodles.","iconImageAssetId":88963008124478,"universeId":10770392871,"isForSale":true,"priceInformation":{"defaultPriceInRobux":25,"enabledFeatures":[…
 
 ## Creating
-- CREATE pass '2x Noodles' (199 R$): HTTP 200 {"gamePassId":2039846388,"name":"2x Noodles","description":"Double Noodles from dumping rubble and selling finds. Forever.","isForSale":true,"iconAssetId":133448903949274,"createdTimestamp":"2026-10-15T12:05:25.724Z","updatedTimestamp":"2026-10-15T12:05:25.724Z","priceInformation":{"defaultPriceInRobux":199,"enabledFeatures":[]},"isManagedPricingEnabled":false}
   -> DoubleNoodles: pass 2039846388
-- CREATE pass 'Auto-Vacuum' (149 R$): HTTP 200 {"gamePassId":2039576400,"name":"Auto-Vacuum","description":"Your vacuum runs by itself: rubble flies into your backpack while you punch.","isForSale":true,"iconAssetId":133448903949274,"createdTimestamp":"2026-10-15T12:05:26.263Z","updatedTimestamp":"2026-10-15T12:05:26.263Z","priceInformation":{"defaultPriceInRobux":149,"enabledFeatures":[]},"isManagedPricingEnabled":false}
   -> AutoVacuum: pass 2039576400
-- CREATE pass 'Huge Backpack' (149 R$): HTTP 200 {"gamePassId":2036384610,"name":"Huge Backpack","description":"Your backpack holds twice as much rubble. Fewer trips to the Yard!","isForSale":true,"iconAssetId":133448903949274,"createdTimestamp":"2026-10-15T12:05:26.764Z","updatedTimestamp":"2026-10-15T12:05:26.764Z","priceInformation":{"defaultPriceInRobux":149,"enabledFeatures":[]},"isManagedPricingEnabled":false}
   -> HugeBackpack: pass 2036384610
-- CREATE pass '2x Strength' (199 R$): HTTP 200 {"gamePassId":2038250596,"name":"2x Strength","description":"Every gym rep gives double strength. Forever.","isForSale":true,"iconAssetId":133448903949274,"createdTimestamp":"2026-10-15T12:05:27.304Z","updatedTimestamp":"2026-10-15T12:05:27.304Z","priceInformation":{"defaultPriceInRobux":199,"enabledFeatures":[]},"isManagedPricingEnabled":false}
   -> DoubleStrength: pass 2038250596
-- CREATE pass 'VIP Prisoner' (299 R$): HTTP 200 {"gamePassId":2038340615,"name":"VIP Prisoner","description":"Gold fists, a VIP chat tag and the VIP corner in the Common Room.","isForSale":true,"iconAssetId":133448903949274,"createdTimestamp":"2026-10-15T12:05:27.8Z","updatedTimestamp":"2026-10-15T12:05:27.8Z","priceInformation":{"defaultPriceInRobux":299,"enabledFeatures":[]},"isManagedPricingEnabled":false}
   -> VIP: pass 2038340615
-- CREATE product 'Dynamite' (49 R$): HTTP 200 {"productId":3718744920,"name":"Dynamite","description":"One stick of dynamite: blows up a huge sphere of blocks in your tunnel.","iconImageAssetId":88963008124478,"universeId":10770392871,"isForSale":true,"priceInformation":{"defaultPriceInRobux":49,"enabledFeatures":[]},"isImmutable":false,"createdTimestamp":"2026-10-15T12:05:28.339Z","updatedTimestamp":"2026-10-15T12:05:28.339Z","isManagedPricingEnabled":false}
   -> Dynamite: product 3718744920
-- CREATE product 'Noodle Crate' (39 R$): HTTP 200 {"productId":3718744921,"name":"Noodle Crate","description":"A crate of Noodles. The exact amount is shown in the Store before you buy.","iconImageAssetId":88963008124478,"universeId":10770392871,"isForSale":true,"priceInformation":{"defaultPriceInRobux":39,"enabledFeatures":[]},"isImmutable":false,"createdTimestamp":"2026-10-15T12:05:28.84Z","updatedTimestamp":"2026-10-15T12:05:28.84Z","isManagedPricingEnabled":false}
   -> NoodlesSmall: product 3718744921
-- CREATE product 'Noodle Truck' (149 R$): HTTP 200 {"productId":3718744924,"name":"Noodle Truck","description":"A truck full of Noodles (5x a crate). The exact amount is shown in the Store.","iconImageAssetId":88963008124478,"universeId":10770392871,"isForSale":true,"priceInformation":{"defaultPriceInRobux":149,"enabledFeatures":[]},"isImmutable":false,"createdTimestamp":"2026-10-15T12:05:29.348Z","updatedTimestamp":"2026-10-15T12:05:29.348Z","isManagedPricingEnabled":false}
   -> NoodlesBig: product 3718744924
-- CREATE product 'Instant Backpack Empty' (25 R$): HTTP 200 {"productId":3718744929,"name":"Instant Backpack Empty","description":"Dump your whole backpack right where you stand, for full Noodles.","iconImageAssetId":88963008124478,"universeId":10770392871,"isForSale":true,"priceInformation":{"defaultPriceInRobux":25,"enabledFeatures":[]},"isImmutable":false,"createdTimestamp":"2026-10-15T12:05:29.828Z","updatedTimestamp":"2026-10-15T12:05:29.828Z","isManagedPricingEnabled":false}
+- CREATE product 'Starter Pack' (79 R$): HTTP 200 {"productId":3719132943,"name":"Starter Pack","description":"Once per prisoner: 3 Dynamite, 30 minutes of NOODLE RUSH (2x Noodles), the Fresh Fish uniform and a Noodle Crate.","iconImageAssetId":88963008124478,"universeId":10770392871,"isForSale":true,"priceInformation":{"defaultPriceInRobux":79,"enabledFeatures":[]},"isImmutable":false,"createdTimestamp":"2026-10-17T05:56:07.861Z","updatedTimestamp":"2026-10-17T05:56:07.861Z","isManagedPricingEnabled":false}
+  -> StarterPack: product 3719132943
+- CREATE product 'Noodle Rush' (49 R$): HTTP 200 {"productId":3719132947,"name":"Noodle Rush","description":"2x Noodles from rubble for 30 minutes (adds up if you buy more).","iconImageAssetId":88963008124478,"universeId":10770392871,"isForSale":true,"priceInformation":{"defaultPriceInRobux":49,"enabledFeatures":[]},"isImmutable":false,"createdTimestamp":"2026-10-17T05:56:08.606Z","updatedTimestamp":"2026-10-17T05:56:08.606Z","isManagedPricingEnabled":false}
+  -> NoodleRush: product 3719132947
+- CREATE product 'Noodle Train' (449 R$): HTTP 200 {"productId":3719132950,"name":"Noodle Train","description":"A whole train of Noodles (24x a crate). The exact amount is shown in the Store.","iconImageAssetId":88963008124478,"universeId":10770392871,"isForSale":true,"priceInformation":{"defaultPriceInRobux":449,"enabledFeatures":[]},"isImmutable":false,"createdTimestamp":"2026-10-17T05:56:09.492Z","updatedTimestamp":"2026-10-17T05:56:09.492Z","isManagedPricingEnabled":false}
+  -> NoodlesHuge: product 3719132950
+- CREATE product 'Prison Pass Premium' (399 R$): HTTP 200 {"productId":3719132958,"name":"Prison Pass Premium","description":"This season's Prison Pass premium track: every premium reward listed in the Pass panel (Riot Gear, Lightning Fists, the Jailbird cellmate and more) plus +25% pass XP. Lasts this season.","iconImageAssetId":88963008124478,"universeId":10770392871,"isForSale":true,"priceInformation":{"defaultPriceInRobux":399,"enabledFeatures":[]},"isImmutable":false,"createdTimestamp":"2026-10-17T05:56:10.278Z","updatedTimestamp":"2026-10-17T05:56:10.278Z","isManagedPricingEnabled":false}
+  -> PrisonPass: product 3719132958
   -> InstantEmpty: product 3718744929
 
 ## Off sale (everything on Roblox that is not in Products.luau)
@@ -47,7 +46,7 @@ Catalog: 9 entries in Products.luau
 - OFF SALE product 'Speed Pack' (3717972926): HTTP 204 
 
 ## Experience name + description
-- PATCH place name/description/serverSize=12: HTTP 200 {"path":"universes/10770392871/places/95313582510402","createTime":"2026-10-11T16:10:04.725Z","updateTime":"2026-10-15T12:05:18.054Z","displayName":"Dig Out! Prison Escape","description":"You're a prisoner with a plan. Punch through the wall of your cell, dig a giant tunnel through plaster, brick an…
-- PATCH universe name/description: HTTP 200 {"path":"universes/10770392871","createTime":"2026-10-11T16:10:04.950Z","updateTime":"2026-10-15T11:31:22.750Z","displayName":"Dig Out! Prison Escape","description":"You're a prisoner with a plan. Punch through the wall of your cell, dig a giant tunnel through plaster, brick and concrete, find hidde…
+- PATCH place name/description/serverSize=12: HTTP 200 {"path":"universes/10770392871/places/95313582510402","createTime":"2026-10-11T16:10:04.725Z","updateTime":"2026-10-17T05:56:21.728Z","displayName":"Dig Out! Prison Escape","description":"You're a prisoner with a plan. Punch through the back wall of your cell and dig a tunnel 600 m down to freedom!\…
+- PATCH universe name/description: HTTP 200 {"path":"universes/10770392871","createTime":"2026-10-11T16:10:04.950Z","updateTime":"2026-10-17T05:56:21.716Z","displayName":"Dig Out! Prison Escape","description":"You're a prisoner with a plan. Punch through the back wall of your cell and dig a tunnel 600 m down to freedom!\n\n⛏️ Smash through 10…
 
 Result: ALL OK
